@@ -83,6 +83,38 @@
 
         [x-cloak] { display: none !important; }
 
+        /* Custom scrollbar utilities */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+            height: 4px;
+            width: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 9999px;
+        }
+
+        /* Core Meramot component utilities */
+        .meramot-card {
+            border-radius: 1.5rem;
+            border: 1px solid var(--border);
+            background-color: var(--card);
+        }
+        .meramot-pill {
+            background-color: var(--mint-100);
+            border: 1px solid var(--border);
+            color: var(--foreground);
+        }
+
         /* Mobile drawer overlay from mobile.css */
         .mobile-sidebar-backdrop {
             position: fixed;
@@ -523,7 +555,7 @@
     @endif
 
     <!-- Main Dynamic Content Slot -->
-    <main class="flex-grow">
+    <main class="flex-grow w-full min-w-0">
         @yield('content')
     </main>
 

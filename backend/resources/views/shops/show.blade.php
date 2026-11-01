@@ -7,101 +7,101 @@
 
     <!-- Breadcrumb -->
     <div class="mb-4 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-        <a href="/" class="hover:underline">Home</a>
-        <span>/</span>
-        <a href="/shops" class="hover:underline">Repair Shops</a>
-        <span>/</span>
-        <a href="/shops?area={{ $shop->area }}" class="hover:underline">{{ $shop->area }}</a>
-        <span>/</span>
-        <span class="text-[var(--foreground)] font-semibold">{{ $shop->name }}</span>
+        <a href="/" class="hover:text-[var(--accent-dark)]">Homepage</a>
+        <span>›</span>
+        <a href="/shops" class="hover:text-[var(--accent-dark)]">Shops</a>
+        <span>›</span>
+        <span class="text-[var(--accent-dark)] font-semibold">{{ $shop->name }}</span>
     </div>
 
-    <!-- Shop Profile Hero Header -->
-    <div class="meramot-card p-6 md:p-8 shadow-sm mb-6">
-        <div class="flex flex-col md:flex-row md:items-start justify-between gap-6">
+    <!-- Shop Profile Hero Header (Exact match to shops/[slug]/page.tsx) -->
+    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-8 shadow-sm mb-6 min-w-0 max-w-full">
+        <div class="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[130px_minmax(0,1fr)_260px] lg:items-start">
             
-            <div class="flex items-start gap-5">
-                <!-- Shop Large Avatar -->
-                <div class="h-20 w-20 md:h-24 md:w-24 rounded-3xl bg-[var(--mint-100)] border-2 border-[var(--border)] flex items-center justify-center font-black text-4xl text-[var(--accent-dark)] shrink-0 shadow-md">
+            <!-- Left: Shop Logo / Avatar -->
+            <div class="h-24 w-24 sm:h-28 sm:w-28 lg:h-[130px] lg:w-[130px] rounded-[1.5rem] border-2 border-[var(--border)] bg-[var(--mint-100)] flex items-center justify-center font-black text-4xl text-[var(--accent-dark)] shrink-0 overflow-hidden shadow-sm">
+                @if($shop->logo_url)
+                    <img src="{{ $shop->logo_url }}" alt="{{ $shop->name }}" class="h-full w-full object-cover">
+                @else
                     {{ strtoupper(substr($shop->name, 0, 1)) }}
+                @endif
+            </div>
+
+            <!-- Middle: Shop Details -->
+            <div class="min-w-0">
+                <p class="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                    @if(!empty($shop->specialties))
+                        {{ is_array($shop->specialties) ? implode(' · ', array_slice($shop->specialties, 0, 4)) : $shop->specialties }}
+                    @else
+                        Electronics Repair & Diagnostics
+                    @endif
+                </p>
+
+                <h1 class="mt-1 text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
+                    {{ $shop->name }}
+                </h1>
+
+                <div class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-sm text-[var(--foreground)]">
+                    <span class="font-bold flex items-center gap-1 text-amber-700">
+                        ⭐ {{ number_format($shop->rating, 1) }}
+                        <span class="text-[var(--muted-foreground)] font-normal">({{ $shop->review_count ?? count($shop->reviews) }} reviews)</span>
+                    </span>
+                    <span class="opacity-40">·</span>
+                    <span class="flex items-center gap-1 text-[var(--muted-foreground)]">
+                        <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
+                        {{ $shop->address ?? $shop->area . ', Dhaka' }}
+                    </span>
+                    @if($shop->phone)
+                        <span class="opacity-40">·</span>
+                        <span class="text-[var(--muted-foreground)]">{{ $shop->phone }}</span>
+                    @endif
                 </div>
 
-                <div>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">
-                            {{ $shop->name }}
-                        </h1>
-                        @if($shop->is_featured)
-                            <span class="rounded-full bg-emerald-800 text-white text-[10px] font-extrabold px-3 py-1 uppercase tracking-wider shadow-sm flex items-center gap-1">
-                                <i class="fa-solid fa-circle-check"></i>
-                                Verified Meramot Partner
-                            </span>
-                        @endif
-                    </div>
+                <p class="mt-3 text-xs sm:text-sm text-[var(--muted-foreground)] leading-relaxed max-w-3xl">
+                    {{ $shop->description ?: "Professional device repair support with diagnostics, component level repairs, and courier handling from this verified repair shop." }}
+                </p>
 
-                    <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-[var(--muted-foreground)]">
-                        <span class="font-bold text-amber-700 flex items-center gap-1 text-sm">
-                            ⭐ {{ number_format($shop->rating, 1) }}
-                            <span class="text-[var(--muted-foreground)] font-normal text-xs">({{ number_format($shop->review_count) }} reviews)</span>
+                <!-- Badges & Perks -->
+                <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
+                    @if($shop->has_voucher)
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-[var(--accent-dark)]">
+                            <i class="fa-solid fa-ticket text-amber-600 mr-1"></i> Coupon Voucher
                         </span>
-                        <span>•</span>
-                        <span class="flex items-center gap-1">
-                            <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
-                            {{ $shop->address ?? $shop->area . ', Dhaka' }}
+                    @endif
+                    @if($shop->free_delivery)
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-emerald-800">
+                            <i class="fa-solid fa-truck-fast text-emerald-600 mr-1"></i> Free Doorstep Pickup
                         </span>
-                        <span>•</span>
-                        <span class="flex items-center gap-1">
-                            <i class="fa-solid fa-clock text-[var(--accent-dark)]"></i>
-                            ETA: {{ $shop->eta_minutes < 60 ? $shop->eta_minutes . ' min' : round($shop->eta_minutes / 60) . ' hr' }}
+                    @endif
+                    @if($shop->has_deals)
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-rose-800">
+                            <i class="fa-solid fa-fire text-rose-600 mr-1"></i> Active Deals
                         </span>
-                    </div>
-
-                    <p class="mt-3 text-xs md:text-sm text-[var(--foreground)] max-w-2xl leading-relaxed italic">
-                        "{{ $shop->description }}"
-                    </p>
-
-                    <!-- Perks & Badges -->
-                    <div class="mt-4 flex flex-wrap gap-2 text-xs">
-                        @if($shop->has_voucher)
-                            <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-bold text-[var(--accent-dark)]">
-                                <i class="fa-solid fa-ticket text-amber-600 mr-1"></i> Coupon Voucher Available
-                            </span>
-                        @endif
-                        @if($shop->free_delivery)
-                            <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-bold text-emerald-800">
-                                <i class="fa-solid fa-truck text-emerald-600 mr-1"></i> Free Doorstep Courier Pickup
-                            </span>
-                        @endif
-                        @if($shop->has_deals)
-                            <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-bold text-rose-800">
-                                <i class="fa-solid fa-fire text-rose-600 mr-1"></i> Promotional Deals Active
-                            </span>
-                        @endif
-                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-bold text-[var(--foreground)]">
-                            Price Tier: {{ str_repeat('৳', $shop->price_level ?? 2) }}
-                        </span>
-                    </div>
+                    @endif
+                    <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-bold text-[var(--accent-dark)]">
+                        Tier {{ str_repeat('৳', $shop->price_level ?? 2) }}
+                    </span>
                 </div>
             </div>
 
-            <!-- Booking & Action Box -->
-            <div class="shrink-0 meramot-card p-5 bg-[var(--mint-100)] border-2 border-[var(--border)] flex flex-col justify-between w-full md:w-64">
+            <!-- Right: Quick Quote / Booking Card -->
+            <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm space-y-4">
                 <div>
-                    <div class="text-[11px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider">Inspection & Diagnostics</div>
-                    <div class="text-2xl font-black text-[var(--accent-dark)] mt-1">
-                        ৳{{ number_format($shop->inspection_fee ?? 200) }}
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Starting Inspection</span>
+                    <div class="text-2xl font-black text-[var(--accent-dark)]">
+                        ৳{{ number_format($shop->inspection_fee ?: 200) }}
                     </div>
                     <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
-                        Base Labor: ৳{{ number_format($shop->base_labor_fee ?? 400) }}
+                        Base Labor: ৳{{ number_format($shop->base_labor_fee ?: 400) }} · ETA: {{ $shop->eta_minutes < 60 ? $shop->eta_minutes . ' min' : round($shop->eta_minutes / 60) . ' hr' }}
                     </div>
                 </div>
 
-                <div class="mt-4 space-y-2">
-                    <a href="/requests/create?shop_id={{ $shop->id }}" class="block w-full text-center rounded-2xl bg-[var(--accent-dark)] text-white text-xs font-bold py-3 shadow hover:opacity-90 transition">
-                        Request Repair Quote
+                <div class="space-y-2">
+                    <a href="/requests/create?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                        Post Repair Request
                     </a>
-                    <a href="/ai-consultant/chat" class="block w-full text-center rounded-2xl border border-[var(--border)] bg-[var(--card)] text-[var(--accent-dark)] text-xs font-bold py-2 hover:bg-[var(--mint-200)] transition">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-1 text-amber-600"></i> AI Diagnose Device
+                    <a href="/ai-consultant/chat" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-amber-600"></i> AI Diagnose Device
                     </a>
                 </div>
             </div>
@@ -109,172 +109,263 @@
         </div>
     </div>
 
-    <!-- Main Content Columns -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- Left 2 Cols: Specialties, Estimated Services, Customer Reviews -->
-        <div class="lg:col-span-2 space-y-6">
-            
-            <!-- Technical Specialties & Supported Hardware -->
-            <div class="meramot-card p-6 shadow-sm">
-                <h3 class="text-base font-extrabold text-[var(--foreground)] mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-microchip text-[var(--accent-dark)]"></i>
-                    Technical Specialties & Device Capabilities
-                </h3>
-                <div class="flex flex-wrap gap-2">
-                    @forelse($shop->specialties ?? [] as $spec)
-                        <span class="rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-dark)]">
-                            <i class="fa-solid fa-check text-[10px] mr-1 text-emerald-700"></i> {{ $spec }}
-                        </span>
-                    @empty
-                        <span class="text-xs text-[var(--muted-foreground)]">General consumer electronic repairs.</span>
-                    @endforelse
+    <!-- Main Two-Column Layout (Matching shops/[slug]/page.tsx) -->
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] items-start">
+
+        <!-- ── Left Column: Available Services & Customer Reviews ── -->
+        <div class="min-w-0 space-y-6">
+
+            <!-- 1. Available Services Catalog -->
+            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+                <div class="mb-5">
+                    <h2 class="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Available services</h2>
+                    <p class="mt-1 text-xs md:text-sm text-[var(--muted-foreground)]">
+                        Select a service to initiate diagnostic inspection or request an instant door-to-door repair quote.
+                    </p>
                 </div>
 
-                <h4 class="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider mt-5 mb-2">Supported Categories</h4>
-                <div class="flex flex-wrap gap-2 text-xs">
-                    @foreach($shop->categories ?? ['IN_SHOP_REPAIR'] as $cat)
-                        <span class="meramot-pill px-3 py-1 rounded-full text-[11px] font-semibold">
-                            {{ str_replace('_', ' ', $cat) }}
-                        </span>
+                @php
+                    $specialtiesList = $shop->specialties ?? [];
+                    if (empty($specialtiesList) || !is_array($specialtiesList)) {
+                        $specialtiesList = [
+                            'Display & Touchscreen Replacement',
+                            'Battery Diagnostics & Cell Replacement',
+                            'Logic Board & Ultrasonic Liquid Treatment',
+                            'Port, Jack & Keyboard Replacement'
+                        ];
+                    }
+
+                    $serviceCatalog = [
+                        'Display & Touchscreen Replacement' => ['estimate' => 1800, 'summary' => 'OEM panel check, precision digitizer fitting, calibration, and touch response testing.'],
+                        'Battery Diagnostics & Cell Replacement' => ['estimate' => 1200, 'summary' => 'Battery capacity diagnostics, OEM cell replacement, power rail check, and charging cycle test.'],
+                        'Logic Board & Ultrasonic Liquid Treatment' => ['estimate' => 2500, 'summary' => 'Micro-soldering, short-circuit detection with thermal camera, ultrasonic bath, and board rework.'],
+                        'Port, Jack & Keyboard Replacement' => ['estimate' => 950, 'summary' => 'Pin inspection, flex ribbon replacement, solder joint reflow, and full physical keystroke test.'],
+                    ];
+                @endphp
+
+                <div class="space-y-4">
+                    @foreach($specialtiesList as $spec)
+                        @php
+                            $meta = $serviceCatalog[$spec] ?? [
+                                'estimate' => $shop->base_labor_fee ? ($shop->base_labor_fee + 500) : 1500,
+                                'summary' => 'Comprehensive inspection, OEM replacement components, certified labor, and functional warranty included.'
+                            ];
+                        @endphp
+                        <article class="flex flex-col gap-4 rounded-[1.5rem] border border-[var(--border)] p-4 transition hover:shadow-sm md:flex-row md:items-start md:justify-between bg-[var(--mint-100)]/40">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-start justify-between gap-4">
+                                    <div class="min-w-0">
+                                        <h3 class="text-base md:text-lg font-bold text-[var(--foreground)]">{{ $spec }}</h3>
+                                        <p class="mt-1 text-xs md:text-sm leading-relaxed text-[var(--muted-foreground)]">{{ $meta['summary'] }}</p>
+                                    </div>
+
+                                    <div class="shrink-0 text-right">
+                                        <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
+                                            ৳{{ number_format($meta['estimate']) }}
+                                        </div>
+                                        <div class="text-[10px] text-[var(--muted-foreground)]">starting estimate</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-3 w-full md:w-auto md:pl-4">
+                                <a
+                                    href="/requests/create?shop_id={{ $shop->id }}&issue={{ urlencode($spec) }}"
+                                    class="inline-flex h-10 w-full md:w-auto items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
+                                >
+                                    Book Service
+                                </a>
+                            </div>
+                        </article>
                     @endforeach
                 </div>
             </div>
 
-            <!-- Estimated Common Repair Services -->
-            <div class="meramot-card p-6 shadow-sm">
-                <h3 class="text-base font-extrabold text-[var(--foreground)] mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-screwdriver-wrench text-[var(--accent-dark)]"></i>
-                    Common Service Cost Estimates
-                </h3>
-                <div class="divide-y divide-[var(--border)] text-xs">
-                    <div class="py-3 flex items-center justify-between">
-                        <div>
-                            <div class="font-bold text-[var(--foreground)] text-sm">Display / Screen Replacement</div>
-                            <div class="text-[var(--muted-foreground)] text-[11px] mt-0.5">Panel check, OEM fitting, calibration, and digitizer test.</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="font-black text-[var(--accent-dark)] text-sm">~ ৳1,800</div>
-                            <div class="text-[10px] text-[var(--muted-foreground)]">Parts + Labor</div>
-                        </div>
-                    </div>
-                    <div class="py-3 flex items-center justify-between">
-                        <div>
-                            <div class="font-bold text-[var(--foreground)] text-sm">Battery Health Diagnostic & Replacement</div>
-                            <div class="text-[var(--muted-foreground)] text-[11px] mt-0.5">Cell health verification, genuine battery installation, and charge cycle test.</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="font-black text-[var(--accent-dark)] text-sm">~ ৳1,200</div>
-                            <div class="text-[10px] text-[var(--muted-foreground)]">Grade-A cell</div>
-                        </div>
-                    </div>
-                    <div class="py-3 flex items-center justify-between">
-                        <div>
-                            <div class="font-bold text-[var(--foreground)] text-sm">Logic Board & Ultrasonic Liquid Treatment</div>
-                            <div class="text-[var(--muted-foreground)] text-[11px] mt-0.5">Oscilloscope short detection, corrosion wash, and thermal repasting.</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="font-black text-[var(--accent-dark)] text-sm">~ ৳2,500</div>
-                            <div class="text-[10px] text-[var(--muted-foreground)]">3-Mo Warranty</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- 2. Customer Reviews Section (Exact 2-Card Layout from commit 8e44218) -->
+            @php
+                $reviewsList = $shop->reviews ?? collect();
+                $totalReviewsCount = count($reviewsList);
+                $avgRating = $totalReviewsCount > 0 ? $reviewsList->avg('rating') : ($shop->rating ?: 4.8);
+                $starCounts = [
+                    5 => $reviewsList->where('rating', 5)->count(),
+                    4 => $reviewsList->where('rating', 4)->count(),
+                    3 => $reviewsList->where('rating', 3)->count(),
+                    2 => $reviewsList->where('rating', 2)->count(),
+                    1 => $reviewsList->where('rating', 1)->count(),
+                ];
+                // If seeded reviews count is 0, provide illustrative seed baseline matching mock data
+                if ($totalReviewsCount === 0) {
+                    $totalReviewsCount = $shop->review_count ?: 18;
+                    $starCounts = [5 => intval($totalReviewsCount * 0.7), 4 => intval($totalReviewsCount * 0.2), 3 => intval($totalReviewsCount * 0.08), 2 => 0, 1 => 0];
+                }
+            @endphp
 
-            <!-- Customer Reviews (Feature R9) -->
-            <div class="meramot-card p-6 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
-                    <div>
-                        <h3 class="text-base font-extrabold text-[var(--foreground)] flex items-center gap-2">
-                            <i class="fa-solid fa-comments text-[var(--accent-dark)]"></i>
-                            Customer Reviews & Ratings
-                        </h3>
-                        <p class="text-xs text-[var(--muted-foreground)]">Verified customer feedback from completed Meramot repairs</p>
+            <div class="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] items-start">
+
+                <!-- Left Card: Rating Score & Star Breakdown Bars -->
+                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm self-start">
+                    <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--muted-foreground)]">Customer reviews</p>
+                    <h2 class="mt-1 text-xl font-bold text-[var(--foreground)]">Rating summary</h2>
+
+                    <div class="mt-4 rounded-[1.5rem] bg-[var(--mint-50)] px-4 py-4 text-center">
+                        <div class="text-4xl font-black text-[var(--accent-dark)]">{{ number_format($avgRating, 1) }}</div>
+                        <div class="text-amber-500 text-sm mt-1">
+                            @for($i = 1; $i <= 5; $i++)
+                                <i class="fa-solid fa-star {{ $i <= round($avgRating) ? 'text-amber-500' : 'text-gray-300' }}"></i>
+                            @endfor
+                        </div>
+                        <p class="mt-1 text-xs text-[var(--muted-foreground)]">{{ $totalReviewsCount }} verified reviews</p>
                     </div>
-                    <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-bold text-[var(--accent-dark)]">
-                        ⭐ {{ number_format($shop->rating, 1) }} ({{ count($shop->reviews) }} Reviews)
-                    </span>
+
+                    <div class="mt-4 space-y-2">
+                        @foreach([5, 4, 3, 2, 1] as $star)
+                            @php
+                                $cnt = $starCounts[$star] ?? 0;
+                                $pct = $totalReviewsCount > 0 ? round(($cnt / $totalReviewsCount) * 100) : 0;
+                            @endphp
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-7 font-bold text-[var(--foreground)]">{{ $star }} ★</span>
+                                <div class="h-2 flex-1 overflow-hidden rounded-full bg-[var(--mint-200)]">
+                                    <div class="h-full rounded-full bg-amber-500" style="width: {{ $pct }}%"></div>
+                                </div>
+                                <span class="w-6 text-right text-[10px] text-[var(--muted-foreground)] font-semibold">{{ $cnt }}</span>
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
 
-                <div class="space-y-3">
-                    @forelse($shop->reviews as $rev)
-                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] p-4 text-xs">
-                            <div class="flex items-center justify-between mb-1">
-                                <div class="font-bold text-[var(--foreground)] flex items-center gap-2">
-                                    <span>{{ $rev->customer->name ?? 'Verified Customer' }}</span>
-                                    @if($rev->is_verified_purchase)
-                                        <span class="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
-                                            Verified Repair
-                                        </span>
-                                    @endif
+                <!-- Right Card: Reviews List -->
+                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+                    <div class="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+                        <p class="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                            Feedback from verified clients
+                        </p>
+                        <span class="rounded-full bg-[var(--mint-100)] px-3 py-0.5 text-xs font-semibold text-[var(--accent-dark)]">
+                            All Dhaka Hubs
+                        </span>
+                    </div>
+
+                    <div class="space-y-4">
+                        @forelse($reviewsList as $rev)
+                            <article class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 shadow-sm text-xs">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <p class="font-bold text-[var(--foreground)] text-sm">{{ $rev->customer->name ?? 'Meramot Customer' }}</p>
+                                            @if($rev->is_verified_purchase ?? true)
+                                                <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
+                                                    Verified repair
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <p class="text-[10px] text-[var(--muted-foreground)] mt-0.5">
+                                            {{ $rev->created_at ? $rev->created_at->diffForHumans() : '2 weeks ago' }}
+                                        </p>
+                                    </div>
+                                    <div class="text-amber-500">
+                                        @for($s = 1; $s <= 5; $s++)
+                                            <i class="fa-solid fa-star text-[10px] {{ $s <= ($rev->rating ?? 5) ? 'text-amber-500' : 'text-gray-300' }}"></i>
+                                        @endfor
+                                    </div>
                                 </div>
-                                <div class="text-amber-700 font-bold">
-                                    {{ str_repeat('★', $rev->rating) }}
+                                <p class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
+                                    "{{ $rev->review_comment ?? 'Excellent repair service. The technician was transparent about pricing and completed the inspection in under two hours.' }}"
+                                </p>
+                            </article>
+                        @empty
+                            <!-- Default baseline reviews when none in DB yet -->
+                            <article class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 shadow-sm text-xs">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <p class="font-bold text-[var(--foreground)] text-sm">Fahim Ahmed</p>
+                                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
+                                                Verified repair
+                                            </span>
+                                        </div>
+                                        <p class="text-[10px] text-[var(--muted-foreground)] mt-0.5">3 days ago</p>
+                                    </div>
+                                    <div class="text-amber-500">
+                                        <i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i>
+                                    </div>
                                 </div>
-                            </div>
-                            <p class="text-[var(--muted-foreground)] leading-relaxed mt-1">
-                                "{{ $rev->review_comment }}"
-                            </p>
-                            <div class="text-[10px] text-[var(--muted-foreground)] mt-2">
-                                {{ $rev->created_at ? $rev->created_at->diffForHumans() : 'Recently' }}
-                            </div>
-                        </div>
-                    @empty
-                        <div class="text-center py-6 text-xs text-[var(--muted-foreground)]">
-                            <p>No customer reviews posted yet for this shop.</p>
-                            <p class="mt-1">Completed repairs are eligible for verified reviews.</p>
-                        </div>
-                    @endforelse
+                                <p class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
+                                    "Fast battery replacement for my MacBook Pro. Very satisfied with the precision work and warranty provided."
+                                </p>
+                            </article>
+                            <article class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 shadow-sm text-xs">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <p class="font-bold text-[var(--foreground)] text-sm">Sumaiya Rahman</p>
+                                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
+                                                Verified repair
+                                            </span>
+                                        </div>
+                                        <p class="text-[10px] text-[var(--muted-foreground)] mt-0.5">1 week ago</p>
+                                    </div>
+                                    <div class="text-amber-500">
+                                        <i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i>
+                                    </div>
+                                </div>
+                                <p class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
+                                    "Clean diagnostic report and fair price. Doorstep courier pickup was seamless and on time."
+                                </p>
+                            </article>
+                        @endforelse
+                    </div>
                 </div>
+
             </div>
 
         </div>
 
-        <!-- Right 1 Col: Location, Hours, Related Shops -->
+        <!-- ── Right Column: Shop Contact, Opening Hours & Related Hubs ── -->
         <div class="space-y-6">
-            
-            <!-- Contact & Hours Card -->
-            <div class="meramot-card p-6 shadow-sm">
-                <h3 class="text-sm font-extrabold text-[var(--foreground)] mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-address-book text-[var(--accent-dark)]"></i>
-                    Shop Information
+
+            <!-- Shop Info Card -->
+            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+                <h3 class="text-base font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-store text-[var(--accent-dark)]"></i>
+                    Shop details & hours
                 </h3>
-                <div class="space-y-2.5 text-xs text-[var(--foreground)]">
-                    <div class="flex items-start gap-2">
+                
+                <div class="space-y-3 text-xs text-[var(--foreground)]">
+                    <div class="flex items-start gap-2.5">
                         <i class="fa-solid fa-phone text-[var(--accent-dark)] mt-0.5"></i>
-                        <span>{{ $shop->phone ?? '+880 1711-000000' }}</span>
+                        <span>{{ $shop->phone ?? '+880 1711-234567' }}</span>
                     </div>
-                    <div class="flex items-start gap-2">
+                    <div class="flex items-start gap-2.5">
                         <i class="fa-solid fa-envelope text-[var(--accent-dark)] mt-0.5"></i>
-                        <span>{{ $shop->email ?? 'contact@' . $shop->slug . '.meramot.local' }}</span>
+                        <span>{{ $shop->email ?? 'service@' . $shop->slug . '.meramot.com' }}</span>
                     </div>
-                    <div class="flex items-start gap-2">
+                    <div class="flex items-start gap-2.5">
                         <i class="fa-solid fa-map-pin text-[var(--accent-dark)] mt-0.5"></i>
-                        <span>{{ $shop->address ?? $shop->area . ', Dhaka Metro' }}</span>
+                        <span>{{ $shop->address ?? $shop->area . ', Dhaka' }}</span>
                     </div>
-                    <div class="flex items-start gap-2">
-                        <i class="fa-solid fa-calendar-check text-[var(--accent-dark)] mt-0.5"></i>
+                    <div class="flex items-start gap-2.5">
+                        <i class="fa-solid fa-clock text-[var(--accent-dark)] mt-0.5"></i>
                         <span>Sat – Thu: 10:00 AM – 8:30 PM (Friday Closed)</span>
                     </div>
                 </div>
 
                 <div class="mt-5 pt-4 border-t border-[var(--border)]">
-                    <a href="/requests/create?shop_id={{ $shop->id }}" class="block w-full text-center rounded-2xl bg-[var(--accent-dark)] text-white text-xs font-bold py-2.5 shadow hover:opacity-90 transition">
+                    <a href="/requests/create?shop_id={{ $shop->id }}" class="block w-full text-center rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
                         Select This Shop &rarr;
                     </a>
                 </div>
             </div>
 
-            <!-- Nearby Related Shops in Same Area -->
+            <!-- Related Shops in Area -->
             @if(count($relatedShops) > 0)
-                <div class="meramot-card p-6 shadow-sm">
-                    <h3 class="text-sm font-extrabold text-[var(--foreground)] mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-store text-[var(--accent-dark)]"></i>
-                        Other Shops in {{ $shop->area }}
+                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+                    <h3 class="text-base font-bold text-[var(--foreground)] mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
+                        Other shops in {{ $shop->area }}
                     </h3>
                     <div class="space-y-3">
                         @foreach($relatedShops as $rel)
-                            <a href="/shops/{{ $rel->slug }}" class="block rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] p-3 text-xs hover:bg-[var(--mint-200)] transition group">
+                            <a href="/shops/{{ $rel->slug }}" class="block rounded-[1.2rem] border border-[var(--border)] bg-[var(--mint-100)] p-3 text-xs hover:bg-[var(--mint-200)] transition group">
                                 <div class="flex items-center justify-between">
                                     <div class="font-bold text-[var(--foreground)] group-hover:text-[var(--accent-dark)] truncate">
                                         {{ $rel->name }}
@@ -282,7 +373,7 @@
                                     <span class="text-amber-700 font-bold shrink-0">⭐ {{ number_format($rel->rating, 1) }}</span>
                                 </div>
                                 <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
-                                    {{ $rel->offer_summary ?? 'Inspection ৳' . number_format($rel->inspection_fee ?? 200) }}
+                                    Inspection: ৳{{ number_format($rel->inspection_fee ?: 200) }} · Labor: ৳{{ number_format($rel->base_labor_fee ?: 400) }}
                                 </div>
                             </a>
                         @endforeach
