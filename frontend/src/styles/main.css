@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-meramot-600 hover:bg-meramot-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-meramot-500 transition-colors;
+  }
+  
+  .card-container {
+    @apply bg-white rounded-xl border border-slate-200 shadow-sm p-6 hover:shadow-md transition-shadow;
+  }
+}

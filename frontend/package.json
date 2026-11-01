@@ -1,0 +1,23 @@
+{
+  "name": "meramot-frontend",
+  "version": "1.0.0",
+  "description": "Frontend views, Tailwind styling, and reactive interface for Meramot Repair Marketplace",
+  "main": "src/index.js",
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/styles/main.css -o ./public/dist/styles.css --minify",
+    "watch:css": "tailwindcss -i ./src/styles/main.css -o ./public/dist/styles.css --watch"
+  },
+  "keywords": ["meramot", "cse470", "tailwind", "blade-ui"],
+  "author": "Group 6 - Farhan Tanvir, Nafiul Islam, Shanid Sajjatuz, Nawshad Zaman",
+  "license": "MIT",
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.7",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.3"
+  },
+  "dependencies": {
+    "alpinejs": "^3.13.8",
+    "lucide": "^0.363.0"
+  }
+}
