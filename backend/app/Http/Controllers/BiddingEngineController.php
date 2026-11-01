@@ -14,10 +14,14 @@ use Illuminate\Http\Request;
 class BiddingEngineController extends Controller
 {
     /**
-     * List all bids for a specific repair request.
+     * List all bids for a specific repair request or show bidding board view.
      */
-    public function index($requestId)
+    public function index($requestId = null)
     {
+        if (!$requestId) {
+            return view('vendor.bidding-board');
+        }
+
         $bids = Bid::with('vendor')
             ->where('repair_request_id', $requestId)
             ->orderBy('proposed_cost', 'asc')
