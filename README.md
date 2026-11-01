@@ -98,46 +98,108 @@ CSE470-Meramot-Project/
 
 ---
 
-## 6. Getting Started Locally
+## 6. Getting Started Locally (Teammate Setup Guide)
 
-### Prerequisites
-- PHP `>= 8.2` (via XAMPP or native binary)
-- Composer `>= 2.5`
-- Node.js `>= 18.0` and npm
-- Python `>= 3.10`
-- PostgreSQL `>= 14`
+### ⚡ Quickest Setup (Windows — One-Click)
 
-### Backend Setup (Laravel 10)
+If you are on Windows, you don't need to run complex terminal commands manually:
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/farhantanvir3-sudo/CSE470-Meramot-Project.git
+   cd CSE470-Meramot-Project
+   ```
+2. **One-Click Automated Setup**:
+   Double-click `setup.bat` (or run `./setup.bat` in Command Prompt / PowerShell).
+   - Automatically sets up `.env` files for both backend and AI microservice.
+   - Installs Composer packages from `composer.lock`.
+   - Generates the Laravel encryption key.
+   - Configures the Python virtual environment and installs FastAPI dependencies.
+3. **Run Migrations & Seed Baseline Data**:
+   ```bash
+   cd backend
+   php artisan migrate --seed
+   ```
+4. **Launch Development Servers**:
+   - Double-click `run-backend.bat` (Starts Laravel on **http://127.0.0.1:8000**)
+   - Double-click `run-ai.bat` (Starts Python FastAPI on **http://127.0.0.1:5000**)
+
+---
+
+### 🛠️ Manual Terminal Setup (Linux, macOS, or Windows CLI)
+
+#### Step 1: System Prerequisites
+- **PHP** `>= 8.2` (via XAMPP or native binary)
+  > **Important PHP.ini Check**: In your `php.ini`, ensure the PostgreSQL extensions are enabled by removing the semicolon `;` in front of:
+  > ```ini
+  > extension=pdo_pgsql
+  > extension=pgsql
+  > ```
+- **Composer** `>= 2.5` ([getcomposer.org](https://getcomposer.org/))
+- **PostgreSQL** `>= 14` (Ensure service is running on port `5432`)
+- **Python** `>= 3.10` & **Node.js** `>= 18.0`
+
+#### Step 2: Database Configuration
+1. Open pgAdmin or `psql` and ensure the database exists:
+   ```sql
+   CREATE DATABASE meramot;
+   ```
+2. In `backend/.env`, verify database credentials:
+   ```env
+   DB_CONNECTION=pgsql
+   DB_HOST=127.0.0.1
+   DB_PORT=5432
+   DB_DATABASE=meramot
+   DB_USERNAME=postgres       # or your local postgres username
+   DB_PASSWORD=your_password  # your postgres password
+   ```
+
+#### Step 3: Install Backend & Run Migrations
 ```bash
 cd backend
-cp .env.example .env
-# Update DB credentials in .env (DB_DATABASE=meramot_db, DB_USERNAME, DB_PASSWORD)
 composer install
 php artisan key:generate
 php artisan migrate --seed
 php artisan serve --port=8000
 ```
+*The database will seed all 32 original repair shops with Dhaka coordinates, baseline admin accounts, customer demo accounts, and test vendors.*
 
-### AI Microservice Setup (FastAPI)
+#### Step 4: Start Python AI Microservice (FastAPI)
 ```bash
 cd backend/ai-microservice
 python -m venv venv
-# On Windows:
+
+# Windows:
 .\venv\Scripts\activate
-# On Linux/macOS:
-# source venv/bin/activate
+# Linux/macOS:
+source venv/bin/activate
+
 pip install -r requirements.txt
 cp .env.example .env
-# Set GROQ_API_KEY and GEMINI_API_KEY
-uvicorn main:app --reload --port=5000
+uvicorn main:app --reload --port 5000
 ```
 
-### Frontend Asset Compilation
-```bash
-cd frontend
-npm install
-npm run build # or npm run dev
-```
+---
+
+### 🌐 Local URLs to Access Features
+
+| Portal | URL | Assigned Features |
+| :--- | :--- | :--- |
+| **Customer Hub** | [http://127.0.0.1:8000/shops/explore](http://127.0.0.1:8000/shops/explore) | R6 (Search), R7 (Request), R8 (Cart) |
+| **Vendor Portal** | [http://127.0.0.1:8000/vendor/bidding-board](http://127.0.0.1:8000/vendor/bidding-board) | R11 (Onboarding), R12 (Bidding), R15 (Analytics) |
+| **Rider Logistics** | [http://127.0.0.1:8000/delivery/jobs-queue](http://127.0.0.1:8000/delivery/jobs-queue) | R1 (Verify), R2 (Queue), R3 (Earnings), R4 (GPS) |
+| **Admin Governance** | [http://127.0.0.1:8000/admin/financial-overview](http://127.0.0.1:8000/admin/financial-overview) | R16 (Ledger), R18 (Payouts), R19 (Moderation), R20 (Audit) |
+| **AI Swagger Docs** | [http://127.0.0.1:5000/docs](http://127.0.0.1:5000/docs) | Interactive testing for R10 & R13 endpoints |
+
+---
+
+### ❓ Common Gotchas & Troubleshooting
+
+1. **`could not find driver (SQLSTATE[08006])`**:
+   Open `php.ini` in your PHP/XAMPP directory, search for `pdo_pgsql`, remove the leading semicolon (`;extension=pdo_pgsql` &rarr; `extension=pdo_pgsql`), save, and restart Apache / CLI.
+2. **`Connection refused on port 5432`**:
+   Make sure PostgreSQL is running (in Windows Services or Docker).
+3. **`Composer install security warning`**:
+   A `composer.lock` file is committed to the repo. Running `composer install` will install exact, verified package versions without prompting advisory blockers.
 
 ---
 
