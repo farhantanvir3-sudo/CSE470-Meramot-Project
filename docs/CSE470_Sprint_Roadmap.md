@@ -45,7 +45,7 @@
   - Features R1, R6, R7, R11, R16 functional end-to-end
 
 ### Sprint 2: Core Bidding Marketplace, AI Microservice & Payments
-- **Window**: Nov 13 – Nov 27, 2026 (15 Days) | **Official Deadline**: Dec 1, 2026
+- **Window**: Nov 13 – Dec 1, 2026 (19 Days) | **Official Deadline**: Dec 1, 2026
 - **Goal**: High-complexity transactional features: vendor bidding mechanics, line-item quote generation, Python FastAPI AI integration, and payment checkout.
 - **Deliverables**:
   - Features R2, R8, R12, R13, R17 functional end-to-end
@@ -53,7 +53,7 @@
   - SSLCommerz sandbox payment initiation, IPN callback, and PDF invoice generation
 
 ### Sprint 3: Logistics Tracking, Communications & Settlement
-- **Window**: Nov 28 – Dec 9, 2026 (12 Days) | **Official Deadline**: Dec 14, 2026
+- **Window**: Dec 2 – Dec 14, 2026 (13 Days) | **Official Deadline**: Dec 14, 2026
 - **Goal**: Delivery logistics tracking, external SMS/Email broadcasting, commission accounting, and admin governance.
 - **Deliverables**:
   - Features R3, R4, R14, R18, R19 functional end-to-end
@@ -61,7 +61,7 @@
   - Automated 10% platform commission calculation & vendor net balance settlement
 
 ### Sprint 4: AI Troubleshooting, Analytics, Audit & Defense
-- **Window**: Dec 10 – Dec 20, 2026 (11 Days) | **Official Deadline**: Dec 20, 2026
+- **Window**: Dec 15 – Dec 20, 2026 (6 Days) | **Official Deadline**: Dec 20, 2026
 - **Goal**: Real-time communication channels, business analytics, immutable security audits, and final course defense presentation.
 - **Deliverables**:
   - Features R5, R9, R10, R15, R20 functional end-to-end
