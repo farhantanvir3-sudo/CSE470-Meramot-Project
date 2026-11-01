@@ -15,14 +15,14 @@ INSTRUCTIONS FOR NAWSHAD:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Secure Checkout & Payment | Feature R17')
+@section('title', 'Secure Checkout & Payment | Meramot')
 
 @section('content')
 <div class="max-w-xl mx-auto bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
     <div class="mb-6 flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Secure Payment Checkout</h1>
-            <p class="text-xs text-slate-500 mt-1">Feature R17 | Assigned to: <strong class="text-teal-700">Md. Nawshad Zaman Khan [23301622]</strong></p>
+            <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R17 | Assigned to: <strong class="text-teal-700">Md. Nawshad Zaman Khan [23301622]</strong></p>
         </div>
         <span class="text-xs bg-indigo-100 text-indigo-800 font-semibold px-3 py-1 rounded-full border border-indigo-200">
             SSLCommerz Secured

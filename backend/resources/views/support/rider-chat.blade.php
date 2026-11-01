@@ -16,16 +16,16 @@ INSTRUCTIONS FOR NAFIUL:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Admin-to-Rider Support Chat | Feature R5')
+@section('title', 'Admin-to-Rider Support Chat | Meramot')
 
 @section('content')
 <div class="mb-6">
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Rider Support Live Chat</h1>
-            <p class="text-xs text-slate-500 mt-1">Feature R5 | Assigned to: <strong class="text-teal-700">Md. Nafiul Islam [22299035]</strong></p>
+            <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R5 | Assigned to: <strong class="text-teal-700">Md. Nafiul Islam [22299035]</strong></p>
         </div>
-        <span class="text-xs bg-rose-100 text-rose-800 font-semibold px-3 py-1 rounded-full border border-rose-200">
+        <span class="dev-only-badge text-xs bg-rose-100 text-rose-800 font-semibold px-3 py-1 rounded-full border border-rose-200">
             Sprint 4 Target
         </span>
     </div>

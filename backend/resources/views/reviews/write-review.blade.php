@@ -16,13 +16,13 @@ INSTRUCTIONS FOR SHANID:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Write Verified Review | Feature R9')
+@section('title', 'Write Verified Review | Meramot')
 
 @section('content')
 <div class="max-w-xl mx-auto bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-slate-900">Leave a Verified Review</h1>
-        <p class="text-xs text-slate-500 mt-1">Feature R9 | Assigned to: <strong class="text-teal-700">Shanid Sajjatuz Islam [23201465]</strong></p>
+        <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R9 | Assigned to: <strong class="text-teal-700">Shanid Sajjatuz Islam [23201465]</strong></p>
     </div>
 
     <form method="POST" action="/reviews" class="space-y-5 text-sm">

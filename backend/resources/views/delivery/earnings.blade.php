@@ -16,16 +16,16 @@ INSTRUCTIONS FOR NAFIUL:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Rider Earnings & Payout Ledger | Feature R3')
+@section('title', 'Rider Earnings & Payout Ledger | Meramot')
 
 @section('content')
 <div class="mb-6">
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Rider Earnings & Payout Ledger</h1>
-            <p class="text-xs text-slate-500 mt-1">Feature R3 | Assigned to: <strong class="text-teal-700">Md. Nafiul Islam [22299035]</strong></p>
+            <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R3 | Assigned to: <strong class="text-teal-700">Md. Nafiul Islam [22299035]</strong></p>
         </div>
-        <span class="text-xs bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full border border-amber-200">
+        <span class="dev-only-badge text-xs bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full border border-amber-200">
             Sprint 3 Target
         </span>
     </div>

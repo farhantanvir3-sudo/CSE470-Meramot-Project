@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Direct Fixed Service Packages Catalog | Meramot (Feature R8)')
+@section('title', 'Direct Fixed Service Packages Catalog | Meramot')
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
@@ -16,8 +16,11 @@
             <h1 class="text-2xl font-black text-[var(--foreground)]">
                 Pre-Configured Service Packages
             </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
-                Feature R8 • Lead: <strong class="text-[var(--accent-dark)]">Shanid Sajjatuz Islam [23201465]</strong> • Fixed pricing, warranty included, instant booking
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-2">
+                <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
+                    Feature R8 • Lead: Shanid Sajjatuz Islam [23201465]
+                </span>
+                <span>Fixed transparent pricing, repair warranty included, and doorstep dispatch</span>
             </p>
         </div>
 

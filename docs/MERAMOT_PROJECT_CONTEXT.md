@@ -225,3 +225,23 @@ The PostgreSQL database is seeded with authentic records ported from the histori
 - **FastAPI AI Microservice**: Runs on port `5000` via `run-ai.bat`.
   - **Socket Error 10013 Resolution**: If port 5000 is occupied by a previously running process or Hyper-V reservation, `run-ai.bat` automatically notifies the user and launches on fallback port `5001`.
 - **Database**: PostgreSQL 18 service (`postgresql-x64-18`), database `meramot`, user `meramot_user`.
+
+---
+
+## 10. Developer & Academic Defense Mode Architecture
+
+To preserve a 100% clean, professional consumer-facing product while simultaneously supporting academic grading defense for CSE 470, the system features a hidden **Academic Defense / Dev Mode**:
+
+1. **Default Production View (`dev=0` / normal access)**:
+   - Completely hides all academic banners, university names, faculty tags, and internal feature codes (`Feature R... • Lead: [Student Name & ID]`).
+   - Browser tab titles render clean without feature codes (e.g., `Explore Verified Repair Shops in Dhaka | Meramot`).
+   - The top navigation ribbon is completely omitted from the layout.
+   - The footer displays authentic customer service links (`Post Repair Request`, `AI Fault Diagnostics`, `Standard Fixed Packages`, `Register as Partner Shop`).
+2. **Academic Defense Mode (`dev=1`)**:
+   - Displays the dark green top ribbon: `[CSE 470 Group 6 • Dev Mode] Faculty: Nazmul Islam [NZU]` with one-click role switcher links (`Customer`, `Vendor Portal`, `Rider Board`, `Admin Console`) and `Exit Dev Mode`.
+   - Surfaces individual feature code tags and student ownership badges (`.dev-only-badge`) next to each section header for immediate grading traceability during vivas.
+   - Restores the academic course information column in the footer.
+3. **How to Toggle**:
+   - **URL Query Parameter**: Append `?dev=1` to any page URL to activate (persists in session), or `?dev=0` to deactivate.
+   - **Keyboard Shortcut**: Press `Ctrl + Shift + D` on any page to toggle instantaneously.
+   - **Footer Button**: Click the discreet `Dev` toggle link in the footer copyright row.

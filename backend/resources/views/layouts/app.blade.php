@@ -77,16 +77,28 @@
             color: var(--accent-dark);
             border: 1px solid var(--border);
         }
+        @php
+            if (request()->has('dev')) {
+                session(['dev_mode' => request()->boolean('dev')]);
+            }
+            $isDevMode = session('dev_mode', false) || request()->boolean('dev');
+        @endphp
+        @if(!$isDevMode)
+            .dev-only-badge, .cse470-dev-badge {
+                display: none !important;
+            }
+        @endif
     </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased">
 
-    <!-- Top Dev & Role Switcher Ribbon -->
-    <div class="bg-accent-dark text-white text-[11px] py-1.5 px-4 shadow-sm">
+    <!-- Top Dev & Role Switcher Ribbon (Only Visible When Dev Mode is Active) -->
+    @if($isDevMode)
+    <div class="bg-accent-dark text-white text-[11px] py-1.5 px-4 shadow-sm border-b border-emerald-950">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2">
-                <span class="bg-white/20 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px]">CSE 470 Group 6</span>
-                <span class="opacity-80">BRAC University • Faculty Nazmul Islam [NZU]</span>
+                <span class="bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px]">CSE 470 Group 6 • Dev Mode</span>
+                <span class="opacity-80">Faculty: Nazmul Islam [NZU]</span>
             </div>
             <div class="flex items-center gap-3">
                 <span class="opacity-70">Switch Mode:</span>
@@ -97,9 +109,12 @@
                 <a href="/delivery/jobs-queue" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-motorcycle text-sky-300"></i> Rider Board</a>
                 <span class="opacity-40">|</span>
                 <a href="/admin/financial-overview" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-shield-halved text-rose-300"></i> Admin Console</a>
+                <span class="opacity-40">|</span>
+                <a href="?dev=0" class="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-semibold transition" title="Hide academic bar and feature badges"><i class="fa-solid fa-xmark mr-1"></i> Exit Dev Mode</a>
             </div>
         </div>
     </div>
+    @endif
 
     <!-- Main Meramot Header (Faithful to Original Design) -->
     <header class="w-full border-b border-[var(--border)] bg-[var(--mint-100)] sticky top-0 z-50 backdrop-blur-md">
@@ -279,23 +294,45 @@
                     </ul>
                 </div>
                 <div>
-                    <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Academic Course Work</h5>
-                    <p class="mb-2">CSE 470: Software Engineering (Section 06)</p>
-                    <p>Faculty: <strong>Nazmul Islam [NZU]</strong></p>
-                    <p class="mt-2 text-[10px] text-emerald-800 font-bold">Strict MVC Architecture • Laravel 10 • FastAPI Microservice • PostgreSQL</p>
+                    @if($isDevMode)
+                        <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Academic Course Work</h5>
+                        <p class="mb-2">CSE 470: Software Engineering (Section 06)</p>
+                        <p>Faculty: <strong>Nazmul Islam [NZU]</strong></p>
+                        <p class="mt-2 text-[10px] text-emerald-800 font-bold">Strict MVC Architecture • Laravel 10 • FastAPI Microservice • PostgreSQL</p>
+                    @else
+                        <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Customer Support</h5>
+                        <ul class="space-y-1.5">
+                            <li><a href="/requests/create" class="hover:underline">Post Repair Request</a></li>
+                            <li><a href="/ai-consultant/chat" class="hover:underline">AI Fault Diagnostics</a></li>
+                            <li><a href="/packages/catalog" class="hover:underline">Standard Fixed Packages</a></li>
+                            <li><a href="/vendor/onboarding" class="hover:underline">Register as Partner Shop</a></li>
+                        </ul>
+                    @endif
                 </div>
             </div>
             <div class="border-t border-[var(--border)] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
                 <p>&copy; 2026 Meramot (মেরামত) Digital Marketplace. All rights reserved.</p>
-                <div class="flex gap-4">
+                <div class="flex items-center gap-4">
                     <a href="/shops" class="hover:underline">Explore All Shops</a>
                     <a href="/packages/catalog" class="hover:underline">Service Packages</a>
                     <a href="/requests/create" class="hover:underline">Request Repair</a>
                     <a href="/ai-consultant/chat" class="hover:underline">AI Diagnostics</a>
+                    <a href="?dev={{ $isDevMode ? '0' : '1' }}" class="text-[10px] text-[var(--muted-foreground)] opacity-40 hover:opacity-100 transition" title="Press Ctrl+Shift+D or click to toggle academic defense mode">
+                        <i class="fa-solid fa-code"></i> {{ $isDevMode ? 'Dev Mode (ON)' : 'Dev' }}
+                    </a>
                 </div>
             </div>
         </div>
     </footer>
 
+    <script>
+        // Press Ctrl + Shift + D to toggle Developer / Academic Defense Mode
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+                e.preventDefault();
+                window.location.href = window.location.pathname + '?dev={{ $isDevMode ? "0" : "1" }}';
+            }
+        });
+    </script>
 </body>
 </html>

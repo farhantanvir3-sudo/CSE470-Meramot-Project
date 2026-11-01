@@ -15,14 +15,14 @@ INSTRUCTIONS FOR FARHAN:
 --}}
 @extends('layouts.app')
 
-@section('title', 'AI Request Triage & Summary | Feature R13')
+@section('title', 'AI Request Triage & Summary | Meramot')
 
 @section('content')
 <div class="max-w-3xl mx-auto bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
     <div class="mb-6 flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">AI Fault Diagnostic Summary</h1>
-            <p class="text-xs text-slate-500 mt-1">Feature R13 | Assigned to: <strong class="text-teal-700">Farhan Tanvir [22299179]</strong></p>
+            <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R13 | Assigned to: <strong class="text-teal-700">Farhan Tanvir [22299179]</strong></p>
         </div>
         <span class="text-xs bg-purple-100 text-purple-800 font-semibold px-3 py-1 rounded-full border border-purple-200">
             FastAPI AI Microservice

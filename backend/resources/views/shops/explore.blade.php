@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Explore Verified Repair Shops in Dhaka | Meramot (Feature R6)')
+@section('title', 'Explore Verified Repair Shops in Dhaka | Meramot')
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
@@ -24,8 +24,11 @@
             <h1 class="text-2xl font-black text-[var(--foreground)]">
                 Explore Verified Repair Shops
             </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
-                Feature R6 • Lead: <strong class="text-[var(--accent-dark)]">Shanid Sajjatuz Islam [23201465]</strong> • 32 seed repair hubs across Dhaka
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-2">
+                <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
+                    Feature R6 • Lead: Shanid Sajjatuz Islam [23201465]
+                </span>
+                <span>Discover top-rated electronic repair experts across Dhaka</span>
             </p>
         </div>
 

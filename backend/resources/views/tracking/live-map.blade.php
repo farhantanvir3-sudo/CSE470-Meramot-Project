@@ -16,7 +16,7 @@ INSTRUCTIONS FOR NAFIUL:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Live GPS Tracking Map | Feature R4')
+@section('title', 'Live GPS Tracking Map | Meramot')
 
 @section('content')
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -26,9 +26,9 @@ INSTRUCTIONS FOR NAFIUL:
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Real-Time Delivery Route Tracking</h1>
-            <p class="text-xs text-slate-500 mt-1">Feature R4 | Assigned to: <strong class="text-teal-700">Md. Nafiul Islam [22299035]</strong></p>
+            <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R4 | Assigned to: <strong class="text-teal-700">Md. Nafiul Islam [22299035]</strong></p>
         </div>
-        <span class="text-xs bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full border border-amber-200">
+        <span class="dev-only-badge text-xs bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full border border-amber-200">
             Sprint 3 Target
         </span>
     </div>

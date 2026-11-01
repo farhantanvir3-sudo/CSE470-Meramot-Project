@@ -16,15 +16,15 @@ INSTRUCTIONS FOR NAWSHAD:
 --}}
 @extends('layouts.app')
 
-@section('title', 'System Audit Trail & Security Monitor | Feature R20')
+@section('title', 'System Audit Trail & Security Monitor | Meramot')
 
 @section('content')
 <div class="mb-6 flex justify-between items-center">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Security & Compliance Audit Trail</h1>
-        <p class="text-xs text-slate-500 mt-1">Feature R20 | Assigned to: <strong class="text-teal-700">Md. Nawshad Zaman Khan [23301622]</strong></p>
+        <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R20 | Assigned to: <strong class="text-teal-700">Md. Nawshad Zaman Khan [23301622]</strong></p>
     </div>
-    <span class="text-xs bg-rose-100 text-rose-800 font-semibold px-3 py-1 rounded-full border border-rose-200">
+    <span class="dev-only-badge text-xs bg-rose-100 text-rose-800 font-semibold px-3 py-1 rounded-full border border-rose-200">
         Sprint 4 Target
     </span>
 </div>

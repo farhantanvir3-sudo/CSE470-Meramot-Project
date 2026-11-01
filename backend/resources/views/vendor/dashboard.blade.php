@@ -15,15 +15,15 @@ INSTRUCTIONS FOR FARHAN:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Vendor Performance Analytics | Feature R15')
+@section('title', 'Vendor Performance Analytics | Meramot')
 
 @section('content')
 <div class="mb-6 flex justify-between items-center">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Vendor Performance Analytics</h1>
-        <p class="text-xs text-slate-500 mt-1">Feature R15 | Assigned to: <strong class="text-teal-700">Farhan Tanvir [22299179]</strong></p>
+        <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R15 | Assigned to: <strong class="text-teal-700">Farhan Tanvir [22299179]</strong></p>
     </div>
-    <span class="text-xs bg-rose-100 text-rose-800 font-semibold px-3 py-1 rounded-full border border-rose-200">
+    <span class="dev-only-badge text-xs bg-rose-100 text-rose-800 font-semibold px-3 py-1 rounded-full border border-rose-200">
         Sprint 4 Target
     </span>
 </div>

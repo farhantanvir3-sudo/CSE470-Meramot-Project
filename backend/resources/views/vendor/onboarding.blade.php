@@ -15,13 +15,13 @@ INSTRUCTIONS FOR FARHAN:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Vendor Onboarding & Verification | Feature R11')
+@section('title', 'Vendor Onboarding & Verification | Meramot')
 
 @section('content')
 <div class="max-w-2xl mx-auto bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-slate-900">Vendor Onboarding & Profile Verification</h1>
-        <p class="text-xs text-slate-500 mt-1">Feature R11 | Assigned to: <strong class="text-teal-700">Farhan Tanvir [22299179]</strong></p>
+        <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R11 | Assigned to: <strong class="text-teal-700">Farhan Tanvir [22299179]</strong></p>
     </div>
 
     <form method="POST" action="/vendors/onboarding" class="space-y-4 text-xs">

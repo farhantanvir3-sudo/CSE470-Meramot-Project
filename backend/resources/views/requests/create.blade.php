@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Post Device Repair Request | Meramot (Feature R7)')
+@section('title', 'Post Device Repair Request | Meramot')
 
 @section('content')
 <div class="mx-auto max-w-3xl px-4 py-6 md:px-6">
@@ -15,10 +15,10 @@
     <div class="meramot-card p-6 md:p-8 shadow-sm">
         
         <div class="mb-6 border-b border-[var(--border)] pb-4">
-            <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]">
+            <span class="dev-only-badge text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-2">
                 Feature R7 • Shanid Sajjatuz Islam [23201465]
             </span>
-            <h1 class="text-2xl font-black text-[var(--foreground)] mt-2">
+            <h1 class="text-2xl font-black text-[var(--foreground)]">
                 Post an Electronic Device Repair Request
             </h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1">

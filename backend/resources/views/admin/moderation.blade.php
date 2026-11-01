@@ -15,15 +15,15 @@ INSTRUCTIONS FOR NAWSHAD:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Content Moderation & Governance | Feature R19')
+@section('title', 'Content Moderation & Governance | Meramot')
 
 @section('content')
 <div class="mb-6 flex justify-between items-center">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">User Moderation & Governance Panel</h1>
-        <p class="text-xs text-slate-500 mt-1">Feature R19 | Assigned to: <strong class="text-teal-700">Md. Nawshad Zaman Khan [23301622]</strong></p>
+        <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R19 | Assigned to: <strong class="text-teal-700">Md. Nawshad Zaman Khan [23301622]</strong></p>
     </div>
-    <span class="text-xs bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full border border-amber-200">
+    <span class="dev-only-badge text-xs bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full border border-amber-200">
         Sprint 3 Target
     </span>
 </div>

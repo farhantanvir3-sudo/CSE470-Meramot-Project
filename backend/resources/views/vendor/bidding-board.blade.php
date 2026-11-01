@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Vendor Live Bidding Board | Meramot (Feature R12)')
+@section('title', 'Vendor Live Bidding Board | Meramot')
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
@@ -11,8 +11,11 @@
                 <i class="fa-solid fa-gavel text-amber-700"></i>
                 Live Repair Bidding Marketplace
             </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
-                Feature R12 • Assigned: <strong class="text-[var(--accent-dark)]">Farhan Tanvir [22299179] (Lead)</strong> • Real-time reverse bidding on hardware tickets
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-2">
+                <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
+                    Feature R12 • Assigned: Farhan Tanvir [22299179] (Lead)
+                </span>
+                <span>Real-time reverse bidding on hardware tickets across Dhaka</span>
             </p>
         </div>
         <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] font-bold text-xs px-3.5 py-1.5 self-start">

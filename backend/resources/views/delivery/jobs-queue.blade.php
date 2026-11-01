@@ -17,16 +17,16 @@ INSTRUCTIONS FOR NAFIUL:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Rider Delivery Job Queue | Feature R2')
+@section('title', 'Rider Delivery Job Queue | Meramot')
 
 @section('content')
 <div class="mb-6">
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Rider Delivery Dispatch Queue</h1>
-            <p class="text-xs text-slate-500 mt-1">Feature R2 | Assigned to: <strong class="text-teal-700">Md. Nafiul Islam [22299035]</strong></p>
+            <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R2 | Assigned to: <strong class="text-teal-700">Md. Nafiul Islam [22299035]</strong></p>
         </div>
-        <span class="text-xs bg-indigo-100 text-indigo-800 font-semibold px-3 py-1 rounded-full border border-indigo-200">
+        <span class="dev-only-badge text-xs bg-indigo-100 text-indigo-800 font-semibold px-3 py-1 rounded-full border border-indigo-200">
             Sprint 2 Target
         </span>
     </div>

@@ -15,15 +15,15 @@ INSTRUCTIONS FOR NAWSHAD:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Platform Financial Overview | Feature R16')
+@section('title', 'Platform Financial Overview | Meramot')
 
 @section('content')
 <div class="mb-6 flex justify-between items-center">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Platform Financial Double-Entry Ledger</h1>
-        <p class="text-xs text-slate-500 mt-1">Feature R16 | Assigned to: <strong class="text-teal-700">Md. Nawshad Zaman Khan [23301622]</strong></p>
+        <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R16 | Assigned to: <strong class="text-teal-700">Md. Nawshad Zaman Khan [23301622]</strong></p>
     </div>
-    <span class="text-xs bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full border border-amber-200">
+    <span class="dev-only-badge text-xs bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full border border-amber-200">
         Sprint 1 Target
     </span>
 </div>

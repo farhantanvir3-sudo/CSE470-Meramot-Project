@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'AI Device Diagnostic Consultant | Meramot (Feature R10)')
+@section('title', 'AI Device Diagnostic Consultant | Meramot')
 
 @section('content')
 <div class="mx-auto max-w-3xl px-4 py-6 md:px-6">
@@ -19,8 +19,11 @@
                 <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i>
                 AI Hardware Diagnostic Consultant
             </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
-                Feature R10 • Shanid Sajjatuz Islam [23201465] • Backed by Python FastAPI Microservice (Port 5000)
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-2">
+                <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
+                    Feature R10 • Shanid Sajjatuz Islam [23201465]
+                </span>
+                <span>Automated hardware symptom triage and intelligent repair estimation</span>
             </p>
         </div>
         <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-bold text-[var(--accent-dark)] self-start">

@@ -15,13 +15,13 @@ INSTRUCTIONS FOR FARHAN:
 --}}
 @extends('layouts.app')
 
-@section('title', 'Vendor Alert & SMS Settings | Feature R14')
+@section('title', 'Vendor Alert & SMS Settings | Meramot')
 
 @section('content')
 <div class="max-w-xl mx-auto bg-white rounded-xl border border-slate-200 p-8 shadow-sm">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-slate-900">Multi-Channel Alert Engine</h1>
-        <p class="text-xs text-slate-500 mt-1">Feature R14 | Assigned to: <strong class="text-teal-700">Farhan Tanvir [22299179]</strong></p>
+        <p class="text-xs text-slate-500 mt-1 dev-only-badge">Feature R14 | Assigned to: <strong class="text-teal-700">Farhan Tanvir [22299179]</strong></p>
     </div>
 
     <form class="space-y-4 text-xs">
