@@ -25,9 +25,9 @@ The development workload is partitioned equally among all 4 group members, with 
 | Member Name | Student ID | GitHub Username | Assigned Feature IDs | Core Modules |
 | :--- | :---: | :---: | :---: | :--- |
 | **Farhan Tanvir** *(Team Lead)* | **22299179** | [`farhantanvir3-sudo`](https://github.com/farhantanvir3-sudo) | **R11, R12, R13, R14, R15** | Vendor Onboarding, Live Bidding Engine, FastAPI AI Summary Microservice, Multi-Channel BulkSMS, Vendor Analytics |
-| **Md. Nafiul Islam** | **22299035** | [`nafiul-islam`](https://github.com/nafiul-islam) | **R1, R2, R3, R4, R5** | Delivery Onboarding, Delivery Jobs Queue, Rider Earnings Ledger, Live GPS Tracking, Pusher Rider Support Chat |
-| **Shanid Sajjatuz Islam** | **23201465** | [`shanid-sajjatuz`](https://github.com/shanid-sajjatuz) | **R6, R7, R8, R9, R10** | Repair Shop Search & Filters, Customer Repair Requests, Service Package Cart, Verified Shop Reviews, AI Diagnostic Chat Consultant |
-| **Md. Nawshad Zaman Khan** | **23301622** | [`nawshad-zaman`](https://github.com/nawshad-zaman) | **R16, R17, R18, R19, R20** | Platform Double-Entry Ledger, SSLCommerz/Stripe Gateway & Invoice, Automated Vendor Payouts, Content Moderation, Immutable Audit Logs |
+| **Md. Nafiul Islam** | **22299035** | [`Nafiul141`](https://github.com/Nafiul141) | **R1, R2, R3, R4, R5** | Delivery Onboarding, Delivery Jobs Queue, Rider Earnings Ledger, Live GPS Tracking, Pusher Rider Support Chat |
+| **Shanid Sajjatuz Islam** | **23201465** | [`perashanid`](https://github.com/perashanid) | **R6, R7, R8, R9, R10** | Repair Shop Search & Filters, Customer Repair Requests, Service Package Cart, Verified Shop Reviews, AI Diagnostic Chat Consultant |
+| **Md. Nawshad Zaman Khan** | **23301622** | [`Joy-Khan007`](https://github.com/Joy-Khan007) | **R16, R17, R18, R19, R20** | Platform Double-Entry Ledger, SSLCommerz/Stripe Gateway & Invoice, Automated Vendor Payouts, Content Moderation, Immutable Audit Logs |
 
 ---
 
