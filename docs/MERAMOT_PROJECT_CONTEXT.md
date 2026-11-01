@@ -201,6 +201,16 @@ The Meramot frontend is built with an unmistakable, fresh mint and deep forest g
 ## 8. Database Seeds & Baseline Dataset (Version 2.0)
 
 The PostgreSQL database is seeded with authentic records ported from the historical prototype:
+- **Exact Schema Implementation (39 Tables)**: Fully ported from the original `schema.prisma` into native Laravel 10 migrations, ensuring 100% column-for-column and relation-for-relation compatibility without using Node/Express or Prisma:
+  - `users`: Core authentication with roles (`customer`, `vendor`, `admin`, `delivery`, `delivery_admin`), status, geocoordinates.
+  - `vendor_profiles`: Business registration matching `VendorApplication` (trade license, specialties, shop coordinates, verification state).
+  - `repair_shops`: 32 authentic shops matching `Shop` (inspection fees, base labor fees, opening hours, vouchers, free delivery, categories).
+  - `shop_services` & `shop_staff`: Specific service catalog items and multi-technician shop membership.
+  - `repair_requests`: Customer problem descriptions, symptom checklists, diagnostic fees, and delivery preferences.
+  - `bids` & `repair_jobs`: Reverse-bidding quotes (parts + labor + turnaround) and repair workflow state machine.
+  - `delivery_agents`, `coverage_zones`, `rider_coverages`, `delivery_jobs`, `rider_chat_messages`: Full logistics ecosystem with OTP verification and GPS coordinate logging.
+  - `invoices`, `invoice_line_items`, `payment_transactions`, `financial_ledgers`, `vendor_payouts`, `escrow_ledgers`, `refunds`: Double-entry accounting with 10% platform commission deductions.
+  - `shop_reviews`, `service_packages`, `carts`, `cart_items`, `ai_chat_sessions`, `ai_chat_messages`, `support_tickets`, `support_messages`, `warranties`, `recently_viewed`, `notification_logs`, `offer_banners`, `dispute_cases`, `dispute_notes`, `moderation_logs`, `audit_logs`.
 - **32 Repair Shops**: All 12 specialty/featured repair hubs from `mock-data.ts` (ProTech Solutions, The Gadget Den, Budget Fixer, MacMaster Repairs, etc.) plus 20 core Dhaka metro shops spanning Banani, Gulshan, Dhanmondi, Mirpur, Uttara, Bashundhara, Mohammadpur, Farmgate, Tejgaon, Wari, Rampura, and New Market.
 - **32 Vendor Profiles**: Synchronized with `repair_shops` table to satisfy Feature R11.
 - **6 Fixed Service Packages**: Seeded with real turnaround hours and warranty terms (Feature R8).
