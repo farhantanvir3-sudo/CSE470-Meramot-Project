@@ -92,8 +92,8 @@ CSE470-Meramot-Project/
 | Sprint | Timeline | Module & Feature Scope | Deadline |
 | :---: | :---: | :--- | :---: |
 | **Sprint 1** | Nov 1 – Nov 12 *(1.5 Wks)* | **Foundational Setup & Onboarding**: DB schema initialization, R1 (Delivery Agent Onboarding), R6 (Shop Search), R7 (Repair Request Posting), R11 (Vendor Profile Verification), R16 (Platform Ledger) | Nov 12, 2026 |
-| **Sprint 2** | Nov 13 – Nov 27 *(2.0 Wks)* | **Core Bidding Marketplace, AI Microservice & Payments**: R2 (Delivery Jobs Queue), R8 (Package Cart), R12 (Live Bidding Engine), R13 (FastAPI Request Summary Microservice), R17 (SSLCommerz/Stripe Gateway & Invoicing) | Nov 27, 2026 |
-| **Sprint 3** | Nov 28 – Dec 9 *(1.5 Wks)* | **Logistics Tracking, Communications & Settlement**: R3 (Rider Earnings), R4 (Live GPS Location Tracking), R14 (BulkSMS BD Broadcast Engine), R18 (Automated Vendor Commission Settlement), R19 (Sitewide Governance & Moderation) | Dec 9, 2026 |
+| **Sprint 2** | Nov 13 – Nov 27 *(2.0 Wks)* | **Core Bidding Marketplace, AI Microservice & Payments**: R2 (Delivery Jobs Queue), R8 (Package Cart), R12 (Live Bidding Engine), R13 (FastAPI Request Summary Microservice), R17 (SSLCommerz/Stripe Gateway & Invoicing) | Dec 1, 2026 |
+| **Sprint 3** | Nov 28 – Dec 9 *(1.5 Wks)* | **Logistics Tracking, Communications & Settlement**: R3 (Rider Earnings), R4 (Live GPS Location Tracking), R14 (BulkSMS BD Broadcast Engine), R18 (Automated Vendor Commission Settlement), R19 (Sitewide Governance & Moderation) | Dec 14, 2026 |
 | **Sprint 4** | Dec 10 – Dec 20 *(1.5 Wks)* | **AI Troubleshooting, Analytics & Defense Prep**: R5 (Pusher Rider Support Chat), R9 (Shop Reviews), R10 (AI Diagnostic Chat Assistant), R15 (Vendor Financial Analytics), R20 (Immutable Audit Logs), Integration Testing | Dec 20, 2026 |
 
 ---
