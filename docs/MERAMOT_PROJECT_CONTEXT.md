@@ -280,3 +280,12 @@ To preserve a 100% clean, professional consumer-facing product while simultaneou
      - Distinguishing specs fields (chipset, display size, release year).
   6. **Vendor Dashboard (`vendor/dashboard.blade.php`)**:
      - Tabbed UI (`Overview`, `Marketplace Bids`, `Direct Orders`, `My Repair Jobs`) ported from Farhan's commit `aff5aff`.
+   7. **Explore Directory Desktop Fixes (`shops/explore.blade.php`)**:
+      - Resolved desktop right-side cutoff by setting CSS grid track to `lg:grid-cols-[240px_minmax(0,1fr)]` matching `shops-results-client.tsx`.
+      - Enforced `min-w-0 max-w-full` on the main content column and chip containers to eliminate horizontal blowout.
+      - Styled horizontal area chip lists with `.no-scrollbar` to suppress intrusive native OS scrollbars.
+   8. **Shop Profile & Reviews (`shops/show.blade.php`)**:
+      - Ported `frontend/src/app/shops/[slug]/page.tsx` from commit `8e44218`.
+      - Hero banner with avatar/logo, address, contact, and quick booking box.
+      - Services catalog with starting price estimates and repair booking actions.
+      - Exact two-card reviews layout: Left score card with 5★–1★ breakdown progress bars; Right card with verified customer feedback cards and area chips.
