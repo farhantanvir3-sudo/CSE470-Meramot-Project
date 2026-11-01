@@ -33,41 +33,37 @@ class ShopDiscoveryController extends Controller
             ->take(6)
             ->get();
 
+        // Exact offer cards from commit 8e44218 / mock-data.ts
         $offerCards = [
             [
                 'title' => 'Free pickup on your first repair',
                 'subtitle' => 'Use code MERAMOTNEW to save the courier fee today.',
-                'href' => '/shops?freeDelivery=true&deals=true',
-                'badge' => 'PROMO CODE',
+                'href' => '/shops?sort=distance&freeDelivery=true&deals=true&q=pickup',
             ],
             [
                 'title' => 'Laptop battery week',
-                'subtitle' => 'Selected vendors are offering up to 15% off original replacement cells.',
+                'subtitle' => 'Selected vendors are offering up to 15% off original cells.',
                 'href' => '/shops?q=battery&sort=price&deals=true',
-                'badge' => 'SPECIAL DEAL',
             ],
-            [
-                'title' => 'Express 1-Hour Screen Fix',
-                'subtitle' => 'Certified technicians in Banani & Gulshan with instant parts.',
-                'href' => '/shops?q=screen&sort=distance',
-                'badge' => 'FAST TRACK',
-            ]
         ];
 
+        // Exact 6 popular categories from commit 8e44218 / mock-data.ts
         $popularCategories = [
-            ['label' => 'Phone', 'sprite' => '📱', 'trend' => 'High screen repair demand', 'query' => 'phone'],
-            ['label' => 'Laptop', 'sprite' => '💻', 'trend' => 'Battery and keyboard issues', 'query' => 'laptop'],
-            ['label' => 'Tablet', 'sprite' => '🧾', 'trend' => 'Port replacement trending', 'query' => 'tablet'],
-            ['label' => 'Smartwatch', 'sprite' => '⌚', 'trend' => 'Glass and strap repairs', 'query' => 'smartwatch'],
-            ['label' => 'Gaming Console', 'sprite' => '🎮', 'trend' => 'Fan cleaning rising', 'query' => 'console'],
-            ['label' => 'Printer', 'sprite' => '🖨️', 'trend' => 'Roller and cartridge requests', 'query' => 'printer'],
+            ['label' => 'Phone', 'sprite' => '📱', 'trend' => 'High screen repair demand', 'href' => '/shops?q=phone'],
+            ['label' => 'Laptop', 'sprite' => '💻', 'trend' => 'Battery and keyboard issues', 'href' => '/shops?q=laptop'],
+            ['label' => 'Tablet', 'sprite' => '🧾', 'trend' => 'Port replacement trending', 'href' => '/shops?q=tablet'],
+            ['label' => 'Smartwatch', 'sprite' => '⌚', 'trend' => 'Glass and strap repairs', 'href' => '/shops?q=smartwatch'],
+            ['label' => 'Gaming Console', 'sprite' => '🎮', 'trend' => 'Fan cleaning rising', 'href' => '/shops?q=console'],
+            ['label' => 'Printer', 'sprite' => '🖨️', 'trend' => 'Roller and cartridge requests', 'href' => '/shops?q=printer'],
         ];
 
+        // Exact recently viewed searches from commit 8e44218 / mock-data.ts
         $recentlyViewed = [
-            ['label' => 'MacBook Air M2 battery replacement', 'query' => 'MacBook Air M2 repair'],
-            ['label' => 'iPhone 13 display set', 'query' => 'iPhone display'],
-            ['label' => 'ThinkPad keyboard repair', 'query' => 'keyboard repair'],
-            ['label' => 'Samsung S23 charging port fix', 'query' => 'charging port'],
+            ['label' => 'MacBook Air M2 battery replacement', 'href' => '/shops?q=MacBook%20Air%20M2%20Repair'],
+            ['label' => 'iPhone 13 display set', 'href' => '/shops?q=iPhone%2013%20display'],
+            ['label' => 'ThinkPad keyboard repair', 'href' => '/shops?q=ThinkPad%20keyboard%20repair'],
+            ['label' => 'Sony PlayStation 5 HDMI port', 'href' => '/shops?q=PlayStation%205%20HDMI'],
+            ['label' => 'iPad Pro 11-inch digitizer', 'href' => '/shops?q=iPad%20Pro%20digitizer'],
         ];
 
         $popularPackages = ServicePackage::where('is_popular', true)->take(4)->get();

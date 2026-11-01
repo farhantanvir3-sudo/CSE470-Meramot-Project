@@ -245,3 +245,38 @@ To preserve a 100% clean, professional consumer-facing product while simultaneou
    - **URL Query Parameter**: Append `?dev=1` to any page URL to activate (persists in session), or `?dev=0` to deactivate.
    - **Keyboard Shortcut**: Press `Ctrl + Shift + D` on any page to toggle instantaneously.
    - **Footer Button**: Click the discreet `Dev` toggle link in the footer copyright row.
+
+---
+
+## 11. Design Fidelity to Commit `8e44218a3c09c9d2e79907e507dcbbdc72767d4c` (Farhan's Original Vision)
+
+- **Context**: In the legacy project, merge conflicts and groupmate PRs caused the deployed frontend to deviate from the intended vision. Commit `8e44218a3c09c9d2e79907e507dcbbdc72767d4c` (and preceding commits by Farhan) represents the true intended UX/UI design.
+- **Strict MVC Rule**: The system retains strict Laravel 10 (PHP 8.2) MVC architecture + PostgreSQL 15 + FastAPI microservice. The legacy repository remains completely untouched.
+- **Ported UI / UX Elements**:
+  1. **AuthCard & Google Button (`auth/login.blade.php`, `auth/register.blade.php`)**:
+     - Signature green gradient shimmer on Google button (`hover:border-[#214c34]/40 hover:shadow-[0_0_20px_-5px_rgba(33,76,52,0.3)]` with `bg-gradient-to-r from-transparent via-[#214c34]/[0.07] to-transparent`).
+     - Real-time password strength checklist (8+ chars, uppercase, lowercase, number, special char).
+     - Delivery partner login link in deep navy (`text-[#1b365d]`) on sign-in only (Commit `d9490a9`).
+     - Vendor and rider registration links displayed on sign-up only (Commit `1eb676e`).
+     - Full authentication controller (`AuthController.php`) with session auth and 1-click demo login chips.
+  2. **Master Layout & Header (`layouts/app.blade.php`)**:
+     - Exact branding logo scale: `h-[4.62rem] md:h-[5.1975rem] lg:h-[6.3525rem]`.
+     - Center Location button (`NavbarLocationButton`) with Dhaka neighborhood selector modal.
+     - Cart button with `cart.svg` (`h-[45px] w-[45px]`).
+     - Category tabs with active `border-b-[3px]` indicator (`Courier Pickup`, `In-shop Repair`, `Spare Parts`).
+     - Mobile drawer (`mobile-sidebar-panel`) with `drawerSlideIn` animation and dark blur backdrop.
+     - Logout confirmation modal ("Are you sure? You will be logged out...").
+  3. **Homepage (`home.blade.php`)**:
+     - `OfferCarousel`: 2-column cards grid (`grid grid-cols-2 gap-3 md:gap-4`) with "Offer available" uppercase tracking, bold typography, and `Explore shops` pill buttons.
+     - `FeaturedShops`: Desktop 3-column grid + Mobile 2-column compact natural-height tiles with starting-from price and voucher/free delivery badges.
+     - `PopularCategories`: 3-column grid with device sprites (📱, 💻, 🧾, ⌚, 🎮, 🖨️).
+     - `RecentlyViewed`: Pill chips linking to past search queries.
+  4. **Explore Directory (`shops/explore.blade.php`)**:
+     - Two-column desktop layout with sticky `SidebarFilters` (Sort radio dots, Distance range slider, Offers & savings checkboxes).
+     - Area selector pills (All, Banani, Gulshan, Dhanmondi, Mirpur, Uttara, etc.).
+     - Rich `ShopResultCard` with the 3-column stats box (`INSPECTION FEE | LABOR FEE | ETA`).
+  5. **Customer Request Wizard (`requests/create.blade.php`)**:
+     - All 29 electronic device types and 12 issue categories.
+     - Distinguishing specs fields (chipset, display size, release year).
+  6. **Vendor Dashboard (`vendor/dashboard.blade.php`)**:
+     - Tabbed UI (`Overview`, `Marketplace Bids`, `Direct Orders`, `My Repair Jobs`) ported from Farhan's commit `aff5aff`.

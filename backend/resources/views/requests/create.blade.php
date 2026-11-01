@@ -54,39 +54,78 @@
                 </div>
             @endif
 
+            <!-- 1. Device Type & Brand -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Device Category *</label>
                     <select name="device_type" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none" required>
-                        <option value="Laptop">Laptop / Ultrabook / MacBook</option>
-                        <option value="Mobile Phone">Smartphone / iPhone / Android</option>
-                        <option value="Tablet">Tablet / iPad</option>
-                        <option value="Gaming Console">Gaming Console (PS5, Switch, Xbox)</option>
-                        <option value="Audio Equipment">Smartwatch / Wearable / Audio</option>
+                        @php
+                            $deviceTypes = [
+                                'Laptop', 'Desktop', 'Mobile Phone', 'Tablet', 'Smartwatch', 'Fitness Tracker',
+                                'Headphones/Earbuds', 'Smart TV', 'Monitor', 'Speaker', 'Printer', 'Scanner',
+                                'Camera', 'Action Camera', 'Game Console', 'VR Headset', 'Router/Modem',
+                                'Drone', 'Projector', 'Power Bank', 'UPS', 'E-Reader', 'External Storage',
+                                'Keyboard', 'Streaming Device', 'Dash Cam', 'GPS Device', 'Smart Home Device', 'Other'
+                            ];
+                        @endphp
+                        @foreach($deviceTypes as $dtype)
+                            <option value="{{ $dtype }}">{{ $dtype }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Brand Name *</label>
-                    <input type="text" name="brand" placeholder="Apple, Lenovo, Asus, Samsung, Dell..." class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                    <input type="text" name="brand" placeholder="e.g. Apple, Dell, Lenovo, Asus, Samsung, HP..." class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
                 </div>
             </div>
 
+            <!-- 2. Model & Distinguishing Hardware Specs (From commit 695ec21 / 5d858e6) -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="sm:col-span-1">
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Model Name / Number *</label>
+                    <input type="text" name="model_name" placeholder="e.g. MacBook Pro, ThinkPad T14, Galaxy S23" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                </div>
+                <div>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Release / Purchase Year</label>
+                    <input type="text" name="year" placeholder="e.g. 2021, 2023" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Screen Size / Chipset</label>
+                    <input type="text" name="specs" placeholder="e.g. 14-inch OLED, M1 Pro, Core i7" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                </div>
+            </div>
+
+            <!-- 3. Issue Category & Issue Title -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Model Name / Number *</label>
-                    <input type="text" name="model_name" placeholder="e.g. MacBook Air M2 2022, Galaxy S23 Ultra" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Primary Problem Category *</label>
+                    <select name="issue_category" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none" required>
+                        @php
+                            $issueCategories = [
+                                'Screen or display', 'Battery or charging', 'Keyboard or touchpad',
+                                'Performance or overheating', 'Water damage', 'Speaker or microphone',
+                                'Camera issue', 'Software or OS', 'Network or connectivity',
+                                'Data recovery', 'Parts replacement', 'Other'
+                            ];
+                        @endphp
+                        @foreach($issueCategories as $icat)
+                            <option value="{{ $icat }}">{{ $icat }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Issue Headline *</label>
-                    <input type="text" name="issue_title" placeholder="e.g. Broken display glass, does not power on" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                    <input type="text" name="issue_title" placeholder="e.g. Broken display glass, does not turn on" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
                 </div>
             </div>
 
+            <!-- 4. Detailed Description -->
             <div>
-                <label class="block font-bold text-[var(--foreground)] mb-1">Detailed Symptoms & History *</label>
+                <label class="block font-bold text-[var(--foreground)] mb-1">Detailed Symptoms & Device History *</label>
                 <textarea name="issue_description" rows="4" placeholder="Describe symptoms: Was there any liquid spill? Does the fan spin? Did it drop? Any smoke or burning odor?" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 leading-relaxed outline-none" required></textarea>
             </div>
 
+            <!-- 5. Logistics & Location -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Preferred Logistics Mode *</label>
@@ -97,22 +136,39 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Dhaka Area / Pickup Address</label>
-                    <input type="text" name="pickup_address" placeholder="e.g. Road 11, Banani, Dhaka" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Dhaka Area / Pickup Neighborhood *</label>
+                    <select name="area" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none" required>
+                        @foreach(['Banani', 'Gulshan', 'Dhanmondi', 'Mirpur', 'Uttara', 'Bashundhara', 'Mohammadpur', 'Farmgate', 'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Wari'] as $a)
+                            <option value="{{ $a }}">{{ $a }}, Dhaka</option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
+            <!-- 6. Pickup Address & Expected Budget -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Full Pickup Address</label>
+                    <input type="text" name="pickup_address" placeholder="House #, Road #, Block/Sector, Landmarks" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Estimated Budget (৳)</label>
+                    <input type="number" name="estimated_budget" placeholder="e.g. 2500" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                </div>
+            </div>
+
+            <!-- Submit Button -->
             <div class="pt-4 border-t border-[var(--border)] flex items-center justify-between">
-                <span class="text-[11px] text-[var(--muted-foreground)]">
-                    <i class="fa-solid fa-lock text-[10px] mr-1"></i> Customer payments held in secure escrow until job completion
-                </span>
-                <button type="submit" class="rounded-full bg-[var(--accent-dark)] text-white text-xs font-bold px-6 py-3 shadow hover:opacity-90 transition">
-                    Submit Request to Live Bidding &rarr;
+                <a href="/shops" class="text-xs font-semibold text-[var(--muted-foreground)] hover:underline">
+                    Cancel & Return
+                </a>
+                <button type="submit" class="rounded-full bg-[var(--accent-dark)] px-8 py-3 text-xs font-bold text-white shadow-lg hover:opacity-90 transition">
+                    Publish Request to Bidding Marketplace &rarr;
                 </button>
             </div>
+
         </form>
 
     </div>
-
 </div>
 @endsection

@@ -1,264 +1,224 @@
 @extends('layouts.app')
 
-@section('title', 'Meramot (মেরামত) — Fast, Trusted Electronic Device Repair Marketplace')
+@section('title', 'Meramot (মেরামত) — Digital Electronic Repair Marketplace')
 
 @section('content')
-<div class="mx-auto grid max-w-7xl gap-6 px-4 py-6 md:px-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-    
-    <!-- Left Sidebar: Filters & Quick Selectors -->
-    <aside class="space-y-4 hidden lg:block">
-        
-        <!-- Sort Card -->
-        <div class="meramot-card p-5 shadow-sm">
-            <h3 class="mb-4 text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
-                <i class="fa-solid fa-arrow-down-wide-short text-[var(--accent-dark)]"></i>
-                Sort Shops
-            </h3>
-            <div class="space-y-2 text-xs">
-                @php
-                    $activeSort = request('sort', 'topRated');
-                @endphp
-                <a href="/shops?sort=topRated" class="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition hover:bg-[var(--mint-50)] {{ $activeSort === 'topRated' ? 'font-bold bg-[var(--mint-100)]' : '' }}">
-                    <span class="h-3.5 w-3.5 rounded-full border {{ $activeSort === 'topRated' ? 'border-[var(--accent-dark)] bg-[var(--accent-dark)]' : 'border-[var(--border)] bg-[var(--card)]' }}"></span>
-                    <span>Top Rated</span>
-                </a>
-                <a href="/shops?sort=distance" class="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition hover:bg-[var(--mint-50)] {{ $activeSort === 'distance' ? 'font-bold bg-[var(--mint-100)]' : '' }}">
-                    <span class="h-3.5 w-3.5 rounded-full border {{ $activeSort === 'distance' ? 'border-[var(--accent-dark)] bg-[var(--accent-dark)]' : 'border-[var(--border)] bg-[var(--card)]' }}"></span>
-                    <span>Nearest Distance</span>
-                </a>
-                <a href="/shops?sort=price" class="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition hover:bg-[var(--mint-50)] {{ $activeSort === 'price' ? 'font-bold bg-[var(--mint-100)]' : '' }}">
-                    <span class="h-3.5 w-3.5 rounded-full border {{ $activeSort === 'price' ? 'border-[var(--accent-dark)] bg-[var(--accent-dark)]' : 'border-[var(--border)] bg-[var(--card)]' }}"></span>
-                    <span>Lowest Price</span>
-                </a>
-                <a href="/shops?sort=relevance" class="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-left transition hover:bg-[var(--mint-50)] {{ $activeSort === 'relevance' ? 'font-bold bg-[var(--mint-100)]' : '' }}">
-                    <span class="h-3.5 w-3.5 rounded-full border {{ $activeSort === 'relevance' ? 'border-[var(--accent-dark)] bg-[var(--accent-dark)]' : 'border-[var(--border)] bg-[var(--card)]' }}"></span>
-                    <span>Best Match</span>
-                </a>
-            </div>
-        </div>
+<div class="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6">
+    <div class="space-y-6 md:space-y-8">
 
-        <!-- Offers & Perks Card -->
-        <div class="meramot-card p-5 shadow-sm">
-            <h3 class="mb-4 text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
-                <i class="fa-solid fa-tags text-[var(--accent-dark)]"></i>
-                Promotions
-            </h3>
-            <div class="space-y-2 text-xs">
-                <a href="/shops?voucher=true" class="flex items-center justify-between rounded-2xl px-3 py-2 transition hover:bg-[var(--mint-50)]">
-                    <span class="flex items-center gap-2">
-                        <i class="fa-solid fa-ticket text-amber-700"></i>
-                        <span>Vouchers</span>
-                    </span>
-                    <span class="meramot-pill px-2 py-0.5 rounded-full text-[10px]">Active</span>
-                </a>
-                <a href="/shops?freeDelivery=true" class="flex items-center justify-between rounded-2xl px-3 py-2 transition hover:bg-[var(--mint-50)]">
-                    <span class="flex items-center gap-2">
-                        <i class="fa-solid fa-truck-fast text-emerald-700"></i>
-                        <span>Free Delivery</span>
-                    </span>
-                    <span class="meramot-pill px-2 py-0.5 rounded-full text-[10px]">Free</span>
-                </a>
-                <a href="/shops?deals=true" class="flex items-center justify-between rounded-2xl px-3 py-2 transition hover:bg-[var(--mint-50)]">
-                    <span class="flex items-center gap-2">
-                        <i class="fa-solid fa-fire text-rose-600"></i>
-                        <span>Special Deals</span>
-                    </span>
-                    <span class="meramot-pill px-2 py-0.5 rounded-full text-[10px]">Hot</span>
-                </a>
-            </div>
-        </div>
-
-        <!-- Service Request CTA Box -->
-        <div class="meramot-card p-5 bg-gradient-to-br from-[var(--mint-200)] to-[var(--mint-300)] shadow-sm">
-            <div class="flex items-center gap-2 text-[var(--accent-dark)] font-bold text-xs uppercase tracking-wider mb-2">
-                <i class="fa-solid fa-bolt"></i> Need Urgent Repair?
-            </div>
-            <p class="text-xs text-[var(--foreground)] mb-4">Post your device issue once and receive competitive reverse quotes from top repair shops across Dhaka.</p>
-            <a href="/requests/create" class="block w-full text-center bg-[var(--accent-dark)] text-white text-xs font-bold py-2.5 rounded-2xl shadow hover:opacity-90 transition">
-                Create Repair Request &rarr;
-            </a>
-        </div>
-    </aside>
-
-    <!-- Main Content Area -->
-    <div class="space-y-8">
-        
-        <!-- Offer Banner Carousel Section -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            @foreach($offerCards as $card)
-                <a href="{{ $card['href'] }}" class="meramot-card p-5 transition hover:-translate-y-1 hover:shadow-md flex flex-col justify-between group">
-                    <div>
-                        <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]">
-                            {{ $card['badge'] }}
-                        </span>
-                        <h3 class="mt-3 text-sm font-bold text-[var(--foreground)] group-hover:text-[var(--accent-dark)] transition">
-                            {{ $card['title'] }}
-                        </h3>
-                        <p class="mt-1 text-xs text-[var(--muted-foreground)] leading-relaxed">
-                            {{ $card['subtitle'] }}
+        <!-- ── 1. Offer Carousel (Exact match to OfferCarousel.tsx from commit 8e44218) ── -->
+        <section class="grid grid-cols-2 gap-3 md:gap-4">
+            @foreach($offerCards as $offer)
+                <article class="flex flex-col rounded-[1.4rem] bg-[var(--mint-100)] p-4 shadow-sm md:min-h-[260px] md:justify-center md:rounded-[2rem] md:p-10 lg:min-h-[280px]">
+                    <div class="flex flex-1 flex-col">
+                        <p class="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)] md:mb-2 md:text-sm md:tracking-[0.2em] lg:text-base">
+                            Offer available
                         </p>
+
+                        <h2 class="text-lg font-bold leading-tight text-[var(--foreground)] md:text-3xl lg:text-4xl">
+                            {{ $offer['title'] }}
+                        </h2>
+
+                        <p class="mt-2 line-clamp-2 text-xs leading-5 text-[var(--muted-foreground)] md:mt-3 md:max-w-xl md:text-sm lg:text-base lg:leading-relaxed">
+                            {{ $offer['subtitle'] }}
+                        </p>
+
+                        <div class="mt-auto pt-4 md:pt-5 lg:pt-6">
+                            <a href="{{ $offer['href'] }}" class="self-start inline-flex items-center justify-center rounded-full bg-[var(--accent-dark)] px-4 py-1.5 text-xs font-semibold text-[var(--accent-foreground)] md:px-5 md:py-2 md:text-sm lg:px-6 lg:py-2.5 lg:text-base transition hover:opacity-90">
+                                Explore<span class="hidden md:inline">&nbsp;shops</span>
+                            </a>
+                        </div>
                     </div>
-                    <div class="mt-4 text-xs font-bold text-[var(--accent-dark)] flex items-center gap-1">
-                        <span>Explore deal</span>
-                        <i class="fa-solid fa-arrow-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
-                    </div>
-                </a>
+                </article>
             @endforeach
         </section>
 
-        <!-- Popular Categories Section (Matching legacy Meramot) -->
-        <section>
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-lg font-extrabold text-[var(--foreground)] flex items-center gap-2">
-                    <span>Popular Categories</span>
-                </h2>
-                <span class="text-xs text-[var(--muted-foreground)]">Dhaka Metro Market Demand</span>
-            </div>
-            
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                @foreach($popularCategories as $cat)
-                    <a href="/shops?q={{ urlencode($cat['query']) }}" class="meramot-card p-3 text-center transition hover:-translate-y-1 hover:shadow-md group flex flex-col items-center justify-between">
-                        <div class="text-3xl mb-1 group-hover:scale-110 transition-transform">{{ $cat['sprite'] }}</div>
-                        <h4 class="text-xs font-bold text-[var(--foreground)]">{{ $cat['label'] }}</h4>
-                        <span class="text-[10px] text-[var(--muted-foreground)] mt-1 line-clamp-1 leading-tight">
-                            {{ $cat['trend'] }}
-                        </span>
-                    </a>
-                @endforeach
-            </div>
-        </section>
+        <!-- ── 2. Featured Shops (Exact match to FeaturedShops.tsx from commit 8e44218) ── -->
+        <section class="mt-10">
+            <h2 class="mb-3 text-lg font-bold text-[var(--foreground)] md:mb-4 md:text-2xl">
+                Featured shops
+            </h2>
 
-        <!-- Featured Shops Grid (Matching FeaturedShops.tsx & ShopCard.tsx) -->
-        <section>
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-xl font-extrabold text-[var(--foreground)]">Featured Repair Hubs</h2>
-                    <p class="text-xs text-[var(--muted-foreground)]">Highest rated and verified repair technicians near your area</p>
-                </div>
-                <a href="/shops" class="text-xs font-bold text-[var(--accent-dark)] hover:underline flex items-center gap-1">
-                    <span>View all 32 shops</span>
-                    <i class="fa-solid fa-chevron-right text-[10px]"></i>
-                </a>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                @foreach($featuredShops as $shop)
-                    <a href="/shops/{{ $shop->slug }}" class="meramot-card p-4 transition hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between group">
-                        <div>
-                            <!-- Header with Avatar & Price Tag -->
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="flex items-start gap-3">
-                                    <div class="h-12 w-12 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] flex items-center justify-center font-black text-xl text-[var(--accent-dark)] shrink-0 shadow-sm">
-                                        {{ strtoupper(substr($shop->name, 0, 1)) }}
+            <!-- Desktop Grid — 2 cols on md, 3 on lg -->
+            <div class="hidden md:grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                @foreach($featuredShops->slice(0, 6) as $shop)
+                    <div class="h-full">
+                        <a href="/shops/{{ $shop->slug }}" class="block rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm transition hover:shadow-md h-full flex flex-col justify-between md:p-6 md:min-h-[220px]">
+                            <div>
+                                <div class="flex items-start gap-3 md:gap-4">
+                                    <div class="flex shrink-0 items-center justify-center rounded-xl bg-[var(--mint-100)] text-xl font-bold text-[var(--accent-dark)] h-12 w-12 md:h-16 md:w-16">
+                                        @if($shop->logo_url)
+                                            <img src="{{ $shop->logo_url }}" alt="{{ $shop->name }}" class="h-full w-full rounded-xl object-cover">
+                                        @else
+                                            {{ strtoupper(substr($shop->name, 0, 1)) }}
+                                        @endif
                                     </div>
-                                    <div class="min-w-0">
-                                        <h3 class="text-sm font-bold text-[var(--foreground)] truncate group-hover:text-[var(--accent-dark)]">
-                                            {{ $shop->name }}
-                                        </h3>
-                                        <p class="text-[11px] text-[var(--muted-foreground)] flex items-center gap-1 mt-0.5">
-                                            <i class="fa-solid fa-location-dot text-[10px] text-[var(--accent-dark)]"></i>
-                                            <span>{{ $shop->area }}, Dhaka</span>
-                                        </p>
+
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <div class="min-w-0">
+                                                <h3 class="line-clamp-2 font-bold text-[var(--foreground)] text-base md:text-lg">
+                                                    {{ $shop->name }}
+                                                </h3>
+                                                <p class="mt-0.5 text-[var(--muted-foreground)] line-clamp-1 text-xs md:text-sm">
+                                                    {{ $shop->address ?? $shop->city }}
+                                                </p>
+                                                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--foreground)]">
+                                                    <span>⭐ {{ number_format($shop->rating, 1) }}</span>
+                                                    <span class="text-[var(--muted-foreground)]">({{ $shop->review_count ?? 12 }} reviews)</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="flex shrink-0 flex-col items-end pl-2 text-right">
+                                                <span class="font-semibold text-[var(--muted-foreground)] uppercase tracking-wider text-[10px] md:text-[11px]">
+                                                    {{ $shop->inspection_fee ? 'Starting from' : 'From' }}
+                                                </span>
+                                                <span class="font-extrabold tracking-tight text-[var(--accent-dark)] leading-tight text-base md:text-xl">
+                                                    ৳{{ number_format($shop->inspection_fee ?: ($shop->base_labor_fee ?: 350)) }}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                
-                                <span class="meramot-pill px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0">
-                                    {{ str_repeat('৳', $shop->price_level ?? 2) }}
-                                </span>
                             </div>
 
-                            <!-- Rating, Reviews & ETA -->
-                            <div class="mt-3 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-                                <span class="font-bold text-[var(--foreground)] flex items-center gap-1 text-amber-700">
-                                    ⭐ {{ number_format($shop->rating, 1) }}
-                                </span>
-                                <span>({{ number_format($shop->review_count) }})</span>
-                                <span>•</span>
-                                <span>{{ $shop->eta_minutes < 60 ? $shop->eta_minutes . ' min' : round($shop->eta_minutes / 60) . ' hr' }}</span>
-                            </div>
-
-                            <!-- Description Quote -->
-                            <p class="mt-2 text-xs text-[var(--muted-foreground)] line-clamp-2 leading-relaxed">
-                                "{{ $shop->description }}"
-                            </p>
-
-                            <!-- Specialties Tags -->
-                            <div class="mt-3 flex flex-wrap gap-1.5">
-                                @foreach(array_slice($shop->specialties ?? [], 0, 3) as $spec)
-                                    <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] text-[var(--accent-dark)] font-medium">
-                                        {{ $spec }}
-                                    </span>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <!-- Footer Info: Inspection Fee & Perks -->
-                        <div class="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-xs">
-                            <span class="font-bold text-[var(--accent-dark)]">
-                                {{ $shop->offer_summary ?? 'Inspection ৳' . number_format($shop->inspection_fee ?? 200) }}
-                            </span>
-                            <div class="flex gap-1.5 text-[10px]">
+                            <div class="mt-3 flex flex-wrap gap-2 md:mt-5">
                                 @if($shop->has_voucher)
-                                    <span class="bg-[var(--mint-50)] text-[var(--accent-dark)] px-2 py-0.5 rounded-full font-bold">Voucher</span>
+                                    <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[var(--accent-dark)] text-xs md:text-sm">
+                                        Voucher
+                                    </span>
                                 @endif
                                 @if($shop->free_delivery)
-                                    <span class="bg-[var(--mint-50)] text-emerald-900 px-2 py-0.5 rounded-full font-bold">Free Del</span>
+                                    <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[var(--accent-dark)] text-xs md:text-sm">
+                                        Free delivery
+                                    </span>
+                                @endif
+                                @if($shop->has_deals)
+                                    <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[var(--accent-dark)] text-xs md:text-sm">
+                                        Deal
+                                    </span>
                                 @endif
                             </div>
-                        </div>
-                    </a>
-                @endforeach
-            </div>
-        </section>
 
-        <!-- Pre-Configured Fixed Packages (Feature R8 preview) -->
-        <section class="meramot-card p-6 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h2 class="text-lg font-extrabold text-[var(--foreground)] flex items-center gap-2">
-                        <i class="fa-solid fa-cube text-[var(--accent-dark)]"></i>
-                        <span>Pre-Configured Service Packages</span>
-                    </h2>
-                    <p class="text-xs text-[var(--muted-foreground)]">Fixed rate repairs with warranty included — no bidding required</p>
-                </div>
-                <a href="/packages/catalog" class="text-xs font-bold text-[var(--accent-dark)] hover:underline">
-                    View all packages &rarr;
-                </a>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                @foreach($popularPackages as $pkg)
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] p-4 flex flex-col justify-between">
-                        <div>
-                            <span class="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[var(--card)] text-[var(--accent-dark)]">
-                                {{ $pkg->device_category }}
-                            </span>
-                            <h4 class="mt-2 text-xs font-bold text-[var(--foreground)]">{{ $pkg->title }}</h4>
-                            <p class="text-lg font-black text-[var(--accent-dark)] mt-2">
-                                ৳{{ number_format($pkg->fixed_price) }}
-                            </p>
-                            <div class="mt-2 text-[10px] text-[var(--muted-foreground)] flex items-center gap-2">
-                                <span><i class="fa-solid fa-shield-halved text-[9px]"></i> {{ $pkg->warranty_months }} Mo Warranty</span>
-                                <span>•</span>
-                                <span><i class="fa-solid fa-clock text-[9px]"></i> {{ $pkg->estimated_turnaround_hours }}h Turnaround</span>
-                            </div>
-                        </div>
-                        <a href="/packages/catalog" class="mt-3 block text-center bg-[var(--accent-dark)] text-white text-[11px] font-bold py-1.5 rounded-xl hover:opacity-90 transition">
-                            Book Package
+                            @if(!empty($shop->specialties))
+                                <p class="mt-3 md:mt-4 text-sm md:text-base font-medium text-[var(--muted-foreground)]">
+                                    {{ is_array($shop->specialties) ? implode(' • ', array_slice($shop->specialties, 0, 2)) : $shop->specialties }}
+                                </p>
+                            @endif
                         </a>
                     </div>
                 @endforeach
             </div>
+
+            <!-- Mobile Grid — 2 cols, natural height tiles (Exact match to FeaturedShops.tsx mobile) -->
+            <div class="grid grid-cols-2 gap-3 md:hidden">
+                @foreach($featuredShops->slice(0, 4) as $shop)
+                    <a href="/shops/{{ $shop->slug }}" class="relative flex flex-col justify-between overflow-hidden rounded-[1rem] border border-[var(--border)] bg-[var(--card)] p-3 shadow-sm transition active:scale-95 active:bg-[var(--mint-50)] min-h-[140px]">
+                        <!-- Top Row: Logo & Rating -->
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.75rem] bg-[var(--mint-100)] text-sm font-bold text-[var(--accent-dark)]">
+                                @if($shop->logo_url)
+                                    <img src="{{ $shop->logo_url }}" alt="{{ $shop->name }}" class="h-full w-full rounded-[0.75rem] object-cover">
+                                @else
+                                    {{ strtoupper(substr($shop->name, 0, 1)) }}
+                                @endif
+                            </div>
+                            <div class="flex shrink-0 items-center rounded-full bg-[var(--mint-50)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                                ★ {{ number_format($shop->rating, 1) }}
+                            </div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="mt-2 min-w-0">
+                            <h3 class="line-clamp-2 text-xs font-bold leading-tight tracking-tight text-[var(--foreground)]">
+                                {{ $shop->name }}
+                            </h3>
+                        </div>
+
+                        <!-- Bottom: Price & Badges -->
+                        <div class="mt-auto pt-2 flex items-end justify-between gap-1">
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[9px] font-bold uppercase text-[var(--muted-foreground)] leading-none truncate">
+                                    Starting from
+                                </span>
+                                <div class="text-sm font-black tracking-tight text-[var(--accent-dark)] leading-none mt-1.5 truncate">
+                                    ৳{{ number_format($shop->inspection_fee ?: ($shop->base_labor_fee ?: 350)) }}
+                                </div>
+                            </div>
+                            
+                            <div class="flex flex-col items-end gap-1 shrink-0">
+                                @if($shop->has_voucher)
+                                    <span class="rounded bg-[var(--accent-dark)] px-1.5 py-[3px] text-[7px] font-bold uppercase tracking-widest text-[var(--accent-foreground)] leading-none">
+                                        VOUCHER
+                                    </span>
+                                @endif
+                                @if($shop->free_delivery)
+                                    <span class="rounded bg-[var(--mint-100)] px-1.5 py-[3px] text-[7px] font-bold uppercase tracking-widest text-[var(--accent-dark)] leading-none">
+                                        FREE
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+
+            <!-- Explore More Button -->
+            <div class="mt-6 flex justify-center md:mt-8">
+                <a href="/shops" class="inline-flex items-center gap-2 rounded-full border-2 border-[var(--accent-dark)] bg-transparent px-6 py-2.5 text-sm font-bold text-[var(--accent-dark)] transition-colors hover:bg-[var(--mint-50)] md:px-8 md:py-3 md:text-base">
+                    <span>Explore More Featured Shops</span>
+                    <svg class="h-4 w-4 md:h-5 md:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </a>
+            </div>
         </section>
 
-        <!-- Recently Searched Quick Links -->
-        <section class="pt-2">
-            <h3 class="text-xs font-bold text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Recent Hot Searches</h3>
-            <div class="flex flex-wrap gap-2">
-                @foreach($recentlyViewed as $rv)
-                    <a href="/shops?q={{ urlencode($rv['query']) }}" class="meramot-pill px-3 py-1.5 rounded-full text-xs hover:bg-[var(--mint-200)] transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-magnifying-glass text-[10px] opacity-60"></i>
-                        <span>{{ $rv['label'] }}</span>
+        <!-- ── 3. Popular Categories (Exact match to PopularCategories.tsx from commit 8e44218) ── -->
+        <section class="space-y-4">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                    Popular parts category
+                </p>
+                <h2 class="text-lg font-bold text-[var(--foreground)] md:text-2xl lg:text-3xl">
+                    What devices need repair the most right now
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
+                @foreach($popularCategories as $item)
+                    <a href="{{ $item['href'] }}" class="flex flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md min-h-[120px] md:min-h-0 md:flex-row md:justify-start md:gap-4 md:rounded-[1.75rem] md:p-4 md:text-left">
+                        <div class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--mint-200)] text-2xl shadow-inner md:h-16 md:w-16 md:rounded-2xl md:text-3xl">
+                            {{ $item['sprite'] }}
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold leading-tight text-[var(--foreground)] md:text-lg md:font-semibold">
+                                {{ $item['label'] }}
+                            </h3>
+                            <p class="mt-1 line-clamp-2 text-[10px] leading-[1.3] text-[var(--muted-foreground)] md:mt-1 md:text-sm md:leading-tight">
+                                {{ $item['trend'] }}
+                            </p>
+                        </div>
+                    </a>
+                @endforeach
+            </div>
+        </section>
+
+        <!-- ── 4. Recently Viewed (Exact match to RecentlyViewed.tsx from commit 8e44218) ── -->
+        <section class="space-y-4">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                    Recently viewed
+                </p>
+                <h2 class="text-lg font-bold text-[var(--foreground)] md:text-2xl lg:text-3xl">
+                    Jump back into previous repair searches
+                </h2>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                @foreach($recentlyViewed as $item)
+                    <a href="{{ $item['href'] }}" class="inline-flex items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-sm font-medium leading-none text-[var(--foreground)] shadow-sm transition hover:bg-[var(--mint-50)]">
+                        {{ $item['label'] }}
                     </a>
                 @endforeach
             </div>

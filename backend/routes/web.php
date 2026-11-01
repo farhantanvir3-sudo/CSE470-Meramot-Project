@@ -26,6 +26,7 @@ use App\Http\Controllers\PaymentGatewayController;     // R17 - Nawshad
 use App\Http\Controllers\VendorPayoutController;       // R18 - Nawshad
 use App\Http\Controllers\AdminModerationController;    // R19 - Nawshad
 use App\Http\Controllers\AuditLogController;           // R20 - Nawshad
+use App\Http\Controllers\AuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,6 +35,16 @@ use App\Http\Controllers\AuditLogController;           // R20 - Nawshad
 */
 
 Route::get('/', [ShopDiscoveryController::class, 'home'])->name('home');
+
+// -------------------------------------------------------------
+// Authentication Routes (Ported from AuthCard.tsx at commit 8e44218)
+// -------------------------------------------------------------
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/auth/demo', [AuthController::class, 'demoLogin'])->name('auth.demo');
 
 // -------------------------------------------------------------
 // MODULE: Delivery & Rider Logistics (Assigned: Md. Nafiul Islam)
