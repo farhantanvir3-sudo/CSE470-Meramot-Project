@@ -12,11 +12,22 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
+        'username',
         'name',
         'email',
         'password',
         'phone',
-        'role', // 'customer', 'vendor', 'delivery_agent', 'admin'
+        'avatar_url',
+        'address',
+        'city',
+        'area',
+        'latitude',
+        'longitude',
+        'role', // 'customer', 'vendor', 'admin', 'delivery', 'delivery_admin'
+        'is_email_verified',
+        'is_phone_verified',
+        'status',
+        'pending_penalty',
         'is_active',
     ];
 
@@ -26,9 +37,13 @@ class User extends Authenticatable
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_email_verified' => 'boolean',
+        'is_phone_verified' => 'boolean',
         'is_active' => 'boolean',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
+        'pending_penalty' => 'decimal:2',
     ];
 
     public function vendorProfile()
