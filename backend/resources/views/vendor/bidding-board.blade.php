@@ -1,81 +1,92 @@
-{{--
-=============================================================================
-FEATURE R12: Live Bidding Engine & Diagnostic Quote Generator
-=============================================================================
-Assigned Member: Farhan Tanvir [Student ID: 22299179] (Team Lead)
-Sprint: Sprint 2 (Nov 13 – Nov 27, 2026)
-Architectural Layer: View (Vendor/BiddingBoard)
-Controller: BiddingEngineController@index, store, acceptBid
-Models Touched: Bid, RepairQuote, Item
-
-INSTRUCTIONS FOR FARHAN:
-- Live reverse-bidding board for repair tickets.
-- Technicians can input line-item costs (parts + labor + diagnostic fee) and turnaround time.
-- Real-time updates when competing bids arrive.
-=============================================================================
---}}
 @extends('layouts.app')
 
-@section('title', 'Vendor Live Bidding Board | Feature R12')
+@section('title', 'Vendor Live Bidding Board | Meramot (Feature R12)')
 
 @section('content')
-<div class="mb-6 flex justify-between items-center">
-    <div>
-        <h1 class="text-2xl font-bold text-slate-900">Live Repair Bidding Marketplace</h1>
-        <p class="text-xs text-slate-500 mt-1">Feature R12 | Assigned to: <strong class="text-teal-700">Farhan Tanvir [22299179]</strong></p>
+<div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
+
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-black text-[var(--foreground)] flex items-center gap-2">
+                <i class="fa-solid fa-gavel text-amber-700"></i>
+                Live Repair Bidding Marketplace
+            </h1>
+            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
+                Feature R12 • Assigned: <strong class="text-[var(--accent-dark)]">Farhan Tanvir [22299179] (Lead)</strong> • Real-time reverse bidding on hardware tickets
+            </p>
+        </div>
+        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] font-bold text-xs px-3.5 py-1.5 self-start">
+            Reverse-Quote Engine
+        </span>
     </div>
-    <span class="text-xs bg-indigo-100 text-indigo-800 font-semibold px-3 py-1 rounded-full border border-indigo-200">
-        Sprint 2 Target
-    </span>
-</div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Active Request Card -->
-    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase font-mono">Bidding Open</span>
-        <h3 class="font-bold text-slate-900 text-base mt-2">Apple MacBook Pro M1 (14-inch)</h3>
-        <p class="text-xs text-slate-600 mt-1 font-medium">Issue: No display backlight after accidental liquid contact</p>
-        <p class="text-xs text-slate-400 mt-2">Customer: Dhanmondi, Dhaka | Posted 20 mins ago</p>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Active Request Card -->
+        <div class="meramot-card p-6 shadow-sm">
+            <span class="text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-emerald-800 text-white">
+                Bidding Open
+            </span>
+            <h3 class="font-black text-[var(--foreground)] text-base mt-3">Apple MacBook Pro M1 (14-inch)</h3>
+            <p class="text-xs text-[var(--foreground)] mt-1 font-medium">Issue: No display backlight after accidental liquid contact</p>
+            <div class="mt-3 text-[11px] text-[var(--muted-foreground)] space-y-1">
+                <div><i class="fa-solid fa-location-dot text-[var(--accent-dark)] mr-1"></i> Customer in Dhanmondi, Dhaka</div>
+                <div><i class="fa-solid fa-clock text-[var(--accent-dark)] mr-1"></i> Ticket posted 20 mins ago</div>
+            </div>
 
-        <!-- AI Diagnostic Insight (Feature R13 link) -->
-        <div class="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200 text-xs text-purple-900">
-            <span class="font-bold block mb-1"><i class="fa-solid fa-microchip"></i> AI Microservice Summary:</span>
-            Probable Backlight Driver IC short or blown fuse on motherboard 50V rail.
+            <!-- AI Diagnostic Microservice Hook (Feature R13) -->
+            <div class="mt-4 p-3.5 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] text-xs text-[var(--foreground)]">
+                <span class="font-bold flex items-center gap-1.5 text-amber-700 mb-1">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    FastAPI AI Hardware Summary:
+                </span>
+                <p class="text-[11px] text-[var(--muted-foreground)] leading-relaxed">
+                    Probable Backlight Driver IC short or blown fuse on motherboard 50V rail. Recommended step: Test backlight boost diode with multimeter.
+                </p>
+            </div>
+        </div>
+
+        <!-- Submit Diagnostic Bid Form -->
+        <div class="lg:col-span-2 meramot-card p-6 shadow-sm">
+            <h3 class="font-bold text-sm text-[var(--foreground)] mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-file-invoice-dollar text-[var(--accent-dark)]"></i>
+                Submit Verified Diagnostic Quote
+            </h3>
+            
+            <form method="POST" action="/requests/1/bids" class="space-y-4 text-xs">
+                @csrf
+                <input type="hidden" name="vendor_id" value="1">
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Proposed Cost (৳) *</label>
+                        <input type="number" name="proposed_cost" placeholder="3500" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Turnaround Days *</label>
+                        <input type="number" name="estimated_days" value="2" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Warranty (Days) *</label>
+                        <input type="number" name="warranty_days" value="90" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Technician Diagnostic Note</label>
+                    <textarea name="technician_note" rows="3" placeholder="Includes ultrasonic motherboard cleaning and OEM chip replacement with oscilloscope testing." class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 leading-relaxed outline-none"></textarea>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between">
+                    <span class="text-[11px] text-[var(--muted-foreground)]">
+                        Platform Commission: 10.00% automatically accounted for
+                    </span>
+                    <button type="submit" class="rounded-full bg-[var(--accent-dark)] text-white text-xs font-bold px-6 py-2.5 shadow hover:opacity-90 transition">
+                        Place Diagnostic Bid &rarr;
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <!-- Submit Diagnostic Bid Form -->
-    <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-        <h3 class="font-bold text-sm text-slate-900 mb-4">Submit Verified Diagnostic Quote</h3>
-        
-        <form method="POST" action="/requests/1/bids" class="space-y-4 text-xs">
-            @csrf
-            <input type="hidden" name="vendor_id" value="1">
-            
-            <div class="grid grid-cols-3 gap-4">
-                <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Proposed Total Cost (৳)</label>
-                    <input type="number" name="proposed_cost" placeholder="3500" class="w-full rounded-lg border-slate-300 text-xs py-2" required>
-                </div>
-                <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Estimated Days</label>
-                    <input type="number" name="estimated_days" value="2" class="w-full rounded-lg border-slate-300 text-xs py-2" required>
-                </div>
-                <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Warranty (Days)</label>
-                    <input type="number" name="warranty_days" value="90" class="w-full rounded-lg border-slate-300 text-xs py-2" required>
-                </div>
-            </div>
-
-            <div>
-                <label class="block font-semibold text-slate-700 mb-1">Technician Diagnostic Note</label>
-                <textarea name="technician_note" rows="3" placeholder="Includes ultrasonic motherboard cleaning and OEM chip replacement." class="w-full rounded-lg border-slate-300 text-xs p-3"></textarea>
-            </div>
-
-            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-lg text-xs transition">
-                Place Diagnostic Bid
-            </button>
-        </form>
-    </div>
 </div>
 @endsection

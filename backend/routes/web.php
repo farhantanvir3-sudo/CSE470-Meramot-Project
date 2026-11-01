@@ -33,9 +33,7 @@ use App\Http\Controllers\AuditLogController;           // R20 - Nawshad
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    return redirect('/shops/explore');
-});
+Route::get('/', [ShopDiscoveryController::class, 'home'])->name('home');
 
 // -------------------------------------------------------------
 // MODULE: Delivery & Rider Logistics (Assigned: Md. Nafiul Islam)
@@ -56,7 +54,8 @@ Route::get('/support/rider-chat/{riderId}', [RiderChatController::class, 'index'
 // -------------------------------------------------------------
 // MODULE: Discovery, Requests & AI Consultation (Assigned: Shanid Sajjatuz Islam)
 // -------------------------------------------------------------
-Route::get('/shops/explore', [ShopDiscoveryController::class, 'index']);                // R6
+Route::get('/shops', [ShopDiscoveryController::class, 'index'])->name('shops.index');
+Route::get('/shops/explore', [ShopDiscoveryController::class, 'index'])->name('shops.explore');
 Route::get('/shops/{slug}', [ShopDiscoveryController::class, 'show'])->name('shops.show'); // R6
 Route::get('/requests/create', [RepairRequestController::class, 'create']);             // R7
 Route::post('/requests', [RepairRequestController::class, 'store']);                    // R7
