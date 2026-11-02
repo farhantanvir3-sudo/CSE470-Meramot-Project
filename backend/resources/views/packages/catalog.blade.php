@@ -1,128 +1,139 @@
 @extends('layouts.app')
 
-@section('title', 'Direct Fixed Service Packages Catalog | Meramot')
+@section('title', 'Service Packages - Meramot')
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
-
+<div class="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
     <!-- Header -->
-    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="mb-6 flex items-center justify-between">
         <div>
-            <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
-                <a href="/" class="hover:underline">Home</a>
-                <span>/</span>
-                <span class="text-[var(--foreground)] font-semibold">Service Packages</span>
-            </div>
-            <h1 class="text-2xl font-black text-[var(--foreground)]">
-                Pre-Configured Service Packages
-            </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-2">
-                <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
-                    Feature R8 • Lead: Shanid Sajjatuz Islam [23201465]
-                </span>
-                <span>Fixed transparent pricing, repair warranty included, and doorstep dispatch</span>
-            </p>
+            <h1 class="text-3xl font-bold text-gray-900">Service Packages</h1>
+            <p class="mt-1 text-sm text-gray-600">Fixed-price repair packages with guaranteed quality</p>
         </div>
-
-        <div class="flex items-center gap-3">
-            <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3 py-1.5 rounded-full border border-[var(--border)]">
-                <i class="fa-solid fa-shield-halved text-emerald-700 mr-1"></i> Meramot Warranty Guaranteed
-            </span>
-        </div>
+        <a href="{{ route('cart.view') }}" class="relative inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+            <svg class="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+            </svg>
+            Cart
+            @if($cartCount > 0)
+                <span class="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-blue-600">{{ $cartCount }}</span>
+            @endif
+        </a>
     </div>
 
-    <!-- Active Cart Preview (If session cart has items) -->
-    @if(session('cart') && count(session('cart')) > 0)
-        <div class="mb-6 meramot-card p-4 border-2 border-emerald-600 bg-[var(--mint-100)] flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="h-10 w-10 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold text-sm">
-                    {{ count(session('cart')) }}
-                </div>
-                <div>
-                    <h4 class="font-bold text-xs text-[var(--foreground)]">Packages Ready in Cart</h4>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">Proceed to doorstep pickup scheduling & escrow checkout</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <a href="/requests/create" class="rounded-full bg-[var(--accent-dark)] text-white text-xs font-bold px-5 py-2 hover:opacity-90 transition shadow">
-                    Checkout Packages &rarr;
-                </a>
-            </div>
-        </div>
-    @endif
+    <!-- Filters -->
+    <div class="mb-6 flex flex-wrap gap-3">
+        <form method="GET" action="{{ route('packages.catalog') }}" class="flex w-full flex-wrap gap-3">
+            <!-- Search -->
+            <input type="text" name="q" value="{{ request('q') }}" placeholder="Search packages..." class="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+            
+            <!-- Category Filter -->
+            <select name="category" class="rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">All Categories</option>
+                @foreach($categories as $cat)
+                    <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                @endforeach
+            </select>
 
-    <!-- Package Cards Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @forelse($packages ?? [] as $pkg)
-            <div class="meramot-card p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
-                <div>
-                    <!-- Badge & Category -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-extrabold uppercase px-3 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]">
-                            {{ $pkg->device_category }}
-                        </span>
-                        @if($pkg->is_popular)
-                            <span class="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                <i class="fa-solid fa-star text-[9px]"></i> Most Popular
-                            </span>
-                        @endif
+            <!-- Price Filter -->
+            <select name="max_price" class="rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="">Any Price</option>
+                <option value="2000" {{ request('max_price') == '2000' ? 'selected' : '' }}>Under ৳2,000</option>
+                <option value="5000" {{ request('max_price') == '5000' ? 'selected' : '' }}>Under ৳5,000</option>
+                <option value="10000" {{ request('max_price') == '10000' ? 'selected' : '' }}>Under ৳10,000</option>
+            </select>
+
+            <!-- Sort -->
+            <select name="sort" class="rounded-lg border border-gray-300 px-4 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+                <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>Most Popular</option>
+                <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>Price: Low to High</option>
+                <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Price: High to Low</option>
+            </select>
+
+            <button type="submit" class="rounded-lg bg-gray-900 px-6 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                Apply Filters
+            </button>
+        </form>
+    </div>
+
+    <!-- Package Grid -->
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        @forelse($packages as $package)
+            <div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:shadow-md">
+                @if($package->is_popular)
+                    <div class="bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
+                        ⭐ Most Popular
+                    </div>
+                @endif
+                
+                <div class="p-5">
+                    <div class="mb-2 inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
+                        {{ $package->device_category }}
+                    </div>
+                    
+                    <h3 class="text-lg font-bold text-gray-900">{{ $package->title }}</h3>
+                    <p class="mt-2 text-sm text-gray-600">{{ Str::limit($package->description, 100) }}</p>
+                    
+                    <div class="mt-4 flex items-baseline justify-between">
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900">৳{{ number_format($package->fixed_price) }}</span>
+                            <span class="ml-2 text-sm text-gray-500">{{ $package->estimated_duration_hours }}h</span>
+                        </div>
                     </div>
 
-                    <!-- Title & Price -->
-                    <h3 class="font-black text-lg text-[var(--foreground)] mt-3 group-hover:text-[var(--accent-dark)] transition">
-                        {{ $pkg->title }}
-                    </h3>
-
-                    <div class="mt-2 flex items-baseline gap-2">
-                        <span class="text-3xl font-black text-[var(--accent-dark)]">
-                            ৳{{ number_format($pkg->fixed_price) }}
-                        </span>
-                        <span class="text-xs text-[var(--muted-foreground)]">Fixed All-Inclusive</span>
-                    </div>
-
-                    <!-- Meta specs -->
-                    <div class="mt-3 flex items-center gap-3 text-xs text-[var(--muted-foreground)] py-2 border-y border-[var(--border)]">
-                        <span class="flex items-center gap-1 font-semibold text-[var(--foreground)]">
-                            <i class="fa-solid fa-clock text-[var(--accent-dark)]"></i>
-                            {{ $pkg->estimated_turnaround_hours }} Hours Turnaround
-                        </span>
-                        <span>•</span>
-                        <span class="flex items-center gap-1 font-semibold text-[var(--foreground)]">
-                            <i class="fa-solid fa-shield-halved text-emerald-700"></i>
-                            {{ $pkg->warranty_months }} Months Warranty
-                        </span>
-                    </div>
-
-                    <!-- Inclusions List -->
-                    <div class="mt-4">
-                        <h5 class="text-[11px] font-bold text-[var(--foreground)] uppercase tracking-wider mb-2">Package Inclusions:</h5>
-                        <ul class="space-y-1.5 text-xs text-[var(--muted-foreground)]">
-                            @foreach($pkg->inclusions ?? [] as $inc)
-                                <li class="flex items-start gap-2">
-                                    <i class="fa-solid fa-check text-emerald-700 mt-1 text-[10px]"></i>
-                                    <span>{{ $inc }}</span>
+                    @if($package->included_items)
+                        <ul class="mt-3 space-y-1 text-sm text-gray-600">
+                            @foreach(array_slice($package->included_items, 0, 3) as $item)
+                                <li class="flex items-center">
+                                    <svg class="mr-2 h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                    {{ $item }}
                                 </li>
                             @endforeach
                         </ul>
-                    </div>
-                </div>
+                    @endif
 
-                <!-- Add to Cart Form -->
-                <form method="POST" action="/cart/add" class="mt-6 pt-4 border-t border-[var(--border)]">
-                    @csrf
-                    <input type="hidden" name="package_id" value="{{ $pkg->id }}">
-                    <button type="submit" class="w-full rounded-2xl bg-[var(--accent-dark)] hover:opacity-90 text-white py-2.5 text-xs font-bold shadow transition flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-cart-plus"></i>
-                        <span>Select Package & Add to Cart</span>
+                    <button 
+                        onclick="addToCart({{ $package->id }})"
+                        class="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                    >
+                        Add to Cart
                     </button>
-                </form>
+                </div>
             </div>
         @empty
-            <div class="col-span-3 text-center py-16 meramot-card p-8">
-                <p class="text-xs text-[var(--muted-foreground)]">No standard service packages loaded in database.</p>
+            <div class="col-span-full rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+                <p class="text-gray-500">No packages found matching your criteria.</p>
+                <a href="{{ route('packages.catalog') }}" class="mt-4 inline-block text-blue-600 hover:underline">Clear filters</a>
             </div>
         @endforelse
     </div>
 
+    <!-- Pagination -->
+    <div class="mt-8">
+        {{ $packages->links() }}
+    </div>
 </div>
+
+<script>
+function addToCart(packageId) {
+    fetch('/cart/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ package_id: packageId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert('✅ Package added to cart!');
+            location.reload();
+        }
+    })
+    .catch(err => console.error(err));
+}
+</script>
 @endsection
