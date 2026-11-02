@@ -42,7 +42,7 @@
             </a>
         </div>
 
-        <form method="POST" action="/requests" class="space-y-5 text-xs">
+        <form method="POST" action="/requests" enctype="multipart/form-data" class="space-y-5 text-xs">
             @csrf
 
             <!-- Pre-selected Shop alert if came from shop profile -->
@@ -123,6 +123,24 @@
             <div>
                 <label class="block font-bold text-[var(--foreground)] mb-1">Detailed Symptoms & Device History *</label>
                 <textarea name="issue_description" rows="4" placeholder="Describe symptoms: Was there any liquid spill? Does the fan spin? Did it drop? Any smoke or burning odor?" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 leading-relaxed outline-none" required></textarea>
+            </div>
+
+            <!-- 4.5. Photo Upload -->
+            <div>
+                <label class="block font-bold text-[var(--foreground)] mb-1">Upload Device Photos (Optional)</label>
+                <p class="text-[11px] text-[var(--muted-foreground)] mb-2">
+                    Attach up to 5 photos showing the issue, cracks, water damage indicators, or error screens (Max 5MB each)
+                </p>
+                <input 
+                    type="file" 
+                    name="photos[]" 
+                    multiple 
+                    accept="image/jpeg,image/jpg,image/png,image/webp" 
+                    class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[var(--accent-dark)] file:text-white hover:file:opacity-90"
+                >
+                <p class="text-[10px] text-[var(--muted-foreground)] mt-1">
+                    Supported: JPG, PNG, WebP • Max 5 files • 5MB per file
+                </p>
             </div>
 
             <!-- 5. Logistics & Location -->
