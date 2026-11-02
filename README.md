@@ -110,16 +110,28 @@ If you are on Windows, you don't need to run complex terminal commands manually:
    ```
 2. **One-Click Automated Setup**:
    Double-click `setup.bat` (or run `./setup.bat` in Command Prompt / PowerShell).
-   - Automatically sets up `.env` files for both backend and AI microservice.
+   - Automatically prepares `.env` files for both backend and AI microservice.
    - Installs Composer packages from `composer.lock`.
    - Generates the Laravel encryption key.
    - Configures the Python virtual environment and installs FastAPI dependencies.
-3. **Run Migrations & Seed Baseline Data**:
-   ```bash
-   cd backend
-   php artisan migrate --seed
+   - Attempts to auto-create the `meramot` PostgreSQL database and run migrations.
+
+3. **Database Configuration**:
+   Make sure PostgreSQL is running on port `5432`. In `backend/.env`, set your local PostgreSQL user & password:
+   ```env
+   DB_CONNECTION=pgsql
+   DB_HOST=127.0.0.1
+   DB_PORT=5432
+   DB_DATABASE=meramot
+   DB_USERNAME=postgres
+   DB_PASSWORD=your_local_postgres_password
    ```
-4. **Launch Development Servers**:
+   *(Or uncomment `DATABASE_URL=postgresql://postgres:your_password@127.0.0.1:5432/meramot` if you prefer a single connection string URL!)*
+
+4. **One-Click Database Migration & Seeding**:
+   Double-click `setup-db.bat`. It will create the database `meramot` if missing, run all 39 table migrations, and seed mock shops, users, and packages!
+
+5. **Launch Development Servers**:
    - Double-click `run-backend.bat` (Starts Laravel on **http://127.0.0.1:8000**)
    - Double-click `run-ai.bat` (Starts Python FastAPI on **http://127.0.0.1:5000**)
 
