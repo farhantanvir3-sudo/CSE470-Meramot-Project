@@ -45,18 +45,39 @@ class RepairRequestController extends Controller
             'device_type' => 'required|string',
             'brand' => 'required|string',
             'model_name' => 'required|string',
+            'serial_number' => 'nullable|string',
             'issue_title' => 'required|string|max:255',
             'issue_description' => 'required|string',
             'preferred_service_type' => 'required|in:pickup_dropoff,walk_in,technician_home_visit',
             'pickup_address' => 'nullable|string',
+            'photos' => 'nullable|array|max:5',
+            'photos.*' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB max per image
         ]);
 
+        // Handle photo uploads
+        if ($request->hasFile('photos')) {
+            $photoPaths = [];
+            foreach ($request->file('photos') as $photo) {
+                $path = $photo->store('repair-requests', 'public');
+                $photoPaths[] = $path;
+            }
+            $validated['photos'] = $photoPaths;
+        }
+
+        // Create repair request
         $repairRequest = RepairRequest::create(array_merge($validated, [
-            'customer_id' => $request->user()->id ?? 1,
+            'customer_id' => $request->user()->id ?? 1, // TODO: Replace with proper auth
             'status' => 'bidding_open',
         ]));
 
-        return redirect()->route('requests.track', $repairRequest->id)->with('success', 'Repair request published! Bidding is now open.');
+        // TODO: Trigger AI Summary Generation (Feature R13)
+        // AISummaryController::generateSummary($repairRequest);
+
+        // TODO: Notify nearby vendors (Feature R14)
+        // VendorNotificationController::dispatchBiddingAlert($repairRequest);
+
+        return redirect()->route('requests.track', $repairRequest->id)
+            ->with('success', 'Repair request published successfully! Vendors have been notified and bidding is now open.');
     }
 
     /**
@@ -65,8 +86,18 @@ class RepairRequestController extends Controller
      */
     public function track($id)
     {
-        // TODO (Shanid): Load request and bids
-        $repairRequest = RepairRequest::with('bids')->findOrFail($id);
+        $repairRequest = RepairRequest::with([
+            'bids' => function($query) {
+                $query->where('status', '!=', 'WITHDRAWN')
+                      ->orderBy('proposed_cost', 'asc'); // Show lowest bids first
+            },
+            'customer'
+        ])->findOrFail($id);
+
+        // TODO: Add authorization check - only customer or admin can view
+        // if (auth()->id() !== $repairRequest->customer_id && !auth()->user()->isAdmin()) {
+        //     abort(403, 'Unauthorized access');
+        // }
 
         return view('requests.track', compact('repairRequest'));
     }
