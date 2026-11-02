@@ -11,6 +11,7 @@ use App\Http\Controllers\RiderChatController;          // R5 - Nafiul
 
 use App\Http\Controllers\ShopDiscoveryController;      // R6 - Shanid
 use App\Http\Controllers\RepairRequestController;      // R7 - Shanid
+use App\Http\Controllers\StatusTransitionController;   // R7 - Status updates
 use App\Http\Controllers\ServicePackageController;     // R8 - Shanid
 use App\Http\Controllers\ReviewController;             // R9 - Shanid
 use App\Http\Controllers\AIChatController;             // R10 - Shanid
@@ -71,8 +72,17 @@ Route::get('/shops/{slug}', [ShopDiscoveryController::class, 'show'])->name('sho
 Route::get('/requests/create', [RepairRequestController::class, 'create']);             // R7
 Route::post('/requests', [RepairRequestController::class, 'store']);                    // R7
 Route::get('/requests/{id}/track', [RepairRequestController::class, 'track'])->name('requests.track'); // R7
-Route::get('/packages/catalog', [ServicePackageController::class, 'index']);            // R8
-Route::post('/cart/add', [ServicePackageController::class, 'addToCart']);               // R8
+Route::post('/requests/{id}/update-status', [StatusTransitionController::class, 'updateStatus']); // R7
+Route::get('/requests/{id}/available-transitions', [StatusTransitionController::class, 'getAvailableTransitions']); // R7
+Route::post('/requests/{id}/accept-bid', [StatusTransitionController::class, 'acceptBid']); // R7
+Route::post('/requests/{id}/cancel', [StatusTransitionController::class, 'cancel']); // R7
+Route::get('/packages/catalog', [ServicePackageController::class, 'index'])->name('packages.catalog'); // R8
+Route::post('/cart/add', [ServicePackageController::class, 'addToCart'])->name('cart.add'); // R8
+Route::get('/cart', [ServicePackageController::class, 'viewCart'])->name('cart.view'); // R8
+Route::delete('/cart/remove/{packageId}', [ServicePackageController::class, 'removeFromCart'])->name('cart.remove'); // R8
+Route::patch('/cart/update/{packageId}', [ServicePackageController::class, 'updateCartQuantity'])->name('cart.update'); // R8
+Route::post('/cart/clear', [ServicePackageController::class, 'clearCart'])->name('cart.clear'); // R8
+Route::get('/cart/checkout', [ServicePackageController::class, 'checkout'])->name('cart.checkout'); // R8
 Route::get('/reviews/create/{shopId}', [ReviewController::class, 'create']);            // R9
 Route::post('/reviews', [ReviewController::class, 'store']);                            // R9
 Route::get('/ai-consultant/chat', [AIChatController::class, 'index']);                  // R10

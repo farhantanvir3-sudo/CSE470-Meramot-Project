@@ -7,6 +7,8 @@ use App\Http\Controllers\BiddingEngineController;
 use App\Http\Controllers\AISummaryController;
 use App\Http\Controllers\VendorNotificationController;
 use App\Http\Controllers\VendorAnalyticsController;
+use App\Http\Controllers\ShopDiscoveryController;
+use App\Http\Controllers\AIChatController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,6 +19,17 @@ use App\Http\Controllers\VendorAnalyticsController;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// Feature R6: Shop Search with Distance Filtering
+Route::prefix('shops')->group(function () {
+    Route::get('/nearby', [ShopDiscoveryController::class, 'getNearbyShops']); // Distance-based search
+    Route::get('/search', [ShopDiscoveryController::class, 'apiSearch']); // API search endpoint
+});
+
+// Feature R10: AI-Powered Repair Diagnostic Chat
+Route::prefix('ai-consultant')->group(function () {
+    Route::post('/message', [AIChatController::class, 'sendMessage']);
 });
 
 // Feature R11: Vendor Onboarding & Profile Verification
