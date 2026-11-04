@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             ShopSeeder::class,
             ServicePackageSeeder::class,
             ReviewSeeder::class,
+            FinancialLedgerSeeder::class,
         ]);
     }
 }

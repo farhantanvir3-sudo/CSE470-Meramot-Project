@@ -150,7 +150,7 @@
             if (request()->has('dev')) {
                 session(['dev_mode' => request()->boolean('dev')]);
             }
-            $isDevMode = session('dev_mode', false) || request()->boolean('dev');
+            $isDevMode = session('dev_mode', true);
         @endphp
         @if(!$isDevMode)
             .dev-only-badge, .cse470-dev-badge {
@@ -254,6 +254,10 @@
                         <i class="fa-regular fa-bell text-sm"></i>
                         <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-600"></span>
                     </button>
+                    <!-- Financial Ledger (Feature R16 - Nawshad) -->
+                    <a href="/admin/financial-overview" class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:bg-[var(--mint-300)] hover:scale-105" title="Financial Ledger & Overview (Feature R16 - Nawshad)">
+                        <i class="fa-solid fa-scale-balanced text-sm text-emerald-800"></i>
+                    </a>
 
                     <!-- Desktop: Full Action Bar -->
                     <div class="hidden md:flex md:items-center md:gap-3">
@@ -472,6 +476,9 @@
                 </a>
                 <a href="/vendor/bidding-board" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-[var(--mint-50)]">
                     Vendor Reverse Bidding Board
+                <a href="/admin/financial-overview" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-teal-800 hover:bg-[var(--mint-50)]">
+                    <i class="fa-solid fa-scale-balanced mr-2"></i> Financial Ledger (R16)
+                </a>
                 </a>
                 <div class="my-2 border-t border-[var(--border)]"></div>
                 @auth
