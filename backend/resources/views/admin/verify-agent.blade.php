@@ -50,7 +50,7 @@ INSTRUCTIONS FOR NAFIUL:
                     <td class="px-6 py-4 font-mono text-xs text-slate-500">{{ $agent->nid_number ?? '1998239012' }}</td>
                     <td class="px-6 py-4">
                         <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            {{ $agent->verification_status ?? 'pending' }}
+                            {{ $agent->registration_status ?? 'PENDING' }}
                         </span>
                     </td>
                     <td class="px-6 py-4 text-right space-x-2">

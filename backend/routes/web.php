@@ -60,6 +60,8 @@ Route::prefix('delivery')->group(function () {
 Route::get('/admin/delivery-agents/pending', [AdminDeliveryController::class, 'index']); // R1
 Route::post('/admin/delivery-agents/{id}/approve', [AdminDeliveryController::class, 'approve']); // R1
 Route::post('/admin/delivery-agents/{id}/reject', [AdminDeliveryController::class, 'reject']);   // R1
+Route::get('/delivery-agent/register', [AdminDeliveryController::class, 'create']); // R1
+Route::post('/delivery-agent/register', [AdminDeliveryController::class, 'store']); // R1
 Route::get('/tracking/{jobId}', [TrackingController::class, 'showMap']);                // R4
 Route::get('/support/rider-chat/{riderId}', [RiderChatController::class, 'index']);    // R5
 

@@ -18,17 +18,18 @@ class DeliveryAgent extends Model
         'nid_number',
         'vehicle_type',
         'license_number',
-        'verification_status', // 'pending', 'verified', 'rejected'
+        'registration_status', // 'PENDING', 'APPROVED', 'REJECTED'
+        'status',              // 'OFFLINE', 'AVAILABLE', 'BUSY', 'SUSPENDED'
+        'is_active',
         'current_latitude',
         'current_longitude',
-        'is_available',
         'total_earnings',
     ];
 
     protected $casts = [
         'current_latitude' => 'decimal:8',
         'current_longitude' => 'decimal:8',
-        'is_available' => 'boolean',
+        'is_active' => 'boolean',
         'total_earnings' => 'decimal:2',
     ];
 
