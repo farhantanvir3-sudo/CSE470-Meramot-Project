@@ -47,7 +47,10 @@ INSTRUCTIONS FOR NAFIUL:
                 <tr class="hover:bg-slate-50">
                     <td class="px-6 py-4 font-medium text-slate-900">{{ $agent->user->name ?? 'Demo Applicant' }}</td>
                     <td class="px-6 py-4 capitalize text-slate-600">{{ $agent->vehicle_type ?? 'Motorcycle' }}</td>
-                    <td class="px-6 py-4 font-mono text-xs text-slate-500">{{ $agent->nid_number ?? '1998239012' }}</td>
+                    <td class="px-6 py-4 font-mono text-xs text-slate-500">
+                        <div>NID: {{ $agent->nid_number ?? '-' }}</div>
+                        <div>License: {{ $agent->license_number ?? '-' }}</div>
+                    </td>
                     <td class="px-6 py-4">
                         <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                             {{ $agent->registration_status ?? 'PENDING' }}
