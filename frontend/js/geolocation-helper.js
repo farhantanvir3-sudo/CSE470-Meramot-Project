@@ -24,6 +24,7 @@ const DHAKA_HUBS = [
     { area: 'Banani', city: 'Dhaka', lat: 23.7937, lng: 90.4066, address: 'Road 11, Banani, Dhaka 1213' },
     { area: 'Gulshan', city: 'Dhaka', lat: 23.7925, lng: 90.4158, address: 'Gulshan 2 Circle, Gulshan, Dhaka 1212' },
     { area: 'Dhanmondi', city: 'Dhaka', lat: 23.7461, lng: 90.3742, address: 'Satmasjid Road, Dhanmondi, Dhaka 1209' },
+    { area: 'Hatirpool', city: 'Dhaka', lat: 23.7422, lng: 90.3918, address: 'Hatirpool Eastern Plaza Rd, Dhaka 1205' },
     { area: 'Mirpur', city: 'Dhaka', lat: 23.8071, lng: 90.3686, address: 'Mirpur 10 Roundabout, Mirpur, Dhaka 1216' },
     { area: 'Uttara', city: 'Dhaka', lat: 23.8759, lng: 90.3795, address: 'Sector 7, Uttara, Dhaka 1230' },
     { area: 'Bashundhara', city: 'Dhaka', lat: 23.8191, lng: 90.4526, address: 'Block C, Bashundhara R/A, Dhaka 1229' },
@@ -34,7 +35,11 @@ const DHAKA_HUBS = [
     { area: 'Badda', city: 'Dhaka', lat: 23.7805, lng: 90.4267, address: 'Middle Badda, Pragati Sarani, Dhaka 1212' },
     { area: 'Rampura', city: 'Dhaka', lat: 23.7612, lng: 90.4219, address: 'Rampura TV Center Road, Dhaka 1219' },
     { area: 'New Market', city: 'Dhaka', lat: 23.7333, lng: 90.3836, address: 'Mirpur Road, New Market, Dhaka 1205' },
-    { area: 'Wari', city: 'Dhaka', lat: 23.7176, lng: 90.4178, address: 'Rankin Street, Wari, Dhaka 1203' }
+    { area: 'Wari', city: 'Dhaka', lat: 23.7176, lng: 90.4178, address: 'Rankin Street, Wari, Dhaka 1203' },
+    { area: 'Agrabad', city: 'Chattogram', lat: 22.3264, lng: 91.8155, address: 'Agrabad Commercial Area, Chattogram 4100' },
+    { area: 'Zindabazar', city: 'Sylhet', lat: 24.8949, lng: 91.8687, address: 'Zindabazar Main Road, Sylhet 3100' },
+    { area: 'Shaheb Bazar', city: 'Rajshahi', lat: 24.3653, lng: 88.6003, address: 'Shaheb Bazar Zero Point, Rajshahi 6100' },
+    { area: 'Shib Bari', city: 'Khulna', lat: 22.8206, lng: 89.5535, address: 'Shib Bari More, Khulna 9100' }
 ];
 
 /* ============================================================================
@@ -324,17 +329,17 @@ const MeramotLocationPicker = {
     },
 
     /**
-     * Forward geocode a search query using OpenStreetMap Nominatim
+     * Forward geocode a search query anywhere in Bangladesh using OpenStreetMap Nominatim
      */
     async forwardGeocode(query) {
         if (!query || !query.trim()) return null;
         try {
-            const q = query.toLowerCase().includes('dhaka') || query.toLowerCase().includes('bangladesh')
+            const q = query.toLowerCase().includes('bangladesh')
                 ? query.trim()
-                : `${query.trim()}, Dhaka, Bangladesh`;
+                : `${query.trim()}, Bangladesh`;
 
             const res = await fetch(
-                `${FORWARD_GEOCODE_ENDPOINT}?q=${encodeURIComponent(q)}&format=json&limit=1&addressdetails=1`,
+                `${FORWARD_GEOCODE_ENDPOINT}?q=${encodeURIComponent(q)}&countrycodes=bd&format=json&limit=1&addressdetails=1`,
                 {
                     headers: {
                         'Accept': 'application/json'

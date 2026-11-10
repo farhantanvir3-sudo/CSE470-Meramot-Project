@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\VendorOnboardingController;
+use App\Http\Controllers\VendorBranchController;
 use App\Http\Controllers\BiddingEngineController;
 use App\Http\Controllers\AISummaryController;
 use App\Http\Controllers\VendorNotificationController;
@@ -21,9 +22,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// Feature R6: Shop Search with Distance Filtering
+// Feature R6: Shop Search with Nationwide Distance & Multi-Branch Filtering
 Route::prefix('shops')->group(function () {
-    Route::get('/nearby', [ShopDiscoveryController::class, 'getNearbyShops']); // Distance-based search
+    Route::get('/nearby', [ShopDiscoveryController::class, 'getNearbyShops']); // Distance-based search across Bangladesh
     Route::get('/search', [ShopDiscoveryController::class, 'apiSearch']); // API search endpoint
 });
 
@@ -32,10 +33,13 @@ Route::prefix('ai-consultant')->group(function () {
     Route::post('/message', [AIChatController::class, 'sendMessage']);
 });
 
-// Feature R11: Vendor Onboarding & Profile Verification
+// Feature R11 & R15: Vendor Onboarding, Dual-Address & Multi-Branch Expansion
 Route::prefix('vendors')->group(function () {
     Route::get('/onboarding', [VendorOnboardingController::class, 'show']);
     Route::post('/onboarding', [VendorOnboardingController::class, 'store']);
+    Route::post('/branches/toggle', [VendorBranchController::class, 'enableBranching']);
+    Route::post('/branches', [VendorBranchController::class, 'storeBranch']);
+    Route::patch('/branches/{shopId}', [VendorBranchController::class, 'updateBranchAddresses']);
     Route::post('/{id}/verify', [VendorOnboardingController::class, 'verify']);
     Route::get('/{id}/analytics', [VendorAnalyticsController::class, 'getPerformanceMetrics']); // Feature R15
 });

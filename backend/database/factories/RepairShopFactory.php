@@ -13,13 +13,25 @@ class RepairShopFactory extends Factory
     public function definition(): array
     {
         $name = $this->faker->company() . ' Repair Lab';
+        $area = $this->faker->randomElement(['Banani', 'Gulshan', 'Dhanmondi', 'Uttara', 'Mirpur']);
+        $city = 'Dhaka';
+        $sameAsGps = $this->faker->boolean(40);
+        $gpsAddress = "Near {$area} Main Road, {$city}";
+        $storefrontAddress = $sameAsGps
+            ? $gpsAddress
+            : ($this->faker->streetAddress() . ", {$area}, {$city}");
+
         return [
             'name' => $name,
             'slug' => Str::slug($name) . '-' . Str::lower(Str::random(5)),
+            'is_branch' => false,
+            'branch_name' => null,
             'description' => $this->faker->sentence(12),
-            'address' => $this->faker->streetAddress(),
-            'city' => 'Dhaka',
-            'area' => $this->faker->randomElement(['Banani', 'Gulshan', 'Dhanmondi', 'Uttara', 'Mirpur']),
+            'address' => $storefrontAddress,
+            'gps_address' => $gpsAddress,
+            'same_as_gps_location' => $sameAsGps,
+            'city' => $city,
+            'area' => $area,
             'latitude' => $this->faker->latitude(23.72, 23.88),
             'longitude' => $this->faker->longitude(90.35, 90.44),
             'phone' => '017' . $this->faker->numerify('########'),
@@ -33,9 +45,10 @@ class RepairShopFactory extends Factory
             'has_voucher' => $this->faker->boolean(40),
             'free_delivery' => $this->faker->boolean(40),
             'has_deals' => $this->faker->boolean(40),
-            'is_featured' => $this->faker->boolean(30),
+            'is_featured' => false,
             'is_active' => true,
             'is_public' => true,
+            'setup_complete' => true,
             'accepts_direct_orders' => true,
             'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR'],
             'specialties' => ['Screen Replacement', 'Battery Service', 'Board Repair'],

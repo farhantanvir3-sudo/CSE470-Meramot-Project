@@ -37,9 +37,17 @@
                     @endif
                 </p>
 
-                <h1 class="mt-1 text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
-                    {{ $shop->name }}
-                </h1>
+                <div class="mt-1 flex flex-wrap items-center gap-2.5">
+                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
+                        {{ $shop->name }}
+                    </h1>
+                    @if($shop->display_branch_tag)
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-3.5 py-1 text-xs sm:text-sm font-bold text-[var(--accent-foreground)] shadow-sm">
+                            <i class="fa-solid fa-code-branch text-xs"></i>
+                            <span>Branch: {{ $shop->display_branch_tag }}</span>
+                        </span>
+                    @endif
+                </div>
 
                 <div class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-sm text-[var(--foreground)]">
                     <span class="font-bold flex items-center gap-1 text-amber-700">
@@ -49,7 +57,7 @@
                     <span class="opacity-40">·</span>
                     <span class="flex items-center gap-1 text-[var(--muted-foreground)]">
                         <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
-                        {{ $shop->address ?? $shop->area . ', Dhaka' }}
+                        {{ $shop->public_address }}
                     </span>
                     @if($shop->phone)
                         <span class="opacity-40">·</span>
@@ -379,11 +387,14 @@
                     </div>
                     <div class="flex items-start gap-2.5">
                         <i class="fa-solid fa-map-pin text-[var(--accent-dark)] mt-0.5"></i>
-                        <span>{{ $shop->address ?? $shop->area . ', Dhaka' }}</span>
+                        <div>
+                            <span class="block font-semibold">{{ $shop->public_address }}</span>
+                            <span class="text-[10px] text-[var(--muted-foreground)]">{{ $shop->area }}, {{ $shop->city }}</span>
+                        </div>
                     </div>
                     <div class="flex items-start gap-2.5">
                         <i class="fa-solid fa-clock text-[var(--accent-dark)] mt-0.5"></i>
-                        <span>Sat – Thu: 10:00 AM – 8:30 PM (Friday Closed)</span>
+                        <span>{{ $shop->opening_hours_text ?: 'Sat – Thu: 10:00 AM – 8:30 PM (Friday Closed)' }}</span>
                     </div>
                 </div>
 
@@ -393,6 +404,37 @@
                     </a>
                 </div>
             </div>
+
+            <!-- Other Branches of This Vendor Brand -->
+            @if(isset($siblingBranches) && count($siblingBranches) > 0)
+                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+                    <div class="mb-3 flex items-center justify-between gap-2">
+                        <h3 class="text-base font-bold text-[var(--foreground)] flex items-center gap-2">
+                            <i class="fa-solid fa-code-branch text-[var(--accent-dark)]"></i>
+                            <span>Other Branches ({{ count($siblingBranches) }})</span>
+                        </h3>
+                        <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                            {{ $shop->name }}
+                        </span>
+                    </div>
+                    <div class="space-y-2.5 max-h-72 overflow-y-auto pr-1 scrollbar-thin">
+                        @foreach($siblingBranches as $branch)
+                            <a href="/shops/{{ $branch->slug }}" class="block rounded-[1.2rem] border border-[var(--border)] bg-[var(--mint-100)] p-3 text-xs hover:bg-[var(--mint-200)] transition group">
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-foreground)] truncate">
+                                        <i class="fa-solid fa-code-branch text-[8px]"></i>
+                                        <span>{{ $branch->display_branch_tag ?: $branch->area }}</span>
+                                    </span>
+                                    <span class="text-amber-700 font-bold shrink-0">⭐ {{ number_format($branch->rating, 1) }}</span>
+                                </div>
+                                <div class="text-[11px] text-[var(--muted-foreground)] mt-1.5 line-clamp-1">
+                                    {{ $branch->public_address }}
+                                </div>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
 
             <!-- Related Shops in Area -->
             @if(count($relatedShops) > 0)
@@ -404,9 +446,9 @@
                     <div class="space-y-3">
                         @foreach($relatedShops as $rel)
                             <a href="/shops/{{ $rel->slug }}" class="block rounded-[1.2rem] border border-[var(--border)] bg-[var(--mint-100)] p-3 text-xs hover:bg-[var(--mint-200)] transition group">
-                                <div class="flex items-center justify-between">
+                                <div class="flex items-center justify-between gap-1.5">
                                     <div class="font-bold text-[var(--foreground)] group-hover:text-[var(--accent-dark)] truncate">
-                                        {{ $rel->name }}
+                                        {{ $rel->name }}{{ $rel->display_branch_tag ? ' [' . $rel->display_branch_tag . ']' : '' }}
                                     </div>
                                     <span class="text-amber-700 font-bold shrink-0">⭐ {{ number_format($rel->rating, 1) }}</span>
                                 </div>

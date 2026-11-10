@@ -17,6 +17,7 @@ use App\Http\Controllers\ReviewController;             // R9 - Shanid
 use App\Http\Controllers\AIChatController;             // R10 - Shanid
 
 use App\Http\Controllers\VendorOnboardingController;   // R11 - Farhan
+use App\Http\Controllers\VendorBranchController;       // R11/R15 Multi-Branch & Dual-Address - Farhan
 use App\Http\Controllers\BiddingEngineController;       // R12 - Farhan
 use App\Http\Controllers\AISummaryController;          // R13 - Farhan
 use App\Http\Controllers\VendorNotificationController; // R14 - Farhan
@@ -117,24 +118,10 @@ Route::prefix('vendor')->group(function () {
     Route::get('/bidding-board', [BiddingEngineController::class, 'index']);            // R12
     Route::get('/request-details/{id}', function ($id) { return view('vendor.request-details'); }); // R13
     Route::get('/alert-settings', function () { return view('vendor.alert-settings'); }); // R14
-    Route::get('/dashboard', function () {
-        $directOrders = RepairRequest::with(['customer', 'requestedShop'])
-            ->where('source', 'DIRECT_SERVICE')
-            ->where('status', 'PENDING')
-            ->latest()
-            ->get();
-        $marketplaceRequests = RepairRequest::with('customer')
-            ->where('status', 'BIDDING')
-            ->latest()
-            ->take(6)
-            ->get();
-        $activeJobs = RepairJob::with(['repairRequest', 'shop'])
-            ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
-            ->latest()
-            ->take(8)
-            ->get();
-        return view('vendor.dashboard', compact('directOrders', 'marketplaceRequests', 'activeJobs'));
-    }); // R15
+    Route::get('/dashboard', [VendorBranchController::class, 'dashboard'])->name('vendor.dashboard'); // R15 + Multi-Branch
+    Route::post('/branches/toggle', [VendorBranchController::class, 'enableBranching'])->name('vendor.branches.toggle');
+    Route::post('/branches', [VendorBranchController::class, 'storeBranch'])->name('vendor.branches.store');
+    Route::patch('/branches/{shopId}', [VendorBranchController::class, 'updateBranchAddresses'])->name('vendor.branches.update');
     Route::post('/direct-orders/{id}/respond', [StatusTransitionController::class, 'respondToDirectOrder'])->name('vendor.direct-orders.respond');
 });
 
