@@ -89,34 +89,41 @@ C:\Users\USER\Desktop\CSE 470\CSE470-Meramot-Project\
 │   │       ├── FinancialLedger.php, PaymentTransaction.php, VendorPayout.php
 │   │       ├── ModerationLog.php, AuditLog.php
 │   ├── database/
-│   │   ├── migrations/                   # 6 Schema migration files covering all 20 features
+│   │   ├── factories/                    # Eloquent Model Factories for PostgreSQL Feature Tests
+│   │   ├── migrations/                   # 7 Schema migration files covering all 20 features + Direct-Order Cart
 │   │   └── seeders/
 │   │       ├── DatabaseSeeder.php        # Master seeder entrypoint
 │   │       ├── ShopSeeder.php            # 32 original shops from legacy Meramot with lat/lng
 │   │       └── UserSeeder.php            # Admin, Customer, Vendor & Rider baseline accounts
-│   ├── resources/views/                  # Blade MVC View Templates
-│   │   ├── layouts/app.blade.php         # Master layout with Meramot header & role switcher
-│   │   ├── admin/                        # verify-agent, financial-overview, payouts, moderation, audit-logs
-│   │   ├── customer/ & requests/         # create-request, track-request
-│   │   ├── delivery/ & tracking/         # jobs-queue, earnings, live-map
-│   │   ├── shops/ & reviews/             # explore, show, write-review
-│   │   ├── vendor/                       # onboarding, bidding-board, request-details, alert-settings, dashboard
-│   │   └── ai-consultant/                # chat
+│   ├── resources/views/README.md         # Signpost pointing to root frontend/views/
 │   ├── routes/
 │   │   ├── api.php                       # REST API endpoints
-│   │   └── web.php                       # Blade view routes
+│   │   └── web.php                       # Blade view, Direct-Order Cart & Frontend asset routes
+│   ├── tests/Feature/                    # PostgreSQL PHPUnit Feature Suites (R6, R7, R8, R9, R10)
 │   ├── ai-microservice/                  # Dedicated Python FastAPI AI Service (Port 5000)
 │   │   ├── main.py                       # FastAPI entrypoint (/api/ai/summarize-request, /api/ai/chat)
 │   │   ├── requirements.txt              # fastapi, uvicorn, groq, google-genai
 │   │   └── .env.example
 │   ├── public/images/                    # meramot.svg, cart.svg
 │   ├── composer.json
+│   ├── phpunit.xml                       # PostgreSQL testing configuration
 │   └── .env.example                      # PostgreSQL, SSLCommerz, BulkSMS, Pusher config
 │
-├── frontend/                             # Frontend views & asset compilation pipeline
-│   ├── public/                           # meramot.svg, cart.svg, icons, index.html preview
-│   ├── src/components/                   # Navbar.js, BiddingBoardCard.js
-│   ├── src/styles/main.css               # Tailwind CSS tokens
+├── frontend/                             # Separated Frontend Root Folder (Pure Laravel 10 MVC)
+│   ├── views/                            # All Blade MVC View Templates (configured via backend/config/view.php)
+│   │   ├── layouts/app.blade.php         # Master layout with Meramot header, toast banner & role switcher
+│   │   ├── admin/                        # verify-agent, financial-overview, payouts, moderation, audit-logs
+│   │   ├── packages/                     # catalog, cart (Unified Direct-Order + Quickmatch), checkout
+│   │   ├── requests/                     # create, track (16-state Dual-Quote timeline)
+│   │   ├── delivery/ & tracking/         # register, jobs-queue, earnings, live-map
+│   │   ├── shops/ & reviews/             # explore, show, write-review
+│   │   ├── vendor/                       # onboarding, bidding-board, request-details, alert-settings, dashboard
+│   │   └── ai-consultant/                # chat (Alpine reactive chat + quick symptom prompts)
+│   ├── js/                               # Modular Client Scripts (served via FrontendAssetController)
+│   │   ├── geolocation-helper.js         # Browser GPS helper
+│   │   └── marketplace-client.js         # Non-blocking Cart, Geolocation & AI Chat client module
+│   ├── public/                           # meramot.svg, cart.svg, icons
+│   ├── src/styles/main.css               # Tailwind CSS & Mint/Forest-Green CSS variable tokens
 │   ├── package.json
 │   └── tailwind.config.js
 │
@@ -289,3 +296,21 @@ To preserve a 100% clean, professional consumer-facing product while simultaneou
       - Hero banner with avatar/logo, address, contact, and quick booking box.
       - Services catalog with starting price estimates and repair booking actions.
       - Exact two-card reviews layout: Left score card with 5★–1★ breakdown progress bars; Right card with verified customer feedback cards and area chips.
+
+---
+
+## 12. Sprint 1 Teammate Merge & Unified Direct-Order Architecture
+
+1. **Two-Root-Folder Separation (`frontend/` & `backend/`) on Pure Laravel 10 MVC**:
+   - All Blade views live in `frontend/views/` (loaded via `backend/config/view.php`).
+   - All client-side JavaScript modules live in `frontend/js/` (`geolocation-helper.js`, `marketplace-client.js`), served cleanly via `FrontendAssetController` (`/js/{filename}`, `/styles/{filename}`).
+   - `backend/` strictly houses PHP controllers, Eloquent models, services, PostgreSQL migrations, factories, and PHPUnit feature tests.
+2. **PostgreSQL Enforced Everywhere**:
+   - Reverted accidental SQLite config in `backend/.env.example` back to `DB_CONNECTION=pgsql`.
+   - Fixed PostgreSQL Haversine distance queries in `ShopDiscoveryController.php` using clamped `LEAST(1.0, GREATEST(-1.0, ...))` and `whereRaw`.
+3. **Unified Direct-Order + Quickmatch Cart (`ServicePackageController` & `StatusTransitionController`)**:
+   - Customers can add shop-specific services from `/shops/{slug}` (locking that `RepairShop`) or fixed-price packages from `/packages/catalog` (with Quickmatch or manual verified shop selection).
+   - Checking out `/cart` (`POST /cart/checkout/place`) configures Pickup Schedule (`NOW` / `LATER`), Courier Tier (`REGULAR` ৳80 / `EXPRESS` ৳150), 5% min ৳30 escrow protection fee, Dhaka address + GPS coordinates, and Payment Method (`CASH` / `SSLCOMMERZ`), atomically creating a `RepairRequest` (`status = PENDING`, `source = DIRECT_SERVICE`), pre-linked `RepairJob` (`status = CREATED`), and `PaymentTransaction`.
+   - Vendors review incoming orders in `/vendor/dashboard` (**Direct Orders** tab) to **Accept** (`PENDING -> ASSIGNED`) or **Decline** (`PENDING -> REJECTED` with automatic escrow refund).
+4. **16-State Dual-Quote Lifecycle (`RepairRequest` & `requests/track.blade.php`)**:
+   - Supports both Marketplace Quote 1 (`BIDDING -> ASSIGNED`) and Bench Diagnosis Quote 2 (`WAITING_APPROVAL -> REPAIRING` on customer approval, or `RETURN_SCHEDULED` on customer decline).

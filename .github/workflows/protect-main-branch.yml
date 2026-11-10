@@ -1,0 +1,18 @@
+name: Main Branch Freeze Guard (Sprint 1 Demo Preparation)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  verify-branch-actor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce Feature Branch Workflow for Teammates
+        run: |
+          if [ "${{ github.actor }}" != "farhantanvir3-sudo" ]; then
+            echo "::error::Direct commits/pushes to 'main' are locked while Team Lead (farhantanvir3-sudo) prepares 'main' for deployment and the Nov 12 Sprint 1 Demo. Please create and push to your own branch (e.g., git checkout -b <your-name>-sprint1 && git push -u origin <your-name>-sprint1) and open a Pull Request."
+            exit 1
+          fi
+          echo "Push by Team Lead verified."

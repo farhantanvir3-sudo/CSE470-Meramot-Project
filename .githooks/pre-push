@@ -1,0 +1,40 @@
+#!/usr/bin/env sh
+# ============================================================================
+# MERAMOT GIT HOOK: Block direct teammate pushes to 'main'
+# ============================================================================
+
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+while read local_ref local_sha remote_ref remote_sha
+do
+    if [ "$remote_ref" = "refs/heads/main" ] || [ "$BRANCH" = "main" ]; then
+        GIT_USER=$(git config user.name 2>/dev/null)
+        GIT_EMAIL=$(git config user.email 2>/dev/null)
+
+        case "$GIT_USER $GIT_EMAIL" in
+            *farhantanvir*|*"Farhan Tanvir"*)
+                exit 0
+                ;;
+        esac
+
+        if [ "$ALLOW_MAIN_COMMIT" = "1" ]; then
+            exit 0
+        fi
+
+        echo ""
+        echo "========================================================================"
+        echo "ERROR: Direct pushes to 'main' are disabled!"
+        echo "========================================================================"
+        echo "Team Lead (Farhan Tanvir) is preparing 'main' for deployment and the"
+        echo "November 12 Sprint 1 Defense Demo."
+        echo ""
+        echo "Please push your commits to a separate branch instead:"
+        echo "   git checkout -b <your-name>-feature"
+        echo "   git push -u origin <your-name>-feature"
+        echo "========================================================================"
+        echo ""
+        exit 1
+    fi
+done
+
+exit 0

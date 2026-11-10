@@ -7,6 +7,14 @@ use App\Models\FinancialLedger;
 use App\Models\RepairShop;
 use Illuminate\Database\Seeder;
 
+/**
+ * ============================================================================
+ * FEATURE R16: Baseline Double-Entry Financial Ledger Seeder
+ * ============================================================================
+ * Author: Md. Nawshad Zaman Khan [Student ID: 23301622] (Commit 4742c9c)
+ * Demonstrates 10% platform commission accounting and cumulative credits/debits.
+ * ============================================================================
+ */
 class FinancialLedgerSeeder extends Seeder
 {
     /**

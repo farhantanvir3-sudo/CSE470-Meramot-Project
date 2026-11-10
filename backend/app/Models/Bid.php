@@ -15,16 +15,21 @@ class Bid extends Model
 
     protected $fillable = [
         'repair_request_id',
+        'shop_id',
         'vendor_id',
+        'parts_cost',
+        'labor_cost',
         'proposed_cost',
         'estimated_days',
         'warranty_days',
         'line_items', // breakdown of parts cost vs service labor
         'technician_note',
-        'status', // 'submitted', 'accepted', 'rejected', 'expired'
+        'status', // 'ACTIVE', 'ACCEPTED', 'DECLINED', 'EXPIRED', 'WITHDRAWN'
     ];
 
     protected $casts = [
+        'parts_cost' => 'decimal:2',
+        'labor_cost' => 'decimal:2',
         'proposed_cost' => 'decimal:2',
         'line_items' => 'array',
     ];
@@ -32,6 +37,11 @@ class Bid extends Model
     public function repairRequest()
     {
         return $this->belongsTo(RepairRequest::class);
+    }
+
+    public function shop()
+    {
+        return $this->belongsTo(RepairShop::class, 'shop_id');
     }
 
     public function vendor()

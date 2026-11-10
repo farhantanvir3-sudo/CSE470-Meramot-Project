@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+# ============================================================================
+# MERAMOT GIT HOOK: Block direct teammate commits to 'main'
+# ============================================================================
+
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+if [ "$BRANCH" = "main" ]; then
+    GIT_USER=$(git config user.name 2>/dev/null)
+    GIT_EMAIL=$(git config user.email 2>/dev/null)
+
+    # Allow Team Lead (Farhan Tanvir) or explicit override ALLOW_MAIN_COMMIT=1
+    case "$GIT_USER $GIT_EMAIL" in
+        *farhantanvir*|*"Farhan Tanvir"*)
+            exit 0
+            ;;
+    esac
+
+    if [ "$ALLOW_MAIN_COMMIT" = "1" ]; then
+        exit 0
+    fi
+
+    echo ""
+    echo "========================================================================"
+    echo "ERROR: Direct commits to 'main' are disabled!"
+    echo "========================================================================"
+    echo "Team Lead (Farhan Tanvir) is preparing 'main' for deployment and the"
+    echo "November 12 Sprint 1 Defense Demo."
+    echo ""
+    echo "Please create and switch to your own branch to commit your work:"
+    echo "   git checkout -b <your-name>-feature"
+    echo "   git commit -m \"your commit message\""
+    echo "   git push -u origin <your-name>-feature"
+    echo "========================================================================"
+    echo ""
+    exit 1
+fi
+
+exit 0

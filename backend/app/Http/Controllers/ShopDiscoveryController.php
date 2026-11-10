@@ -14,15 +14,20 @@ use Illuminate\Http\Request;
  * Assigned Member: Shanid Sajjatuz Islam [Student ID: 23201465]
  * Sprint: Sprint 1 (Nov 1 – Nov 12, 2026)
  * Architectural Layer: Controller (ShopDiscoveryController)
- * Models Touched: RepairShop, ShopReview, ServicePackage
- * Views Rendered:
- *   - resources/views/home.blade.php
- *   - resources/views/shops/explore.blade.php
- *   - resources/views/shops/show.blade.php
+ * Models Touched: RepairShop, ShopReview, ServicePackage, ShopService
+ * Views Rendered (from root `frontend/views/`):
+ *   - home.blade.php
+ *   - shops/explore.blade.php
+ *   - shops/show.blade.php
  * ============================================================================
  */
 class ShopDiscoveryController extends Controller
 {
+    /**
+     * Reusable PostgreSQL-safe Haversine SQL expression (clamped to [-1, 1] for acos).
+     */
+    private const HAVERSINE_SQL = '(6371 * acos(LEAST(1.0, GREATEST(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude))))))';
+
     /**
      * Public Homepage (Matches legacy Meramot home).
      * Route: GET /
@@ -34,7 +39,6 @@ class ShopDiscoveryController extends Controller
             ->take(6)
             ->get();
 
-        // Exact offer cards from commit 8e44218 / mock-data.ts
         $offerCards = [
             [
                 'title' => 'Free pickup on your first repair',
@@ -48,7 +52,6 @@ class ShopDiscoveryController extends Controller
             ],
         ];
 
-        // Exact 6 popular categories from commit 8e44218 / mock-data.ts
         $popularCategories = [
             ['label' => 'Phone', 'sprite' => '📱', 'trend' => 'High screen repair demand', 'href' => '/shops?q=phone'],
             ['label' => 'Laptop', 'sprite' => '💻', 'trend' => 'Battery and keyboard issues', 'href' => '/shops?q=laptop'],
@@ -58,7 +61,6 @@ class ShopDiscoveryController extends Controller
             ['label' => 'Printer', 'sprite' => '🖨️', 'trend' => 'Roller and cartridge requests', 'href' => '/shops?q=printer'],
         ];
 
-        // Exact recently viewed searches from commit 8e44218 / mock-data.ts
         $recentlyViewed = [
             ['label' => 'MacBook Air M2 battery replacement', 'href' => '/shops?q=MacBook%20Air%20M2%20Repair'],
             ['label' => 'iPhone 13 display set', 'href' => '/shops?q=iPhone%2013%20display'],
@@ -104,7 +106,7 @@ class ShopDiscoveryController extends Controller
             $query->whereRaw("categories::text ILIKE ?", ["%{$category}%"]);
         }
 
-        // 3. Area Filter (Banani, Gulshan, Dhanmondi, Uttara, Mirpur, Mohammadpur, etc.)
+        // 3. Area Filter
         if ($request->filled('area') && $request->input('area') !== 'All') {
             $query->where('area', $request->input('area'));
         }
@@ -122,29 +124,24 @@ class ShopDiscoveryController extends Controller
 
         // 5. Minimum Rating
         if ($request->filled('min_rating')) {
-            $query->where('rating', '>=', (float)$request->input('min_rating'));
+            $query->where('rating', '>=', (float) $request->input('min_rating'));
         }
 
-        // 6. Distance Filter (using Haversine formula if user provides coordinates)
-        if ($request->filled('lat') && $request->filled('lng') && $request->filled('maxDistanceKm')) {
+        // 6. PostgreSQL Haversine Distance Filter (Shanid Sajjatuz Islam [23201465])
+        $hasCoords = $request->filled('lat') && $request->filled('lng');
+        if ($hasCoords) {
             $userLat = (float) $request->input('lat');
             $userLng = (float) $request->input('lng');
-            $maxDistance = (float) $request->input('maxDistanceKm', 12);
+            $haversine = self::HAVERSINE_SQL;
 
-            // Haversine formula for PostgreSQL
-            $query->selectRaw("
-                *,
-                (
-                    6371 * acos(
-                        cos(radians(?)) 
-                        * cos(radians(latitude)) 
-                        * cos(radians(longitude) - radians(?)) 
-                        + sin(radians(?)) 
-                        * sin(radians(latitude))
-                    )
-                ) AS distance_km
-            ", [$userLat, $userLng, $userLat])
-            ->havingRaw('distance_km <= ?', [$maxDistance]);
+            $query->whereNotNull('latitude')
+                  ->whereNotNull('longitude')
+                  ->selectRaw("*, {$haversine} AS distance_km", [$userLat, $userLng, $userLat]);
+
+            if ($request->filled('maxDistanceKm')) {
+                $maxDistance = (float) $request->input('maxDistanceKm', 12);
+                $query->whereRaw("{$haversine} <= ?", [$userLat, $userLng, $userLat, $maxDistance]);
+            }
         }
 
         // 7. Sorting Order
@@ -154,8 +151,7 @@ class ShopDiscoveryController extends Controller
                 $query->orderBy('price_level', 'asc')->orderBy('inspection_fee', 'asc');
                 break;
             case 'distance':
-                // If distance calculated, use it; otherwise use ETA
-                if ($request->filled('lat') && $request->filled('lng')) {
+                if ($hasCoords) {
                     $query->orderBy('distance_km', 'asc');
                 } else {
                     $query->orderBy('eta_minutes', 'asc')->orderBy('is_featured', 'desc');
@@ -172,7 +168,6 @@ class ShopDiscoveryController extends Controller
 
         $shops = $query->paginate(12)->withQueryString();
 
-        // Area list for filters
         $areas = [
             'All', 'Banani', 'Gulshan', 'Dhanmondi', 'Mirpur',
             'Uttara', 'Mohammadpur', 'Bashundhara', 'Farmgate',
@@ -188,7 +183,10 @@ class ShopDiscoveryController extends Controller
      */
     public function show($slug)
     {
-        $shop = RepairShop::with(['reviews.customer'])->where('slug', $slug)->firstOrFail();
+        $shop = RepairShop::with(['reviews.customer', 'services' => function ($q) {
+            $q->where('is_active', true)->orderBy('sort_order', 'asc');
+        }])->where('slug', $slug)->firstOrFail();
+
         $relatedShops = RepairShop::where('area', $shop->area)
             ->where('id', '!=', $shop->id)
             ->take(3)
@@ -198,45 +196,36 @@ class ShopDiscoveryController extends Controller
     }
 
     /**
-     * API: Get nearby shops based on user coordinates
+     * API: Get nearby shops based on user coordinates (Shanid Sajjatuz Islam [23201465])
      * Route: GET /api/shops/nearby
      */
     public function getNearbyShops(Request $request)
     {
         $validated = $request->validate([
-            'lat' => 'required|numeric|between:23.7,23.9',
-            'lng' => 'required|numeric|between:90.3,90.5',
-            'radius' => 'nullable|numeric|min:1|max:50', // kilometers
+            'lat' => 'required|numeric|between:23.6,24.0',
+            'lng' => 'required|numeric|between:90.2,90.6',
+            'radius' => 'nullable|numeric|min:1|max:50',
             'limit' => 'nullable|integer|min:1|max:50',
         ]);
 
-        $userLat = $validated['lat'];
-        $userLng = $validated['lng'];
-        $radius = $validated['radius'] ?? 10; // Default 10km
-        $limit = $validated['limit'] ?? 20;
+        $userLat = (float) $validated['lat'];
+        $userLng = (float) $validated['lng'];
+        $radius = (float) ($validated['radius'] ?? 10);
+        $limit = (int) ($validated['limit'] ?? 20);
+        $haversine = self::HAVERSINE_SQL;
 
-        // Use Haversine formula to calculate distance
-        $shops = RepairShop::selectRaw("
-            *,
-            (
-                6371 * acos(
-                    cos(radians(?)) 
-                    * cos(radians(latitude)) 
-                    * cos(radians(longitude) - radians(?)) 
-                    + sin(radians(?)) 
-                    * sin(radians(latitude))
-                )
-            ) AS distance_km
-        ", [$userLat, $userLng, $userLat])
-        ->havingRaw('distance_km <= ?', [$radius])
-        ->orderBy('distance_km', 'asc')
-        ->take($limit)
-        ->get()
-        ->map(function ($shop) {
-            $shop->distance_formatted = GeolocationService::formatDistance($shop->distance_km);
-            $shop->eta_minutes = GeolocationService::estimateTravelTime($shop->distance_km);
-            return $shop;
-        });
+        $shops = RepairShop::whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->selectRaw("*, {$haversine} AS distance_km", [$userLat, $userLng, $userLat])
+            ->whereRaw("{$haversine} <= ?", [$userLat, $userLng, $userLat, $radius])
+            ->orderBy('distance_km', 'asc')
+            ->take($limit)
+            ->get()
+            ->map(function ($shop) {
+                $shop->distance_formatted = GeolocationService::formatDistance((float) $shop->distance_km);
+                $shop->eta_minutes = GeolocationService::estimateTravelTime((float) $shop->distance_km);
+                return $shop;
+            });
 
         return response()->json([
             'success' => true,
@@ -251,14 +240,13 @@ class ShopDiscoveryController extends Controller
     }
 
     /**
-     * API: Advanced search with all filters
+     * API: Advanced search with all filters (Shanid Sajjatuz Islam [23201465])
      * Route: GET /api/shops/search
      */
     public function apiSearch(Request $request)
     {
         $query = RepairShop::query();
 
-        // Text search
         if ($request->filled('q')) {
             $searchTerm = trim($request->input('q'));
             $query->where(function ($q) use ($searchTerm) {
@@ -270,27 +258,22 @@ class ShopDiscoveryController extends Controller
             });
         }
 
-        // Category filter
         if ($request->filled('category')) {
             $query->whereRaw("categories::text ILIKE ?", ["%{$request->input('category')}%"]);
         }
 
-        // Area filter
         if ($request->filled('area')) {
             $query->where('area', $request->input('area'));
         }
 
-        // Rating filter
         if ($request->filled('min_rating')) {
             $query->where('rating', '>=', (float) $request->input('min_rating'));
         }
 
-        // Price level filter
         if ($request->filled('max_price_level')) {
             $query->where('price_level', '<=', (int) $request->input('max_price_level'));
         }
 
-        // Promotional filters
         if ($request->boolean('has_deals')) {
             $query->where('has_deals', true);
         }
@@ -301,35 +284,26 @@ class ShopDiscoveryController extends Controller
             $query->where('free_delivery', true);
         }
 
-        // Distance-based filtering
-        if ($request->filled('lat') && $request->filled('lng')) {
+        $hasCoords = $request->filled('lat') && $request->filled('lng');
+        if ($hasCoords) {
             $userLat = (float) $request->input('lat');
             $userLng = (float) $request->input('lng');
             $maxDistance = (float) $request->input('max_distance_km', 15);
+            $haversine = self::HAVERSINE_SQL;
 
-            $query->selectRaw("
-                *,
-                (
-                    6371 * acos(
-                        cos(radians(?)) 
-                        * cos(radians(latitude)) 
-                        * cos(radians(longitude) - radians(?)) 
-                        + sin(radians(?)) 
-                        * sin(radians(latitude))
-                    )
-                ) AS distance_km
-            ", [$userLat, $userLng, $userLat])
-            ->havingRaw('distance_km <= ?', [$maxDistance]);
+            $query->whereNotNull('latitude')
+                  ->whereNotNull('longitude')
+                  ->selectRaw("*, {$haversine} AS distance_km", [$userLat, $userLng, $userLat])
+                  ->whereRaw("{$haversine} <= ?", [$userLat, $userLng, $userLat, $maxDistance]);
         }
 
-        // Sorting
         $sort = $request->input('sort', 'rating');
         switch ($sort) {
             case 'price':
                 $query->orderBy('price_level', 'asc');
                 break;
             case 'distance':
-                if ($request->filled('lat') && $request->filled('lng')) {
+                if ($hasCoords) {
                     $query->orderBy('distance_km', 'asc');
                 } else {
                     $query->orderBy('eta_minutes', 'asc');
@@ -341,8 +315,7 @@ class ShopDiscoveryController extends Controller
                 break;
         }
 
-        // Pagination
-        $perPage = $request->input('per_page', 15);
+        $perPage = (int) $request->input('per_page', 15);
         $shops = $query->paginate($perPage);
 
         return response()->json([

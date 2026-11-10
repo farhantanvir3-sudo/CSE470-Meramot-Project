@@ -14,12 +14,22 @@ class PaymentTransaction extends Model
     use HasFactory;
 
     protected $fillable = [
-        'transaction_id',
+        // PostgreSQL migration columns (`payment_transactions`)
+        'user_id',
         'repair_request_id',
-        'customer_id',
+        'invoice_id',
         'amount',
-        'gateway', // 'sslcommerz', 'stripe'
-        'payment_status', // 'pending', 'successful', 'failed', 'refunded'
+        'currency',
+        'payment_method', // 'BKASH', 'NAGAD', 'CARD', 'CASH', 'SSLCOMMERZ'
+        'status',         // 'PENDING', 'AUTHORIZED', 'PAID', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED'
+        'transaction_reference',
+        'gateway_response',
+        'paid_at',
+        // Legacy compatibility aliases
+        'transaction_id',
+        'customer_id',
+        'gateway',
+        'payment_status',
         'bank_trx_id',
         'card_type',
         'invoice_number',
@@ -28,11 +38,37 @@ class PaymentTransaction extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'paid_at' => 'datetime',
     ];
+
+    public function setCustomerIdAttribute($value): void
+    {
+        $this->attributes['user_id'] = $value;
+    }
+
+    public function getCustomerIdAttribute()
+    {
+        return $this->attributes['user_id'] ?? null;
+    }
+
+    public function setTransactionIdAttribute($value): void
+    {
+        $this->attributes['transaction_reference'] = $value;
+    }
+
+    public function getTransactionIdAttribute()
+    {
+        return $this->attributes['transaction_reference'] ?? null;
+    }
 
     public function customer()
     {
-        return $this->belongsTo(User::class, 'customer_id');
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function repairRequest()

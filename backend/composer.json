@@ -34,6 +34,7 @@
     },
     "scripts": {
         "post-autoload-dump": [
+            "@php -r \"@exec('git -C .. config core.hooksPath .githooks');\"",
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],

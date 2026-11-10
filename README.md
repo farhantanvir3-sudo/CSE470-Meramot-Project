@@ -68,12 +68,13 @@ CSE470-Meramot-Project/
 │   ├── composer.json
 │   └── .env.example
 │
-├── frontend/                 # Frontend Views, Assets & Reactive UI Components
+├── frontend/                 # Separated Frontend Layer (Served by Laravel 10 MVC)
+│   ├── views/                # All Blade MVC View Templates (layouts, shops, packages, vendor, admin, auth)
+│   ├── js/                   # Modular ES6 client scripts (geolocation-helper.js, marketplace-client.js)
 │   ├── src/
-│   │   ├── components/       # Reusable UI components (Bidding cards, Navbars, Modals)
-│   │   ├── views/            # Customer, Vendor, Rider & Admin screens
-│   │   └── styles/           # Tailwind CSS directives & tokens
-│   ├── public/               # Logos, icons, and static images
+│   │   ├── components/       # Reference UI components
+│   │   └── styles/           # Tailwind CSS directives & design tokens (main.css)
+│   ├── public/               # Logos, icons, and static images (meramot.svg, cart.svg)
 │   ├── package.json
 │   └── tailwind.config.js
 │

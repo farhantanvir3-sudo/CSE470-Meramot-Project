@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 use App\Models\RepairShop;
+use App\Models\ShopService;
 use App\Models\VendorProfile;
 use App\Models\User;
 
@@ -857,7 +859,7 @@ class ShopSeeder extends Seeder
 
         foreach ($allShops as $index => $s) {
             // Seed RepairShop table (Feature R6)
-            RepairShop::updateOrCreate(
+            $shop = RepairShop::updateOrCreate(
                 ['slug' => $s['slug']],
                 [
                     'name' => $s['name'],
@@ -885,6 +887,30 @@ class ShopSeeder extends Seeder
                     'email' => $s['email'] ?? 'shop@meramot.local',
                 ]
             );
+
+            // Seed bookable Direct-Order ShopService rows for every shop
+            $specialties = $s['specialties'] ?? ['Hardware Diagnostics', 'Component Replacement'];
+            $baseLabor = (float) ($s['base_labor_fee'] ?? 400);
+            foreach ($specialties as $svcIdx => $specName) {
+                $svcSlug = Str::slug($specName) ?: ('service-' . ($svcIdx + 1));
+                ShopService::updateOrCreate(
+                    ['shop_id' => $shop->id, 'slug' => $svcSlug],
+                    [
+                        'name' => ucfirst($specName),
+                        'short_description' => 'Certified workshop service with genuine components and bench warranty.',
+                        'device_type' => 'Electronics',
+                        'issue_category' => ucfirst($specName),
+                        'pricing_type' => 'STARTING_FROM',
+                        'base_price' => $baseLabor + ($svcIdx * 250),
+                        'estimated_days_min' => 1,
+                        'estimated_days_max' => 3,
+                        'includes_pickup' => in_array('COURIER_PICKUP', $s['categories'] ?? [], true),
+                        'sort_order' => $svcIdx,
+                        'is_featured' => $svcIdx === 0,
+                        'is_active' => true,
+                    ]
+                );
+            }
 
             // Seed VendorProfile table (Feature R11)
             VendorProfile::updateOrCreate(
