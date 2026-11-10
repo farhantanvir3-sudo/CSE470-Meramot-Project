@@ -18,10 +18,15 @@ class VendorOnboardingController extends Controller
     public function show(Request $request)
     {
         $profile = VendorProfile::where('user_id', $request->user()->id ?? 1)->first();
-        return response()->json([
-            'status' => 'success',
-            'data' => $profile,
-        ]);
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 'success',
+                'data' => $profile,
+            ]);
+        }
+
+        return view('vendor.onboarding', compact('profile'));
     }
 
     /**
@@ -45,11 +50,15 @@ class VendorOnboardingController extends Controller
             ])
         );
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Vendor application submitted successfully for administrative audit.',
-            'data' => $profile,
-        ], 201);
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Vendor application submitted successfully for administrative audit.',
+                'data' => $profile,
+            ], 201);
+        }
+
+        return redirect()->back()->with('success', 'Vendor application submitted successfully for administrative audit.');
     }
 
     /**
