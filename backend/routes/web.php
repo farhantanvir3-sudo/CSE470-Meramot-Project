@@ -112,7 +112,8 @@ Route::get('/ai-consultant/chat', [AIChatController::class, 'index']);          
 // MODULE: Vendor Onboarding, Bidding & Analytics (Assigned: Farhan Tanvir - Lead)
 // -------------------------------------------------------------
 Route::prefix('vendor')->group(function () {
-    Route::get('/onboarding', [VendorOnboardingController::class, 'show']);             // R11
+    Route::get('/onboarding', [VendorOnboardingController::class, 'show'])->name('vendor.onboarding');             // R11
+    Route::post('/onboarding', [VendorOnboardingController::class, 'store'])->name('vendor.onboarding.store');     // R11
     Route::get('/bidding-board', [BiddingEngineController::class, 'index']);            // R12
     Route::get('/request-details/{id}', function ($id) { return view('vendor.request-details'); }); // R13
     Route::get('/alert-settings', function () { return view('vendor.alert-settings'); }); // R14

@@ -32,6 +32,9 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- OpenStreetMap + Leaflet Open-Source Map Styles & Script (No API Key Required) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Standalone Client Modules (Served from root `frontend/js/`) -->
     <script defer src="/js/geolocation-helper.js"></script>
@@ -168,7 +171,13 @@
     mobileMenuOpen: false, 
     locationModalOpen: false, 
     showLogoutConfirm: false, 
-    locationLabel: 'Banani, Dhaka',
+    selectedLocation: null,
+    draftLocation: null,
+    locationLabel: 'Choose your location',
+    locationLoading: false,
+    locationSaving: false,
+    locationError: '',
+    mapSearchQuery: '',
     toastVisible: false,
     toastMessage: '',
     toastType: 'success',
@@ -191,12 +200,119 @@
             localStorage.setItem('meramot_theme', 'light');
         }
     },
+    syncStoredLocation() {
+        if (!window.MeramotLocationPicker) return;
+        const stored = window.MeramotLocationPicker.parseStoredLocation();
+        if (stored) {
+            this.selectedLocation = stored;
+            this.draftLocation = stored;
+            this.locationLabel = window.MeramotLocationPicker.buildLocationLabel(stored);
+        }
+    },
+    openLocationModal() {
+        this.locationError = '';
+        this.draftLocation = this.selectedLocation || (window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null);
+        if (window.MeramotLocationPicker) {
+            window.MeramotLocationPicker.draftLocation = this.draftLocation;
+        }
+        this.locationModalOpen = true;
+        this.$nextTick(() => {
+            if (window.MeramotLocationPicker) {
+                window.MeramotLocationPicker.initOrRefreshMap('meramot-leaflet-map', {
+                    onDraftChange: (loc) => {
+                        this.locationError = '';
+                        this.draftLocation = loc;
+                    },
+                    onLoading: (loading) => {
+                        this.locationLoading = loading;
+                    },
+                    onError: (msg) => {
+                        this.locationError = msg;
+                    }
+                });
+            }
+        });
+    },
+    async useGpsLocation() {
+        if (!window.MeramotGeolocation || !window.MeramotLocationPicker) return;
+        this.locationLoading = true;
+        this.locationError = '';
+        try {
+            const pos = await window.MeramotGeolocation.getCurrentPosition();
+            window.MeramotLocationPicker.flyToLocation(pos.lat, pos.lng, 15);
+            const resolved = await window.MeramotLocationPicker.reverseGeocode(pos.lat, pos.lng, 'gps');
+            this.draftLocation = resolved;
+            window.MeramotLocationPicker.draftLocation = resolved;
+        } catch (err) {
+            this.locationError = err.message || 'Location permission denied. You can still click the map to pin your address.';
+        } finally {
+            this.locationLoading = false;
+        }
+    },
+    async searchMapAddress() {
+        if (!this.mapSearchQuery.trim() || !window.MeramotLocationPicker) return;
+        this.locationLoading = true;
+        this.locationError = '';
+        try {
+            const found = await window.MeramotLocationPicker.forwardGeocode(this.mapSearchQuery);
+            if (!found) {
+                this.locationError = 'Could not find that address on OpenStreetMap. Try clicking the map or picking a Dhaka hub.';
+            } else {
+                this.draftLocation = found;
+                window.MeramotLocationPicker.draftLocation = found;
+                window.MeramotLocationPicker.flyToLocation(found.lat, found.lng, 15);
+            }
+        } catch (err) {
+            this.locationError = 'Search failed. Please click directly on the map.';
+        } finally {
+            this.locationLoading = false;
+        }
+    },
+    selectQuickHub(hub) {
+        this.locationError = '';
+        const next = {
+            address: hub.address,
+            city: hub.city || 'Dhaka',
+            area: hub.area,
+            lat: hub.lat,
+            lng: hub.lng,
+            source: 'map'
+        };
+        this.draftLocation = next;
+        if (window.MeramotLocationPicker) {
+            window.MeramotLocationPicker.draftLocation = next;
+            window.MeramotLocationPicker.flyToLocation(hub.lat, hub.lng, 14);
+        }
+    },
+    confirmMapLocation() {
+        if (!this.draftLocation) {
+            this.locationError = 'Choose a point on the map first.';
+            return;
+        }
+        this.locationSaving = true;
+        this.locationError = '';
+        try {
+            const saved = window.MeramotLocationPicker.saveLocation(this.draftLocation);
+            this.selectedLocation = saved;
+            this.locationLabel = window.MeramotLocationPicker.buildLocationLabel(saved);
+            this.locationModalOpen = false;
+            this.showToast({ message: 'Pinned location saved: ' + this.locationLabel, type: 'success' });
+        } catch (err) {
+            this.locationError = 'Could not save location.';
+        } finally {
+            this.locationSaving = false;
+        }
+    },
     init() {
         if (this.darkMode) {
             document.documentElement.classList.add('dark');
         }
+        setTimeout(() => this.syncStoredLocation(), 50);
     }
-}" @meramot-toast.window="showToast($event.detail)">
+}"
+@meramot-toast.window="showToast($event.detail)"
+@meramot-open-location-modal.window="openLocationModal()"
+@meramot-location-changed.window="selectedLocation = $event.detail; locationLabel = window.MeramotLocationPicker ? window.MeramotLocationPicker.buildLocationLabel($event.detail) : locationLabel">
 
     <!-- Non-Blocking Meramot Mint Toast Notification -->
     <div
@@ -269,15 +385,15 @@
                     </a>
                 </div>
 
-                <!-- Desktop-only: Location Button -->
+                <!-- Desktop-only: Location Button (Matches NavbarLocationButton.tsx) -->
                 <div class="hidden md:flex md:justify-center">
                     <button
                         type="button"
-                        @click="locationModalOpen = true"
-                        class="inline-flex items-center gap-2 rounded-full bg-[var(--mint-200)] px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--mint-300)] shadow-sm"
+                        @click="openLocationModal()"
+                        class="group inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
                     >
-                        <i class="fa-solid fa-location-dot text-[var(--accent-dark)] text-base"></i>
-                        <span x-text="locationLabel">Banani, Dhaka</span>
+                        <i class="fa-solid fa-location-dot shrink-0 text-[var(--accent-dark)] text-base"></i>
+                        <span class="max-w-[260px] truncate" x-text="locationLabel">Choose your location</span>
                     </button>
                 </div>
 
@@ -416,7 +532,7 @@
                 <div class="flex items-center gap-2">
                     <button
                         type="button"
-                        @click="locationModalOpen = true"
+                        @click="openLocationModal()"
                         class="shrink-0 p-1.5 text-[var(--accent-dark)]"
                         aria-label="Change location"
                     >
@@ -557,26 +673,142 @@
         </aside>
     </div>
 
-    <!-- ── Location Picker Modal ── -->
-    <div x-show="locationModalOpen" x-cloak class="fixed inset-0 z-[120] flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="locationModalOpen = false"></div>
-        <div class="relative z-10 w-full max-w-md rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl">
-            <h3 class="text-xl font-bold text-[var(--foreground)] mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
-                <span>Choose Your Dhaka Hub</span>
-            </h3>
-            <p class="text-xs text-[var(--muted-foreground)] mb-4">Shops and estimated courier pickup times will calibrate to your selected neighborhood.</p>
-            <div class="space-y-2 text-sm">
-                @foreach(['Banani, Dhaka', 'Gulshan, Dhaka', 'Dhanmondi, Dhaka', 'Mirpur, Dhaka', 'Uttara, Dhaka', 'Bashundhara, Dhaka', 'Mohammadpur, Dhaka', 'All Dhaka'] as $loc)
+    <!-- ── OpenStreetMap + Leaflet Location Picker Modal (Exact match to LocationPickerModal.tsx & MapPicker.tsx) ── -->
+    <div x-show="locationModalOpen" x-cloak class="fixed inset-0 z-[120] flex items-center justify-center px-4 py-6">
+        <div class="absolute inset-0 bg-black/35 backdrop-blur-sm" @click="locationModalOpen = false"></div>
+
+        <div class="relative z-[121] flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-2xl">
+            <!-- Modal Header -->
+            <div class="flex items-start justify-between gap-4 border-b border-[var(--border)] p-5">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted-foreground)]">
+                        Delivery location
+                    </p>
+                    <h2 class="mt-1 text-2xl font-bold text-[var(--foreground)]">Choose your location</h2>
+                    <p class="mt-1 text-sm text-[var(--muted-foreground)]">
+                        Click or drag the pin on the map to select an address, search a Dhaka landmark, or use GPS to detect your current location.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    @click="locationModalOpen = false"
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] transition hover:bg-[var(--mint-200)]"
+                    aria-label="Close location picker"
+                >
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body: MapPicker + Controls Column -->
+            <div class="grid min-h-0 flex-1 gap-4 overflow-y-auto p-5 lg:grid-cols-[1fr_290px]">
+                <!-- Left Column: Address Search + Interactive OpenStreetMap + Leaflet Canvas -->
+                <div class="flex flex-col gap-3">
+                    <form @submit.prevent="searchMapAddress()" class="flex items-center gap-2">
+                        <div class="relative flex-1">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]"></i>
+                            <input
+                                type="text"
+                                x-model="mapSearchQuery"
+                                placeholder="Search road, block, or landmark in Dhaka (e.g. Banani Road 11)..."
+                                class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] pl-9 pr-4 py-2.5 text-xs font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            :disabled="locationLoading"
+                            class="rounded-2xl bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-[var(--accent-foreground)] transition hover:opacity-90 disabled:opacity-60"
+                        >
+                            Find
+                        </button>
+                    </form>
+
+                    <div class="relative min-h-[360px] flex-1 overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-50)]">
+                        <div id="meramot-leaflet-map" class="h-[390px] min-h-[360px] w-full z-10"></div>
+                        <div class="pointer-events-none absolute left-4 top-4 z-[400] rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#244229] shadow-sm">
+                            OpenStreetMap + Leaflet
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: GPS Button, Selected Address Card, Quick Hubs, Confirm Button -->
+                <div class="flex flex-col gap-3">
                     <button
                         type="button"
-                        @click="locationLabel = '{{ $loc }}'; locationModalOpen = false; window.location.href = '/shops?area=' + ('{{ $loc }}' === 'All Dhaka' ? 'All' : '{{ explode(',', $loc)[0] }}')"
-                        class="flex w-full items-center justify-between rounded-xl px-4 py-2.5 text-left transition hover:bg-[var(--mint-100)]"
+                        @click="useGpsLocation()"
+                        :disabled="locationLoading || locationSaving"
+                        class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--accent-dark)] px-4 py-3 text-sm font-bold text-[var(--accent-foreground)] transition hover:opacity-95 disabled:opacity-60 shadow-sm"
                     >
-                        <span class="font-medium text-[var(--foreground)]">{{ $loc }}</span>
-                        <i class="fa-solid fa-chevron-right text-xs text-[var(--muted-foreground)]"></i>
+                        <i class="fa-solid fa-location-crosshairs" :class="locationLoading ? 'fa-spin' : ''"></i>
+                        <span x-text="locationLoading ? 'Detecting...' : 'Use GPS location'">Use GPS location</span>
                     </button>
-                @endforeach
+
+                    <!-- Selected Address Preview Box -->
+                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] p-4">
+                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+                            Selected address
+                        </p>
+                        <p class="mt-2 text-sm font-semibold leading-6 text-[var(--foreground)]" x-text="draftLocation?.address || 'No location selected yet. Click anywhere on the map.'"></p>
+                        <template x-if="draftLocation && (draftLocation.area || draftLocation.city)">
+                            <p class="mt-1.5 text-xs font-semibold text-[var(--accent-dark)]" x-text="[draftLocation.area, draftLocation.city].filter(Boolean).join(', ')"></p>
+                        </template>
+                        <template x-if="draftLocation && typeof draftLocation.lat === 'number' && typeof draftLocation.lng === 'number'">
+                            <p class="mt-1 font-mono text-[11px] text-[var(--muted-foreground)]" x-text="draftLocation.lat.toFixed(5) + ', ' + draftLocation.lng.toFixed(5)"></p>
+                        </template>
+                    </div>
+
+                    <!-- Quick Jump Dhaka Hubs -->
+                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)] mb-2">
+                            Quick jump to Dhaka hub
+                        </p>
+                        <div class="flex flex-wrap gap-1.5">
+                            @foreach([
+                                ['area' => 'Banani', 'city' => 'Dhaka', 'lat' => 23.7937, 'lng' => 90.4066, 'address' => 'Road 11, Banani, Dhaka 1213'],
+                                ['area' => 'Gulshan', 'city' => 'Dhaka', 'lat' => 23.7925, 'lng' => 90.4158, 'address' => 'Gulshan 2 Circle, Gulshan, Dhaka 1212'],
+                                ['area' => 'Dhanmondi', 'city' => 'Dhaka', 'lat' => 23.7461, 'lng' => 90.3742, 'address' => 'Satmasjid Road, Dhanmondi, Dhaka 1209'],
+                                ['area' => 'Mirpur', 'city' => 'Dhaka', 'lat' => 23.8071, 'lng' => 90.3686, 'address' => 'Mirpur 10 Roundabout, Mirpur, Dhaka 1216'],
+                                ['area' => 'Uttara', 'city' => 'Dhaka', 'lat' => 23.8759, 'lng' => 90.3795, 'address' => 'Sector 7, Uttara, Dhaka 1230'],
+                                ['area' => 'Bashundhara', 'city' => 'Dhaka', 'lat' => 23.8191, 'lng' => 90.4526, 'address' => 'Block C, Bashundhara R/A, Dhaka 1229'],
+                                ['area' => 'Mohammadpur', 'city' => 'Dhaka', 'lat' => 23.7662, 'lng' => 90.3589, 'address' => 'Town Hall Market, Mohammadpur, Dhaka 1207'],
+                                ['area' => 'Farmgate', 'city' => 'Dhaka', 'lat' => 23.7561, 'lng' => 90.3872, 'address' => 'Kazi Nazrul Islam Ave, Farmgate, Dhaka 1215'],
+                            ] as $hub)
+                                <button
+                                    type="button"
+                                    @click="selectQuickHub(@js($hub))"
+                                    class="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-[11px] font-semibold text-[var(--foreground)] transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
+                                >
+                                    {{ $hub['area'] }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    <div x-show="locationError" x-cloak class="rounded-2xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 border border-red-200" x-text="locationError"></div>
+
+                    <div class="mt-auto flex flex-col gap-2 pt-1">
+                        <button
+                            type="button"
+                            @click="confirmMapLocation()"
+                            :disabled="locationSaving || !draftLocation"
+                            class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--accent-dark)] px-4 py-3 text-sm font-bold text-[var(--accent-foreground)] transition hover:opacity-95 disabled:opacity-60 shadow-sm"
+                        >
+                            <i class="fa-solid fa-check"></i>
+                            <span x-text="locationSaving ? 'Saving...' : 'Confirm location'">Confirm location</span>
+                        </button>
+
+                        <template x-if="draftLocation && typeof draftLocation.lat === 'number' && typeof draftLocation.lng === 'number'">
+                            <button
+                                type="button"
+                                @click="confirmMapLocation(); window.MeramotGeolocation.updateUrlWithLocation(draftLocation.lat, draftLocation.lng, 12)"
+                                class="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]"
+                            >
+                                <i class="fa-solid fa-compass"></i>
+                                <span>Find Nearby Shops from Pin</span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

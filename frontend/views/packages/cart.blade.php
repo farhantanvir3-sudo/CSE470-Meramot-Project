@@ -14,6 +14,10 @@
     scheduleType: '{{ old('schedule_type', 'NOW') }}',
     deliveryType: '{{ old('delivery_type', 'REGULAR') }}',
     paymentMethod: '{{ old('payment_method', 'CASH') }}',
+    addressMode: 'MAP',
+    pinnedLocation: null,
+    pickupAddress: @js(old('address', auth()->user()->address ?? '')),
+    selectedArea: '{{ old('area', auth()->user()->area ?? 'Banani') }}',
     subtotal: {{ (float) ($total ?? 0) }},
     serviceCharge: {{ (float) ($serviceCharge ?? 0) }},
     get deliveryFee() {
@@ -22,22 +26,48 @@
     get grandTotal() {
         return this.subtotal + this.serviceCharge + (this.subtotal > 0 ? this.deliveryFee : 0);
     },
+    applyMapLocation(loc) {
+        if (!loc) return;
+        this.pinnedLocation = loc;
+        this.addressMode = 'MAP';
+        this.pickupAddress = loc.address || '';
+        if (loc.area) {
+            const match = ['Banani', 'Gulshan', 'Dhanmondi', 'Mirpur', 'Uttara', 'Bashundhara', 'Mohammadpur', 'Farmgate', 'Tejgaon', 'Mohakhali', 'Badda', 'Wari'].find(a => a.toLowerCase() === loc.area.toLowerCase());
+            if (match) this.selectedArea = match;
+        }
+    },
+    useSavedOrOpenMap() {
+        const stored = window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null;
+        if (stored) {
+            this.applyMapLocation(stored);
+            window.MeramotToast?.show('Map location attached to this order.', 'success');
+        } else {
+            this.$dispatch('meramot-open-location-modal');
+        }
+    },
     async fillGpsLocation() {
-        if (!window.MeramotGeolocation) return;
+        if (!window.MeramotGeolocation || !window.MeramotLocationPicker) return;
         try {
             const pos = await window.MeramotGeolocation.getCurrentPosition();
-            const addrEl = document.getElementById('cart-pickup-address');
-            if (addrEl && !addrEl.value.trim()) {
-                addrEl.value = `GPS Pin (${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}), Dhaka`;
-            } else if (addrEl) {
-                addrEl.value = addrEl.value.trim() + ` [GPS: ${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}]`;
-            }
-            window.MeramotToast?.show('GPS coordinates attached to pickup address!', 'success');
+            const resolved = await window.MeramotLocationPicker.reverseGeocode(pos.lat, pos.lng, 'gps');
+            const saved = window.MeramotLocationPicker.saveLocation(resolved);
+            this.applyMapLocation(saved);
+            window.MeramotToast?.show('GPS coordinates reverse-geocoded & attached!', 'success');
         } catch (err) {
             window.MeramotToast?.show(err.message || 'Unable to read GPS coordinates.', 'warning');
         }
+    },
+    init() {
+        setTimeout(() => {
+            const stored = window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null;
+            if (stored) {
+                this.applyMapLocation(stored);
+            } else {
+                this.addressMode = 'MANUAL';
+            }
+        }, 60);
     }
-}">
+}" @meramot-location-changed.window="applyMapLocation($event.detail)">
 
     <!-- Header -->
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
@@ -283,34 +313,82 @@
                         </div>
                         <div>
                             <label class="block font-bold text-[var(--foreground)] mb-1">Dhaka Pickup Neighborhood</label>
-                            <select name="area" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
+                            <select name="area" x-model="selectedArea" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
                                 @foreach(['Banani', 'Gulshan', 'Dhanmondi', 'Mirpur', 'Uttara', 'Bashundhara', 'Mohammadpur', 'Farmgate', 'Tejgaon', 'Mohakhali', 'Badda', 'Wari'] as $hub)
-                                    <option value="{{ $hub }}" {{ old('area', auth()->user()->area ?? 'Banani') === $hub ? 'selected' : '' }}>{{ $hub }}, Dhaka</option>
+                                    <option value="{{ $hub }}">{{ $hub }}, Dhaka</option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
 
-                    <!-- Pickup Address + Geolocation Button -->
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label for="cart-pickup-address" class="font-bold text-[var(--foreground)]">4. Full Pickup Street Address *</label>
+                    <!-- Pickup Address + OpenStreetMap Location Mode Selector (Matches cart/page.tsx) -->
+                    <div class="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <label for="cart-pickup-address" class="font-bold text-[var(--foreground)]">4. Pickup Location (OpenStreetMap / Manual / Profile) *</label>
+                            <div class="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    @click="$dispatch('meramot-open-location-modal')"
+                                    class="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dark)] px-3 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
+                                >
+                                    <i class="fa-solid fa-map-location-dot"></i> Pin on Map
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="fillGpsLocation()"
+                                    class="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-50)] transition"
+                                >
+                                    <i class="fa-solid fa-location-crosshairs"></i> Use GPS
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <button
                                 type="button"
-                                @click="fillGpsLocation()"
-                                class="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--accent-dark)] hover:underline"
+                                @click="useSavedOrOpenMap()"
+                                class="rounded-xl border p-2.5 text-left transition"
+                                :class="addressMode === 'MAP' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/40 hover:border-[var(--accent-dark)]/50'"
                             >
-                                <i class="fa-solid fa-location-crosshairs"></i> Attach Live GPS Pin
+                                <div class="font-bold text-xs text-[var(--foreground)]">Use map location</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)]">Pulls from navbar map pin</div>
+                            </button>
+                            <button
+                                type="button"
+                                @click="addressMode = 'MANUAL'"
+                                class="rounded-xl border p-2.5 text-left transition"
+                                :class="addressMode === 'MANUAL' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/40 hover:border-[var(--accent-dark)]/50'"
+                            >
+                                <div class="font-bold text-xs text-[var(--foreground)]">Manual address</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)]">Type a pickup address</div>
+                            </button>
+                            <button
+                                type="button"
+                                @click="addressMode = 'PROFILE'; pickupAddress = @js(auth()->user()->address ?? 'House 12, Road 11, Banani, Dhaka')"
+                                class="rounded-xl border p-2.5 text-left transition"
+                                :class="addressMode === 'PROFILE' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/40 hover:border-[var(--accent-dark)]/50'"
+                            >
+                                <div class="font-bold text-xs text-[var(--foreground)]">Profile address</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)]">Use saved account info</div>
                             </button>
                         </div>
+
+                        <template x-if="pinnedLocation">
+                            <div class="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 text-xs">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] block">Selected from OpenStreetMap</span>
+                                <span class="font-bold text-[var(--foreground)] mt-0.5 block" x-text="pinnedLocation.address"></span>
+                            </div>
+                        </template>
+
                         <textarea
                             id="cart-pickup-address"
                             name="address"
+                            x-model="pickupAddress"
                             rows="2"
                             required
                             placeholder="House #, Road #, Block/Sector, Apartment & Rider Landmarks"
                             class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-xs text-[var(--foreground)] outline-none"
-                        >{{ old('address', auth()->user()->address ?? '') }}</textarea>
+                        ></textarea>
                     </div>
 
                     <!-- Optional Device Model / Symptom Note -->
