@@ -31,24 +31,17 @@ class VendorPayoutController extends Controller
      */
     public function index()
     {
-        // TODO (Nawshad): Fetch pending payouts with vendor details
-        $payouts = VendorPayout::with('vendor')->latest()->get();
+        $payouts = VendorPayout::with('shop')->latest()->get();
 
         return view('admin.payouts.manage', compact('payouts'));
     }
 
     /**
-     * Disburse vendor payout settlement.
+     * Disburse vendor payout settlement (Sprint 3 — routes to Coming Soon during Sprint 1).
      * Route: POST /admin/payouts/{id}/disburse
      */
-    public function disbursePayout($id)
+    public function disbursePayout(Request $request, $id)
     {
-        $payout = VendorPayout::findOrFail($id);
-        $payout->update([
-            'status' => 'disbursed',
-            'disbursed_at' => now(),
-        ]);
-
-        return redirect()->back()->with('success', "Payout {$payout->id} disbursed successfully.");
+        return app(ComingSoonController::class)->show($request, 'vendor-payouts');
     }
 }

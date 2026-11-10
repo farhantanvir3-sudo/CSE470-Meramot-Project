@@ -184,7 +184,7 @@
                     <a href="/vendor/onboarding" class="text-emerald-800 font-medium hover:underline">
                         <i class="fa-solid fa-store mr-1"></i> Register your repair shop as a partner &rarr;
                     </a>
-                    <a href="/auth/demo?role=delivery" class="text-[#1b365d] font-medium hover:underline">
+                    <a href="/delivery-agent/register" class="text-[#1b365d] font-medium hover:underline">
                         <i class="fa-solid fa-motorcycle mr-1"></i> Apply as a doorstep delivery courier &rarr;
                     </a>
                 </div>

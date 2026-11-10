@@ -17,6 +17,8 @@
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8">
 
+    @include('admin.partials.nav')
+
     <!-- Header with Student & Feature Badge (Nawshad [23301622] — Commit 4742c9c) -->
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[var(--border)] pb-5">
         <div>

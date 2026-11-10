@@ -29,47 +29,31 @@ class PaymentGatewayController extends Controller
      * Show payment checkout screen.
      * Route: GET /checkout/payment/{requestId}
      */
-    public function showCheckout($requestId)
+    public function showCheckout(Request $request, $requestId)
     {
-        $repairRequest = RepairRequest::with('bids')->findOrFail($requestId);
+        $repairRequest = RepairRequest::with(['bids', 'requestedShop'])->find($requestId);
+        if (!$repairRequest) {
+            return app(ComingSoonController::class)->show($request, 'sslcommerz-payment');
+        }
+
         return view('checkout.payment', compact('repairRequest'));
     }
 
     /**
-     * Initiate payment transaction with SSLCommerz sandbox.
+     * Initiate payment transaction with SSLCommerz sandbox (Sprint 2 — routes to Coming Soon during Sprint 1).
      * Route: POST /payment/initiate
      */
     public function initiatePayment(Request $request)
     {
-        $validated = $request->validate([
-            'repair_request_id' => 'required|exists:repair_requests,id',
-            'amount' => 'required|numeric|min:10',
-        ]);
-
-        $trxId = 'MRM_' . uniqid();
-
-        $transaction = PaymentTransaction::create([
-            'transaction_id' => $trxId,
-            'repair_request_id' => $validated['repair_request_id'],
-            'customer_id' => $request->user()->id ?? 1,
-            'amount' => $validated['amount'],
-            'gateway' => 'sslcommerz',
-            'payment_status' => 'pending',
-            'invoice_number' => 'INV-' . date('Ymd') . '-' . rand(1000, 9999),
-        ]);
-
-        // TODO (Nawshad): Integrate SSLCommerz Session initiation and redirect user to Hosted payment page
-
-        return redirect()->route('payment.success', ['trx_id' => $trxId]);
+        return app(ComingSoonController::class)->show($request, 'sslcommerz-payment');
     }
 
     /**
-     * SSLCommerz success / IPN callback handler.
+     * SSLCommerz success / IPN callback handler (Sprint 2).
      * Route: POST /payment/success
      */
     public function handleSuccess(Request $request)
     {
-        // TODO (Nawshad): Validate IPN hash parameters and update PaymentTransaction status = 'successful'
-        return view('checkout.success');
+        return app(ComingSoonController::class)->show($request, 'sslcommerz-payment');
     }
 }

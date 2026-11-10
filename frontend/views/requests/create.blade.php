@@ -9,6 +9,8 @@
     <div class="mb-4 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
         <a href="/" class="hover:underline">Home</a>
         <span>/</span>
+        <a href="/requests" class="hover:underline">My Repair Requests</a>
+        <span>/</span>
         <span class="text-[var(--foreground)] font-semibold">Post Repair Request</span>
     </div>
 
@@ -48,9 +50,20 @@
             <!-- Pre-selected Shop alert if came from shop profile -->
             @if(request('shop_id'))
                 <input type="hidden" name="preferred_shop_id" value="{{ request('shop_id') }}">
-                <div class="p-3 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs flex items-center gap-2">
-                    <i class="fa-solid fa-circle-check text-emerald-700"></i>
-                    <span>Direct quote requested from shop partner <strong>#{{ request('shop_id') }}</strong></span>
+                <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check text-emerald-700"></i>
+                        <span>
+                            Direct quote requested from
+                            <strong>{{ $selectedShop->name ?? ('Shop Partner #' . request('shop_id')) }}</strong>
+                            @if(!empty($selectedShop?->display_branch_tag))
+                                <span class="ml-1 rounded-full bg-emerald-800 px-2 py-0.5 text-[10px] font-bold text-white">{{ $selectedShop->display_branch_tag }}</span>
+                            @endif
+                        </span>
+                    </div>
+                    @if(!empty($selectedShop))
+                        <a href="{{ route('shops.show', $selectedShop->slug) }}" class="font-bold text-emerald-800 hover:underline shrink-0">View Shop</a>
+                    @endif
                 </div>
             @endif
 
@@ -115,7 +128,7 @@
                 </div>
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Issue Headline *</label>
-                    <input type="text" name="issue_title" placeholder="e.g. Broken display glass, does not turn on" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                    <input type="text" name="issue_title" value="{{ old('issue_title', $prefilledIssue ?? request('issue', '')) }}" placeholder="e.g. Broken display glass, does not turn on" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
                 </div>
             </div>
 
@@ -148,17 +161,16 @@
                 x-data="{
                     addressMode: 'MAP',
                     pinnedLocation: null,
-                    pickupAddress: '{{ old('pickup_address', auth()->user()->address ?? '') }}',
-                    selectedArea: '{{ old('area', auth()->user()->area ?? 'Banani') }}',
+                    pickupAddress: @js(old('pickup_address', auth()->user()->address ?? '')),
+                    selectedArea: @js(old('area', auth()->user()->area ?? 'Banani')),
+                    selectedCity: @js(old('city', 'Dhaka')),
                     applyMapLocation(loc) {
                         if (!loc) return;
                         this.pinnedLocation = loc;
                         this.addressMode = 'MAP';
                         this.pickupAddress = loc.address || '';
-                        if (loc.area) {
-                            const match = ['Banani', 'Gulshan', 'Dhanmondi', 'Mirpur', 'Uttara', 'Bashundhara', 'Mohammadpur', 'Farmgate', 'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Wari'].find(a => a.toLowerCase() === loc.area.toLowerCase());
-                            if (match) this.selectedArea = match;
-                        }
+                        if (loc.area) this.selectedArea = loc.area;
+                        if (loc.city) this.selectedCity = loc.city;
                     },
                     useSavedOrOpenMap() {
                         const stored = window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null;
@@ -277,12 +289,27 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Dhaka Area / Pickup Neighborhood *</label>
-                        <select name="area" x-model="selectedArea" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none" required>
-                            @foreach(['Banani', 'Gulshan', 'Dhanmondi', 'Mirpur', 'Uttara', 'Bashundhara', 'Mohammadpur', 'Farmgate', 'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Wari'] as $a)
-                                <option value="{{ $a }}">{{ $a }}, Dhaka</option>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Area / Pickup Neighborhood *</label>
+                        <input
+                            type="text"
+                            name="area"
+                            list="meramot-bangladesh-areas"
+                            x-model="selectedArea"
+                            placeholder="Banani, Hatirpool, Agrabad, Zindabazar..."
+                            class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none"
+                            required
+                        >
+                        <input type="hidden" name="city" :value="selectedCity">
+                        <datalist id="meramot-bangladesh-areas">
+                            @foreach([
+                                'Banani', 'Gulshan', 'Dhanmondi', 'Hatirpool', 'Mirpur', 'Uttara', 'Bashundhara',
+                                'Mohammadpur', 'Farmgate', 'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Wari',
+                                'Agrabad, Chattogram', 'GEC Circle, Chattogram', 'Zindabazar, Sylhet', 'Joydebpur, Gazipur',
+                                'Shaheb Bazar, Rajshahi', 'Shib Bari, Khulna', 'Satmatha, Bogura', 'Ganginarpar, Mymensingh'
+                            ] as $a)
+                                <option value="{{ $a }}"></option>
                             @endforeach
-                        </select>
+                        </datalist>
                     </div>
                 </div>
 

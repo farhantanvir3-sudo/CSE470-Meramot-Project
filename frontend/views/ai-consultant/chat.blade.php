@@ -47,15 +47,33 @@
                     user_message: text
                 })
             });
-            const data = await res.json();
-            this.messages.push({
-                sender: 'ai',
-                text: data.reply || data.message || 'Preliminary triage complete. Likely component-level fault detected — post a repair request or select a fixed package for bench verification.'
-            });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.status === 'success' && data.reply) {
+                this.messages.push({
+                    sender: 'ai',
+                    text: data.reply
+                });
+            } else {
+                const lower = text.toLowerCase();
+                let hint = `Preliminary ${this.category} triage: Symptom profile indicates a component-level power, display, or thermal issue.`;
+                if (lower.includes('screen') || lower.includes('display') || lower.includes('touch') || lower.includes('flicker')) {
+                    hint = `Preliminary ${this.category} Display Triage:\n• Probable Cause: Cracked OLED/LCD digitizer assembly or loose LVDS/eDP display flex cable.\n• Recommended Action: Book a Screen Replacement Package or post a Marketplace Request for OEM panel quotes.`;
+                } else if (lower.includes('battery') || lower.includes('drain') || lower.includes('charg')) {
+                    hint = `Preliminary ${this.category} Power & Battery Triage:\n• Probable Cause: Degraded lithium cell cycle capacity or USB-C/charging IC regulation fault.\n• Recommended Action: Check charging port debris first, or book a Certified Battery Replacement.`;
+                } else if (lower.includes('heat') || lower.includes('shut') || lower.includes('fan')) {
+                    hint = `Preliminary ${this.category} Thermal Triage:\n• Probable Cause: Dried thermal compound, clogged heatsink fins, or VRM MOSFET thermal cutoff.\n• Recommended Action: Stop heavy loads immediately and schedule an Ultrasonic Cooling & Thermal Repaste service.`;
+                } else if (lower.includes('water') || lower.includes('liquid') || lower.includes('spill') || lower.includes('key')) {
+                    hint = `Preliminary ${this.category} Liquid Exposure Triage:\n• Probable Cause: Corrosion risk across keyboard membrane and motherboard power rails.\n• Recommended Action: Keep the device powered OFF (do not charge!) and request urgent Ultrasonic Board Cleaning.`;
+                }
+                this.messages.push({
+                    sender: 'ai',
+                    text: hint + `\n\n(Note: Live FastAPI LLM neural inference launches in Sprint 4 — you can post a live Repair Request right now using the button above!)`
+                });
+            }
         } catch (e) {
             this.messages.push({
                 sender: 'ai',
-                text: 'Preliminary hardware triage: Symptom pattern suggests power-rail, display flex, or thermal degradation. Submit a Marketplace Repair Request to receive itemized Quote 1 bids from verified Dhaka workshops.'
+                text: `Preliminary ${this.category} hardware triage: Symptom pattern suggests power-rail, display flex, or thermal degradation. Post a Marketplace Repair Request to receive itemized Quote 1 bids from verified workshops. (Live FastAPI LLM microservice scheduled for Sprint 4.)`
             });
         } finally {
             this.loading = false;

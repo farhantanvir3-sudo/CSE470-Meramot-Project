@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bid;
 use App\Models\FinancialLedger;
+use App\Models\PaymentTransaction;
 use App\Models\RepairJob;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
@@ -95,17 +97,18 @@ class VendorBranchController extends Controller
         }
         $directOrders = $directOrdersQuery->latest()->get();
 
-        $marketplaceRequests = RepairRequest::with('customer')
+        $marketplaceRequests = RepairRequest::with(['customer', 'bids.shop'])
             ->where('status', 'BIDDING')
             ->latest()
-            ->take(6)
+            ->take(8)
             ->get();
 
-        $activeJobs = RepairJob::with(['repairRequest', 'shop'])
+        $activeJobs = RepairJob::with(['repairRequest.customer', 'shop'])
             ->whereIn('shop_id', $scopedShopIds)
-            ->whereNotIn('status', ['COMPLETED', 'CANCELLED'])
+            ->where('status', '!=', 'CANCELLED')
+            ->orderByRaw("CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END")
             ->latest()
-            ->take(8)
+            ->take(10)
             ->get();
 
         $ledgerGross = (float) FinancialLedger::whereIn('shop_id', $scopedShopIds)
@@ -446,6 +449,174 @@ class VendorBranchController extends Controller
 
         return redirect("/vendor/dashboard?shop_id={$shop->id}&tab=branches")
             ->with('success', "Updated GPS approximate pin & public storefront address for {$shop->name}" . ($shop->display_branch_tag ? " [{$shop->display_branch_tag}]" : '') . '.');
+    }
+
+    /**
+     * Submit a real itemized Quote 1 Bid on an open Marketplace RepairRequest.
+     * Routes: POST /vendor/requests/{id}/bid, POST /requests/{id}/bids
+     */
+    public function submitBid(Request $request, $requestId)
+    {
+        $repairRequest = RepairRequest::findOrFail($requestId);
+
+        $validated = $request->validate([
+            'shop_id' => 'nullable|integer|exists:repair_shops,id',
+            'parts_cost' => 'nullable|numeric|min:0|max:1000000',
+            'labor_cost' => 'nullable|numeric|min:0|max:1000000',
+            'proposed_cost' => 'nullable|numeric|min:1|max:2000000',
+            'estimated_days' => 'required|integer|min:1|max:60',
+            'warranty_days' => 'nullable|integer|min:0|max:730',
+            'technician_note' => 'nullable|string|max:1000',
+        ]);
+
+        $vendorProfile = $this->resolveVendorProfile($request);
+        $shop = !empty($validated['shop_id'])
+            ? RepairShop::findOrFail($validated['shop_id'])
+            : ($vendorProfile->shops()->orderBy('id')->first() ?? RepairShop::orderBy('id')->firstOrFail());
+
+        $partsCost = (float) ($validated['parts_cost'] ?? 0);
+        $laborCost = (float) ($validated['labor_cost'] ?? 0);
+        $proposedCost = isset($validated['proposed_cost']) && (float) $validated['proposed_cost'] > 0
+            ? (float) $validated['proposed_cost']
+            : ($partsCost + $laborCost);
+
+        if ($proposedCost <= 0) {
+            throw ValidationException::withMessages([
+                'parts_cost' => 'Please enter a valid Parts + Labor quote amount greater than ৳0.',
+            ]);
+        }
+
+        if ($partsCost == 0.0 && $laborCost == 0.0) {
+            $partsCost = round($proposedCost * 0.65, 2);
+            $laborCost = round($proposedCost - $partsCost, 2);
+        }
+
+        $bid = Bid::updateOrCreate(
+            [
+                'repair_request_id' => $repairRequest->id,
+                'shop_id' => $shop->id,
+            ],
+            [
+                'parts_cost' => $partsCost,
+                'labor_cost' => $laborCost,
+                'proposed_cost' => $proposedCost,
+                'estimated_days' => (int) $validated['estimated_days'],
+                'warranty_days' => (int) ($validated['warranty_days'] ?? 90),
+                'line_items' => [
+                    ['item' => 'Component / Parts Estimate', 'cost' => $partsCost],
+                    ['item' => 'Bench Diagnostics & Labor', 'cost' => $laborCost],
+                ],
+                'technician_note' => $validated['technician_note'] ?? "Verified {$shop->name} bench quote with warranty.",
+                'status' => 'ACTIVE',
+            ]
+        );
+
+        if ($repairRequest->status === 'PENDING') {
+            $repairRequest->update(['status' => 'BIDDING']);
+        }
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Diagnostic quote submitted successfully.',
+                'data' => $bid->load('shop'),
+            ], 201);
+        }
+
+        $branchLabel = $shop->display_branch_tag ? " [{$shop->display_branch_tag}]" : '';
+
+        return redirect()
+            ->back()
+            ->with(
+                'success',
+                "Quote 1 bid of ৳" . number_format($proposedCost, 2) . " submitted by {$shop->name}{$branchLabel} on Request #{$repairRequest->id}!"
+            );
+    }
+
+    /**
+     * Update an active RepairJob's bench status (and optionally dispatch Quote 2 or settle ledger on COMPLETED).
+     * Route: POST /vendor/jobs/{jobId}/status
+     */
+    public function updateJobStatus(Request $request, $jobId)
+    {
+        $job = RepairJob::with(['repairRequest', 'shop'])->findOrFail($jobId);
+
+        $validated = $request->validate([
+            'status' => 'required|in:AT_SHOP,DIAGNOSING,WAITING_APPROVAL,REPAIRING,COMPLETED',
+            'final_quoted_amount' => 'nullable|numeric|min:50|max:2000000',
+            'diagnosis_notes' => 'nullable|string|max:1000',
+        ]);
+
+        $newStatus = $validated['status'];
+        $jobUpdates = ['status' => $newStatus];
+
+        if ($newStatus === 'REPAIRING' && !$job->started_at) {
+            $jobUpdates['started_at'] = now();
+        }
+        if (!empty($validated['diagnosis_notes'])) {
+            $jobUpdates['diagnosis_notes'] = trim($validated['diagnosis_notes']);
+        }
+        if (!empty($validated['final_quoted_amount'])) {
+            $jobUpdates['final_quoted_amount'] = (float) $validated['final_quoted_amount'];
+        }
+        if ($newStatus === 'COMPLETED') {
+            $jobUpdates['completed_at'] = now();
+        }
+
+        $job->update($jobUpdates);
+
+        if ($job->repairRequest) {
+            $reqUpdates = ['status' => $newStatus];
+            if (!empty($validated['final_quoted_amount'])) {
+                $reqUpdates['quoted_final_amount'] = (float) $validated['final_quoted_amount'];
+            }
+            $job->repairRequest->update($reqUpdates);
+
+            // When repair completes, record captured payment & 10%/90% double-entry ledger entries if not yet logged
+            if ($newStatus === 'COMPLETED') {
+                $gross = (float) ($job->final_quoted_amount ?? $job->repairRequest->quoted_final_amount ?? 2500);
+                if ($gross > 0) {
+                    $payment = PaymentTransaction::firstOrCreate(
+                        ['repair_request_id' => $job->repairRequest->id],
+                        [
+                            'user_id' => $job->repairRequest->customer_id,
+                            'amount' => $gross,
+                            'currency' => 'BDT',
+                            'payment_method' => 'CASH',
+                            'status' => 'PAID',
+                            'paid_at' => now(),
+                            'transaction_reference' => 'MRM-JOB-' . $job->id . '-' . strtoupper(Str::random(4)),
+                        ]
+                    );
+                    if ($payment->status !== 'PAID') {
+                        $payment->update(['status' => 'PAID', 'paid_at' => now(), 'amount' => $gross]);
+                    }
+
+                    $alreadySettled = FinancialLedger::where('payment_id', $payment->id)
+                        ->where('entry_type', 'CUSTOMER_PAYMENT')
+                        ->exists();
+
+                    if (!$alreadySettled) {
+                        AdminLedgerController::settleOrderWithCommission(
+                            $gross,
+                            (int) $job->shop_id,
+                            (int) $payment->id,
+                            null,
+                            0.10,
+                            "Repair Job #{$job->id} ({$job->repairRequest->title})"
+                        );
+                    }
+                }
+            }
+        }
+
+        return redirect('/vendor/dashboard?tab=assigned_jobs')
+            ->with(
+                'success',
+                "Updated Job #{$job->id} status to {$newStatus}"
+                . ($newStatus === 'WAITING_APPROVAL' ? ' — Quote 2 sent to customer for approval!' : '')
+                . ($newStatus === 'COMPLETED' ? ' — 10%/90% double-entry ledger recorded in Admin Financial Overview!' : '.')
+            );
     }
 
     /**

@@ -3,20 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\VendorProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
+    /**
+     * Determine role-aware landing destination after sign-in.
+     */
+    private function redirectPathForUser(User $user, ?string $requestedRole = null): string
+    {
+        if ($requestedRole === 'delivery_admin') {
+            return '/admin/delivery-agents/pending';
+        }
+
+        return match ($user->role) {
+            'admin' => '/admin',
+            'vendor' => $this->resolveVendorRedirect($user),
+            'delivery_agent', 'delivery' => '/delivery-agent/register',
+            default => '/',
+        };
+    }
+
+    private function resolveVendorRedirect(User $user): string
+    {
+        $profile = VendorProfile::where('user_id', $user->id)->first();
+        if ($profile && $profile->verification_status !== 'approved') {
+            return '/vendor/onboarding';
+        }
+        return '/vendor/dashboard';
+    }
+
     /**
      * Show Sign In Page (Matching AuthCard.tsx at commit 8e44218)
      */
     public function showLogin()
     {
         if (Auth::check()) {
-            return redirect('/');
+            return redirect($this->redirectPathForUser(Auth::user()));
         }
         return view('auth.login');
     }
@@ -39,7 +65,9 @@ class AuthController extends Controller
         if ($user && Hash::check($credentials['password'], $user->password)) {
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
-            return redirect()->intended('/')->with('success', 'Welcome back, ' . $user->name . '!');
+            return redirect()
+                ->intended($this->redirectPathForUser($user))
+                ->with('success', 'Welcome back, ' . $user->name . '!');
         }
 
         return back()->withInput($request->only('identifier'))->withErrors([
@@ -53,7 +81,7 @@ class AuthController extends Controller
     public function showRegister()
     {
         if (Auth::check()) {
-            return redirect('/');
+            return redirect($this->redirectPathForUser(Auth::user()));
         }
         return view('auth.register');
     }
@@ -88,7 +116,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Fast Demo Sign-In (For developer/reviewer testing)
+     * Fast Demo Sign-In (For developer/reviewer testing across all roles)
      */
     public function demoLogin(Request $request)
     {
@@ -96,7 +124,8 @@ class AuthController extends Controller
         $email = match ($role) {
             'vendor' => 'sakib.tech@gmail.com',
             'admin' => 'mustahid000@gmail.com',
-            'delivery' => 'delivery.admin.demo@meeramoot.test',
+            'delivery' => 'rider.demo@meramot.test',
+            'delivery_admin' => 'delivery.admin.demo@meeramoot.test',
             default => 'customer@meramot.demo',
         };
 
@@ -104,10 +133,11 @@ class AuthController extends Controller
         if ($user) {
             Auth::login($user);
             $request->session()->regenerate();
-            return redirect()->back()->with('success', 'Logged in as ' . ucfirst($role) . ' (' . $user->name . ')');
+            return redirect($this->redirectPathForUser($user, $role))
+                ->with('success', 'Signed in to demo portal as ' . $user->name . '!');
         }
 
-        return redirect()->back()->with('error', 'Demo user not found.');
+        return redirect('/login')->with('error', 'Demo user not found. Please run database seeders.');
     }
 
     /**

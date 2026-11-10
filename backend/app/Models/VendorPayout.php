@@ -21,25 +21,33 @@ class VendorPayout extends Model
     use HasFactory;
 
     protected $fillable = [
-        'vendor_id',
-        'gross_earnings',
-        'platform_commission_amount', // 10% deduction
-        'net_payout_amount',
-        'payout_method', // 'bKash', 'Nagad', 'bank_transfer'
-        'account_number',
-        'status', // 'pending', 'approved', 'disbursed', 'rejected'
-        'disbursed_at',
+        'shop_id',
+        'delivery_agent_id',
+        'amount',
+        'currency',
+        'status', // 'PENDING', 'PROCESSING', 'PAID', 'FAILED', 'CANCELLED'
+        'reference_code',
+        'notes',
+        'paid_at',
     ];
 
     protected $casts = [
-        'gross_earnings' => 'decimal:2',
-        'platform_commission_amount' => 'decimal:2',
-        'net_payout_amount' => 'decimal:2',
-        'disbursed_at' => 'datetime',
+        'amount' => 'decimal:2',
+        'paid_at' => 'datetime',
     ];
+
+    public function shop()
+    {
+        return $this->belongsTo(RepairShop::class, 'shop_id');
+    }
+
+    public function deliveryAgent()
+    {
+        return $this->belongsTo(DeliveryAgent::class, 'delivery_agent_id');
+    }
 
     public function vendor()
     {
-        return $this->belongsTo(VendorProfile::class, 'vendor_id');
+        return $this->belongsTo(RepairShop::class, 'shop_id');
     }
 }

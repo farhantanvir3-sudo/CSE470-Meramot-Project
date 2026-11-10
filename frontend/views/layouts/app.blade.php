@@ -367,17 +367,19 @@
                 <span class="bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px]">CSE 470 Group 6 • Dev Mode</span>
                 <span class="opacity-80">Faculty: Nazmul Islam [NZU]</span>
             </div>
-            <div class="flex items-center gap-3">
-                <span class="opacity-70">Switch Mode:</span>
-                <a href="/shops/explore" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-store text-emerald-400"></i> Customer</a>
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="opacity-70">Switch Portal:</span>
+                <a href="/shops/explore" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-store text-emerald-400"></i> Shops</a>
+                <span class="opacity-40">|</span>
+                <a href="/requests" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-list-check text-teal-300"></i> Requests</a>
                 <span class="opacity-40">|</span>
                 <a href="/vendor/dashboard" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-gavel text-amber-300"></i> Vendor Portal</a>
                 <span class="opacity-40">|</span>
-                <a href="/delivery/jobs-queue" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-motorcycle text-sky-300"></i> Rider Board</a>
+                <a href="/delivery-agent/register" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-motorcycle text-sky-300"></i> Rider R1</a>
                 <span class="opacity-40">|</span>
-                <a href="/admin/financial-overview" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-shield-halved text-rose-300"></i> Admin Console</a>
+                <a href="/admin" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-shield-halved text-rose-300"></i> Admin Console</a>
                 <span class="opacity-40">|</span>
-                <a href="?dev=0" class="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-semibold transition"><i class="fa-solid fa-xmark mr-1"></i> Exit Dev Mode</a>
+                <a href="{{ request()->fullUrlWithQuery(['dev' => 0]) }}" class="bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-0.5 rounded text-[10px] font-semibold transition"><i class="fa-solid fa-xmark mr-1"></i> Exit Dev Mode</a>
             </div>
         </div>
     </div>
@@ -426,11 +428,54 @@
                 <!-- Right side icons — always visible -->
                 <div class="flex shrink-0 items-center gap-2 md:gap-3">
                     
-                    <!-- Notification Bell -->
-                    <button class="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:bg-[var(--mint-300)]" title="Notifications">
-                        <i class="fa-regular fa-bell text-sm"></i>
-                        <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-600"></span>
-                    </button>
+                    <!-- Notification Bell Dropdown -->
+                    <div class="relative" x-data="{ notifOpen: false }">
+                        <button
+                            type="button"
+                            @click="notifOpen = !notifOpen"
+                            class="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:bg-[var(--mint-300)]"
+                            title="Notifications"
+                            aria-label="Notifications"
+                        >
+                            <i class="fa-regular fa-bell text-sm"></i>
+                            <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-600"></span>
+                        </button>
+
+                        <div
+                            x-show="notifOpen"
+                            @click.away="notifOpen = false"
+                            x-cloak
+                            class="absolute right-0 z-40 mt-2 w-80 rounded-3xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-2xl text-xs"
+                        >
+                            <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5 mb-2.5">
+                                <span class="font-black text-sm text-[var(--foreground)]">Platform Updates</span>
+                                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">Live</span>
+                            </div>
+
+                            <div class="space-y-2">
+                                <a href="/requests" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
+                                    <div class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                                        <i class="fa-solid fa-gavel text-amber-600"></i>
+                                        <span>Quote 1 &amp; Quote 2 Lifecycle Active</span>
+                                    </div>
+                                    <p class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Track incoming workshop bids and bench diagnostics in real time.</p>
+                                </a>
+
+                                <a href="/shops?branched=true" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
+                                    <div class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                                        <i class="fa-solid fa-map-location-dot text-[var(--accent-dark)]"></i>
+                                        <span>Nationwide Bangladesh Directory Live</span>
+                                    </div>
+                                    <p class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Explore verified workshops &amp; multi-branch brands across Bangladesh.</p>
+                                </a>
+                            </div>
+
+                            <div class="mt-3 pt-2.5 border-t border-[var(--border)] flex items-center justify-between">
+                                <a href="/requests" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">My Requests</a>
+                                <a href="/vendor/alert-settings" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">SMS Alert Settings &rarr;</a>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Financial Ledger (Feature R16 - Nawshad) -->
                     @if($isDevMode)
@@ -468,27 +513,70 @@
                                     x-show="userMenuOpen"
                                     @click.away="userMenuOpen = false"
                                     x-cloak
-                                    class="absolute right-0 z-30 mt-2 w-56 rounded-3xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-xl text-sm"
+                                    class="absolute right-0 z-30 mt-2 w-64 rounded-3xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-xl text-sm"
                                 >
-                                    <a href="/shops" class="block rounded-2xl px-4 py-3 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                        Explore shops
+                                    @php
+                                        $navUserRole = auth()->user()->role ?? 'customer';
+                                    @endphp
+
+                                    @if($navUserRole === 'admin')
+                                        <a href="/admin" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
+                                            <i class="fa-solid fa-shield-halved mr-1.5"></i> Admin Console
+                                        </a>
+                                        <a href="/admin/vendors/pending" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Verify Vendors
+                                        </a>
+                                        <a href="/admin/delivery-agents/pending" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Verify Riders
+                                        </a>
+                                        <a href="/admin/financial-overview" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Financial Ledger
+                                        </a>
+                                        <div class="my-1.5 border-t border-[var(--border)]"></div>
+                                    @elseif($navUserRole === 'vendor')
+                                        <a href="/vendor/dashboard" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
+                                            <i class="fa-solid fa-store mr-1.5"></i> Vendor Dashboard
+                                        </a>
+                                        <a href="/vendor/onboarding" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Onboarding &amp; Verification
+                                        </a>
+                                        <div class="my-1.5 border-t border-[var(--border)]"></div>
+                                    @elseif(in_array($navUserRole, ['delivery_agent', 'delivery'], true))
+                                        <a href="/delivery-agent/register" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
+                                            <i class="fa-solid fa-motorcycle mr-1.5"></i> Delivery Partner Status
+                                        </a>
+                                        <a href="/delivery/jobs-queue" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Rider Dispatch Queue
+                                        </a>
+                                        <div class="my-1.5 border-t border-[var(--border)]"></div>
+                                    @endif
+
+                                    <a href="/requests" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        My Repair Requests
                                     </a>
-                                    <a href="/requests/create" class="block rounded-2xl px-4 py-3 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                    <a href="/requests/create" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                         Make Repair Request
                                     </a>
-                                    <a href="/packages/catalog" class="block rounded-2xl px-4 py-3 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                    <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        Explore shops
+                                    </a>
+                                    <a href="/packages/catalog" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                         Service Packages
                                     </a>
-                                    <a href="/cart" class="block rounded-2xl px-4 py-3 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                    <a href="/cart" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                         View cart
                                     </a>
-                                    <a href="/ai-consultant/chat" class="block rounded-2xl px-4 py-3 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                    <a href="/ai-consultant/chat" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                         AI help chat
+                                    </a>
+                                    <a href="/profile" class="block rounded-2xl px-4 py-2.5 text-[var(--muted-foreground)] transition hover:bg-[var(--mint-50)] hover:text-[var(--foreground)]">
+                                        Account Profile
                                     </a>
                                     <div class="my-1 border-t border-[var(--border)]"></div>
                                     <button
+                                        type="button"
                                         @click="userMenuOpen = false; showLogoutConfirm = true"
-                                        class="block w-full rounded-2xl px-4 py-3 text-left font-medium text-red-700 transition hover:bg-red-50"
+                                        class="block w-full rounded-2xl px-4 py-2.5 text-left font-medium text-red-700 transition hover:bg-red-50"
                                     >
                                         Log out
                                     </button>
@@ -504,8 +592,9 @@
                         @endauth
 
                         <!-- Language Switcher Pill -->
-                        <div class="relative" x-data="{ langMenuOpen: false, currentLang: 'en' }">
+                        <div class="relative" x-data="{ langMenuOpen: false, currentLang: localStorage.getItem('meramot_lang') || 'en' }">
                             <button
+                                type="button"
                                 @click="langMenuOpen = !langMenuOpen"
                                 class="rounded-full bg-[var(--mint-200)] px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--mint-300)]"
                             >
@@ -516,16 +605,18 @@
                                 x-show="langMenuOpen"
                                 @click.away="langMenuOpen = false"
                                 x-cloak
-                                class="absolute right-0 z-30 mt-2 w-40 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-2 shadow-lg text-sm"
+                                class="absolute right-0 z-30 mt-2 w-44 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-2 shadow-lg text-sm"
                             >
                                 <button
-                                    @click="currentLang = 'en'; langMenuOpen = false"
+                                    type="button"
+                                    @click="currentLang = 'en'; localStorage.setItem('meramot_lang', 'en'); langMenuOpen = false; showToast({ message: 'Language set to English.', type: 'success' })"
                                     class="block w-full rounded-xl px-4 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
                                 >
                                     English
                                 </button>
                                 <button
-                                    @click="currentLang = 'bn'; langMenuOpen = false"
+                                    type="button"
+                                    @click="currentLang = 'bn'; localStorage.setItem('meramot_lang', 'bn'); langMenuOpen = false; showToast({ message: 'বাংলা নির্বাচন করা হয়েছে (Full Bangla translations coming soon).', type: 'success' })"
                                     class="block w-full rounded-xl px-4 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
                                 >
                                     বাংলা
@@ -662,6 +753,9 @@
                 <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
                     Explore all shops
                 </a>
+                <a href="/requests" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                    My Repair Requests
+                </a>
                 <a href="/requests/create" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
                     Make Repair Request
                 </a>
@@ -675,16 +769,20 @@
                     AI Diagnostic Help
                 </a>
                 <a href="/vendor/dashboard" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-[var(--mint-50)]">
-                    Vendor Portal & Direct Orders
+                    Vendor Portal &amp; Direct Orders
                 </a>
-                @if($isDevMode)
-                <a href="/admin/financial-overview" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-teal-800 hover:bg-[var(--mint-50)]">
-                    <i class="fa-solid fa-scale-balanced mr-2"></i> Financial Ledger (R16)
+                <a href="/delivery-agent/register" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-sky-900 hover:bg-[var(--mint-50)]">
+                    Delivery Partner Portal
+                </a>
+                @if($isDevMode || (auth()->check() && auth()->user()->role === 'admin'))
+                <a href="/admin" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-teal-800 hover:bg-[var(--mint-50)]">
+                    <i class="fa-solid fa-shield-halved mr-2"></i> Admin Console
                 </a>
                 @endif
                 <div class="my-2 border-t border-[var(--border)]"></div>
                 @auth
                     <button
+                        type="button"
                         @click="mobileMenuOpen = false; showLogoutConfirm = true"
                         class="block w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-red-700 hover:bg-red-50"
                     >
@@ -904,6 +1002,13 @@
             </div>
         </div>
     @endif
+    @if(session('warning'))
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+            <div class="p-3.5 text-xs font-semibold text-amber-950 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-between shadow-sm">
+                <span><i class="fa-solid fa-triangle-exclamation mr-2 text-amber-700"></i> {{ session('warning') }}</span>
+            </div>
+        </div>
+    @endif
     @if(session('error'))
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
             <div class="p-3.5 text-xs font-semibold text-rose-900 rounded-2xl bg-rose-100 border border-rose-300 flex items-center justify-between shadow-sm">
@@ -967,7 +1072,7 @@
                     <a href="/packages/catalog" class="hover:underline">Service Packages</a>
                     <a href="/requests/create" class="hover:underline">Request Repair</a>
                     <a href="/ai-consultant/chat" class="hover:underline">AI Diagnostics</a>
-                    <a href="?dev={{ $isDevMode ? '0' : '1' }}" class="text-[10px] text-[var(--muted-foreground)] opacity-40 hover:opacity-100 transition" title="Press Ctrl+Shift+D or click to toggle academic defense mode">
+                    <a href="{{ request()->fullUrlWithQuery(['dev' => $isDevMode ? '0' : '1']) }}" class="text-[10px] text-[var(--muted-foreground)] opacity-40 hover:opacity-100 transition" title="Press Ctrl+Shift+D or click to toggle academic defense mode">
                         <i class="fa-solid fa-code"></i> {{ $isDevMode ? 'Dev Mode (ON)' : 'Dev' }}
                     </a>
                 </div>
@@ -979,7 +1084,9 @@
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
                 e.preventDefault();
-                window.location.href = window.location.pathname + '?dev={{ $isDevMode ? "0" : "1" }}';
+                const targetUrl = new URL(window.location.href);
+                targetUrl.searchParams.set('dev', '{{ $isDevMode ? "0" : "1" }}');
+                window.location.href = targetUrl.toString();
             }
         });
     </script>

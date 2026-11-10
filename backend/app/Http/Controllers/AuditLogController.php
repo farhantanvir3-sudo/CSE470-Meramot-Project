@@ -30,13 +30,7 @@ class AuditLogController extends Controller
      */
     public function index(Request $request)
     {
-        $query = AuditLog::with('user');
-
-        if ($request->boolean('suspicious_only')) {
-            $query->where('is_suspicious', true);
-        }
-
-        $logs = $query->latest()->paginate(25);
+        $logs = AuditLog::with('actor')->latest()->paginate(25);
 
         return view('admin.audit-logs', compact('logs'));
     }

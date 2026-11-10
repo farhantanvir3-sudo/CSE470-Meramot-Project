@@ -5,8 +5,8 @@ FEATURE R11: Vendor Onboarding, Dual Shop Locations & Multi-Branch Opt-In
 Assigned Member: Farhan Tanvir [Student ID: 22299179] (Team Lead)
 Sprint: Sprint 1 (Nov 1 – Nov 12, 2026)
 Architectural Layer: View (Vendor/Onboarding)
-Controller: VendorOnboardingController@show, store, verify
-Models Touched: VendorProfile, RepairShop
+Controller: VendorOnboardingController@show, store, adminIndex, approve, reject
+Models Touched: User, VendorProfile, RepairShop
 =============================================================================
 --}}
 @extends('layouts.app')
@@ -15,7 +15,7 @@ Models Touched: VendorProfile, RepairShop
 
 @section('content')
 <div
-    class="mx-auto max-w-3xl px-4 py-6 md:px-6"
+    class="mx-auto max-w-3xl px-4 py-6 md:px-6 space-y-6"
     x-data="{
         gpsAddress: @js(old('gps_address', $profile->gps_address ?? '')),
         shopAddress: @js(old('shop_address', $profile->shop_address ?? '')),
@@ -33,8 +33,8 @@ Models Touched: VendorProfile, RepairShop
             this.shopLng = typeof loc.lng === 'number' ? loc.lng.toFixed(6) : '';
             if (loc.city) this.city = loc.city;
             if (loc.area) this.area = loc.area;
-            if (this.sameAsGps || !this.shopAddress) {
-                if (this.sameAsGps) this.shopAddress = this.gpsAddress;
+            if (this.sameAsGps) {
+                this.shopAddress = this.gpsAddress;
             }
         },
         syncSameAsGps() {
@@ -45,23 +45,86 @@ Models Touched: VendorProfile, RepairShop
     }"
     @meramot-location-changed.window="applyMapLocation($event.detail)"
 >
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
-        <div class="mb-6 border-b border-[var(--border)] pb-4">
-            <span class="dev-only-badge text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-2">
-                Feature R11 • Farhan Tanvir [22299179]
-            </span>
-            <h1 class="text-2xl font-black text-[var(--foreground)]">Vendor Onboarding & Dual-Location Setup</h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                Register your electronic repair brand on Meramot with verified trade credentials, a private GPS map pin for distance calculation, and your public storefront address.
-            </p>
-        </div>
 
-        @if(session('success'))
-            <div class="mb-5 rounded-2xl border border-emerald-400 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2">
-                <i class="fa-solid fa-circle-check text-emerald-700"></i>
-                <span>{{ session('success') }}</span>
+    {{-- Application Status Banner for Existing Vendor Applicants --}}
+    @if($profile)
+        @php
+            $vStatus = strtolower($profile->verification_status ?? 'pending');
+            $primaryShop = optional($profile->shops)->first();
+        @endphp
+
+        @if($vStatus === 'approved')
+            <div class="rounded-[2rem] border-2 border-emerald-500 bg-emerald-50/90 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-700 px-3 py-0.5 text-[10px] font-extrabold uppercase text-white">
+                        <i class="fa-solid fa-circle-check"></i> Verified &amp; Live Partner
+                    </span>
+                    <h2 class="mt-1.5 text-lg font-black text-[#203126]">{{ $profile->shop_name }} is Verified on Meramot</h2>
+                    <p class="mt-0.5 text-xs text-emerald-950/80">
+                        Your storefront is publicly listed. Manage multi-branch expansion, dual addresses, bids, and direct orders from your dashboard.
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                    @if($primaryShop)
+                        <a href="{{ route('shops.show', $primaryShop->slug) }}" class="rounded-full border border-emerald-700 bg-white px-4 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition">
+                            View Shop Profile
+                        </a>
+                    @endif
+                    <a href="/vendor/dashboard" class="rounded-full bg-[#244229] px-5 py-2 text-xs font-bold text-white shadow hover:opacity-90 transition">
+                        Open Vendor Dashboard &rarr;
+                    </a>
+                </div>
+            </div>
+        @elseif($vStatus === 'rejected')
+            <div class="rounded-[2rem] border-2 border-rose-400 bg-rose-50 p-5 shadow-sm space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-3 py-0.5 text-[10px] font-extrabold uppercase text-white">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Action Required — Application Rejected
+                    </span>
+                    <span class="text-[11px] font-bold text-rose-800">Shop Visibility: Hidden</span>
+                </div>
+                <h2 class="text-base font-black text-rose-950">Please update your trade credentials below and resubmit</h2>
+                @if($profile->rejection_reason)
+                    <div class="rounded-xl border border-rose-300 bg-white px-3.5 py-2.5 text-xs text-rose-900">
+                        <strong>Admin Audit Note:</strong> {{ $profile->rejection_reason }}
+                    </div>
+                @endif
+            </div>
+        @else
+            <div class="rounded-[2rem] border-2 border-amber-400 bg-amber-50/90 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3 py-0.5 text-[10px] font-extrabold uppercase text-white">
+                        <i class="fa-solid fa-clock"></i> Verification Pending
+                    </span>
+                    <h2 class="mt-1.5 text-base font-black text-[#203126]">Application Under Administrative Audit ({{ $profile->shop_name }})</h2>
+                    <p class="mt-0.5 text-xs text-amber-950/80">
+                        Shop visibility stays private until an administrator verifies your Trade License (<span class="font-mono">{{ $profile->business_license_no }}</span>) and NID. You can update details below anytime.
+                    </p>
+                </div>
+                @if($primaryShop)
+                    <a href="{{ route('shops.show', $primaryShop->slug) }}" class="rounded-full border border-amber-700 bg-white px-4 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100 transition shrink-0">
+                        Preview Storefront &rarr;
+                    </a>
+                @endif
             </div>
         @endif
+    @endif
+
+    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
+        <div class="mb-6 border-b border-[var(--border)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+                <span class="dev-only-badge text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-2">
+                    Feature R11 • Farhan Tanvir [22299179]
+                </span>
+                <h1 class="text-2xl font-black text-[var(--foreground)]">Vendor Onboarding &amp; Dual-Location Setup</h1>
+                <p class="text-xs text-[var(--muted-foreground)] mt-1">
+                    Register your electronic repair brand on Meramot with verified trade credentials, a private GPS map pin for distance calculation, and your public storefront address.
+                </p>
+            </div>
+            <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition self-start shrink-0">
+                Vendor Dashboard &rarr;
+            </a>
+        </div>
 
         @if($errors->any())
             <div class="mb-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1">
@@ -73,6 +136,60 @@ Models Touched: VendorProfile, RepairShop
 
         <form method="POST" action="/vendor/onboarding" class="space-y-5 text-xs">
             @csrf
+
+            @guest
+                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Owner Account Credentials</span>
+                        <a href="/login" class="text-[11px] font-bold text-[var(--accent-dark)] hover:underline">Already have an account? Sign in</a>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Owner Full Name *</label>
+                            <input
+                                type="text"
+                                name="owner_name"
+                                value="{{ old('owner_name') }}"
+                                placeholder="e.g. Tariqul Islam"
+                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs outline-none"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Business Email *</label>
+                            <input
+                                type="email"
+                                name="owner_email"
+                                value="{{ old('owner_email') }}"
+                                placeholder="owner@yourworkshop.bd"
+                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs outline-none"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Contact Mobile *</label>
+                            <input
+                                type="tel"
+                                name="owner_phone"
+                                value="{{ old('owner_phone') }}"
+                                placeholder="+88017XXXXXXXX"
+                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs outline-none"
+                                required
+                            >
+                        </div>
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Account Password *</label>
+                            <input
+                                type="password"
+                                name="owner_password"
+                                placeholder="Min. 6 characters"
+                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs outline-none"
+                                required
+                            >
+                        </div>
+                    </div>
+                </div>
+            @endguest
 
             <div>
                 <label class="block font-bold text-[var(--foreground)] mb-1">Repair Shop / Brand Business Name *</label>
@@ -234,16 +351,22 @@ Models Touched: VendorProfile, RepairShop
 
             <div>
                 <label class="block font-bold text-[var(--foreground)] mb-1">Service Categories Supported</label>
+                @php
+                    $selectedCats = old('categories', $profile->categories ?? ['Laptop', 'Phone']);
+                    if (!is_array($selectedCats)) {
+                        $selectedCats = ['Laptop', 'Phone'];
+                    }
+                @endphp
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-3.5">
-                    <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="Laptop" checked class="accent-[#244229]"> Laptop &amp; PC Motherboards</label>
-                    <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="Phone" checked class="accent-[#244229]"> Smartphone Hardware</label>
-                    <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="Display" class="accent-[#244229]"> Display Panel Replacement</label>
-                    <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="WaterDamage" class="accent-[#244229]"> Water Damage Micro-soldering</label>
+                    <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="Laptop" {{ in_array('Laptop', $selectedCats) ? 'checked' : '' }} class="accent-[#244229]"> Laptop &amp; PC Motherboards</label>
+                    <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="Phone" {{ in_array('Phone', $selectedCats) ? 'checked' : '' }} class="accent-[#244229]"> Smartphone Hardware</label>
+                    <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="Display" {{ in_array('Display', $selectedCats) ? 'checked' : '' }} class="accent-[#244229]"> Display Panel Replacement</label>
+                    <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="WaterDamage" {{ in_array('WaterDamage', $selectedCats) ? 'checked' : '' }} class="accent-[#244229]"> Water Damage Micro-soldering</label>
                 </div>
             </div>
 
             <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-95 text-[var(--accent-foreground)] font-bold py-3 text-xs mt-4 shadow-md transition">
-                Submit Application for Verification
+                {{ $profile ? 'Save & Resubmit Application for Verification' : 'Submit Application for Verification' }}
             </button>
         </form>
     </div>

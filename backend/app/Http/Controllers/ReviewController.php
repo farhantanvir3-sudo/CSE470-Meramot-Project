@@ -47,15 +47,24 @@ class ReviewController extends Controller
             'review_comment' => 'required|string|min:10|max:1000',
         ]);
 
+        $customerId = $request->user()?->id
+            ?? \App\Models\User::where('role', 'customer')->value('id')
+            ?? 1;
+
         $review = ShopReview::create(array_merge($validated, [
-            'customer_id' => $request->user()->id ?? 1,
+            'customer_id' => $customerId,
             'is_verified_purchase' => true,
         ]));
 
-        // Recalculate shop average rating
+        // Recalculate shop average rating & review count
         $shop = RepairShop::findOrFail($validated['repair_shop_id']);
-        $newAvg = ShopReview::where('repair_shop_id', $shop->id)->avg('rating');
-        $shop->update(['rating' => round($newAvg, 2)]);
+        $reviewsQuery = ShopReview::where('repair_shop_id', $shop->id)->where('is_hidden', false);
+        $newAvg = $reviewsQuery->avg('rating') ?: 5.0;
+        $newCount = $reviewsQuery->count();
+        $shop->update([
+            'rating' => round((float) $newAvg, 2),
+            'review_count' => $newCount,
+        ]);
 
         return redirect()->route('shops.show', $shop->slug)->with('success', 'Thank you! Your verified review has been posted.');
     }
