@@ -3,16 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\RepairRequest;
+use App\Models\RepairShop;
 use App\Models\User;
 use Illuminate\Http\Request;
 
 /**
  * ============================================================================
- * FEATURE R7: Customer Repair Request Posting & Lifecycle Tracking
+ * FEATURE R7: Customer Repair Request Posting, History & Lifecycle Tracking
  * ============================================================================
  * Assigned Member: Shanid Sajjatuz Islam [Student ID: 23201465]
- * Merged Lifecycle: Farhan Tanvir [22299179] (Dual-Path & Dual-Quote Flow)
+ * Merged Lifecycle: Farhan Tanvir [22299179] (Dual-Path, Dual-Quote & Requests Hub)
  * Views Rendered (from root `frontend/views/`):
+ *   - requests/index.blade.php
  *   - requests/create.blade.php
  *   - requests/track.blade.php
  * ============================================================================
@@ -20,12 +22,51 @@ use Illuminate\Http\Request;
 class RepairRequestController extends Controller
 {
     /**
+     * Customer "My Repair Requests & Direct Orders" Hub.
+     * Routes: GET /requests, GET /orders
+     */
+    public function index(Request $request)
+    {
+        $statusFilter = strtoupper((string) $request->query('filter', 'ALL'));
+        $user = $request->user();
+
+        $query = RepairRequest::with(['bids.shop', 'requestedShop', 'repairJob.shop', 'customer'])
+            ->orderByDesc('created_at');
+
+        if ($user && $user->role === 'customer' && $request->query('scope') !== 'all') {
+            $hasOwnRequests = RepairRequest::where('customer_id', $user->id)->exists();
+            if ($hasOwnRequests) {
+                $query->where('customer_id', $user->id);
+            }
+        }
+
+        if ($statusFilter === 'BIDDING') {
+            $query->where('status', 'BIDDING');
+        } elseif ($statusFilter === 'DIRECT') {
+            $query->where('source', 'DIRECT_SERVICE');
+        } elseif ($statusFilter === 'ACTIVE') {
+            $query->whereIn('status', ['PENDING', 'ASSIGNED', 'PICKUP_SCHEDULED', 'PICKED_UP', 'AT_SHOP', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING']);
+        } elseif ($statusFilter === 'COMPLETED') {
+            $query->where('status', 'COMPLETED');
+        }
+
+        $requests = $query->paginate(12)->withQueryString();
+
+        return view('requests.index', compact('requests', 'statusFilter'));
+    }
+
+    /**
      * Show repair request submission form.
      * Route: GET /requests/create
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('requests.create');
+        $selectedShop = $request->filled('shop_id')
+            ? RepairShop::find($request->query('shop_id'))
+            : null;
+        $prefilledIssue = (string) $request->query('issue', '');
+
+        return view('requests.create', compact('selectedShop', 'prefilledIssue'));
     }
 
     /**
@@ -38,13 +79,17 @@ class RepairRequestController extends Controller
             'device_type' => 'required|string|max:100',
             'brand' => 'required|string|max:100',
             'model_name' => 'required|string|max:150',
+            'year' => 'nullable|string|max:20',
+            'specs' => 'nullable|string|max:150',
             'serial_number' => 'nullable|string|max:100',
             'issue_category' => 'nullable|string|max:120',
             'issue_title' => 'required|string|max:255',
             'issue_description' => 'required|string',
             'preferred_service_type' => 'required|in:pickup_dropoff,walk_in,technician_home_visit',
             'pickup_address' => 'nullable|string|max:500',
-            'area' => 'nullable|string|max:100',
+            'area' => 'nullable|string|max:120',
+            'city' => 'nullable|string|max:100',
+            'estimated_budget' => 'nullable|numeric|min:0|max:1000000',
             'preferred_shop_id' => 'nullable|integer|exists:repair_shops,id',
             'photos' => 'nullable|array|max:5',
             'photos.*' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
@@ -61,11 +106,36 @@ class RepairRequestController extends Controller
         $customerId = $request->user()?->id ?? User::where('role', 'customer')->value('id') ?? User::value('id') ?? 1;
         $requestedShopId = $validated['preferred_shop_id'] ?? null;
 
-        $fullAddress = $validated['pickup_address'] ?? null;
-        if (!empty($validated['area']) && $fullAddress && !str_contains($fullAddress, $validated['area'])) {
-            $fullAddress .= ', ' . $validated['area'] . ', Dhaka';
-        } elseif (!empty($validated['area']) && empty($fullAddress)) {
-            $fullAddress = $validated['area'] . ', Dhaka';
+        $cityName = trim((string) ($validated['city'] ?? 'Dhaka')) ?: 'Dhaka';
+        $areaName = trim((string) ($validated['area'] ?? ''));
+
+        $fullAddress = trim((string) ($validated['pickup_address'] ?? ''));
+        if ($areaName !== '' && $fullAddress !== '' && !str_contains(strtolower($fullAddress), strtolower($areaName))) {
+            $fullAddress .= ', ' . $areaName;
+            if (!str_contains(strtolower($areaName), strtolower($cityName)) && !str_contains(strtolower($fullAddress), strtolower($cityName))) {
+                $fullAddress .= ', ' . $cityName;
+            }
+        } elseif ($areaName !== '' && $fullAddress === '') {
+            $fullAddress = str_contains(strtolower($areaName), strtolower($cityName))
+                ? $areaName
+                : ($areaName . ', ' . $cityName);
+        }
+
+        // Preserve optional hardware metadata cleanly in description
+        $extraMeta = [];
+        if (!empty($validated['year'])) {
+            $extraMeta[] = 'Year: ' . trim($validated['year']);
+        }
+        if (!empty($validated['specs'])) {
+            $extraMeta[] = 'Specs: ' . trim($validated['specs']);
+        }
+        if (!empty($validated['estimated_budget'])) {
+            $extraMeta[] = 'Customer Expected Budget: ৳' . number_format((float) $validated['estimated_budget']);
+        }
+
+        $enrichedDescription = $validated['issue_description'];
+        if (!empty($extraMeta)) {
+            $enrichedDescription .= "\n\n[" . implode(' • ', $extraMeta) . ']';
         }
 
         $repairRequest = RepairRequest::create([
@@ -73,8 +143,8 @@ class RepairRequestController extends Controller
             'source' => $requestedShopId ? 'DIRECT_CUSTOM_SHOP' : 'MARKETPLACE',
             'requested_shop_id' => $requestedShopId,
             'title' => $validated['issue_title'],
-            'description' => $validated['issue_description'],
-            'problem' => $validated['issue_description'],
+            'description' => $enrichedDescription,
+            'problem' => $enrichedDescription,
             'device_type' => $validated['device_type'],
             'brand' => $validated['brand'],
             'model_name' => $validated['model_name'],
@@ -85,12 +155,12 @@ class RepairRequestController extends Controller
             'status' => RepairRequest::STATUS_BIDDING,
             'preferred_pickup' => $validated['preferred_service_type'] === 'pickup_dropoff',
             'preferred_service_type' => $validated['preferred_service_type'],
-            'pickup_address' => $fullAddress,
+            'pickup_address' => $fullAddress ?: null,
         ]);
 
         return redirect()
             ->route('requests.track', $repairRequest->id)
-            ->with('success', 'Repair request published! Verified workshops across Dhaka can now submit Quote 1 bids.');
+            ->with('success', 'Repair request published! Verified workshops across Bangladesh can now submit Quote 1 bids.');
     }
 
     /**
@@ -102,8 +172,8 @@ class RepairRequestController extends Controller
         $repairRequest = RepairRequest::with([
             'bids' => function ($query) {
                 $query->where('status', '!=', 'WITHDRAWN')
-                      ->with('shop')
-                      ->orderBy('proposed_cost', 'asc');
+                    ->with('shop')
+                    ->orderBy('proposed_cost', 'asc');
             },
             'customer',
             'requestedShop',

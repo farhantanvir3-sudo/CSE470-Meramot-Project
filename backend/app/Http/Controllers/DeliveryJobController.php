@@ -31,56 +31,37 @@ class DeliveryJobController extends Controller
      */
     public function index(Request $request)
     {
-        // TODO (Nafiul): Fetch available delivery jobs where status is 'unassigned'
         $availableJobs = DeliveryJob::with('repairRequest')
-            ->where('status', 'unassigned')
+            ->whereIn('status', ['PENDING', 'unassigned'])
             ->latest()
             ->get();
 
-        $activeJobs = DeliveryJob::with('repairRequest')
-            ->where('delivery_agent_id', $request->user()->deliveryAgent->id ?? null)
-            ->whereIn('status', ['assigned', 'picked_up', 'in_transit'])
-            ->get();
+        $agentId = $request->user()?->deliveryAgent?->id;
+        $activeJobs = $agentId
+            ? DeliveryJob::with('repairRequest')
+                ->where('delivery_agent_id', $agentId)
+                ->whereIn('status', ['SCHEDULED', 'DISPATCHED', 'PICKED_UP', 'IN_TRANSIT', 'assigned', 'picked_up', 'in_transit'])
+                ->get()
+            : collect();
 
         return view('delivery.jobs-queue', compact('availableJobs', 'activeJobs'));
     }
 
     /**
-     * Rider claims an unassigned job.
+     * Rider claims an unassigned job (Sprint 2 — routes to Coming Soon during Sprint 1).
      * Route: POST /delivery/jobs/{id}/claim
      */
     public function claimJob(Request $request, $id)
     {
-        // TODO (Nafiul): Check if job is still 'unassigned', then assign to agent and generate 4-digit pickup OTP
-        $job = DeliveryJob::where('id', $id)->where('status', 'unassigned')->firstOrFail();
-        
-        $job->update([
-            'delivery_agent_id' => $request->user()->deliveryAgent->id ?? 1,
-            'status' => 'assigned',
-            'pickup_otp' => str_pad((string)random_int(1000, 9999), 4, '0', STR_PAD_LEFT),
-        ]);
-
-        return redirect()->back()->with('success', 'Job claimed successfully.');
+        return app(ComingSoonController::class)->show($request, 'rider-dispatch-queue');
     }
 
     /**
-     * Update milestone status with OTP verification.
+     * Update milestone status with OTP verification (Sprint 2 — routes to Coming Soon during Sprint 1).
      * Route: POST /delivery/jobs/{id}/milestone
      */
     public function updateMilestone(Request $request, $id)
     {
-        // TODO (Nafiul): Verify pickup_otp or dropoff_otp and transition job status
-        $job = DeliveryJob::findOrFail($id);
-        $nextStatus = $request->input('next_status'); // 'picked_up' or 'delivered'
-
-        $job->update([
-            'status' => $nextStatus,
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => "Milestone updated to {$nextStatus}",
-            'data' => $job,
-        ]);
+        return app(ComingSoonController::class)->show($request, 'rider-dispatch-queue');
     }
 }

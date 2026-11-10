@@ -15,7 +15,7 @@
     <div class="mb-4 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
         <a href="/" class="hover:underline">Home</a>
         <span>›</span>
-        <a href="/requests/create" class="hover:underline">Repair Requests</a>
+        <a href="/requests" class="hover:underline">My Repair Requests</a>
         <span>›</span>
         <span class="text-[var(--foreground)] font-semibold">Track Request #{{ $repairRequest->id }}</span>
     </div>
@@ -374,6 +374,12 @@
                 </h3>
 
                 <div class="space-y-2.5">
+                    @if(in_array($currentStatus, ['ASSIGNED', 'REPAIRING', 'WAITING_APPROVAL', 'COMPLETED'], true))
+                        <a href="/checkout/payment/{{ $repairRequest->id }}" class="block w-full py-2.5 rounded-full bg-emerald-700 text-center text-xs font-bold text-white hover:opacity-90 transition">
+                            <i class="fa-solid fa-credit-card mr-2"></i>Online Escrow Checkout
+                        </a>
+                    @endif
+
                     @if(in_array($currentStatus, ['PICKED_UP', 'AT_SHOP', 'RETURNING'], true))
                         <a href="/tracking/{{ $repairRequest->id }}" class="block w-full py-2.5 rounded-full bg-[var(--accent-dark)] text-center text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                             <i class="fa-solid fa-location-dot mr-2"></i>Track Live Rider GPS
@@ -385,6 +391,10 @@
                             <i class="fa-solid fa-star mr-2"></i>Leave Verified Review
                         </a>
                     @endif
+
+                    <a href="/requests" class="block w-full py-2.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-center text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                        <i class="fa-solid fa-list-check mr-2 text-[var(--accent-dark)]"></i>All My Repair Requests
+                    </a>
 
                     <a href="/ai-consultant/chat" class="block w-full py-2.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-center text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                         <i class="fa-solid fa-wand-magic-sparkles mr-2 text-amber-600"></i>Ask AI Consultant

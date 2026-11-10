@@ -29,10 +29,16 @@ class TrackingController extends Controller
      * Render live GPS map tracking view.
      * Route: GET /tracking/{jobId}
      */
-    public function showMap($jobId)
+    public function showMap(Request $request, $jobId)
     {
-        // TODO (Nafiul): Load job details along with latest GPS coordinates
-        $job = DeliveryJob::with(['deliveryAgent', 'repairRequest'])->findOrFail($jobId);
+        $job = DeliveryJob::with(['deliveryAgent', 'repairRequest'])->find($jobId);
+        if (!$job) {
+            return app(ComingSoonController::class)->show(
+                $request->merge(['request_id' => $jobId]),
+                'live-rider-gps'
+            );
+        }
+
         $latestLocation = LocationLog::where('delivery_job_id', $jobId)->latest()->first();
 
         return view('tracking.live-map', compact('job', 'latestLocation'));

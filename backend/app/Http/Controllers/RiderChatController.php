@@ -28,35 +28,17 @@ class RiderChatController extends Controller
      * Show rider support chat view.
      * Route: GET /support/rider-chat/{riderId}
      */
-    public function index($riderId)
+    public function index(Request $request, $riderId)
     {
-        // TODO (Nafiul): Fetch chat messages where delivery_agent_id = $riderId
-        $messages = RiderChatMessage::where('delivery_agent_id', $riderId)->orderBy('created_at', 'asc')->get();
-
-        return view('support.rider-chat', compact('messages', 'riderId'));
+        return app(ComingSoonController::class)->show($request, 'rider-live-chat');
     }
 
     /**
-     * Send chat message over WebSocket.
+     * Send chat message over WebSocket (Sprint 4 — routes to Coming Soon during Sprint 1).
      * Route: POST /api/support/rider-chat/send
      */
     public function sendMessage(Request $request)
     {
-        $validated = $request->validate([
-            'delivery_agent_id' => 'required|exists:delivery_agents,id',
-            'sender_role' => 'required|in:admin,rider',
-            'message_text' => 'required|string|max:1000',
-        ]);
-
-        $message = RiderChatMessage::create(array_merge($validated, [
-            'is_read' => false,
-        ]));
-
-        // TODO (Nafiul): Broadcast event to Pusher channel 'rider-chat.{delivery_agent_id}'
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $message,
-        ]);
+        return app(ComingSoonController::class)->show($request, 'rider-live-chat');
     }
 }

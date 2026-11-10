@@ -21,16 +21,21 @@ class ModerationLog extends Model
     use HasFactory;
 
     protected $fillable = [
-        'moderator_id',
-        'target_user_id',
-        'action_taken', // 'warn', 'suspend_7_days', 'ban_permanent', 'dismiss_report'
+        'admin_id',
+        'target_type', // 'shop', 'user', 'review'
+        'target_id',
+        'violation_type', // 'fraudulent_quote', 'abusive_chat', 'fake_review'
+        'action_taken', // 'suspended', 'warned', 'content_removed'
         'reason',
-        'flagged_entity_type', // 'repair_request', 'shop_review', 'chat_message'
-        'flagged_entity_id',
     ];
+
+    public function admin()
+    {
+        return $this->belongsTo(User::class, 'admin_id');
+    }
 
     public function targetUser()
     {
-        return $this->belongsTo(User::class, 'target_user_id');
+        return $this->belongsTo(User::class, 'target_id');
     }
 }

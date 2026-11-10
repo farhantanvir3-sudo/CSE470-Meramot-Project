@@ -98,7 +98,7 @@
                         <input type="checkbox" name="remember" class="rounded accent-[#214c34]" checked>
                         <span>Remember me</span>
                     </label>
-                    <a href="#" class="hover:underline">Forgot password?</a>
+                    <a href="/forgot-password" class="hover:underline">Forgot password?</a>
                 </div>
 
                 <button

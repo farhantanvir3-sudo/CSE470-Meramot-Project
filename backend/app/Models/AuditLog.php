@@ -14,23 +14,26 @@ class AuditLog extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'event_action', // e.g., 'vendor_approved', 'bid_accepted', 'payment_verified'
-        'ip_address',
-        'user_agent',
+        'actor_id',
+        'action', // e.g., 'vendor_approved', 'bid_accepted', 'payment_verified'
+        'target_resource',
         'payload_before',
         'payload_after',
-        'is_suspicious',
+        'ip_address',
     ];
 
     protected $casts = [
         'payload_before' => 'array',
         'payload_after' => 'array',
-        'is_suspicious' => 'boolean',
     ];
+
+    public function actor()
+    {
+        return $this->belongsTo(User::class, 'actor_id');
+    }
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'actor_id');
     }
 }

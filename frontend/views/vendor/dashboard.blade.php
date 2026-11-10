@@ -187,7 +187,7 @@
         >
             <i class="fa-solid fa-gavel text-xs text-amber-600"></i>
             <span>Marketplace Bids</span>
-            <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-white">4 Live</span>
+            <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-white">{{ ($marketplaceRequests ?? collect())->count() }} Live</span>
         </button>
 
         <button
@@ -198,7 +198,7 @@
         >
             <i class="fa-solid fa-box text-xs text-emerald-700"></i>
             <span>Direct Orders</span>
-            <span class="rounded-full bg-emerald-800 px-2 py-0.5 text-[10px] text-white">{{ isset($directOrders) ? count($directOrders) + 2 : 2 }}</span>
+            <span class="rounded-full bg-emerald-800 px-2 py-0.5 text-[10px] text-white">{{ ($directOrders ?? collect())->count() }}</span>
         </button>
 
         <button
@@ -209,7 +209,7 @@
         >
             <i class="fa-solid fa-screwdriver-wrench text-xs text-indigo-700"></i>
             <span>My Repair Jobs</span>
-            <span class="rounded-full bg-indigo-900 px-2 py-0.5 text-[10px] text-white">{{ $branchMetrics['active_jobs_count'] ?? 3 }} Active</span>
+            <span class="rounded-full bg-indigo-900 px-2 py-0.5 text-[10px] text-white">{{ ($activeJobs ?? collect())->count() }} Active</span>
         </button>
     </div>
 
@@ -244,30 +244,28 @@
             <div class="meramot-card p-6 shadow-sm lg:col-span-2">
                 <h3 class="font-bold text-base text-[var(--foreground)] mb-3 flex items-center justify-between">
                     <span>Recent Repair Activity &amp; Completed Milestones</span>
-                    <a href="#" @click.prevent="activeTab = 'assigned_jobs'" class="text-xs text-[var(--accent-dark)] hover:underline">View All &rarr;</a>
+                    <button type="button" @click="activeTab = 'assigned_jobs'" class="text-xs font-bold text-[var(--accent-dark)] hover:underline">View All &rarr;</button>
                 </h3>
                 <div class="divide-y divide-[var(--border)] text-xs">
-                    <div class="py-3 flex items-center justify-between">
-                        <div>
-                            <span class="font-bold text-[var(--foreground)] block">Apple MacBook Pro M1 14"</span>
-                            <span class="text-[var(--muted-foreground)]">Backlight IC replacement • {{ $publicPreviewShop->display_branch_tag ?? 'Main Workshop' }}</span>
+                    @forelse(($activeJobs ?? collect())->take(4) as $rJob)
+                        <div class="py-3 flex items-center justify-between gap-3">
+                            <div>
+                                <span class="font-bold text-[var(--foreground)] block">
+                                    #{{ $rJob->id }} — {{ $rJob->repairRequest?->brand }} {{ $rJob->repairRequest?->model_name }} ({{ $rJob->repairRequest?->title ?? 'Hardware Service' }})
+                                </span>
+                                <span class="text-[var(--muted-foreground)]">
+                                    {{ $rJob->shop?->display_branch_tag ?? ($rJob->shop?->name ?? 'Workshop') }} • Customer: {{ $rJob->repairRequest?->customer?->name ?? 'Meramot Customer' }}
+                                </span>
+                            </div>
+                            <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] font-bold px-3 py-1 text-[10px] shrink-0">
+                                {{ $rJob->status }}
+                            </span>
                         </div>
-                        <span class="rounded-full bg-emerald-100 text-emerald-900 font-bold px-3 py-1 text-[10px]">REPAIRING</span>
-                    </div>
-                    <div class="py-3 flex items-center justify-between">
-                        <div>
-                            <span class="font-bold text-[var(--foreground)] block">Lenovo ThinkPad T14 Gen 2</span>
-                            <span class="text-[var(--muted-foreground)]">Keyboard replacement • Customer: Sadia N.</span>
+                    @empty
+                        <div class="py-6 text-center text-[var(--muted-foreground)]">
+                            No active repair jobs in this branch filter yet. Accept a Marketplace Bid or Direct Order to start a bench job!
                         </div>
-                        <span class="rounded-full bg-indigo-100 text-indigo-900 font-bold px-3 py-1 text-[10px]">DIAGNOSING</span>
-                    </div>
-                    <div class="py-3 flex items-center justify-between">
-                        <div>
-                            <span class="font-bold text-[var(--foreground)] block">Samsung Galaxy S23 Ultra</span>
-                            <span class="text-[var(--muted-foreground)]">AMOLED display swap • Customer: Nafis K.</span>
-                        </div>
-                        <span class="rounded-full bg-emerald-800 text-white font-bold px-3 py-1 text-[10px]">COMPLETED</span>
-                    </div>
+                    @endforelse
                 </div>
             </div>
 
@@ -691,113 +689,109 @@
         </div>
     </div>
 
-    <!-- ── TAB 2: MARKETPLACE LIVE BIDDING ── -->
+    <!-- ── TAB 2: MARKETPLACE LIVE BIDDING (Real Database Tickets & Bid Persistence) ── -->
     <div x-show="activeTab === 'marketplace'" x-cloak class="space-y-6">
-        <div class="rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-4 flex items-center justify-between text-xs">
+        <div class="rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-bullhorn text-amber-700 text-lg"></i>
-                <span>Reverse Bidding Rules: Submit itemized parts cost, labor cost, and turnaround time. Customers choose based on warranty, price, and reputation.</span>
+                <span>Reverse Bidding Engine: Submit itemized parts cost, labor cost, and turnaround days. Your bid is saved directly to the customer's tracking page!</span>
             </div>
-            <a href="/vendor/bidding-board" class="rounded-full bg-[var(--accent-dark)] text-white px-4 py-1.5 font-bold hover:opacity-90 transition shrink-0">
-                Full Board View
-            </a>
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="/vendor/alert-settings" class="rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] px-3.5 py-1.5 font-bold hover:bg-[var(--mint-50)] transition">
+                    SMS Alerts
+                </a>
+                <a href="/vendor/bidding-board" class="rounded-full bg-[var(--accent-dark)] text-white px-4 py-1.5 font-bold hover:opacity-90 transition">
+                    Full Board View
+                </a>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <!-- Ticket 1 -->
-            <div class="meramot-card p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] font-black uppercase tracking-wider bg-emerald-800 text-white px-2.5 py-0.5 rounded-full">
-                            Bidding Open • 3 bids active
-                        </span>
-                        <span class="text-xs text-[var(--muted-foreground)]"><i class="fa-regular fa-clock"></i> 20 mins ago</span>
+            @forelse($marketplaceRequests ?? [] as $mReq)
+                <div class="meramot-card p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2 gap-2">
+                            <span class="text-[10px] font-black uppercase tracking-wider bg-emerald-800 text-white px-2.5 py-0.5 rounded-full">
+                                Bidding Open • #{{ $mReq->id }} ({{ $mReq->bids->count() }} {{ Str::plural('bid', $mReq->bids->count()) }})
+                            </span>
+                            <a href="{{ route('requests.track', $mReq->id) }}" class="text-[11px] font-bold text-[var(--accent-dark)] hover:underline">
+                                Customer View &rarr;
+                            </a>
+                        </div>
+                        <h3 class="font-black text-lg text-[var(--foreground)]">{{ $mReq->brand }} {{ $mReq->model_name }}</h3>
+                        <p class="text-xs font-semibold text-[var(--accent-dark)] mt-1">{{ $mReq->title }}</p>
+                        <p class="text-xs text-[var(--muted-foreground)] mt-2 leading-relaxed line-clamp-3">
+                            {{ $mReq->description }}
+                        </p>
+                        <div class="mt-3 text-[11px] text-[var(--muted-foreground)] flex flex-wrap items-center gap-3">
+                            <span><i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i> {{ $mReq->pickup_address ?? 'Dhaka' }}</span>
+                            <span><i class="fa-solid fa-truck text-[var(--accent-dark)]"></i> {{ ucwords(str_replace('_', ' ', $mReq->preferred_service_type ?? 'Pickup & Dropoff')) }}</span>
+                        </div>
                     </div>
-                    <h3 class="font-black text-lg text-[var(--foreground)]">Apple MacBook Pro 14" (2021)</h3>
-                    <p class="text-xs font-semibold text-[var(--accent-dark)] mt-1">Issue: Display backlight black after minor water spill on table</p>
-                    <p class="text-xs text-[var(--muted-foreground)] mt-2 leading-relaxed">
-                        "Device powers on, chime sounds, caps lock key lights up, but screen remains completely dark unless illuminated with external flashlight."
-                    </p>
-                    <div class="mt-3 text-[11px] text-[var(--muted-foreground)] flex items-center gap-3">
-                        <span><i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i> Dhanmondi, Dhaka</span>
-                        <span><i class="fa-solid fa-truck text-[var(--accent-dark)]"></i> Courier Pickup</span>
-                    </div>
-                </div>
 
-                <div class="mt-6 pt-4 border-t border-[var(--border)]">
-                    <form class="grid grid-cols-3 gap-2 text-xs">
-                        <div>
-                            <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Parts (৳)</label>
-                            <input type="number" placeholder="1800" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Labor (৳)</label>
-                            <input type="number" placeholder="1200" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Days</label>
-                            <input type="number" placeholder="2" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2">
-                        </div>
-                        <div class="col-span-3 mt-2">
-                            <button type="button" @click="window.MeramotToast?.show('Bid quote of ৳3,000 submitted successfully!')" class="w-full rounded-full bg-[var(--accent-dark)] py-2 font-bold text-white shadow hover:opacity-90 transition">
-                                Submit Itemized Bid Offer &rarr;
+                    <div class="mt-5 pt-4 border-t border-[var(--border)]">
+                        <form method="POST" action="{{ route('vendor.requests.bid', $mReq->id) }}" class="space-y-2.5 text-xs">
+                            @csrf
+                            @if($activeBranch)
+                                <input type="hidden" name="shop_id" value="{{ $activeBranch->id }}">
+                            @elseif(count($branches) > 1)
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-1">Bid From Branch</label>
+                                    <select name="shop_id" class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-2 text-xs font-semibold outline-none">
+                                        @foreach($branches as $bShop)
+                                            <option value="{{ $bShop->id }}">{{ $bShop->name }}{{ $bShop->display_branch_tag ? ' [' . $bShop->display_branch_tag . ']' : '' }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @elseif(count($branches) === 1)
+                                <input type="hidden" name="shop_id" value="{{ $branches->first()->id }}">
+                            @endif
+
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Parts (৳) *</label>
+                                    <input type="number" name="parts_cost" placeholder="1800" min="0" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 outline-none" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Labor (৳) *</label>
+                                    <input type="number" name="labor_cost" placeholder="900" min="0" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 outline-none" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Days *</label>
+                                    <input type="number" name="estimated_days" value="2" min="1" max="30" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 outline-none" required>
+                                </div>
+                            </div>
+
+                            <input
+                                type="text"
+                                name="technician_note"
+                                placeholder="Technician note (e.g. Genuine OEM spare part + 90-day warranty)"
+                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs outline-none"
+                            >
+
+                            <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] py-2.5 font-bold text-white shadow hover:opacity-90 transition">
+                                Submit Itemized Quote 1 Bid &rarr;
                             </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- Ticket 2 -->
-            <div class="meramot-card p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] font-black uppercase tracking-wider bg-emerald-800 text-white px-2.5 py-0.5 rounded-full">
-                            Bidding Open • 1 bid active
-                        </span>
-                        <span class="text-xs text-[var(--muted-foreground)]"><i class="fa-regular fa-clock"></i> 45 mins ago</span>
-                    </div>
-                    <h3 class="font-black text-lg text-[var(--foreground)]">Sony PlayStation 5 Disc Edition</h3>
-                    <p class="text-xs font-semibold text-[var(--accent-dark)] mt-1">Issue: HDMI port bent pins, no TV signal</p>
-                    <p class="text-xs text-[var(--muted-foreground)] mt-2 leading-relaxed">
-                        "Console dropped forward while plugged in, cable pulled HDMI connector loose. Console boots to white light but no TV output."
-                    </p>
-                    <div class="mt-3 text-[11px] text-[var(--muted-foreground)] flex items-center gap-3">
-                        <span><i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i> Gulshan 2, Dhaka</span>
-                        <span><i class="fa-solid fa-person-walking text-[var(--accent-dark)]"></i> Customer Drop-off</span>
+                        </form>
                     </div>
                 </div>
-
-                <div class="mt-6 pt-4 border-t border-[var(--border)]">
-                    <form class="grid grid-cols-3 gap-2 text-xs">
-                        <div>
-                            <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Parts (৳)</label>
-                            <input type="number" placeholder="1200" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Labor (৳)</label>
-                            <input type="number" placeholder="1500" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Days</label>
-                            <input type="number" placeholder="1" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2">
-                        </div>
-                        <div class="col-span-3 mt-2">
-                            <button type="button" @click="window.MeramotToast?.show('Bid quote of ৳2,700 submitted successfully!')" class="w-full rounded-full bg-[var(--accent-dark)] py-2 font-bold text-white shadow hover:opacity-90 transition">
-                                Submit Itemized Bid Offer &rarr;
-                            </button>
-                        </div>
-                    </form>
+            @empty
+                <div class="md:col-span-2 meramot-card p-8 text-center text-xs text-[var(--muted-foreground)]">
+                    No open marketplace tickets awaiting Quote 1 bids right now. <a href="/requests/create" class="font-bold text-[var(--accent-dark)] underline">Post a test request</a>!
                 </div>
-            </div>
+            @endforelse
         </div>
     </div>
 
     <!-- ── TAB 3: DIRECT ORDERS (Direct-Order Cart Queue) ── -->
     <div x-show="activeTab === 'direct_orders'" x-cloak class="space-y-4">
         <div class="meramot-card p-6 shadow-sm">
-            <h3 class="font-bold text-base text-[var(--foreground)] mb-4">Direct-Order Cart &amp; Quickmatch Bookings (PENDING Acceptance)</h3>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <h3 class="font-bold text-base text-[var(--foreground)]">Direct-Order Cart &amp; Quickmatch Bookings (PENDING Acceptance)</h3>
+                <a href="/packages/catalog" class="text-xs font-bold text-[var(--accent-dark)] hover:underline">Browse Service Packages &rarr;</a>
+            </div>
             <div class="space-y-4 text-xs">
-                @foreach($directOrders ?? [] as $order)
+                @forelse($directOrders ?? [] as $order)
                     <div class="p-4 rounded-2xl bg-[var(--mint-100)] border-2 border-emerald-600 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                         <div>
                             <div class="flex flex-wrap items-center gap-2">
@@ -805,6 +799,7 @@
                                 <span class="text-[11px] font-bold text-[var(--accent-dark)]">
                                     {{ $order->requestedShop->name ?? 'Assigned Workshop' }}{{ optional($order->requestedShop)->display_branch_tag ? ' [' . $order->requestedShop->display_branch_tag . ']' : '' }}
                                 </span>
+                                <a href="{{ route('requests.track', $order->id) }}" class="text-[11px] font-semibold text-[var(--accent-dark)] underline">View Order</a>
                             </div>
                             <h4 class="font-bold text-sm text-[var(--foreground)] mt-1">{{ $order->title }}</h4>
                             <p class="text-[var(--muted-foreground)]">
@@ -829,74 +824,91 @@
                             </form>
                         </div>
                     </div>
-                @endforeach
-
-                <div class="p-4 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                        <span class="rounded bg-emerald-800 text-white font-bold text-[10px] px-2 py-0.5 uppercase">Direct Booking</span>
-                        <h4 class="font-bold text-sm text-[var(--foreground)] mt-1">Liquid Damage Ultrasonic Clean &amp; Diagnostics</h4>
-                        <p class="text-[var(--muted-foreground)]">Customer: Rafiqul Islam • Banani Road 11 • Scheduled Today 3:00 PM</p>
-                        <span class="font-extrabold text-[var(--accent-dark)] text-sm">৳1,800.00</span>
+                @empty
+                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/40 py-8 text-center text-[var(--muted-foreground)]">
+                        No pending Direct-Order cart bookings awaiting response for this branch selection.
                     </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button" @click="window.MeramotToast?.show('Order accepted! Rider dispatched for doorstep pickup.')" class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-4 py-2 hover:opacity-90 shadow-sm transition">
-                            Accept &amp; Dispatch Rider
-                        </button>
-                        <button type="button" @click="window.MeramotToast?.show('Direct order declined.', 'warning')" class="rounded-full border border-rose-300 bg-white text-rose-700 font-bold px-4 py-2 hover:bg-rose-50 transition">
-                            Decline
-                        </button>
-                    </div>
-                </div>
+                @endforelse
             </div>
         </div>
     </div>
 
-    <!-- ── TAB 4: MY REPAIR JOBS ── -->
+    <!-- ── TAB 4: MY REPAIR JOBS (Real Database Bench Workflow & Quote 2 Dispatch) ── -->
     <div x-show="activeTab === 'assigned_jobs'" x-cloak class="space-y-4">
         <div class="meramot-card p-6 shadow-sm">
-            <h3 class="font-bold text-base text-[var(--foreground)] mb-4">Active Repair Queue &amp; Workflow Milestones</h3>
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                    <h3 class="font-bold text-base text-[var(--foreground)]">Active Repair Queue &amp; Bench Milestones</h3>
+                    <p class="text-xs text-[var(--muted-foreground)]">Update live job status, dispatch Quote 2 bench diagnostics, or mark Completed to post 10%/90% ledger settlements.</p>
+                </div>
+            </div>
             <div class="divide-y divide-[var(--border)] text-xs">
-                <div class="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4" x-data="{ status: 'REPAIRING' }">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="font-bold text-sm text-[var(--foreground)]">Job #RJ-2026-084: Apple MacBook Pro 14"</span>
-                            <span class="rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-[10px] px-2 py-0.5" x-text="status"></span>
-                        </div>
-                        <p class="text-[var(--muted-foreground)]">Parts: Backlight IC + Fuse • Total: ৳3,200.00 • Turnaround: Tomorrow 5 PM</p>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <select x-model="status" class="rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
-                            <option value="AT_SHOP">At Shop (Received)</option>
-                            <option value="DIAGNOSING">Diagnosing Bench</option>
-                            <option value="REPAIRING">Repairing / Soldering</option>
-                            <option value="COMPLETED">Completed (Ready for Rider)</option>
-                        </select>
-                        <button type="button" @click="window.MeramotToast?.show('Status updated to: ' + status)" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 font-bold text-white hover:opacity-90">
-                            Update
-                        </button>
-                    </div>
-                </div>
+                @forelse($activeJobs ?? [] as $job)
+                    <div class="py-4 space-y-3" x-data="{ chosenStatus: @js($job->status) }">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2 mb-1">
+                                    <span class="font-bold text-sm text-[var(--foreground)]">
+                                        Job #{{ $job->id }}: {{ $job->repairRequest?->brand }} {{ $job->repairRequest?->model_name }} — {{ $job->repairRequest?->title ?? 'Hardware Service' }}
+                                    </span>
+                                    <span class="rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] font-bold text-[10px] px-2.5 py-0.5">
+                                        {{ $job->status }}
+                                    </span>
+                                    @if($job->shop?->display_branch_tag)
+                                        <span class="rounded-full bg-emerald-800 text-white font-bold text-[10px] px-2 py-0.5">
+                                            {{ $job->shop->display_branch_tag }}
+                                        </span>
+                                    @endif
+                                </div>
+                                <p class="text-[var(--muted-foreground)]">
+                                    Customer: {{ $job->repairRequest?->customer?->name ?? 'Meramot Customer' }}
+                                    • Quoted: <strong>৳{{ number_format($job->final_quoted_amount ?? $job->repairRequest?->quoted_final_amount ?? 0, 2) }}</strong>
+                                    @if($job->repairRequest)
+                                        • <a href="{{ route('requests.track', $job->repairRequest->id) }}" class="font-bold text-[var(--accent-dark)] hover:underline">Track Ticket #{{ $job->repairRequest->id }} &rarr;</a>
+                                    @endif
+                                </p>
+                            </div>
 
-                <div class="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4" x-data="{ status: 'DIAGNOSING' }">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="font-bold text-sm text-[var(--foreground)]">Job #RJ-2026-085: Lenovo ThinkPad T14</span>
-                            <span class="rounded-full bg-indigo-100 text-indigo-900 border border-indigo-300 font-bold text-[10px] px-2 py-0.5" x-text="status"></span>
+                            <form method="POST" action="{{ route('vendor.jobs.status', $job->id) }}" class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                @csrf
+                                <select name="status" x-model="chosenStatus" class="rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
+                                    <option value="AT_SHOP">At Shop (Received)</option>
+                                    <option value="DIAGNOSING">Diagnosing Bench</option>
+                                    <option value="WAITING_APPROVAL">Send Quote 2 (Await Approval)</option>
+                                    <option value="REPAIRING">Repairing / Soldering</option>
+                                    <option value="COMPLETED">Completed (Settle Ledger)</option>
+                                </select>
+
+                                <template x-if="chosenStatus === 'WAITING_APPROVAL'">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <input
+                                            type="number"
+                                            name="final_quoted_amount"
+                                            value="{{ (float) ($job->final_quoted_amount ?? $job->repairRequest?->quoted_final_amount ?? 3200) }}"
+                                            placeholder="Quote 2 (৳)"
+                                            class="w-28 rounded-xl border border-amber-400 bg-white px-2.5 py-2 text-xs font-bold outline-none"
+                                            required
+                                        >
+                                        <input
+                                            type="text"
+                                            name="diagnosis_notes"
+                                            placeholder="Bench findings note..."
+                                            class="w-48 rounded-xl border border-amber-400 bg-white px-2.5 py-2 text-xs outline-none"
+                                        >
+                                    </div>
+                                </template>
+
+                                <button type="submit" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 font-bold text-white hover:opacity-90 transition shrink-0">
+                                    Save Status
+                                </button>
+                            </form>
                         </div>
-                        <p class="text-[var(--muted-foreground)]">Parts: OEM Backlit Keyboard • Total: ৳2,800.00 • Turnaround: Nov 14</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <select x-model="status" class="rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
-                            <option value="AT_SHOP">At Shop (Received)</option>
-                            <option value="DIAGNOSING">Diagnosing Bench</option>
-                            <option value="REPAIRING">Repairing / Soldering</option>
-                            <option value="COMPLETED">Completed (Ready for Rider)</option>
-                        </select>
-                        <button type="button" @click="window.MeramotToast?.show('Status updated to: ' + status)" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 font-bold text-white hover:opacity-90">
-                            Update
-                        </button>
+                @empty
+                    <div class="py-8 text-center text-[var(--muted-foreground)]">
+                        No assigned repair jobs in this branch queue right now.
                     </div>
-                </div>
+                @endforelse
             </div>
         </div>
     </div>

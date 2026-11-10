@@ -314,3 +314,22 @@ To preserve a 100% clean, professional consumer-facing product while simultaneou
    - Vendors review incoming orders in `/vendor/dashboard` (**Direct Orders** tab) to **Accept** (`PENDING -> ASSIGNED`) or **Decline** (`PENDING -> REJECTED` with automatic escrow refund).
 4. **16-State Dual-Quote Lifecycle (`RepairRequest` & `requests/track.blade.php`)**:
    - Supports both Marketplace Quote 1 (`BIDDING -> ASSIGNED`) and Bench Diagnosis Quote 2 (`WAITING_APPROVAL -> REPAIRING` on customer approval, or `RETURN_SCHEDULED` on customer decline).
+
+---
+
+## 13. Nationwide Bangladesh OSM Directory, Multi-Branch Architecture & Sprint 1 Demo Readiness (Nov 12, 2026)
+
+1. **Nationwide Bangladesh OpenStreetMap Shop Seeding & Dual Shop Addresses**:
+   - Seeded **1,297 Repair Shops** across all 8 divisions of Bangladesh (`ShopSeeder` + `SprintOneDemoSeeder`), sourced from real OpenStreetMap tech/electronics/mobile/computer storefronts plus curated multi-branch flagship partners.
+   - Every shop maintains **Dual Addresses**:
+     1. **GPS Approximate Location** (`latitude`, `longitude`, `gps_address` — used server-side for Haversine distance sorting and kept hidden from public JSON/views).
+     2. **Vendor-Provided Storefront Location** (`address`, `city`, `area` — displayed publicly).
+     3. Optional **`same_as_gps_location`** toggle during onboarding (`/vendor/onboarding`) or later in the Vendor Dashboard (`/vendor/dashboard?tab=branches`).
+2. **Multi-Branch Vendor Expansion (`is_branched` / `is_branch` / `branch_name`)**:
+   - Vendors can operate multiple shops across Bangladesh under one brand name (`ProTech Solutions`, `Apple Gadgets Care`, `Miraz Telecom`, etc.), distinguished by exact **Branch Tags** (`[Banani DOHS Flagship]`, `[Uttara Sector 7]`, `[Agrabad, Chattogram]`) on shop tiles, profiles, bids, and ledger records.
+3. **Complete Sprint 1 End-to-End Workflows**:
+   - **Unified Admin Console (`/admin`)** with shared sub-navigation (`frontend/views/admin/partials/nav.blade.php`) connecting Vendor Verification (`R11`), Courier Verification (`R1`), and Platform Financial Double-Entry Ledger (`R16`).
+   - **Feature R11 Completed End-to-End**: Guest-safe `/vendor/onboarding` with status banners (`approved` / `pending` / `rejected` + `rejection_reason`), paired with `/admin/vendors/pending` (`Approve`, `Reject` with mandatory reason, and `Featured` toggle).
+   - **Feature R7 / R12 / R15 / R16 Live Sync**: Customer Request History Hub (`/requests` & `/orders`), real Vendor Quote 1 bidding (`POST /vendor/requests/{id}/bid`), Quote 2 bench updates (`WAITING_APPROVAL`), and automatic 10% platform commission / 90% vendor net double-entry `FinancialLedger` settlement when a vendor marks a `RepairJob` `COMPLETED`.
+   - **Zero Dead Links / Universal `"Coming Soon"` Landing (`ComingSoonController` & `frontend/views/coming-soon.blade.php`)**: Every button, form, and link scheduled for Sprint 2, Sprint 3, or Sprint 4 routes cleanly to a Mint-styled `"Coming Soon"` roadmap page with zero `href="#"`, zero 404s, and zero 500s.
+   - **Automated Verification**: **68 PHPUnit tests (320 assertions)** passing 100% against PostgreSQL.

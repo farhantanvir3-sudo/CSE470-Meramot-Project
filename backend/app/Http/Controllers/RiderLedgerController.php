@@ -30,10 +30,11 @@ class RiderLedgerController extends Controller
      */
     public function index(Request $request)
     {
-        $agentId = $request->user()->deliveryAgent->id ?? 1;
+        $agentId = $request->user()?->deliveryAgent?->id;
 
-        // TODO (Nafiul): Compute sums for unsettled vs settled earnings
-        $earnings = RiderEarnings::where('delivery_agent_id', $agentId)->latest()->get();
+        $earnings = $agentId
+            ? RiderEarnings::where('delivery_agent_id', $agentId)->latest()->get()
+            : collect();
         $totalEarned = $earnings->sum('total_earned');
         $unsettledBalance = $earnings->where('payout_status', 'unpaid')->sum('total_earned');
 
@@ -41,12 +42,11 @@ class RiderLedgerController extends Controller
     }
 
     /**
-     * Request payout withdrawal for rider.
+     * Request payout withdrawal for rider (Sprint 3 — routes to Coming Soon during Sprint 1).
      * Route: POST /delivery/payout/request
      */
     public function requestPayout(Request $request)
     {
-        // TODO (Nafiul): Validate minimum threshold (500 BDT) and transition unpaid records to 'requested'
-        return redirect()->back()->with('success', 'Payout request submitted to platform admin.');
+        return app(ComingSoonController::class)->show($request, 'rider-earnings-payout');
     }
 }

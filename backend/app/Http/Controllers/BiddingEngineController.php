@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Bid;
 use App\Models\RepairRequest;
+use App\Models\RepairShop;
+use App\Models\VendorProfile;
 use Illuminate\Http\Request;
 
 /**
@@ -14,15 +16,30 @@ use Illuminate\Http\Request;
 class BiddingEngineController extends Controller
 {
     /**
-     * List all bids for a specific repair request or show bidding board view.
+     * List all bids for a specific repair request (JSON) or show live bidding board view.
      */
-    public function index($requestId = null)
+    public function index(Request $request, $requestId = null)
     {
-        if (!$requestId) {
-            return view('vendor.bidding-board');
+        if (!$requestId && !$request->is('api/*')) {
+            $openRequests = RepairRequest::with(['customer', 'bids.shop'])
+                ->where('status', 'BIDDING')
+                ->latest()
+                ->take(10)
+                ->get();
+
+            $vendorProfile = $request->user()
+                ? VendorProfile::with('shops')->where('user_id', $request->user()->id)->first()
+                : null;
+            if (!$vendorProfile) {
+                $vendorProfile = VendorProfile::with('shops')->where('shop_name', 'ProTech Solutions')->first()
+                    ?? VendorProfile::with('shops')->first();
+            }
+            $vendorShops = $vendorProfile ? $vendorProfile->shops : RepairShop::take(3)->get();
+
+            return view('vendor.bidding-board', compact('openRequests', 'vendorShops'));
         }
 
-        $bids = Bid::with('vendor')
+        $bids = Bid::with('shop')
             ->where('repair_request_id', $requestId)
             ->orderBy('proposed_cost', 'asc')
             ->get();
@@ -34,29 +51,11 @@ class BiddingEngineController extends Controller
     }
 
     /**
-     * Submit a new diagnostic quote/bid from a verified vendor.
+     * Submit a new diagnostic quote/bid from a verified vendor (API + Web compatible).
      */
     public function store(Request $request, $requestId)
     {
-        $validated = $request->validate([
-            'vendor_id' => 'required|exists:vendor_profiles,id',
-            'proposed_cost' => 'required|numeric|min:50',
-            'estimated_days' => 'required|integer|min:1|max:30',
-            'warranty_days' => 'required|integer|min:0',
-            'line_items' => 'required|array',
-            'technician_note' => 'nullable|string',
-        ]);
-
-        $bid = Bid::create(array_merge($validated, [
-            'repair_request_id' => $requestId,
-            'status' => 'submitted',
-        ]));
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Diagnostic quote submitted successfully to the bidding board.',
-            'data' => $bid,
-        ], 201);
+        return app(VendorBranchController::class)->submitBid($request, $requestId);
     }
 
     /**
@@ -65,19 +64,18 @@ class BiddingEngineController extends Controller
     public function acceptBid($bidId)
     {
         $bid = Bid::findOrFail($bidId);
-        $bid->update(['status' => 'accepted']);
+        $bid->update(['status' => 'ACCEPTED']);
 
-        // Mark corresponding repair request as assigned
-        $request = RepairRequest::findOrFail($bid->repair_request_id);
-        $request->update([
-            'status' => 'assigned',
+        $repairRequest = RepairRequest::findOrFail($bid->repair_request_id);
+        $repairRequest->update([
+            'status' => 'ASSIGNED',
             'selected_bid_id' => $bid->id,
+            'quoted_final_amount' => $bid->proposed_cost,
         ]);
 
-        // Reject other bids for this request
         Bid::where('repair_request_id', $bid->repair_request_id)
             ->where('id', '!=', $bid->id)
-            ->update(['status' => 'rejected']);
+            ->update(['status' => 'DECLINED']);
 
         return response()->json([
             'status' => 'success',

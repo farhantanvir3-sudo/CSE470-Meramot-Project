@@ -19,6 +19,8 @@
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8">
 
+    @include('admin.partials.nav')
+
     <!-- Page Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
