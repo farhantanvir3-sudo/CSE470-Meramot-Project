@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use App\Models\DeliveryAgent;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
@@ -75,8 +76,8 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // 5. Test Delivery Agent
-        User::updateOrCreate(
+        // 5. Test Delivery Agents & Pending Onboarding Applications (Feature R1 — Md. Nafiul Islam [22299035])
+        $approvedRiderUser = User::updateOrCreate(
             ['email' => 'rider.demo@meramot.test'],
             [
                 'name' => 'Rahim Uddin (Express Rider)',
@@ -84,6 +85,91 @@ class UserSeeder extends Seeder
                 'phone' => '+8801799998888',
                 'role' => 'delivery_agent',
                 'is_active' => true,
+            ]
+        );
+
+        DeliveryAgent::updateOrCreate(
+            ['user_id' => $approvedRiderUser->id],
+            [
+                'nid_number' => '1996269481011',
+                'vehicle_type' => 'motorcycle',
+                'license_number' => 'DK-0492811-A',
+                'registration_status' => 'APPROVED',
+                'status' => 'AVAILABLE',
+                'is_active' => true,
+                'rejection_reason' => null,
+            ]
+        );
+
+        $pendingRider1 = User::updateOrCreate(
+            ['email' => 'kamal.rider@meramot.test'],
+            [
+                'name' => 'Kamal Hossain (Rider Applicant)',
+                'password' => $passwordHash,
+                'phone' => '+8801711223344',
+                'role' => 'customer',
+                'is_active' => true,
+            ]
+        );
+
+        DeliveryAgent::updateOrCreate(
+            ['user_id' => $pendingRider1->id],
+            [
+                'nid_number' => '1998269482045',
+                'vehicle_type' => 'motorcycle',
+                'license_number' => 'DK-0837421-M',
+                'registration_status' => 'PENDING',
+                'status' => 'OFFLINE',
+                'is_active' => false,
+                'rejection_reason' => null,
+            ]
+        );
+
+        $pendingRider2 = User::updateOrCreate(
+            ['email' => 'tarek.scooter@meramot.test'],
+            [
+                'name' => 'Tarek Mahmud (Rider Applicant)',
+                'password' => $passwordHash,
+                'phone' => '+8801811556677',
+                'role' => 'customer',
+                'is_active' => true,
+            ]
+        );
+
+        DeliveryAgent::updateOrCreate(
+            ['user_id' => $pendingRider2->id],
+            [
+                'nid_number' => '2000269483099',
+                'vehicle_type' => 'scooter',
+                'license_number' => 'DK-0912345-S',
+                'registration_status' => 'PENDING',
+                'status' => 'OFFLINE',
+                'is_active' => false,
+                'rejection_reason' => null,
+            ]
+        );
+
+        $rejectedRider = User::updateOrCreate(
+            ['email' => 'sohag.van@meramot.test'],
+            [
+                'name' => 'Sohag Mia (Rider Applicant)',
+                'password' => $passwordHash,
+                'phone' => '+8801911889900',
+                'role' => 'customer',
+                'is_active' => true,
+            ]
+        );
+
+        DeliveryAgent::updateOrCreate(
+            ['user_id' => $rejectedRider->id],
+            [
+                'nid_number' => '1995269489900',
+                'vehicle_type' => 'van',
+                'license_number' => 'DK-0112233-V',
+                'registration_status' => 'REJECTED',
+                'status' => 'OFFLINE',
+                'is_active' => false,
+                'rejection_reason' => 'BRTA driving license number expired; please renew and re-apply.',
             ]
         );
     }

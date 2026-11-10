@@ -2,14 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Models\RepairRequest;
+use App\Models\RepairShop;
 use App\Models\ServicePackage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 /**
- * Feature R8: Service Package Catalog & Shopping Cart Tests
+ * Feature R8: Service Package Catalog & Unified Direct-Order Cart Tests
  * Assigned: Shanid Sajjatuz Islam [23201465]
+ * Merged Direct-Order & Quickmatch Tests: Farhan Tanvir [22299179]
  */
 class ServicePackageTest extends TestCase
 {
@@ -77,10 +80,27 @@ class ServicePackageTest extends TestCase
     }
 
     /** @test */
+    public function it_adds_shop_service_to_cart()
+    {
+        $shop = RepairShop::factory()->create(['name' => 'ProTech Lab']);
+
+        $response = $this->postJson('/cart/add', [
+            'shop_id' => $shop->id,
+            'service_name' => 'Display & Touchscreen Replacement',
+            'price' => 1800,
+            'quantity' => 1,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+        $this->assertEquals(1, count(session('cart', [])));
+    }
+
+    /** @test */
     public function it_updates_cart_quantity()
     {
         $package = ServicePackage::factory()->create();
-        
+
         session()->put('cart', [
             $package->id => [
                 'id' => $package->id,
@@ -102,7 +122,7 @@ class ServicePackageTest extends TestCase
     public function it_removes_item_from_cart()
     {
         $package = ServicePackage::factory()->create();
-        
+
         session()->put('cart', [
             $package->id => [
                 'id' => $package->id,
@@ -123,7 +143,7 @@ class ServicePackageTest extends TestCase
     public function it_displays_cart_view()
     {
         $package = ServicePackage::factory()->create();
-        
+
         session()->put('cart', [
             $package->id => [
                 'id' => $package->id,
@@ -146,7 +166,7 @@ class ServicePackageTest extends TestCase
     public function it_clears_entire_cart()
     {
         $package = ServicePackage::factory()->create();
-        
+
         session()->put('cart', [
             $package->id => [
                 'id' => $package->id,
@@ -166,7 +186,7 @@ class ServicePackageTest extends TestCase
     public function it_proceeds_to_checkout_with_cart_items()
     {
         $package = ServicePackage::factory()->create();
-        
+
         session()->put('cart', [
             $package->id => [
                 'id' => $package->id,
@@ -191,5 +211,60 @@ class ServicePackageTest extends TestCase
 
         $response->assertRedirect(route('packages.catalog'));
         $response->assertSessionHas('error', 'Your cart is empty');
+    }
+
+    /** @test */
+    public function it_places_direct_order_into_vendor_pending_queue_and_creates_repair_job()
+    {
+        $customer = User::factory()->create(['role' => 'customer']);
+        $shop = RepairShop::factory()->create(['name' => 'ProTech Banani', 'rating' => 4.9]);
+        $package = ServicePackage::factory()->create(['title' => 'iPhone 13 OLED Swap', 'fixed_price' => 2800]);
+
+        $this->actingAs($customer)->postJson('/cart/add', [
+            'package_id' => $package->id,
+            'shop_id' => $shop->id,
+            'quantity' => 1,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('carts', [
+            'user_id' => $customer->id,
+            'shop_id' => $shop->id,
+            'status' => 'ACTIVE',
+        ]);
+
+        $response = $this->actingAs($customer)->post('/cart/checkout/place', [
+            'shop_id' => $shop->id,
+            'schedule_type' => 'NOW',
+            'delivery_type' => 'REGULAR',
+            'payment_method' => 'CASH',
+            'area' => 'Banani',
+            'address' => 'Road 11, House 42, Banani',
+            'phone' => '01711223344',
+        ]);
+
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('repair_requests', [
+            'customer_id' => $customer->id,
+            'source' => 'DIRECT_SERVICE',
+            'requested_shop_id' => $shop->id,
+            'status' => 'PENDING',
+        ]);
+
+        $createdReq = RepairRequest::where('source', 'DIRECT_SERVICE')->first();
+        $this->assertNotNull($createdReq);
+
+        $this->assertDatabaseHas('repair_jobs', [
+            'repair_request_id' => $createdReq->id,
+            'shop_id' => $shop->id,
+            'status' => 'CREATED',
+        ]);
+
+        // Vendor accepts Direct Order -> PENDING transitions to ASSIGNED
+        $this->post("/vendor/direct-orders/{$createdReq->id}/respond", [
+            'decision' => 'accept',
+        ])->assertRedirect();
+
+        $this->assertEquals('ASSIGNED', $createdReq->fresh()->status);
     }
 }

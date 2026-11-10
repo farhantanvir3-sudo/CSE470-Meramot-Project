@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\RepairRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 /**
@@ -10,24 +11,16 @@ use Illuminate\Http\Request;
  * FEATURE R7: Customer Repair Request Posting & Lifecycle Tracking
  * ============================================================================
  * Assigned Member: Shanid Sajjatuz Islam [Student ID: 23201465]
- * Sprint: Sprint 1 (Nov 1 – Nov 12, 2026)
- * Architectural Layer: Controller (RepairRequestController)
- * Models Touched: RepairRequest, DeviceBrand
- * View Rendered: resources/views/requests/create.blade.php
- *
- * INSTRUCTIONS FOR SHANID:
- * 1. Implement create(): Display customer request submission form with device
- *    brand dropdowns, issue categories, and preferred logistics choice.
- * 2. Implement store(Request $request): Validate input, handle photo uploads,
- *    set status to 'bidding_open', and automatically notify nearby vendors.
- * 3. Implement track($id): Show lifecycle progress bar (Request Posted ->
- *    Bidding Open -> Vendor Assigned -> Diagnostics -> Repaired -> Delivered).
+ * Merged Lifecycle: Farhan Tanvir [22299179] (Dual-Path & Dual-Quote Flow)
+ * Views Rendered (from root `frontend/views/`):
+ *   - requests/create.blade.php
+ *   - requests/track.blade.php
  * ============================================================================
  */
 class RepairRequestController extends Controller
 {
     /**
-     * Show repair request creation form.
+     * Show repair request submission form.
      * Route: GET /requests/create
      */
     public function create()
@@ -36,68 +29,86 @@ class RepairRequestController extends Controller
     }
 
     /**
-     * Save new customer repair request.
+     * Store newly posted repair request and open reverse bidding (Path A: Marketplace).
      * Route: POST /requests
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'device_type' => 'required|string',
-            'brand' => 'required|string',
-            'model_name' => 'required|string',
-            'serial_number' => 'nullable|string',
+            'device_type' => 'required|string|max:100',
+            'brand' => 'required|string|max:100',
+            'model_name' => 'required|string|max:150',
+            'serial_number' => 'nullable|string|max:100',
+            'issue_category' => 'nullable|string|max:120',
             'issue_title' => 'required|string|max:255',
             'issue_description' => 'required|string',
             'preferred_service_type' => 'required|in:pickup_dropoff,walk_in,technician_home_visit',
-            'pickup_address' => 'nullable|string',
+            'pickup_address' => 'nullable|string|max:500',
+            'area' => 'nullable|string|max:100',
+            'preferred_shop_id' => 'nullable|integer|exists:repair_shops,id',
             'photos' => 'nullable|array|max:5',
-            'photos.*' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120', // 5MB max per image
+            'photos.*' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
         ]);
 
-        // Handle photo uploads
+        $photoPaths = null;
         if ($request->hasFile('photos')) {
             $photoPaths = [];
             foreach ($request->file('photos') as $photo) {
-                $path = $photo->store('repair-requests', 'public');
-                $photoPaths[] = $path;
+                $photoPaths[] = $photo->store('repair-requests', 'public');
             }
-            $validated['photos'] = $photoPaths;
         }
 
-        // Create repair request
-        $repairRequest = RepairRequest::create(array_merge($validated, [
-            'customer_id' => $request->user()->id ?? 1, // TODO: Replace with proper auth
-            'status' => 'bidding_open',
-        ]));
+        $customerId = $request->user()?->id ?? User::where('role', 'customer')->value('id') ?? User::value('id') ?? 1;
+        $requestedShopId = $validated['preferred_shop_id'] ?? null;
 
-        // TODO: Trigger AI Summary Generation (Feature R13)
-        // AISummaryController::generateSummary($repairRequest);
+        $fullAddress = $validated['pickup_address'] ?? null;
+        if (!empty($validated['area']) && $fullAddress && !str_contains($fullAddress, $validated['area'])) {
+            $fullAddress .= ', ' . $validated['area'] . ', Dhaka';
+        } elseif (!empty($validated['area']) && empty($fullAddress)) {
+            $fullAddress = $validated['area'] . ', Dhaka';
+        }
 
-        // TODO: Notify nearby vendors (Feature R14)
-        // VendorNotificationController::dispatchBiddingAlert($repairRequest);
+        $repairRequest = RepairRequest::create([
+            'customer_id' => $customerId,
+            'source' => $requestedShopId ? 'DIRECT_CUSTOM_SHOP' : 'MARKETPLACE',
+            'requested_shop_id' => $requestedShopId,
+            'title' => $validated['issue_title'],
+            'description' => $validated['issue_description'],
+            'problem' => $validated['issue_description'],
+            'device_type' => $validated['device_type'],
+            'brand' => $validated['brand'],
+            'model_name' => $validated['model_name'],
+            'serial_number' => $validated['serial_number'] ?? null,
+            'issue_category' => $validated['issue_category'] ?? 'General Hardware Diagnostics',
+            'image_urls' => $photoPaths,
+            'mode' => 'CHECKUP_AND_REPAIR',
+            'status' => RepairRequest::STATUS_BIDDING,
+            'preferred_pickup' => $validated['preferred_service_type'] === 'pickup_dropoff',
+            'preferred_service_type' => $validated['preferred_service_type'],
+            'pickup_address' => $fullAddress,
+        ]);
 
-        return redirect()->route('requests.track', $repairRequest->id)
-            ->with('success', 'Repair request published successfully! Vendors have been notified and bidding is now open.');
+        return redirect()
+            ->route('requests.track', $repairRequest->id)
+            ->with('success', 'Repair request published! Verified workshops across Dhaka can now submit Quote 1 bids.');
     }
 
     /**
-     * Track repair request lifecycle milestones.
+     * Track status and bids of a specific repair request.
      * Route: GET /requests/{id}/track
      */
     public function track($id)
     {
         $repairRequest = RepairRequest::with([
-            'bids' => function($query) {
+            'bids' => function ($query) {
                 $query->where('status', '!=', 'WITHDRAWN')
-                      ->orderBy('proposed_cost', 'asc'); // Show lowest bids first
+                      ->with('shop')
+                      ->orderBy('proposed_cost', 'asc');
             },
-            'customer'
+            'customer',
+            'requestedShop',
+            'repairJob.shop',
         ])->findOrFail($id);
-
-        // TODO: Add authorization check - only customer or admin can view
-        // if (auth()->id() !== $repairRequest->customer_id && !auth()->user()->isAdmin()) {
-        //     abort(403, 'Unauthorized access');
-        // }
 
         return view('requests.track', compact('repairRequest'));
     }

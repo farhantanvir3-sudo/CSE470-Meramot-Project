@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Tests\TestCase;
+use App\Models\RepairJob;
 use App\Models\RepairRequest;
 use App\Models\Bid;
 use App\Models\User;
@@ -13,8 +14,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Feature R7: Customer Repair Request Posting & Lifecycle Tracking Tests
+ * Feature R7: Customer Repair Request Posting & Dual-Quote Lifecycle Tests
  * Assigned: Shanid Sajjatuz Islam [23201465]
+ * Merged Dual-Quote Lifecycle: Farhan Tanvir [22299179]
  */
 class RepairRequestTest extends TestCase
 {
@@ -25,9 +27,9 @@ class RepairRequestTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         Storage::fake('public');
-        
+
         $this->customer = User::factory()->create([
             'role' => 'customer',
             'email' => 'customer@test.com',
@@ -38,7 +40,7 @@ class RepairRequestTest extends TestCase
     public function it_displays_request_creation_form()
     {
         $response = $this->get('/requests/create');
-        
+
         $response->assertStatus(200);
         $response->assertViewIs('requests.create');
         $response->assertSee('Post an Electronic Device Repair Request');
@@ -58,13 +60,14 @@ class RepairRequestTest extends TestCase
         ];
 
         $response = $this->actingAs($this->customer)->post('/requests', $requestData);
-        
+
         $response->assertRedirect();
         $this->assertDatabaseHas('repair_requests', [
             'device_type' => 'Laptop',
             'brand' => 'Dell',
             'model_name' => 'XPS 13',
-            'status' => 'bidding_open',
+            'title' => 'Screen flickering',
+            'status' => 'BIDDING',
         ]);
     }
 
@@ -72,7 +75,7 @@ class RepairRequestTest extends TestCase
     public function it_validates_required_fields()
     {
         $response = $this->actingAs($this->customer)->post('/requests', []);
-        
+
         $response->assertSessionHasErrors([
             'device_type',
             'brand',
@@ -87,9 +90,10 @@ class RepairRequestTest extends TestCase
     public function it_handles_photo_uploads()
     {
         Storage::fake('public');
-        
-        $photo1 = UploadedFile::fake()->image('device-photo-1.jpg');
-        $photo2 = UploadedFile::fake()->image('device-photo-2.jpg');
+
+        $tinyPng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+        $photo1 = UploadedFile::fake()->createWithContent('device-photo-1.png', $tinyPng);
+        $photo2 = UploadedFile::fake()->createWithContent('device-photo-2.png', $tinyPng);
 
         $requestData = [
             'device_type' => 'Mobile Phone',
@@ -101,14 +105,14 @@ class RepairRequestTest extends TestCase
             'photos' => [$photo1, $photo2],
         ];
 
-        $response = $this->actingAs($this->customer)->post('/requests', $requestData);
-        
+        $this->actingAs($this->customer)->post('/requests', $requestData);
+
         $repairRequest = RepairRequest::latest()->first();
-        
+
         $this->assertNotNull($repairRequest->photos);
         $this->assertIsArray($repairRequest->photos);
         $this->assertCount(2, $repairRequest->photos);
-        
+
         Storage::disk('public')->assertExists($repairRequest->photos[0]);
         Storage::disk('public')->assertExists($repairRequest->photos[1]);
     }
@@ -122,7 +126,7 @@ class RepairRequestTest extends TestCase
         ]);
 
         $response = $this->get(route('requests.track', $repairRequest->id));
-        
+
         $response->assertStatus(200);
         $response->assertViewIs('requests.track');
         $response->assertSee('Track Your Repair Request');
@@ -133,13 +137,13 @@ class RepairRequestTest extends TestCase
     public function it_shows_bids_on_tracking_page()
     {
         $shop = RepairShop::factory()->create();
-        
+
         $repairRequest = RepairRequest::factory()->create([
             'customer_id' => $this->customer->id,
             'status' => 'BIDDING',
         ]);
 
-        $bid = Bid::factory()->create([
+        Bid::factory()->create([
             'repair_request_id' => $repairRequest->id,
             'shop_id' => $shop->id,
             'proposed_cost' => 2500,
@@ -148,7 +152,7 @@ class RepairRequestTest extends TestCase
         ]);
 
         $response = $this->get(route('requests.track', $repairRequest->id));
-        
+
         $response->assertSee('2500');
         $response->assertSee('3 days');
     }
@@ -161,7 +165,6 @@ class RepairRequestTest extends TestCase
             'status' => 'PENDING',
         ]);
 
-        // Valid transition: PENDING -> BIDDING
         $result = $repairRequest->transitionTo('BIDDING');
         $this->assertTrue($result);
         $this->assertEquals('BIDDING', $repairRequest->fresh()->status);
@@ -175,17 +178,16 @@ class RepairRequestTest extends TestCase
             'status' => 'PENDING',
         ]);
 
-        // Invalid transition: PENDING -> COMPLETED (skips intermediate steps)
         $result = $repairRequest->transitionTo('COMPLETED');
         $this->assertFalse($result);
         $this->assertEquals('PENDING', $repairRequest->fresh()->status);
     }
 
     /** @test */
-    public function it_accepts_a_bid_and_updates_status()
+    public function it_accepts_a_bid_and_creates_repair_job()
     {
         $shop = RepairShop::factory()->create();
-        
+
         $repairRequest = RepairRequest::factory()->create([
             'customer_id' => $this->customer->id,
             'status' => 'BIDDING',
@@ -203,14 +205,45 @@ class RepairRequestTest extends TestCase
         ]);
 
         $response->assertRedirect(route('requests.track', $repairRequest->id));
-        
+
         $repairRequest->refresh();
         $this->assertEquals($bid->id, $repairRequest->selected_bid_id);
         $this->assertEquals('ASSIGNED', $repairRequest->status);
         $this->assertEquals(2500, $repairRequest->quoted_final_amount);
-        
+        $this->assertDatabaseHas('repair_jobs', [
+            'repair_request_id' => $repairRequest->id,
+            'shop_id' => $shop->id,
+            'accepted_bid_id' => $bid->id,
+        ]);
+
         $bid->refresh();
         $this->assertEquals('ACCEPTED', $bid->status);
+    }
+
+    /** @test */
+    public function it_transitions_quote_two_decline_to_return_scheduled()
+    {
+        $shop = RepairShop::factory()->create();
+
+        $repairRequest = RepairRequest::factory()->create([
+            'customer_id' => $this->customer->id,
+            'status' => 'WAITING_APPROVAL',
+        ]);
+
+        RepairJob::create([
+            'repair_request_id' => $repairRequest->id,
+            'shop_id' => $shop->id,
+            'status' => 'WAITING_APPROVAL',
+            'final_quoted_amount' => 4200,
+            'diagnosis_notes' => 'Additional PMIC chip replacement required.',
+        ]);
+
+        $response = $this->actingAs($this->customer)->post("/requests/{$repairRequest->id}/respond-final-quote", [
+            'decision' => 'decline',
+        ]);
+
+        $response->assertRedirect(route('requests.track', $repairRequest->id));
+        $this->assertEquals('RETURN_SCHEDULED', $repairRequest->fresh()->status);
     }
 
     /** @test */
@@ -226,7 +259,7 @@ class RepairRequestTest extends TestCase
         ]);
 
         $response->assertRedirect(route('requests.track', $repairRequest->id));
-        
+
         $repairRequest->refresh();
         $this->assertEquals('CANCELLED', $repairRequest->status);
         $this->assertNotNull($repairRequest->rejected_at);
@@ -241,7 +274,7 @@ class RepairRequestTest extends TestCase
         ]);
 
         $response = $this->getJson("/requests/{$repairRequest->id}/available-transitions");
-        
+
         $response->assertStatus(200)
                  ->assertJson([
                      'current_status' => 'BIDDING',

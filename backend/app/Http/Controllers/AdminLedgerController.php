@@ -3,50 +3,82 @@
 namespace App\Http\Controllers;
 
 use App\Models\FinancialLedger;
+use App\Models\PaymentTransaction;
 use App\Models\RepairShop;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * ============================================================================
  * FEATURE R16: Platform Financial Summary & Double-Entry Ledger
  * ============================================================================
  * Assigned Member: Md. Nawshad Zaman Khan [Student ID: 23301622]
- * Sprint: Sprint 1 (Nov 1 – Nov 12, 2026)
- * Architectural Layer: Controller (AdminLedgerController)
- * Models Touched: FinancialLedger, RepairShop, PaymentTransaction
- * View Rendered: resources/views/admin/financial-overview.blade.php
- *
- * DELIVERABLES IMPLEMENTED:
- * 1. Cumulative platform credits vs debits bookkeeping.
- * 2. 10% platform commission accounting and analytics.
- * 3. Immutable double-entry ledger journal with running balance calculation.
- * 4. Helper logEntry() for strict double-entry recording across the system.
+ * Commit by Nawshad: 4742c9c (feat(R16): implement platform financial summary
+ *                    and double-entry ledger)
+ * Merged with Original Meramot Financial Business Intelligence (`AdminFinancePage`):
+ *   - Farhan Tanvir [Student ID: 22299179]
+ *   - Fixed PostgreSQL `BIGINT` text search (`CAST(id AS TEXT) ILIKE`)
+ *   - Added Revenue Trends & Fund Distribution analytics breakdown
+ *   - Added interactive Manual Settlement & Batch Auto-Settlement actions
+ * View Rendered (relocated to root `frontend/views/`):
+ *   - frontend/views/admin/financial-overview.blade.php
  * ============================================================================
  */
 class AdminLedgerController extends Controller
 {
-    /**
-     * Display platform financial summary and immutable double-entry audit ledger.
+    /* ------------------------------------------------------------------------
+     * BLOCK 1: Platform Financial Summary & Immutable Double-Entry Audit Ledger
+     * Original Author: Md. Nawshad Zaman Khan [23301622] (Commit 4742c9c)
+     * Enhanced with PostgreSQL-safe search & Original Meramot BI metrics
      * Route: GET /admin/financial-overview
-     */
+     * ------------------------------------------------------------------------ */
     public function index(Request $request)
     {
-        // 1. Overall cumulative totals for cards
+        // 1. Overall cumulative totals for cards (Nawshad — Commit 4742c9c)
         $totalCredits = (float) FinancialLedger::where('direction', 'CREDIT')->sum('amount');
         $totalDebits  = (float) FinancialLedger::where('direction', 'DEBIT')->sum('amount');
         $netPlatformBalance = $totalCredits - $totalDebits;
 
-        // 2. 10% Platform Commission Accounting Metrics
+        // 2. 10% Platform Commission Accounting Metrics (Nawshad — Commit 4742c9c)
         $totalCommissionRevenue = (float) FinancialLedger::where('entry_type', 'PLATFORM_COMMISSION')->sum('amount');
         $totalCustomerInflow    = (float) FinancialLedger::where('entry_type', 'CUSTOMER_PAYMENT')->sum('amount');
         $totalVendorDisbursed   = (float) FinancialLedger::where('entry_type', 'VENDOR_PAYOUT')->sum('amount');
+        $totalVendorAllocated   = (float) FinancialLedger::where('entry_type', 'VENDOR_EARNING')->sum('amount');
         $totalRiderDisbursed    = (float) FinancialLedger::where('entry_type', 'DELIVERY_PAYOUT')->sum('amount');
         $totalRefunds           = (float) FinancialLedger::where('entry_type', 'REFUND')->sum('amount');
 
         // Escrow pending payout = (Customer inflow - refunds) - (Vendor payouts + Rider payouts + Platform commission)
         $pendingEscrowReserve = max(0, ($totalCustomerInflow - $totalRefunds) - ($totalVendorDisbursed + $totalRiderDisbursed + $totalCommissionRevenue));
 
-        // 3. Filterable Query for Ledger Journal Table
+        // Open settlements count (unsettledVendorEarnings + pending PaymentTransactions)
+        $pendingSettlementCount = max(
+            0,
+            FinancialLedger::where('entry_type', 'VENDOR_EARNING')->count()
+            - FinancialLedger::where('entry_type', 'VENDOR_PAYOUT')->count()
+        );
+
+        // Fund Distribution breakdown by entry_type (Ported from Original Meramot AdminFinancePage)
+        $rawDistribution = FinancialLedger::select(
+            'entry_type',
+            DB::raw('COUNT(*) as entry_count'),
+            DB::raw('SUM(amount) as total_amount')
+        )
+            ->groupBy('entry_type')
+            ->orderByDesc('total_amount')
+            ->get();
+
+        $maxDistAmount = max(1.0, (float) ($rawDistribution->max('total_amount') ?? 1));
+        $fundDistribution = $rawDistribution->map(function ($row) use ($maxDistAmount) {
+            return [
+                'type' => $row->entry_type,
+                'label' => FinancialLedger::ENTRY_TYPES[$row->entry_type] ?? $row->entry_type,
+                'count' => (int) $row->entry_count,
+                'amount' => (float) $row->total_amount,
+                'share_pct' => round(((float) $row->total_amount / $maxDistAmount) * 100, 1),
+            ];
+        });
+
+        // 3. Filterable Query for Ledger Journal Table (Nawshad — Commit 4742c9c, fixed for PostgreSQL)
         $query = FinancialLedger::with(['shop', 'payment'])->orderBy('id', 'asc');
 
         if ($request->filled('entry_type')) {
@@ -62,14 +94,18 @@ class AdminLedgerController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
             $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', "%{$search}%")
-                  ->orWhere('id', 'like', "%{$search}%");
+                $q->where('description', 'ILIKE', "%{$search}%")
+                  ->orWhere('entry_type', 'ILIKE', "%{$search}%")
+                  ->orWhereRaw('CAST(id AS TEXT) ILIKE ?', ["%{$search}%"])
+                  ->orWhereHas('shop', function ($sq) use ($search) {
+                      $sq->where('name', 'ILIKE', "%{$search}%");
+                  });
             });
         }
 
-        // Fetch all ordered ascending to compute exact sequential running balance
+        // Fetch all ordered ascending to compute exact sequential running balance (Nawshad — Commit 4742c9c)
         $allEntries = $query->get();
 
         $runningBalance = 0;
@@ -97,35 +133,127 @@ class AdminLedgerController extends Controller
         $shops = RepairShop::select('id', 'name')->orderBy('name')->get();
 
         return view('admin.financial-overview', [
-            'entries'                => $paginatedEntries,
-            'totalCredits'           => $totalCredits,
-            'totalDebits'            => $totalDebits,
-            'netPlatformBalance'     => $netPlatformBalance,
-            'totalCommissionRevenue' => $totalCommissionRevenue,
-            'totalCustomerInflow'    => $totalCustomerInflow,
-            'totalVendorDisbursed'   => $totalVendorDisbursed,
-            'totalRiderDisbursed'    => $totalRiderDisbursed,
-            'pendingEscrowReserve'   => $pendingEscrowReserve,
-            'totalRefunds'           => $totalRefunds,
-            'shops'                  => $shops,
-            'selectedEntryType'      => $request->entry_type,
-            'selectedDirection'      => $request->direction,
-            'selectedShop'           => $request->shop_id,
-            'searchTerm'             => $request->search,
+            'entries'                 => $paginatedEntries,
+            'totalCredits'            => $totalCredits,
+            'totalDebits'             => $totalDebits,
+            'netPlatformBalance'      => $netPlatformBalance,
+            'totalCommissionRevenue'  => $totalCommissionRevenue,
+            'totalCustomerInflow'     => $totalCustomerInflow,
+            'totalVendorDisbursed'    => $totalVendorDisbursed,
+            'totalVendorAllocated'    => $totalVendorAllocated,
+            'totalRiderDisbursed'     => $totalRiderDisbursed,
+            'pendingEscrowReserve'    => $pendingEscrowReserve,
+            'pendingSettlementCount'  => $pendingSettlementCount,
+            'totalRefunds'            => $totalRefunds,
+            'fundDistribution'        => $fundDistribution,
+            'shops'                   => $shops,
+            'selectedEntryType'       => $request->entry_type,
+            'selectedDirection'       => $request->direction,
+            'selectedShop'            => $request->shop_id,
+            'searchTerm'              => $request->search,
         ]);
     }
 
-    /**
-     * Helper to post double-entry ledger transactions immutably.
-     * Accessible by PaymentGatewayController, VendorPayoutController, RiderLedgerController.
-     *
-     * @param string $entryType
-     * @param string $direction ('CREDIT' or 'DEBIT')
-     * @param float $amount
-     * @param string|null $description
-     * @param array $references ['shop_id', 'payment_id', 'invoice_id', 'vendor_payout_id']
-     * @return FinancialLedger
-     */
+    /* ------------------------------------------------------------------------
+     * BLOCK 2: Manual Single Order Settlement Action
+     * Merged from Original Meramot `AdminFinancePage::handleSettleSingle`
+     * Uses Nawshad's `settleOrderWithCommission()` helper.
+     * Route: POST /admin/financial-overview/settle
+     * ------------------------------------------------------------------------ */
+    public function settleManual(Request $request)
+    {
+        $validated = $request->validate([
+            'shop_id' => 'required|exists:repair_shops,id',
+            'gross_amount' => 'required|numeric|min:50',
+            'payment_id' => 'nullable|integer',
+            'note' => 'nullable|string|max:300',
+        ]);
+
+        $shop = RepairShop::findOrFail($validated['shop_id']);
+        $grossAmount = (float) $validated['gross_amount'];
+
+        $result = self::settleOrderWithCommission(
+            $grossAmount,
+            (int) $shop->id,
+            $validated['payment_id'] ?? null,
+            null,
+            0.10,
+            $validated['note'] ?? null
+        );
+
+        return redirect()
+            ->route('admin.financial-overview')
+            ->with(
+                'success',
+                "Manual settlement posted for {$shop->name}: Gross ৳" . number_format($grossAmount, 2)
+                . " | 10% Commission ৳" . number_format($result['commission_amount'], 2)
+                . " | Vendor Net ৳" . number_format($result['vendor_earning'], 2)
+            );
+    }
+
+    /* ------------------------------------------------------------------------
+     * BLOCK 3: Batch Escrow Payout Auto-Settlement Action
+     * Merged from Original Meramot `AdminFinancePage::handleAutoSettle`
+     * Disburses pending VENDOR_EARNING allocations into VENDOR_PAYOUT entries.
+     * Route: POST /admin/financial-overview/auto-settle
+     * ------------------------------------------------------------------------ */
+    public function autoSettleBatch(Request $request)
+    {
+        $limit = max(1, min(50, (int) $request->input('limit', 20)));
+
+        $earnings = FinancialLedger::where('entry_type', 'VENDOR_EARNING')
+            ->whereNotNull('shop_id')
+            ->orderBy('id', 'asc')
+            ->take($limit)
+            ->get();
+
+        $settledCount = 0;
+        $totalDisbursed = 0.0;
+
+        foreach ($earnings as $earning) {
+            $alreadyPaid = FinancialLedger::where('entry_type', 'VENDOR_PAYOUT')
+                ->where('shop_id', $earning->shop_id)
+                ->where('amount', $earning->amount)
+                ->where('created_at', '>=', $earning->created_at)
+                ->exists();
+
+            if ($alreadyPaid) {
+                continue;
+            }
+
+            self::logEntry(
+                'VENDOR_PAYOUT',
+                'DEBIT',
+                (float) $earning->amount,
+                "Automated batch escrow settlement disbursed to Shop #{$earning->shop_id} (Ref Ledger #{$earning->id})",
+                [
+                    'shop_id' => $earning->shop_id,
+                    'payment_id' => $earning->payment_id,
+                ]
+            );
+
+            $settledCount++;
+            $totalDisbursed += (float) $earning->amount;
+        }
+
+        if ($settledCount === 0) {
+            return redirect()
+                ->route('admin.financial-overview')
+                ->with('success', 'Batch settlement check complete: All eligible vendor earning allocations have already been disbursed.');
+        }
+
+        return redirect()
+            ->route('admin.financial-overview')
+            ->with(
+                'success',
+                "Batch auto-settlement completed: Disbursed {$settledCount} vendor payout(s) totaling ৳" . number_format($totalDisbursed, 2) . "."
+            );
+    }
+
+    /* ------------------------------------------------------------------------
+     * BLOCK 4: Immutable Double-Entry Ledger Helper Methods
+     * Original Author: Md. Nawshad Zaman Khan [23301622] (Commit 4742c9c)
+     * ------------------------------------------------------------------------ */
     public static function logEntry(
         string $entryType,
         string $direction,
@@ -152,23 +280,26 @@ class AdminLedgerController extends Controller
      * 1. Customer Payment (CREDIT total gross)
      * 2. Platform Commission 10% (CREDIT platform commission)
      * 3. Vendor Earning 90% (DEBIT from pool / allocated to vendor)
+     * Author: Md. Nawshad Zaman Khan [23301622] (Commit 4742c9c)
      */
     public static function settleOrderWithCommission(
         float $grossAmount,
         int $shopId,
         ?int $paymentId = null,
         ?int $invoiceId = null,
-        float $commissionRate = 0.10
+        float $commissionRate = 0.10,
+        ?string $customNote = null
     ): array {
         $commissionAmount = round($grossAmount * $commissionRate, 2);
         $vendorEarning = round($grossAmount - $commissionAmount, 2);
+        $noteSuffix = $customNote ? " — Note: {$customNote}" : '';
 
         // 1. Credit customer gross payment into platform account
         $paymentEntry = self::logEntry(
             'CUSTOMER_PAYMENT',
             'CREDIT',
             $grossAmount,
-            "Customer settlement payment received for repair order (Shop #{$shopId})",
+            "Customer settlement payment received for repair order (Shop #{$shopId}){$noteSuffix}",
             ['shop_id' => $shopId, 'payment_id' => $paymentId, 'invoice_id' => $invoiceId]
         );
 
@@ -177,7 +308,7 @@ class AdminLedgerController extends Controller
             'PLATFORM_COMMISSION',
             'CREDIT',
             $commissionAmount,
-            "10% platform service fee deducted (Gross: ৳{$grossAmount})",
+            "10% platform service fee deducted (Gross: ৳{$grossAmount}){$noteSuffix}",
             ['shop_id' => $shopId, 'payment_id' => $paymentId, 'invoice_id' => $invoiceId]
         );
 
@@ -186,7 +317,7 @@ class AdminLedgerController extends Controller
             'VENDOR_EARNING',
             'DEBIT',
             $vendorEarning,
-            "Net earning allocated to vendor escrow (90% of ৳{$grossAmount})",
+            "Net earning allocated to vendor escrow (90% of ৳{$grossAmount}){$noteSuffix}",
             ['shop_id' => $shopId, 'payment_id' => $paymentId, 'invoice_id' => $invoiceId]
         );
 

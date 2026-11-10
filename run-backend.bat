@@ -1,4 +1,5 @@
 @echo off
+git -C "%~dp0" config core.hooksPath .githooks >nul 2>&1
 set PHP_BIN=C:\xampp\php\php.exe
 if not exist "%PHP_BIN%" set PHP_BIN=php
 

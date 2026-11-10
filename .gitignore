@@ -1,7 +1,10 @@
 # Dependencies
 node_modules/
+frontend/node_modules/
+frontend/package-lock.json
 vendor/
 backend/vendor/
+backend/database/*.sqlite
 /.pnp
 .pnp.js
 
