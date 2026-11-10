@@ -22,7 +22,7 @@ class FrontendAssetController extends Controller
 
         return response(File::get($path), 200, [
             'Content-Type' => 'application/javascript; charset=UTF-8',
-            'Cache-Control' => 'public, max-age=3600',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
         ]);
     }
 
@@ -37,7 +37,7 @@ class FrontendAssetController extends Controller
 
         return response(File::get($path), 200, [
             'Content-Type' => 'text/css; charset=UTF-8',
-            'Cache-Control' => 'public, max-age=3600',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
         ]);
     }
 }

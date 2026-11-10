@@ -33,12 +33,15 @@
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- OpenStreetMap + Leaflet Open-Source Map Styles & Script (No API Key Required) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <!-- Standalone Client Modules (Served from root `frontend/js/`) -->
-    <script defer src="/js/geolocation-helper.js"></script>
-    <script defer src="/js/marketplace-client.js"></script>
+    <!-- Standalone Client Modules (Served from root `frontend/js/` with cache-busting version) -->
+    @php
+        $jsAssetVer = @filemtime(base_path('../frontend/js/geolocation-helper.js')) ?: time();
+    @endphp
+    <script defer src="/js/geolocation-helper.js?v={{ $jsAssetVer }}"></script>
+    <script defer src="/js/marketplace-client.js?v={{ $jsAssetVer }}"></script>
     
     <style>
         /* Exact CSS variables from commit 8e44218 (globals.css & mobile.css) */
@@ -152,6 +155,22 @@
             to { transform: translateX(0); }
         }
 
+        /* Protect OpenStreetMap + Leaflet tiles from Tailwind Play CDN img reset */
+        .leaflet-container {
+            width: 100%;
+            height: 400px;
+            min-height: 360px;
+            z-index: 10;
+            font-family: inherit;
+        }
+        .leaflet-container img,
+        .leaflet-tile,
+        .leaflet-marker-icon,
+        .leaflet-marker-shadow {
+            max-width: none !important;
+            max-height: none !important;
+        }
+
         /* Academic defense mode toggle (Hidden by default unless ?dev=1 or Ctrl+Shift+D) */
         @php
             if (request()->has('dev')) {
@@ -211,12 +230,19 @@
     },
     openLocationModal() {
         this.locationError = '';
-        this.draftLocation = this.selectedLocation || (window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null);
+        this.draftLocation = this.selectedLocation || (window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null) || {
+            address: 'Road 11, Banani, Dhaka 1213',
+            city: 'Dhaka',
+            area: 'Banani',
+            lat: 23.7937,
+            lng: 90.4066,
+            source: 'map'
+        };
         if (window.MeramotLocationPicker) {
             window.MeramotLocationPicker.draftLocation = this.draftLocation;
         }
         this.locationModalOpen = true;
-        this.$nextTick(() => {
+        setTimeout(() => {
             if (window.MeramotLocationPicker) {
                 window.MeramotLocationPicker.initOrRefreshMap('meramot-leaflet-map', {
                     onDraftChange: (loc) => {
@@ -231,7 +257,7 @@
                     }
                 });
             }
-        });
+        }, 40);
     },
     async useGpsLocation() {
         if (!window.MeramotGeolocation || !window.MeramotLocationPicker) return;
@@ -724,7 +750,7 @@
                     </form>
 
                     <div class="relative min-h-[360px] flex-1 overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-50)]">
-                        <div id="meramot-leaflet-map" class="h-[390px] min-h-[360px] w-full z-10"></div>
+                        <div id="meramot-leaflet-map" style="height: 400px; min-height: 360px; width: 100%;" class="w-full z-10"></div>
                         <div class="pointer-events-none absolute left-4 top-4 z-[400] rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#244229] shadow-sm">
                             OpenStreetMap + Leaflet
                         </div>
