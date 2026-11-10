@@ -74,11 +74,11 @@ class AdminDeliveryController extends Controller
      * Admin: reject an application.
      * Route: POST /admin/delivery-agents/{id}/reject
      */
-    public function reject(Request $request, $id)
-    {
-        $agent = DeliveryAgent::findOrFail($id);
-        $agent->update(['registration_status' => 'REJECTED']);
-
-        return redirect()->back()->with('warning', "Delivery agent application rejected.");
-    }
+        public function reject(Request $request, $id)
+        {
+            $validated = $request->validate(['rejection_reason' => 'required|string|max:500',]);
+            $agent = DeliveryAgent::findOrFail($id);
+            $agent->update(['registration_status' => 'REJECTED','rejection_reason' => $validated['rejection_reason'],]);
+            return redirect()->back()->with('warning', "Delivery agent application rejected.");
+        }
 }

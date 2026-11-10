@@ -21,6 +21,7 @@ class DeliveryAgent extends Model
         'registration_status', // 'PENDING', 'APPROVED', 'REJECTED'
         'status',              // 'OFFLINE', 'AVAILABLE', 'BUSY', 'SUSPENDED'
         'is_active',
+        'rejection_reason',
         'current_latitude',
         'current_longitude',
         'total_earnings',

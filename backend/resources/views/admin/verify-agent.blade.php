@@ -61,8 +61,10 @@ INSTRUCTIONS FOR NAFIUL:
                             @csrf
                             <button type="submit" class="px-3 py-1 bg-emerald-600 text-white rounded text-xs hover:bg-emerald-700">Approve</button>
                         </form>
-                        <form method="POST" action="/admin/delivery-agents/{{ $agent->id ?? 1 }}/reject" class="inline">
+                        <form method="POST" action="/admin/delivery-agents/{{ $agent->id ?? 1 }}/reject" class="inline-flex items-center gap-2">
                             @csrf
+                            <input type="text" name="rejection_reason" placeholder="Reason for rejection" required 
+                                    class="border border-slate-300 rounded px-2 py-1 text-xs w-40">
                             <button type="submit" class="px-3 py-1 bg-rose-600 text-white rounded text-xs hover:bg-rose-700">Reject</button>
                         </form>
                     </td>
