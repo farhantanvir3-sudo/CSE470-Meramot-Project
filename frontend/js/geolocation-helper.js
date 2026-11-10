@@ -157,8 +157,38 @@ const MeramotGeolocation = {
 const MeramotLocationPicker = {
     mapInstance: null,
     markerInstance: null,
+    resizeObserver: null,
     draftLocation: null,
+    callbacks: {},
     DHAKA_HUBS,
+
+    /**
+     * Ensure Leaflet CSS & JS are loaded in the browser even if primary CDN was delayed
+     */
+    async ensureLeafletLoaded() {
+        if (typeof window.L !== 'undefined') return window.L;
+
+        return new Promise((resolve, reject) => {
+            if (!document.querySelector('link[href*="leaflet"]')) {
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+                document.head.appendChild(link);
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+            script.onload = () => resolve(window.L);
+            script.onerror = () => {
+                const fallback = document.createElement('script');
+                fallback.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js';
+                fallback.onload = () => resolve(window.L);
+                fallback.onerror = () => reject(new Error('Could not load Leaflet map library.'));
+                document.head.appendChild(fallback);
+            };
+            document.head.appendChild(script);
+        });
+    },
 
     /**
      * Build compact navbar label from stored location object
@@ -371,10 +401,19 @@ const MeramotLocationPicker = {
     /**
      * Mount or refresh the interactive OpenStreetMap + Leaflet instance inside #meramot-leaflet-map
      */
-    initOrRefreshMap(containerId = 'meramot-leaflet-map', callbacks = {}) {
+    async initOrRefreshMap(containerId = 'meramot-leaflet-map', callbacks = {}) {
+        this.callbacks = callbacks;
+
+        try {
+            await this.ensureLeafletLoaded();
+        } catch (err) {
+            callbacks.onError?.('Map could not be loaded. Please check your internet connection.');
+            return;
+        }
+
         const container = document.getElementById(containerId);
         if (!container || typeof window.L === 'undefined') {
-            callbacks.onError?.('Leaflet map library could not be loaded.');
+            callbacks.onError?.('Map container could not be initialized.');
             return;
         }
 
@@ -388,7 +427,8 @@ const MeramotLocationPicker = {
         if (!this.mapInstance) {
             const map = L.map(container, {
                 center: [startLat, startLng],
-                zoom: startZoom
+                zoom: startZoom,
+                zoomControl: true
             });
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -413,11 +453,11 @@ const MeramotLocationPicker = {
 
             const handleCoordinatePick = async (lat, lng, source = 'map') => {
                 marker.setLatLng([lat, lng]);
-                callbacks.onLoading?.(true);
+                this.callbacks.onLoading?.(true);
                 const resolved = await this.reverseGeocode(lat, lng, source);
                 this.draftLocation = resolved;
-                callbacks.onDraftChange?.(resolved);
-                callbacks.onLoading?.(false);
+                this.callbacks.onDraftChange?.(resolved);
+                this.callbacks.onLoading?.(false);
             };
 
             map.on('click', (event) => {
@@ -431,6 +471,15 @@ const MeramotLocationPicker = {
 
             this.mapInstance = map;
             this.markerInstance = marker;
+
+            if (typeof ResizeObserver !== 'undefined') {
+                this.resizeObserver = new ResizeObserver(() => {
+                    if (this.mapInstance) {
+                        this.mapInstance.invalidateSize();
+                    }
+                });
+                this.resizeObserver.observe(container);
+            }
         } else {
             this.mapInstance.setView([startLat, startLng], startZoom);
             if (this.markerInstance) {
@@ -438,18 +487,24 @@ const MeramotLocationPicker = {
             }
         }
 
-        setTimeout(() => {
-            if (this.mapInstance) {
-                this.mapInstance.invalidateSize();
-            }
-        }, 140);
+        [40, 160, 350].forEach((delay) => {
+            setTimeout(() => {
+                if (this.mapInstance) {
+                    this.mapInstance.invalidateSize();
+                }
+            }, delay);
+        });
     },
 
     /**
      * Fly map & marker to specific coordinates
      */
-    flyToLocation(lat, lng, zoom = 15) {
+    async flyToLocation(lat, lng, zoom = 15) {
+        if (!this.mapInstance) {
+            await this.initOrRefreshMap('meramot-leaflet-map', this.callbacks);
+        }
         if (!this.mapInstance) return;
+        this.mapInstance.invalidateSize();
         this.mapInstance.flyTo([lat, lng], zoom, { duration: 0.6 });
         if (this.markerInstance) {
             this.markerInstance.setLatLng([lat, lng]);
