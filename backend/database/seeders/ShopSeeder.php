@@ -2,30 +2,83 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 use App\Models\RepairShop;
 use App\Models\ShopService;
-use App\Models\VendorProfile;
 use App\Models\User;
+use App\Models\VendorProfile;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
- * Meramot Shop Seeder — Ports all 32 original repair shops from legacy Meramot
- * Covers features R6 (Shop Search & Filters) & R11 (Vendor Profiles)
+ * ============================================================================
+ * MERAMOT NATIONWIDE SHOP & MULTI-BRANCH VENDOR SEEDER (Features R6 & R11)
+ * ============================================================================
+ * Authors:
+ *   - Shanid Sajjatuz Islam [Student ID: 23201465] (Feature R6 Shop Discovery)
+ *   - Farhan Tanvir [Student ID: 22299179] (Multi-Branch Vendors, Dual Shop
+ *     Addresses & Nationwide Bangladesh OpenStreetMap `shop=electronics` Sync)
+ *
+ * Coherence Invariants Enforced Across All Seeded Records:
+ *   1. Dual Shop Addresses:
+ *      - `gps_address` + (`latitude`, `longitude`) = GPS Approximate Location.
+ *      - `address` = Vendor-Provided Storefront Location.
+ *      - `same_as_gps_location === ($address === $gps_address)` for 100% of rows.
+ *   2. Multi-Branch Vendor Integrity:
+ *      - `VendorProfile.is_branched === true` iff its shops have `is_branch === true`
+ *        and a non-empty unique `branch_name`.
+ *      - Demo vendor `sakib.tech@gmail.com` exclusively owns `ProTech Solutions`
+ *        across 3 branches (Banani DOHS Flagship, Uttara Sector 7, Agrabad Chattogram).
+ *      - Demo vendor `dhaka.devices@meramot.demo` exclusively owns standalone
+ *        `Dhaka Device Doctors`.
+ *   3. Nationwide Bangladesh Coverage:
+ *      - Seeds all 34 curated Meramot hubs + all 1,260 named `shop=electronics`
+ *        stores across 59 Bangladesh districts using fast PostgreSQL batch upserts.
+ * ============================================================================
  */
 class ShopSeeder extends Seeder
 {
     public function run(): void
     {
-        $defaultVendor = User::where('role', 'vendor')->first() ?? User::first();
+        $now = now();
 
-        $allShops = [
-            // 12 Featured & Specialty Repair Hubs from original Meramot mock-data
+        // Dedicated demo vendor accounts
+        $sakibVendorUser = User::where('email', 'sakib.tech@gmail.com')->first()
+            ?? User::where('role', 'vendor')->first()
+            ?? User::first();
+
+        $dhakaDoctorsUser = User::where('email', 'dhaka.devices@meramot.demo')->first()
+            ?? $sakibVendorUser;
+
+        // Dedicated directory merchant carrier account so demo users keep 1:1 VendorProfile ownership
+        $directoryVendorUser = User::updateOrCreate(
+            ['email' => 'directory.merchants@meramot.local'],
+            [
+                'name' => 'Meramot Verified Directory Merchants',
+                'password' => Hash::make('Directory@Meramot2026'),
+                'phone' => '+8801700999999',
+                'role' => 'vendor',
+                'is_active' => true,
+            ]
+        );
+
+        // ---------------------------------------------------------------------
+        // PART 1: 34 Curated Meramot Flagship & Metro Repair Hubs
+        // (Includes 3 Multi-Branch locations for ProTech Solutions)
+        // ---------------------------------------------------------------------
+        $curatedShops = [
+            // ProTech Solutions — Branch 1 (Dhaka Banani Flagship)
             [
                 'name' => 'ProTech Solutions',
                 'slug' => 'protech-solutions',
+                'is_branch' => true,
+                'branch_name' => 'Banani DOHS Flagship',
+                'vendor_group_key' => 'curated_brand:protech-solutions',
+                'owner_user_id' => $sakibVendorUser->id,
                 'description' => 'OEM parts only. Certified Apple technicians. 12-month warranty included.',
-                'address' => 'Banani DOHS, Dhaka',
+                'address' => 'Level 3, House 42, Banani DOHS, Dhaka',
+                'gps_address' => 'Road 9, Banani DOHS, Banani, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'Banani',
                 'lat' => 23.790428,
@@ -47,11 +100,79 @@ class ShopSeeder extends Seeder
                 'phone' => '+8801711000001',
                 'email' => 'protech@meramot.local',
             ],
+            // ProTech Solutions — Branch 2 (Dhaka Uttara Expansion Branch)
+            [
+                'name' => 'ProTech Solutions',
+                'slug' => 'protech-solutions-uttara',
+                'is_branch' => true,
+                'branch_name' => 'Uttara Sector 7',
+                'vendor_group_key' => 'curated_brand:protech-solutions',
+                'owner_user_id' => $sakibVendorUser->id,
+                'description' => 'Northern Dhaka certified Apple & ultrabook bench with express courier pickup.',
+                'address' => 'Suite 502, North Tower, Rabindra Sarani, Sector 7, Uttara, Dhaka',
+                'gps_address' => 'Sector 7, Uttara, Dhaka',
+                'same_as_gps_location' => false,
+                'city' => 'Dhaka',
+                'area' => 'Uttara',
+                'lat' => 23.873810,
+                'lng' => 90.398410,
+                'rating' => 4.8,
+                'review_count' => 318,
+                'price_level' => 2,
+                'has_voucher' => true,
+                'free_delivery' => true,
+                'has_deals' => false,
+                'is_featured' => false,
+                'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR'],
+                'specialties' => ['MacBook Air M2 repair', 'battery replacement', 'screen replacement', 'laptop', 'phone'],
+                'eta_minutes' => 75,
+                'result_tag' => 'North Hub',
+                'offer_summary' => 'Inspection ৳300',
+                'inspection_fee' => 300,
+                'base_labor_fee' => 500,
+                'phone' => '+8801711000101',
+                'email' => 'uttara.protech@meramot.local',
+            ],
+            // ProTech Solutions — Branch 3 (Chattogram Agrabad Regional Branch, GPS = Public Address)
+            [
+                'name' => 'ProTech Solutions',
+                'slug' => 'protech-solutions-agrabad',
+                'is_branch' => true,
+                'branch_name' => 'Agrabad, Chattogram',
+                'vendor_group_key' => 'curated_brand:protech-solutions',
+                'owner_user_id' => $sakibVendorUser->id,
+                'description' => 'Port city flagship workshop serving Chattogram corporate & consumer Apple/PC devices.',
+                'address' => 'Sheikh Mujib Road, Agrabad, Chattogram',
+                'gps_address' => 'Sheikh Mujib Road, Agrabad, Chattogram',
+                'same_as_gps_location' => true,
+                'city' => 'Chattogram',
+                'area' => 'Agrabad',
+                'lat' => 22.326410,
+                'lng' => 91.815520,
+                'rating' => 4.9,
+                'review_count' => 204,
+                'price_level' => 2,
+                'has_voucher' => true,
+                'free_delivery' => true,
+                'has_deals' => true,
+                'is_featured' => false,
+                'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR', 'SPARE_PARTS'],
+                'specialties' => ['MacBook Air M2 repair', 'logic board repair', 'OLED display swap', 'laptop', 'phone'],
+                'eta_minutes' => 90,
+                'result_tag' => 'Chattogram Hub',
+                'offer_summary' => 'Inspection ৳300',
+                'inspection_fee' => 300,
+                'base_labor_fee' => 500,
+                'phone' => '+8801711000102',
+                'email' => 'ctg.protech@meramot.local',
+            ],
             [
                 'name' => 'The Gadget Den',
                 'slug' => 'the-gadget-den',
                 'description' => 'Express service available. Right around the corner from Main St. Mall.',
-                'address' => 'Gulshan 1, Dhaka',
+                'address' => 'Shop 204, Navana Tower, Gulshan 1 Circle, Dhaka',
+                'gps_address' => 'Gulshan 1, Gulshan, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'Gulshan',
                 'lat' => 23.791281,
@@ -78,6 +199,8 @@ class ShopSeeder extends Seeder
                 'slug' => 'budget-fixer',
                 'description' => 'Affordable high-quality generic replacement screens. 30-day warranty.',
                 'address' => 'Dhanmondi 27, Dhaka',
+                'gps_address' => 'Dhanmondi 27, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Dhanmondi',
                 'lat' => 23.744013,
@@ -103,7 +226,9 @@ class ShopSeeder extends Seeder
                 'name' => 'MacMaster Repairs',
                 'slug' => 'macmaster-repairs',
                 'description' => 'OEM parts only. Certified Apple replacement tools in stock.',
-                'address' => 'Mohakhali Wireless, Dhaka',
+                'address' => 'Level 2, Tropical Plaza, Mohakhali Wireless, Dhaka',
+                'gps_address' => 'Mohakhali Wireless, Mohakhali, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'Mohakhali',
                 'lat' => 23.776075,
@@ -130,6 +255,8 @@ class ShopSeeder extends Seeder
                 'slug' => 'the-idoc-garage',
                 'description' => 'Silicon Valley fixers. Bravest service, and rapid local courier pickup.',
                 'address' => 'Uttara Sector 11, Dhaka',
+                'gps_address' => 'Uttara Sector 11, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Uttara',
                 'lat' => 23.876491,
@@ -155,7 +282,9 @@ class ShopSeeder extends Seeder
                 'name' => 'ByteSize Repairs',
                 'slug' => 'bytesize-repairs',
                 'description' => 'Express screen replacement with ultra quick turnaround time.',
-                'address' => 'Mirpur DOHS, Dhaka',
+                'address' => 'House 114, Avenue 3, Mirpur DOHS, Dhaka',
+                'gps_address' => 'Mirpur DOHS, Mirpur, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'Mirpur',
                 'lat' => 23.799254,
@@ -182,6 +311,8 @@ class ShopSeeder extends Seeder
                 'slug' => 'applecore-solutions',
                 'description' => 'Expert Apple device repair. Same-day service available.',
                 'address' => 'Middle Badda, Dhaka',
+                'gps_address' => 'Middle Badda, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Badda',
                 'lat' => 23.778462,
@@ -208,6 +339,8 @@ class ShopSeeder extends Seeder
                 'slug' => 'main-street-tech',
                 'description' => 'Reliable everyday repairs at fair prices. Walk-ins welcome.',
                 'address' => 'Tejgaon Commercial Area, Dhaka',
+                'gps_address' => 'Tejgaon Commercial Area, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Tejgaon',
                 'lat' => 23.763010,
@@ -234,6 +367,8 @@ class ShopSeeder extends Seeder
                 'slug' => 'precision-fix',
                 'description' => 'Affordable high-quality generic replacement battery. 90-day warranty.',
                 'address' => 'DIT Road, Rampura, Dhaka',
+                'gps_address' => 'DIT Road, Rampura, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Rampura',
                 'lat' => 23.759799,
@@ -259,7 +394,9 @@ class ShopSeeder extends Seeder
                 'name' => 'Micro-Maestro',
                 'slug' => 'micro-maestro',
                 'description' => 'Specialist in micro soldering and board-level repair. 30-day warranty.',
-                'address' => 'Ring Road, Mohammadpur, Dhaka',
+                'address' => 'Shop 19, Tokyo Square Annex, Ring Road, Mohammadpur, Dhaka',
+                'gps_address' => 'Ring Road, Mohammadpur, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'Mohammadpur',
                 'lat' => 23.768931,
@@ -286,6 +423,8 @@ class ShopSeeder extends Seeder
                 'slug' => 'westside-computery',
                 'description' => 'CPU, storage, and keyboard replacement specialists. 30-day warranty.',
                 'address' => 'Rankin Street, Wari, Dhaka',
+                'gps_address' => 'Rankin Street, Wari, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Wari',
                 'lat' => 23.721946,
@@ -312,6 +451,8 @@ class ShopSeeder extends Seeder
                 'slug' => 'the-gear-lab',
                 'description' => 'Screen repair and genuine spare parts available. Warranty included.',
                 'address' => 'Block C, Bashundhara R/A, Dhaka',
+                'gps_address' => 'Block C, Bashundhara R/A, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Bashundhara',
                 'lat' => 23.808686,
@@ -333,17 +474,19 @@ class ShopSeeder extends Seeder
                 'phone' => '+8801711000012',
                 'email' => 'gearlab@meramot.local',
             ],
-
-            // 20 Core Metro Dhaka Repair Hubs
+            // Standalone Demo Vendor Account #2: Dhaka Device Doctors
             [
                 'name' => 'Dhaka Device Doctors',
                 'slug' => 'dhaka-device-doctors',
+                'owner_user_id' => $dhakaDoctorsUser->id,
                 'description' => 'Pioneer electronic repair clinic specializing in motherboard re-soldering and IC replacements.',
-                'address' => 'Road 11/A, Dhanmondi, Dhaka',
+                'address' => 'Suite 3B, House 58, Road 11/A, Dhanmondi, Dhaka',
+                'gps_address' => 'Road 11/A, Dhanmondi, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'Dhanmondi',
-                'lat' => 23.7461,
-                'lng' => 90.3742,
+                'lat' => 23.746100,
+                'lng' => 90.374200,
                 'rating' => 4.8,
                 'review_count' => 340,
                 'price_level' => 2,
@@ -365,11 +508,13 @@ class ShopSeeder extends Seeder
                 'name' => 'Gulshan Gadget Care',
                 'slug' => 'gulshan-gadget-care',
                 'description' => 'Premium boutique servicing Apple, Dell XPS, and flagship Samsung Galaxy devices with authentic parts.',
-                'address' => 'Gulshan Avenue, Dhaka',
+                'address' => 'Level 4, Pink City Shopping Complex, Gulshan Avenue, Dhaka',
+                'gps_address' => 'Gulshan Avenue, Gulshan, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'Gulshan',
-                'lat' => 23.7925,
-                'lng' => 90.4078,
+                'lat' => 23.792500,
+                'lng' => 90.407800,
                 'rating' => 4.9,
                 'review_count' => 512,
                 'price_level' => 3,
@@ -392,10 +537,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'banani-tech-bench',
                 'description' => 'Expert workstation & gaming rig diagnostics, GPU repasting, and display calibration.',
                 'address' => 'Road 11, Banani, Dhaka',
+                'gps_address' => 'Road 11, Banani, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Banani',
-                'lat' => 23.7940,
-                'lng' => 90.4023,
+                'lat' => 23.794000,
+                'lng' => 90.402300,
                 'rating' => 4.7,
                 'review_count' => 198,
                 'price_level' => 2,
@@ -417,11 +564,13 @@ class ShopSeeder extends Seeder
                 'name' => 'Mirpur Laptop Lab',
                 'slug' => 'mirpur-laptop-lab',
                 'description' => 'Largest inventory of OEM laptop parts, keyboards, hinges, and screen panels in Mirpur.',
-                'address' => 'Mirpur 10 Roundabout, Dhaka',
+                'address' => 'Shop 312, Shah Ali Plaza, Mirpur 10 Roundabout, Dhaka',
+                'gps_address' => 'Mirpur 10 Roundabout, Mirpur, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'Mirpur',
-                'lat' => 23.8042,
-                'lng' => 90.3688,
+                'lat' => 23.804200,
+                'lng' => 90.368800,
                 'rating' => 4.6,
                 'review_count' => 620,
                 'price_level' => 1,
@@ -444,10 +593,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'uttara-fixpoint',
                 'description' => 'Complete electronic restoration hub catering to Northern Dhaka with doorstep pickup.',
                 'address' => 'Sector 7, Uttara, Dhaka',
+                'gps_address' => 'Sector 7, Uttara, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Uttara',
-                'lat' => 23.8759,
-                'lng' => 90.3795,
+                'lat' => 23.875900,
+                'lng' => 90.379500,
                 'rating' => 4.7,
                 'review_count' => 280,
                 'price_level' => 2,
@@ -470,10 +621,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'mohammadpur-device-depot',
                 'description' => 'Reliable neighborhood hardware mechanics with over 10 years of trusted electronics experience.',
                 'address' => 'Taj Mahal Road, Mohammadpur, Dhaka',
+                'gps_address' => 'Taj Mahal Road, Mohammadpur, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Mohammadpur',
-                'lat' => 23.7662,
-                'lng' => 90.3587,
+                'lat' => 23.766200,
+                'lng' => 90.358700,
                 'rating' => 4.5,
                 'review_count' => 175,
                 'price_level' => 1,
@@ -496,10 +649,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'new-market-repair-works',
                 'description' => 'Historic repair hub known for wholesale electronic spare parts and express circuit tracing.',
                 'address' => 'Elephant Road, New Market, Dhaka',
+                'gps_address' => 'Elephant Road, New Market, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'New Market',
-                'lat' => 23.7327,
-                'lng' => 90.3854,
+                'lat' => 23.732700,
+                'lng' => 90.385400,
                 'rating' => 4.4,
                 'review_count' => 410,
                 'price_level' => 1,
@@ -521,11 +676,13 @@ class ShopSeeder extends Seeder
                 'name' => 'Farmgate Tech Rescue',
                 'slug' => 'farmgate-tech-rescue',
                 'description' => 'Central Dhaka transit hub repair station. Fast 1-hour screen and battery swaps while you wait.',
-                'address' => 'Green Road, Farmgate, Dhaka',
+                'address' => 'Shop 14, Sezan Point Level 3, Green Road, Farmgate, Dhaka',
+                'gps_address' => 'Green Road, Farmgate, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'Farmgate',
-                'lat' => 23.7565,
-                'lng' => 90.3903,
+                'lat' => 23.756500,
+                'lng' => 90.390300,
                 'rating' => 4.5,
                 'review_count' => 310,
                 'price_level' => 2,
@@ -548,10 +705,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'tejgaon-circuit-care',
                 'description' => 'Industrial and enterprise device maintenance workshop with oscilloscope-guided diagnostics.',
                 'address' => 'Tejgaon Industrial Area, Dhaka',
+                'gps_address' => 'Tejgaon Industrial Area, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Tejgaon',
-                'lat' => 23.7594,
-                'lng' => 90.3988,
+                'lat' => 23.759400,
+                'lng' => 90.398800,
                 'rating' => 4.6,
                 'review_count' => 189,
                 'price_level' => 2,
@@ -574,10 +733,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'bashundhara-laptop-lounge',
                 'description' => 'Student-friendly repair workshop offering student discounts, software installs, and hardware repairs.',
                 'address' => 'Gate 1, Bashundhara R/A, Dhaka',
+                'gps_address' => 'Gate 1, Bashundhara R/A, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Bashundhara',
-                'lat' => 23.8130,
-                'lng' => 90.4250,
+                'lat' => 23.813000,
+                'lng' => 90.425000,
                 'rating' => 4.8,
                 'review_count' => 420,
                 'price_level' => 1,
@@ -600,10 +761,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'byteback-solutions',
                 'description' => 'Data recovery, corrupted NAND flash repair, and precision water damage treatment.',
                 'address' => 'Satmasjid Road, Dhanmondi, Dhaka',
+                'gps_address' => 'Satmasjid Road, Dhanmondi, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Dhanmondi',
-                'lat' => 23.7512,
-                'lng' => 90.3789,
+                'lat' => 23.751200,
+                'lng' => 90.378900,
                 'rating' => 4.7,
                 'review_count' => 160,
                 'price_level' => 2,
@@ -626,10 +789,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'pixel-repair-station',
                 'description' => 'OLED and Retina display specialists. Dust-free clean room lamination and glass bonding.',
                 'address' => 'Gulshan 2 Circle, Dhaka',
+                'gps_address' => 'Gulshan 2 Circle, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Gulshan',
-                'lat' => 23.7901,
-                'lng' => 90.4120,
+                'lat' => 23.790100,
+                'lng' => 90.412000,
                 'rating' => 4.8,
                 'review_count' => 290,
                 'price_level' => 3,
@@ -652,10 +817,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'motherboard-masters',
                 'description' => 'Advanced BGA chip reballing, power sequence troubleshooting, and BIOS chip reprogramming.',
                 'address' => 'Mirpur 2 Stadium Market, Dhaka',
+                'gps_address' => 'Mirpur 2 Stadium Market, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Mirpur',
-                'lat' => 23.8105,
-                'lng' => 90.3654,
+                'lat' => 23.810500,
+                'lng' => 90.365400,
                 'rating' => 4.9,
                 'review_count' => 480,
                 'price_level' => 2,
@@ -678,10 +845,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'quickfix-electronics',
                 'description' => 'Fast turnaround for daily workhorse gadgets: audio gear, chargers, ports, and keyboards.',
                 'address' => 'Indira Road, Farmgate, Dhaka',
+                'gps_address' => 'Indira Road, Farmgate, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Farmgate',
-                'lat' => 23.7580,
-                'lng' => 90.3890,
+                'lat' => 23.758000,
+                'lng' => 90.389000,
                 'rating' => 4.3,
                 'review_count' => 140,
                 'price_level' => 1,
@@ -704,10 +873,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'urban-device-clinic',
                 'description' => 'Modern tech care center providing warranty-backed replacements and transparent pricing.',
                 'address' => 'Kemal Ataturk Avenue, Banani, Dhaka',
+                'gps_address' => 'Kemal Ataturk Avenue, Banani, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Banani',
-                'lat' => 23.7915,
-                'lng' => 90.4055,
+                'lat' => 23.791500,
+                'lng' => 90.405500,
                 'rating' => 4.6,
                 'review_count' => 215,
                 'price_level' => 2,
@@ -730,10 +901,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'prime-laptop-care',
                 'description' => 'Lenovo ThinkPad, HP EliteBook, and Asus ROG dedicated maintenance facility.',
                 'address' => 'Sector 3, Uttara, Dhaka',
+                'gps_address' => 'Sector 3, Uttara, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Uttara',
-                'lat' => 23.8710,
-                'lng' => 90.3820,
+                'lat' => 23.871000,
+                'lng' => 90.382000,
                 'rating' => 4.7,
                 'review_count' => 310,
                 'price_level' => 2,
@@ -756,10 +929,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'screen-and-circuit',
                 'description' => 'Precision screen refurbishment, polarizer replacement, and OCA vacuum bonding.',
                 'address' => 'Salimullah Road, Mohammadpur, Dhaka',
+                'gps_address' => 'Salimullah Road, Mohammadpur, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Mohammadpur',
-                'lat' => 23.7640,
-                'lng' => 90.3601,
+                'lat' => 23.764000,
+                'lng' => 90.360100,
                 'rating' => 4.5,
                 'review_count' => 195,
                 'price_level' => 2,
@@ -782,10 +957,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'trusted-tech-service',
                 'description' => 'Corporate IT and consumer gadget support providing genuine manufacturer warranty parts.',
                 'address' => 'Nabisco Junction, Tejgaon, Dhaka',
+                'gps_address' => 'Nabisco Junction, Tejgaon, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Tejgaon',
-                'lat' => 23.7610,
-                'lng' => 90.3950,
+                'lat' => 23.761000,
+                'lng' => 90.395000,
                 'rating' => 4.4,
                 'review_count' => 165,
                 'price_level' => 2,
@@ -807,11 +984,13 @@ class ShopSeeder extends Seeder
                 'name' => 'CoreFix Bangladesh',
                 'slug' => 'corefix-bangladesh',
                 'description' => 'Consoles, handhelds, and legacy gaming devices (PlayStation, Nintendo Switch, Xbox).',
-                'address' => 'Multiplan Center, Elephant Road, Dhaka',
+                'address' => 'Level 6, Shop 619, Multiplan Center, Elephant Road, Dhaka',
+                'gps_address' => 'Elephant Road, New Market, Dhaka',
+                'same_as_gps_location' => false,
                 'city' => 'Dhaka',
                 'area' => 'New Market',
-                'lat' => 23.7340,
-                'lng' => 90.3840,
+                'lat' => 23.734000,
+                'lng' => 90.384000,
                 'rating' => 4.6,
                 'review_count' => 260,
                 'price_level' => 2,
@@ -834,10 +1013,12 @@ class ShopSeeder extends Seeder
                 'slug' => 'laptop-harbor',
                 'description' => 'Comprehensive multi-brand laptop repair hub with direct courier pickup for Bashundhara.',
                 'address' => 'Apollo Gate, Bashundhara R/A, Dhaka',
+                'gps_address' => 'Apollo Gate, Bashundhara R/A, Dhaka',
+                'same_as_gps_location' => true,
                 'city' => 'Dhaka',
                 'area' => 'Bashundhara',
-                'lat' => 23.8150,
-                'lng' => 90.4280,
+                'lat' => 23.815000,
+                'lng' => 90.428000,
                 'rating' => 4.7,
                 'review_count' => 310,
                 'price_level' => 2,
@@ -857,75 +1038,313 @@ class ShopSeeder extends Seeder
             ],
         ];
 
-        foreach ($allShops as $index => $s) {
-            // Seed RepairShop table (Feature R6)
-            $shop = RepairShop::updateOrCreate(
-                ['slug' => $s['slug']],
+        // ---------------------------------------------------------------------
+        // PART 2: Load Nationwide Bangladesh OpenStreetMap `shop=electronics` Snapshot
+        // ---------------------------------------------------------------------
+        $osmSnapshotPath = database_path('seeders/data/bangladesh_osm_electronics_shops.json');
+        $osmShops = [];
+        if (is_file($osmSnapshotPath)) {
+            $decoded = json_decode((string) file_get_contents($osmSnapshotPath), true);
+            $osmShops = $decoded['shops'] ?? [];
+        }
+
+        // Combine curated + OSM records into unified normalized entries
+        $combinedEntries = [];
+        $usedSlugs = [];
+
+        foreach ($curatedShops as $idx => $s) {
+            $slug = $s['slug'];
+            $usedSlugs[$slug] = true;
+            $groupKey = $s['vendor_group_key'] ?? ('curated_standalone:' . $slug);
+
+            $combinedEntries[] = [
+                'osm_id' => null,
+                'vendor_group_key' => $groupKey,
+                'owner_user_id' => $s['owner_user_id'] ?? $directoryVendorUser->id,
+                'name' => $s['name'],
+                'slug' => $slug,
+                'is_branch' => (bool) ($s['is_branch'] ?? false),
+                'branch_name' => $s['branch_name'] ?? null,
+                'description' => $s['description'],
+                'address' => $s['address'],
+                'gps_address' => $s['gps_address'],
+                'same_as_gps_location' => (bool) $s['same_as_gps_location'],
+                'city' => $s['city'] ?? 'Dhaka',
+                'area' => $s['area'],
+                'lat' => (float) $s['lat'],
+                'lng' => (float) $s['lng'],
+                'rating' => (float) $s['rating'],
+                'review_count' => (int) ($s['review_count'] ?? 50),
+                'price_level' => (int) ($s['price_level'] ?? 2),
+                'inspection_fee' => (float) ($s['inspection_fee'] ?? 200),
+                'base_labor_fee' => (float) ($s['base_labor_fee'] ?? 400),
+                'offer_summary' => $s['offer_summary'] ?? ('Inspection ৳' . ($s['inspection_fee'] ?? 200)),
+                'result_tag' => $s['result_tag'] ?? null,
+                'eta_minutes' => (int) ($s['eta_minutes'] ?? 60),
+                'has_deals' => (bool) ($s['has_deals'] ?? false),
+                'has_voucher' => (bool) ($s['has_voucher'] ?? false),
+                'free_delivery' => (bool) ($s['free_delivery'] ?? false),
+                'is_featured' => (bool) ($s['is_featured'] ?? false),
+                'categories' => $s['categories'] ?? ['IN_SHOP_REPAIR'],
+                'specialties' => $s['specialties'] ?? ['Laptop repair', 'Phone repair'],
+                'phone' => $s['phone'] ?? '+8801700000000',
+                'email' => $s['email'] ?? ($slug . '@meramot.local'),
+                'opening_hours_text' => 'Sat – Thu: 10:00 AM – 8:30 PM',
+                'is_curated' => true,
+            ];
+        }
+
+        foreach ($osmShops as $osm) {
+            $slug = $osm['slug'];
+            if (isset($usedSlugs[$slug])) {
+                $slug .= '-' . str_replace('/', '-', $osm['osm_id']);
+            }
+            $usedSlugs[$slug] = true;
+
+            $inspFee = (float) ($osm['inspection_fee'] ?? 200);
+            $combinedEntries[] = [
+                'osm_id' => $osm['osm_id'],
+                'vendor_group_key' => $osm['vendor_group_key'] ?? ('standalone:' . $osm['osm_id']),
+                'owner_user_id' => $directoryVendorUser->id,
+                'name' => $osm['name'],
+                'slug' => $slug,
+                'is_branch' => (bool) ($osm['is_branch'] ?? false),
+                'branch_name' => $osm['branch_name'] ?? null,
+                'description' => $osm['description'],
+                'address' => $osm['address'],
+                'gps_address' => $osm['gps_address'],
+                'same_as_gps_location' => (bool) $osm['same_as_gps_location'],
+                'city' => $osm['city'],
+                'area' => $osm['area'],
+                'lat' => (float) $osm['lat'],
+                'lng' => (float) $osm['lng'],
+                'rating' => (float) ($osm['rating'] ?? 4.5),
+                'review_count' => (int) ($osm['review_count'] ?? 24),
+                'price_level' => (int) ($osm['price_level'] ?? 2),
+                'inspection_fee' => $inspFee,
+                'base_labor_fee' => (float) ($osm['base_labor_fee'] ?? 450),
+                'offer_summary' => 'Inspection ৳' . (int) $inspFee,
+                'result_tag' => !empty($osm['is_branch']) ? 'Verified Chain' : null,
+                'eta_minutes' => (int) ($osm['eta_minutes'] ?? 60),
+                'has_deals' => (bool) ($osm['has_deals'] ?? false),
+                'has_voucher' => (bool) ($osm['has_voucher'] ?? false),
+                'free_delivery' => (bool) ($osm['free_delivery'] ?? false),
+                'is_featured' => false,
+                'categories' => $osm['categories'] ?? ['IN_SHOP_REPAIR', 'SPARE_PARTS'],
+                'specialties' => $osm['specialties'] ?? ['Electronics Diagnostics', 'Circuit & Component Repair'],
+                'phone' => $osm['phone'] ?? '+8801700000000',
+                'email' => Str::limit($slug, 42, '') . '@osm.meramot.bd',
+                'opening_hours_text' => $osm['opening_hours_text'] ?? 'Sat – Thu: 10:00 AM – 8:30 PM',
+                'is_curated' => false,
+            ];
+        }
+
+        // ---------------------------------------------------------------------
+        // PART 3: Create / Update Coherent `VendorProfile` Per Distinct Vendor Group
+        // ---------------------------------------------------------------------
+        $vendorBlueprints = [];
+        $vendorIndex = 1;
+
+        foreach ($combinedEntries as $entry) {
+            $gKey = $entry['vendor_group_key'];
+            if (!isset($vendorBlueprints[$gKey])) {
+                $licenseCode = 'TRAD/BD/' . str_pad((string) $vendorIndex, 6, '0', STR_PAD_LEFT);
+                $nidNumber = '199' . str_pad((string) $vendorIndex, 10, '0', STR_PAD_LEFT);
+                $vendorIndex++;
+
+                $vendorBlueprints[$gKey] = [
+                    'user_id' => $entry['owner_user_id'],
+                    'shop_name' => $entry['name'],
+                    'brand_name' => $entry['name'],
+                    'is_branched' => $entry['is_branch'],
+                    'business_license_no' => $licenseCode,
+                    'nid_number' => $nidNumber,
+                    'verification_status' => 'approved',
+                    'shop_address' => $entry['address'],
+                    'gps_address' => $entry['gps_address'],
+                    'same_as_gps_location' => $entry['same_as_gps_location'],
+                    'city' => $entry['city'],
+                    'area' => $entry['area'],
+                    'shop_latitude' => $entry['lat'],
+                    'shop_longitude' => $entry['lng'],
+                    'phone' => $entry['phone'],
+                    'business_email' => $entry['email'],
+                    'categories' => json_encode($entry['specialties'], JSON_UNESCAPED_UNICODE),
+                    'specialties' => json_encode($entry['specialties'], JSON_UNESCAPED_UNICODE),
+                    'courier_pickup' => in_array('COURIER_PICKUP', $entry['categories'], true),
+                    'in_shop_repair' => in_array('IN_SHOP_REPAIR', $entry['categories'], true),
+                    'spare_parts' => in_array('SPARE_PARTS', $entry['categories'], true),
+                    'commission_rate' => 10.00,
+                    'rating' => $entry['rating'],
+                    'notes' => 'group_key:' . $gKey,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            } elseif ($entry['is_branch']) {
+                $vendorBlueprints[$gKey]['is_branched'] = true;
+            }
+        }
+
+        // Fetch existing VendorProfiles keyed by notes (`group_key:...`) or `shop_name` for idempotency
+        $existingByGroupKey = VendorProfile::whereNotNull('notes')
+            ->where('notes', 'LIKE', 'group_key:%')
+            ->pluck('id', 'notes')
+            ->all();
+
+        $profilesToInsert = [];
+        foreach ($vendorBlueprints as $gKey => $bp) {
+            $noteTag = 'group_key:' . $gKey;
+            if (isset($existingByGroupKey[$noteTag])) {
+                VendorProfile::where('id', $existingByGroupKey[$noteTag])->update([
+                    'user_id' => $bp['user_id'],
+                    'shop_name' => $bp['shop_name'],
+                    'brand_name' => $bp['brand_name'],
+                    'is_branched' => $bp['is_branched'],
+                    'shop_address' => $bp['shop_address'],
+                    'gps_address' => $bp['gps_address'],
+                    'same_as_gps_location' => $bp['same_as_gps_location'],
+                    'city' => $bp['city'],
+                    'area' => $bp['area'],
+                    'updated_at' => $now,
+                ]);
+            } else {
+                $profilesToInsert[] = $bp;
+            }
+        }
+
+        foreach (array_chunk($profilesToInsert, 250) as $chunk) {
+            VendorProfile::insert($chunk);
+        }
+
+        $vendorIdByNote = VendorProfile::whereNotNull('notes')
+            ->where('notes', 'LIKE', 'group_key:%')
+            ->pluck('id', 'notes')
+            ->all();
+
+        // ---------------------------------------------------------------------
+        // PART 4: Batch Upsert All `RepairShop` Rows (Curated + Nationwide OSM)
+        // ---------------------------------------------------------------------
+        $shopRows = [];
+        foreach ($combinedEntries as $entry) {
+            $gKey = $entry['vendor_group_key'];
+            $vendorProfileId = $vendorIdByNote['group_key:' . $gKey] ?? null;
+            $canonicalBrandName = $vendorBlueprints[$gKey]['brand_name'] ?? $entry['name'];
+
+            $shopRows[] = [
+                'vendor_profile_id' => $vendorProfileId,
+                'osm_id' => $entry['osm_id'],
+                'name' => $canonicalBrandName,
+                'slug' => $entry['slug'],
+                'is_branch' => $entry['is_branch'],
+                'branch_name' => $entry['branch_name'],
+                'description' => $entry['description'],
+                'address' => $entry['address'],
+                'gps_address' => $entry['gps_address'],
+                'same_as_gps_location' => $entry['same_as_gps_location'],
+                'city' => $entry['city'],
+                'area' => $entry['area'],
+                'latitude' => $entry['lat'],
+                'longitude' => $entry['lng'],
+                'rating' => $entry['rating'],
+                'review_count' => $entry['review_count'],
+                'price_level' => $entry['price_level'],
+                'inspection_fee' => $entry['inspection_fee'],
+                'base_labor_fee' => $entry['base_labor_fee'],
+                'offer_summary' => $entry['offer_summary'],
+                'result_tag' => $entry['result_tag'],
+                'eta_minutes' => $entry['eta_minutes'],
+                'has_deals' => $entry['has_deals'],
+                'has_voucher' => $entry['has_voucher'],
+                'free_delivery' => $entry['free_delivery'],
+                'is_featured' => $entry['is_featured'],
+                'is_active' => true,
+                'is_public' => true,
+                'setup_complete' => true,
+                'accepts_direct_orders' => true,
+                'supports_pickup' => in_array('COURIER_PICKUP', $entry['categories'], true),
+                'categories' => json_encode($entry['categories'], JSON_UNESCAPED_UNICODE),
+                'specialties' => json_encode($entry['specialties'], JSON_UNESCAPED_UNICODE),
+                'phone' => $entry['phone'],
+                'email' => $entry['email'],
+                'opening_hours_text' => $entry['opening_hours_text'],
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        foreach (array_chunk($shopRows, 250) as $chunk) {
+            RepairShop::upsert(
+                $chunk,
+                ['slug'],
                 [
-                    'name' => $s['name'],
-                    'description' => $s['description'],
-                    'address' => $s['address'],
-                    'city' => $s['city'] ?? 'Dhaka',
-                    'area' => $s['area'],
-                    'latitude' => $s['lat'],
-                    'longitude' => $s['lng'],
-                    'rating' => $s['rating'],
-                    'review_count' => $s['review_count'] ?? 50,
-                    'price_level' => $s['price_level'] ?? 2,
-                    'inspection_fee' => $s['inspection_fee'] ?? 200,
-                    'base_labor_fee' => $s['base_labor_fee'] ?? 400,
-                    'offer_summary' => $s['offer_summary'] ?? 'Inspection ৳200',
-                    'result_tag' => $s['result_tag'] ?? null,
-                    'eta_minutes' => $s['eta_minutes'] ?? 60,
-                    'has_deals' => $s['has_deals'] ?? false,
-                    'has_voucher' => $s['has_voucher'] ?? false,
-                    'free_delivery' => $s['free_delivery'] ?? false,
-                    'is_featured' => $s['is_featured'] ?? false,
-                    'categories' => $s['categories'] ?? ['IN_SHOP_REPAIR'],
-                    'specialties' => $s['specialties'] ?? ['Laptop repair', 'Phone repair'],
-                    'phone' => $s['phone'] ?? '+8801700000000',
-                    'email' => $s['email'] ?? 'shop@meramot.local',
+                    'vendor_profile_id', 'osm_id', 'name', 'is_branch', 'branch_name',
+                    'description', 'address', 'gps_address', 'same_as_gps_location',
+                    'city', 'area', 'latitude', 'longitude', 'rating', 'review_count',
+                    'price_level', 'inspection_fee', 'base_labor_fee', 'offer_summary',
+                    'result_tag', 'eta_minutes', 'has_deals', 'has_voucher', 'free_delivery',
+                    'is_featured', 'is_active', 'is_public', 'setup_complete',
+                    'accepts_direct_orders', 'supports_pickup', 'categories', 'specialties',
+                    'phone', 'email', 'opening_hours_text', 'updated_at',
                 ]
             );
+        }
 
-            // Seed bookable Direct-Order ShopService rows for every shop
-            $specialties = $s['specialties'] ?? ['Hardware Diagnostics', 'Component Replacement'];
-            $baseLabor = (float) ($s['base_labor_fee'] ?? 400);
-            foreach ($specialties as $svcIdx => $specName) {
-                $svcSlug = Str::slug($specName) ?: ('service-' . ($svcIdx + 1));
-                ShopService::updateOrCreate(
-                    ['shop_id' => $shop->id, 'slug' => $svcSlug],
-                    [
-                        'name' => ucfirst($specName),
-                        'short_description' => 'Certified workshop service with genuine components and bench warranty.',
-                        'device_type' => 'Electronics',
-                        'issue_category' => ucfirst($specName),
-                        'pricing_type' => 'STARTING_FROM',
-                        'base_price' => $baseLabor + ($svcIdx * 250),
-                        'estimated_days_min' => 1,
-                        'estimated_days_max' => 3,
-                        'includes_pickup' => in_array('COURIER_PICKUP', $s['categories'] ?? [], true),
-                        'sort_order' => $svcIdx,
-                        'is_featured' => $svcIdx === 0,
-                        'is_active' => true,
-                    ]
-                );
+        // ---------------------------------------------------------------------
+        // PART 5: Batch Upsert Bookable Direct-Order `ShopService` Rows
+        // ---------------------------------------------------------------------
+        $shopIdBySlug = RepairShop::pluck('id', 'slug')->all();
+        $serviceRows = [];
+
+        foreach ($combinedEntries as $entry) {
+            $shopId = $shopIdBySlug[$entry['slug']] ?? null;
+            if (!$shopId) {
+                continue;
             }
 
-            // Seed VendorProfile table (Feature R11)
-            VendorProfile::updateOrCreate(
-                ['shop_name' => $s['name']],
+            $specsToSeed = $entry['is_curated']
+                ? $entry['specialties']
+                : array_slice($entry['specialties'], 0, 2);
+
+            $baseLabor = (float) $entry['base_labor_fee'];
+            $includesPickup = in_array('COURIER_PICKUP', $entry['categories'], true);
+            $seenSvcSlugs = [];
+
+            foreach ($specsToSeed as $svcIdx => $specName) {
+                $svcSlug = Str::slug($specName) ?: ('service-' . ($svcIdx + 1));
+                if (isset($seenSvcSlugs[$svcSlug])) {
+                    $svcSlug .= '-' . ($svcIdx + 1);
+                }
+                $seenSvcSlugs[$svcSlug] = true;
+
+                $serviceRows[] = [
+                    'shop_id' => $shopId,
+                    'slug' => $svcSlug,
+                    'name' => ucfirst($specName),
+                    'short_description' => 'Certified workshop service with genuine components and bench warranty.',
+                    'device_type' => 'Electronics',
+                    'issue_category' => ucfirst($specName),
+                    'pricing_type' => 'STARTING_FROM',
+                    'base_price' => $baseLabor + ($svcIdx * 250),
+                    'estimated_days_min' => 1,
+                    'estimated_days_max' => 3,
+                    'includes_pickup' => $includesPickup,
+                    'sort_order' => $svcIdx,
+                    'is_featured' => $svcIdx === 0,
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+
+        foreach (array_chunk($serviceRows, 400) as $chunk) {
+            ShopService::upsert(
+                $chunk,
+                ['shop_id', 'slug'],
                 [
-                    'user_id' => $defaultVendor->id,
-                    'business_license_no' => 'TRAD/DNCC/' . (100000 + $index),
-                    'nid_number' => '199' . str_pad((string)$index, 7, '0', STR_PAD_LEFT),
-                    'verification_status' => 'approved',
-                    'shop_address' => $s['address'],
-                    'shop_latitude' => $s['lat'],
-                    'shop_longitude' => $s['lng'],
-                    'categories' => $s['specialties'] ?? ['Laptop', 'Mobile Phone', 'Hardware Diagnostic'],
-                    'commission_rate' => 10.00,
-                    'rating' => $s['rating'],
+                    'name', 'short_description', 'device_type', 'issue_category',
+                    'pricing_type', 'base_price', 'estimated_days_min', 'estimated_days_max',
+                    'includes_pickup', 'sort_order', 'is_featured', 'is_active', 'updated_at',
                 ]
             );
         }

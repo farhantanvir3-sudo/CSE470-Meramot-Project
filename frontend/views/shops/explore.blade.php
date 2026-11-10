@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Explore Verified Repair Shops in Dhaka | Meramot')
+@section('title', 'Explore Verified Repair Shops Across Bangladesh | Meramot')
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
@@ -12,6 +12,10 @@
                 <a href="/" class="hover:underline">Home</a>
                 <span>/</span>
                 <span class="text-[var(--foreground)] font-semibold">Repair Shops</span>
+                @if(request('city') && request('city') !== 'All')
+                    <span>/</span>
+                    <span class="text-[var(--accent-dark)] font-bold">{{ request('city') }}</span>
+                @endif
                 @if(request('area') && request('area') !== 'All')
                     <span>/</span>
                     <span class="text-[var(--accent-dark)] font-bold">{{ request('area') }}</span>
@@ -28,7 +32,7 @@
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R6 • Lead: Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Discover top-rated electronic repair experts across Dhaka</span>
+                <span>Discover verified electronics & hardware repair experts across all 64 districts of Bangladesh</span>
             </p>
         </div>
 
@@ -156,10 +160,34 @@
         <!-- ── Right Column: Area Pills, Sort Tabs & Rich Shop Cards ── -->
         <main class="min-w-0 max-w-full space-y-4">
             
-            <!-- Area Selector Pills & Quick Filters Bar -->
+            <!-- City / Area Selector Pills & Quick Filters Bar -->
             <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm space-y-3 min-w-0 max-w-full">
-                <!-- Row 1: Area Pills -->
+                <!-- Row 1: Nationwide Bangladesh City / District Pills -->
                 <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs whitespace-nowrap no-scrollbar">
+                    <span class="font-bold text-[var(--foreground)] text-[11px] uppercase tracking-wider mr-1 shrink-0">
+                        <i class="fa-solid fa-map text-[var(--accent-dark)] mr-1"></i> District:
+                    </span>
+                    @php
+                        $activeCity = request('city', 'All');
+                        $cityList = $cities ?? ['All', 'Dhaka', 'Chattogram', 'Gazipur', 'Sylhet', 'Mymensingh', 'Narayanganj', 'Bogura', 'Rajshahi', 'Khulna', 'Cumilla', 'Rangpur', 'Barishal'];
+                    @endphp
+                    @foreach($cityList as $cityItem)
+                        @php
+                            $cityParams = array_merge(request()->query(), [
+                                'city' => $cityItem === 'All' ? null : $cityItem,
+                                'area' => null,
+                                'page' => 1,
+                            ]);
+                        @endphp
+                        <a href="/shops?{{ http_build_query(array_filter($cityParams)) }}"
+                           class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition {{ ($activeCity === $cityItem || ($cityItem === 'All' && empty(request('city')))) ? 'bg-[var(--accent-dark)] text-white shadow-sm' : 'bg-[var(--mint-50)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
+                            {{ $cityItem }}
+                        </a>
+                    @endforeach
+                </div>
+
+                <!-- Row 2: Area / Hub Pills -->
+                <div class="border-t border-[var(--border)]/60 pt-2.5 flex items-center gap-2 overflow-x-auto pb-1 text-xs whitespace-nowrap no-scrollbar">
                     <span class="font-bold text-[var(--foreground)] text-[11px] uppercase tracking-wider mr-1 shrink-0">
                         <i class="fa-solid fa-location-dot text-[var(--accent-dark)] mr-1"></i> Area:
                     </span>
@@ -177,7 +205,7 @@
                     @endforeach
                 </div>
 
-                <!-- Row 2: Sort Tabs & Promo Filters -->
+                <!-- Row 3: Sort Tabs & Promo / Branch Filters -->
                 <div class="border-t border-[var(--border)] pt-3 flex flex-wrap items-center justify-between gap-3 text-xs min-w-0">
                     <!-- Quick Sort Tabs -->
                     <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar max-w-full">
@@ -202,9 +230,12 @@
                         @endforeach
                     </div>
 
-                    <!-- Quick Promo Toggles -->
+                    <!-- Quick Promo & Multi-Branch Toggles -->
                     <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
                         @php
+                            $hasBranched = request()->boolean('branched');
+                            $branchedParams = array_merge(request()->query(), ['branched' => $hasBranched ? null : 'true', 'page' => 1]);
+
                             $hasVoucher = request()->boolean('voucher');
                             $voucherParams = array_merge(request()->query(), ['voucher' => $hasVoucher ? null : 'true', 'page' => 1]);
 
@@ -214,6 +245,12 @@
                             $hasDeals = request()->boolean('deals');
                             $dealsParams = array_merge(request()->query(), ['deals' => $hasDeals ? null : 'true', 'page' => 1]);
                         @endphp
+
+                        <a href="/shops?{{ http_build_query(array_filter($branchedParams)) }}"
+                           class="px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 {{ $hasBranched ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                            <i class="fa-solid fa-code-branch text-[10px] {{ $hasBranched ? 'text-emerald-200' : 'text-[var(--accent-dark)]' }}"></i>
+                            <span>Multi-Branch</span>
+                        </a>
 
                         <a href="/shops?{{ http_build_query(array_filter($voucherParams)) }}" 
                            class="px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 {{ $hasVoucher ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
@@ -233,7 +270,7 @@
                             <span>Deals</span>
                         </a>
 
-                        @if(request()->anyFilled(['q', 'area', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm']))
+                        @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm']))
                             <a href="/shops" class="text-[11px] text-rose-700 font-bold hover:underline ml-1">
                                 Reset
                             </a>
@@ -272,16 +309,24 @@
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-start justify-between gap-2">
                                     <div class="min-w-0">
-                                        <h3 class="truncate text-[0.95rem] font-bold leading-tight text-[var(--foreground)] md:text-[1.1rem] group-hover:text-[var(--accent-dark)] transition">
-                                            {{ $shop->name }}
-                                        </h3>
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <h3 class="truncate text-[0.95rem] font-bold leading-tight text-[var(--foreground)] md:text-[1.1rem] group-hover:text-[var(--accent-dark)] transition">
+                                                {{ $shop->name }}
+                                            </h3>
+                                            @if($shop->display_branch_tag)
+                                                <span class="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-foreground)] shadow-sm">
+                                                    <i class="fa-solid fa-code-branch text-[8px]"></i>
+                                                    <span>{{ $shop->display_branch_tag }}</span>
+                                                </span>
+                                            @endif
+                                        </div>
 
                                         <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-[var(--muted-foreground)] md:text-xs">
                                             <span>⭐ {{ number_format($shop->rating, 1) }}</span>
                                             <span class="opacity-60">·</span>
                                             <span>{{ $shop->review_count ?? 12 }} reviews</span>
                                             <span class="opacity-60">·</span>
-                                            <span><i class="fa-solid fa-location-dot text-[10px] text-[var(--accent-dark)]"></i> {{ $shop->area }}</span>
+                                            <span><i class="fa-solid fa-location-dot text-[10px] text-[var(--accent-dark)]"></i> {{ $shop->area }}{{ ($shop->city && !str_contains(strtolower((string)$shop->area), strtolower($shop->city))) ? ', ' . $shop->city : '' }}</span>
                                             <span class="distance-display {{ isset($shop->distance_km) ? '' : 'hidden' }} rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
                                                 {{ isset($shop->distance_km) ? number_format((float) $shop->distance_km, 1) . 'km' : '' }}
                                             </span>
@@ -318,9 +363,9 @@
                             </div>
                         </div>
 
-                        <!-- Description -->
+                        <!-- Public Vendor Storefront Address & Summary -->
                         <p class="mt-2 line-clamp-1 text-[11px] text-[var(--muted-foreground)] md:text-xs">
-                            {{ $shop->description ?? $shop->address }}
+                            <i class="fa-solid fa-store text-[9px] opacity-75 mr-1"></i>{{ $shop->public_address }}
                         </p>
 
                         <!-- Badges -->

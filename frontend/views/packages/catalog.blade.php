@@ -170,7 +170,7 @@
                             <option value="">⚡ Auto-Quickmatch Top Dhaka Shop</option>
                             @foreach($verifiedShops ?? [] as $vShop)
                                 <option value="{{ $vShop->id }}" {{ session('cart_shop_id') == $vShop->id ? 'selected' : '' }}>
-                                    {{ $vShop->name }} ({{ $vShop->area }} • ★{{ number_format($vShop->rating, 1) }})
+                                    {{ $vShop->name }}{{ $vShop->display_branch_tag ? ' [' . $vShop->display_branch_tag . ']' : ' (' . $vShop->area . ')' }} • ★{{ number_format($vShop->rating, 1) }}
                                 </option>
                             @endforeach
                         </select>

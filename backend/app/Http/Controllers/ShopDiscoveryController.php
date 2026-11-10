@@ -12,9 +12,11 @@ use Illuminate\Http\Request;
  * FEATURE R6: Advanced Repair Shop Search & Multi-Parameter Filtering
  * ============================================================================
  * Assigned Member: Shanid Sajjatuz Islam [Student ID: 23201465]
+ * Nationwide Bangladesh, Multi-Branch & Dual-Address Alignment:
+ *   Farhan Tanvir [Student ID: 22299179] (Team Lead)
  * Sprint: Sprint 1 (Nov 1 – Nov 12, 2026)
  * Architectural Layer: Controller (ShopDiscoveryController)
- * Models Touched: RepairShop, ShopReview, ServicePackage, ShopService
+ * Models Touched: RepairShop, VendorProfile, ShopReview, ServicePackage, ShopService
  * Views Rendered (from root `frontend/views/`):
  *   - home.blade.php
  *   - shops/explore.blade.php
@@ -25,16 +27,19 @@ class ShopDiscoveryController extends Controller
 {
     /**
      * Reusable PostgreSQL-safe Haversine SQL expression (clamped to [-1, 1] for acos).
+     * Operates on the private GPS Approximate Location (`latitude`, `longitude`).
      */
     private const HAVERSINE_SQL = '(6371 * acos(LEAST(1.0, GREATEST(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude))))))';
 
     /**
-     * Public Homepage (Matches legacy Meramot home).
+     * Public Homepage (Matches Meramot home).
      * Route: GET /
      */
     public function home()
     {
-        $featuredShops = RepairShop::where('is_featured', true)
+        $featuredShops = RepairShop::where('is_active', true)
+            ->where('is_public', true)
+            ->where('is_featured', true)
             ->orderBy('rating', 'desc')
             ->take(6)
             ->get();
@@ -81,21 +86,25 @@ class ShopDiscoveryController extends Controller
     }
 
     /**
-     * Search and filter verified repair shops across metro areas.
+     * Search and filter verified repair shops across all 64 districts of Bangladesh.
      * Route: GET /shops/explore or GET /shops
      */
     public function index(Request $request)
     {
-        $query = RepairShop::query();
+        $query = RepairShop::query()
+            ->where('is_active', true)
+            ->where('is_public', true);
 
-        // 1. Text Search (q) across Name, Description, Address, Area, and Specialties
+        // 1. Text Search (q) across Brand Name, Branch Tag, Description, Public Address, Area, City, and Specialties
         if ($request->filled('q')) {
             $searchTerm = trim($request->input('q'));
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'ILIKE', "%{$searchTerm}%")
+                  ->orWhere('branch_name', 'ILIKE', "%{$searchTerm}%")
                   ->orWhere('description', 'ILIKE', "%{$searchTerm}%")
                   ->orWhere('address', 'ILIKE', "%{$searchTerm}%")
                   ->orWhere('area', 'ILIKE', "%{$searchTerm}%")
+                  ->orWhere('city', 'ILIKE', "%{$searchTerm}%")
                   ->orWhereRaw("specialties::text ILIKE ?", ["%{$searchTerm}%"]);
             });
         }
@@ -106,12 +115,22 @@ class ShopDiscoveryController extends Controller
             $query->whereRaw("categories::text ILIKE ?", ["%{$category}%"]);
         }
 
-        // 3. Area Filter
+        // 3. Nationwide District / City Filter
+        if ($request->filled('city') && $request->input('city') !== 'All') {
+            $query->where('city', $request->input('city'));
+        }
+
+        // 4. Area / Neighborhood Filter
         if ($request->filled('area') && $request->input('area') !== 'All') {
             $query->where('area', $request->input('area'));
         }
 
-        // 4. Promo Toggles
+        // 5. Multi-Branch Chain Toggle (`?branched=true`)
+        if ($request->boolean('branched')) {
+            $query->where('is_branch', true);
+        }
+
+        // 6. Promo Toggles
         if ($request->boolean('voucher') || $request->boolean('has_voucher')) {
             $query->where('has_voucher', true);
         }
@@ -122,12 +141,12 @@ class ShopDiscoveryController extends Controller
             $query->where('has_deals', true);
         }
 
-        // 5. Minimum Rating
+        // 7. Minimum Rating
         if ($request->filled('min_rating')) {
             $query->where('rating', '>=', (float) $request->input('min_rating'));
         }
 
-        // 6. PostgreSQL Haversine Distance Filter (Shanid Sajjatuz Islam [23201465])
+        // 8. PostgreSQL Haversine Distance Filter on Private GPS Pin (Shanid Sajjatuz Islam [23201465])
         $hasCoords = $request->filled('lat') && $request->filled('lng');
         if ($hasCoords) {
             $userLat = (float) $request->input('lat');
@@ -144,8 +163,8 @@ class ShopDiscoveryController extends Controller
             }
         }
 
-        // 7. Sorting Order
-        $sort = $request->input('sort', 'topRated');
+        // 9. Sorting Order
+        $sort = $request->input('sort', 'relevance');
         switch ($sort) {
             case 'price':
                 $query->orderBy('price_level', 'asc')->orderBy('inspection_fee', 'asc');
@@ -157,55 +176,78 @@ class ShopDiscoveryController extends Controller
                     $query->orderBy('eta_minutes', 'asc')->orderBy('is_featured', 'desc');
                 }
                 break;
-            case 'relevance':
-                $query->orderBy('is_featured', 'desc')->orderBy('rating', 'desc');
-                break;
             case 'topRated':
-            default:
                 $query->orderBy('rating', 'desc')->orderBy('review_count', 'desc');
+                break;
+            case 'relevance':
+            default:
+                $query->orderBy('is_featured', 'desc')->orderBy('rating', 'desc')->orderBy('review_count', 'desc');
                 break;
         }
 
         $shops = $query->paginate(12)->withQueryString();
 
+        $cities = [
+            'All', 'Dhaka', 'Chattogram', 'Gazipur', 'Sylhet', 'Mymensingh',
+            'Narayanganj', 'Bogura', 'Rajshahi', 'Khulna', 'Cumilla',
+            'Rangpur', 'Barishal', 'Jashore', "Cox's Bazar", 'Narail', 'Tangail',
+        ];
+        if ($request->filled('city') && !in_array($request->input('city'), $cities, true)) {
+            $cities[] = $request->input('city');
+        }
+
         $areas = [
-            'All', 'Banani', 'Gulshan', 'Dhanmondi', 'Mirpur',
+            'All', 'Banani', 'Gulshan', 'Dhanmondi', 'Hatirpool', 'Mirpur',
             'Uttara', 'Mohammadpur', 'Bashundhara', 'Farmgate',
-            'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Wari'
+            'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Motijheel', 'Wari',
+            'Agrabad', 'GEC Circle', 'Zindabazar', 'Shaheb Bazar', 'Shib Bari',
         ];
 
-        return view('shops.explore', compact('shops', 'areas'));
+        return view('shops.explore', compact('shops', 'areas', 'cities'));
     }
 
     /**
-     * Show detailed profile for a selected repair shop.
+     * Show detailed profile for a selected repair shop + sibling branches if branched.
      * Route: GET /shops/{slug}
      */
     public function show($slug)
     {
-        $shop = RepairShop::with(['reviews.customer', 'services' => function ($q) {
-            $q->where('is_active', true)->orderBy('sort_order', 'asc');
-        }])->where('slug', $slug)->firstOrFail();
+        $shop = RepairShop::with([
+            'vendorProfile',
+            'reviews.customer',
+            'services' => function ($q) {
+                $q->where('is_active', true)->orderBy('sort_order', 'asc');
+            },
+        ])->where('slug', $slug)->firstOrFail();
 
-        $relatedShops = RepairShop::where('area', $shop->area)
+        $siblingBranches = $shop->siblingBranches();
+
+        $relatedShops = RepairShop::where('is_active', true)
+            ->where('is_public', true)
             ->where('id', '!=', $shop->id)
+            ->where(function ($q) use ($shop) {
+                $q->where('area', $shop->area)->orWhere('city', $shop->city);
+            })
+            ->orderByRaw('CASE WHEN area = ? THEN 0 ELSE 1 END', [$shop->area])
+            ->orderBy('rating', 'desc')
             ->take(3)
             ->get();
 
-        return view('shops.show', compact('shop', 'relatedShops'));
+        return view('shops.show', compact('shop', 'siblingBranches', 'relatedShops'));
     }
 
     /**
-     * API: Get nearby shops based on user coordinates (Shanid Sajjatuz Islam [23201465])
+     * API: Get nearby shops across Bangladesh based on user GPS coordinates
+     * Assigned: Shanid Sajjatuz Islam [23201465]
      * Route: GET /api/shops/nearby
      */
     public function getNearbyShops(Request $request)
     {
         $validated = $request->validate([
-            'lat' => 'required|numeric|between:23.6,24.0',
-            'lng' => 'required|numeric|between:90.2,90.6',
-            'radius' => 'nullable|numeric|min:1|max:50',
-            'limit' => 'nullable|integer|min:1|max:50',
+            'lat' => 'required|numeric|between:20.5,26.7',
+            'lng' => 'required|numeric|between:88.0,92.7',
+            'radius' => 'nullable|numeric|min:1|max:500',
+            'limit' => 'nullable|integer|min:1|max:100',
         ]);
 
         $userLat = (float) $validated['lat'];
@@ -214,7 +256,9 @@ class ShopDiscoveryController extends Controller
         $limit = (int) ($validated['limit'] ?? 20);
         $haversine = self::HAVERSINE_SQL;
 
-        $shops = RepairShop::whereNotNull('latitude')
+        $shops = RepairShop::where('is_active', true)
+            ->where('is_public', true)
+            ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->selectRaw("*, {$haversine} AS distance_km", [$userLat, $userLng, $userLat])
             ->whereRaw("{$haversine} <= ?", [$userLat, $userLng, $userLat, $radius])
@@ -240,20 +284,25 @@ class ShopDiscoveryController extends Controller
     }
 
     /**
-     * API: Advanced search with all filters (Shanid Sajjatuz Islam [23201465])
+     * API: Advanced search with all filters across Bangladesh
+     * Assigned: Shanid Sajjatuz Islam [23201465]
      * Route: GET /api/shops/search
      */
     public function apiSearch(Request $request)
     {
-        $query = RepairShop::query();
+        $query = RepairShop::query()
+            ->where('is_active', true)
+            ->where('is_public', true);
 
         if ($request->filled('q')) {
             $searchTerm = trim($request->input('q'));
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('name', 'ILIKE', "%{$searchTerm}%")
+                  ->orWhere('branch_name', 'ILIKE', "%{$searchTerm}%")
                   ->orWhere('description', 'ILIKE', "%{$searchTerm}%")
                   ->orWhere('address', 'ILIKE', "%{$searchTerm}%")
                   ->orWhere('area', 'ILIKE', "%{$searchTerm}%")
+                  ->orWhere('city', 'ILIKE', "%{$searchTerm}%")
                   ->orWhereRaw("specialties::text ILIKE ?", ["%{$searchTerm}%"]);
             });
         }
@@ -262,8 +311,16 @@ class ShopDiscoveryController extends Controller
             $query->whereRaw("categories::text ILIKE ?", ["%{$request->input('category')}%"]);
         }
 
-        if ($request->filled('area')) {
+        if ($request->filled('city') && $request->input('city') !== 'All') {
+            $query->where('city', $request->input('city'));
+        }
+
+        if ($request->filled('area') && $request->input('area') !== 'All') {
             $query->where('area', $request->input('area'));
+        }
+
+        if ($request->boolean('branched')) {
+            $query->where('is_branch', true);
         }
 
         if ($request->filled('min_rating')) {
@@ -321,8 +378,8 @@ class ShopDiscoveryController extends Controller
         return response()->json([
             'success' => true,
             'filters_applied' => $request->only([
-                'q', 'category', 'area', 'min_rating', 'max_price_level',
-                'has_deals', 'has_voucher', 'free_delivery', 'sort'
+                'q', 'category', 'city', 'area', 'branched', 'min_rating', 'max_price_level',
+                'has_deals', 'has_voucher', 'free_delivery', 'sort',
             ]),
             'data' => $shops,
         ]);

@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Http\Controllers\AdminLedgerController;
 use App\Models\FinancialLedger;
 use App\Models\RepairShop;
 use Illuminate\Database\Seeder;
@@ -13,6 +12,7 @@ use Illuminate\Database\Seeder;
  * ============================================================================
  * Author: Md. Nawshad Zaman Khan [Student ID: 23301622] (Commit 4742c9c)
  * Demonstrates 10% platform commission accounting and cumulative credits/debits.
+ * Branch-aware shop labeling aligned by Farhan Tanvir [22299179].
  * ============================================================================
  */
 class FinancialLedgerSeeder extends Seeder
@@ -28,7 +28,10 @@ class FinancialLedgerSeeder extends Seeder
             return;
         }
 
-        $shops = RepairShop::take(5)->get();
+        $shops = RepairShop::where('is_featured', true)->orderBy('id')->take(5)->get();
+        if ($shops->isEmpty()) {
+            $shops = RepairShop::take(5)->get();
+        }
         if ($shops->isEmpty()) {
             return;
         }
@@ -46,6 +49,9 @@ class FinancialLedgerSeeder extends Seeder
             $gross = $order['gross'];
             $shop = $order['shop'];
             $shopId = $shop ? $shop->id : 1;
+            $shopDisplayName = ($shop && $shop->is_branch && $shop->branch_name)
+                ? "{$shop->name} [{$shop->branch_name}]"
+                : ($shop ? $shop->name : 'Workshop');
 
             // 1. Customer Payment (CREDIT total gross)
             FinancialLedger::create([
@@ -54,7 +60,7 @@ class FinancialLedgerSeeder extends Seeder
                 'direction'    => 'CREDIT',
                 'amount'       => $gross,
                 'currency'     => 'BDT',
-                'description'  => "Customer payment received: {$order['desc']}",
+                'description'  => "Customer payment received: {$order['desc']} ({$shopDisplayName})",
                 'effective_at' => now()->subDays(rand(2, 10)),
             ]);
 
@@ -78,7 +84,7 @@ class FinancialLedgerSeeder extends Seeder
                 'direction'    => 'DEBIT',
                 'amount'       => $vendorNet,
                 'currency'     => 'BDT',
-                'description'  => "Net earning allocated to {$shop->name} (90% of ৳{$gross})",
+                'description'  => "Net earning allocated to {$shopDisplayName} (90% of ৳{$gross})",
                 'effective_at' => now()->subDays(rand(2, 10)),
             ]);
 
@@ -89,7 +95,7 @@ class FinancialLedgerSeeder extends Seeder
                 'direction'    => 'CREDIT',
                 'amount'       => 150.00,
                 'currency'     => 'BDT',
-                'description'  => "Doorstep logistics delivery fee charged to customer",
+                'description'  => 'Doorstep logistics delivery fee charged to customer',
                 'effective_at' => now()->subDays(rand(1, 5)),
             ]);
 
@@ -99,21 +105,23 @@ class FinancialLedgerSeeder extends Seeder
                 'direction'    => 'DEBIT',
                 'amount'       => 150.00,
                 'currency'     => 'BDT',
-                'description'  => "Delivery fee disbursed to assigned rider",
+                'description'  => 'Delivery fee disbursed to assigned rider',
                 'effective_at' => now()->subDays(rand(1, 5)),
             ]);
         }
 
         // Add one sample vendor payout disbursement
+        $primaryLabel = ($shops[0]->is_branch && $shops[0]->branch_name)
+            ? "{$shops[0]->name} [{$shops[0]->branch_name}]"
+            : $shops[0]->name;
         FinancialLedger::create([
             'shop_id'      => $shops[0]->id,
             'entry_type'   => 'VENDOR_PAYOUT',
             'direction'    => 'DEBIT',
             'amount'       => 5000.00,
             'currency'     => 'BDT',
-            'description'  => "Weekly automated bank payout disbursed to {$shops[0]->name}",
+            'description'  => "Weekly automated bank payout disbursed to {$primaryLabel}",
             'effective_at' => now()->subDay(),
         ]);
     }
 }
-

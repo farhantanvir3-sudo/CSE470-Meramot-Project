@@ -712,7 +712,7 @@
                     </p>
                     <h2 class="mt-1 text-2xl font-bold text-[var(--foreground)]">Choose your location</h2>
                     <p class="mt-1 text-sm text-[var(--muted-foreground)]">
-                        Click or drag the pin on the map to select an address, search a Dhaka landmark, or use GPS to detect your current location.
+                        Click or drag the pin on the map to select an address anywhere in Bangladesh, search a landmark, or use GPS.
                     </p>
                 </div>
 
@@ -736,7 +736,7 @@
                             <input
                                 type="text"
                                 x-model="mapSearchQuery"
-                                placeholder="Search road, block, or landmark in Dhaka (e.g. Banani Road 11)..."
+                                placeholder="Search road, area, or city in Bangladesh (e.g. Banani, Hatirpool, Agrabad, Sylhet)..."
                                 class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] pl-9 pr-4 py-2.5 text-xs font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                             />
                         </div>
@@ -783,30 +783,56 @@
                         </template>
                     </div>
 
-                    <!-- Quick Jump Dhaka Hubs -->
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3">
-                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)] mb-2">
-                            Quick jump to Dhaka hub
-                        </p>
-                        <div class="flex flex-wrap gap-1.5">
-                            @foreach([
-                                ['area' => 'Banani', 'city' => 'Dhaka', 'lat' => 23.7937, 'lng' => 90.4066, 'address' => 'Road 11, Banani, Dhaka 1213'],
-                                ['area' => 'Gulshan', 'city' => 'Dhaka', 'lat' => 23.7925, 'lng' => 90.4158, 'address' => 'Gulshan 2 Circle, Gulshan, Dhaka 1212'],
-                                ['area' => 'Dhanmondi', 'city' => 'Dhaka', 'lat' => 23.7461, 'lng' => 90.3742, 'address' => 'Satmasjid Road, Dhanmondi, Dhaka 1209'],
-                                ['area' => 'Mirpur', 'city' => 'Dhaka', 'lat' => 23.8071, 'lng' => 90.3686, 'address' => 'Mirpur 10 Roundabout, Mirpur, Dhaka 1216'],
-                                ['area' => 'Uttara', 'city' => 'Dhaka', 'lat' => 23.8759, 'lng' => 90.3795, 'address' => 'Sector 7, Uttara, Dhaka 1230'],
-                                ['area' => 'Bashundhara', 'city' => 'Dhaka', 'lat' => 23.8191, 'lng' => 90.4526, 'address' => 'Block C, Bashundhara R/A, Dhaka 1229'],
-                                ['area' => 'Mohammadpur', 'city' => 'Dhaka', 'lat' => 23.7662, 'lng' => 90.3589, 'address' => 'Town Hall Market, Mohammadpur, Dhaka 1207'],
-                                ['area' => 'Farmgate', 'city' => 'Dhaka', 'lat' => 23.7561, 'lng' => 90.3872, 'address' => 'Kazi Nazrul Islam Ave, Farmgate, Dhaka 1215'],
-                            ] as $hub)
-                                <button
-                                    type="button"
-                                    @click="selectQuickHub(@js($hub))"
-                                    class="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-[11px] font-semibold text-[var(--foreground)] transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
-                                >
-                                    {{ $hub['area'] }}
-                                </button>
-                            @endforeach
+                    <!-- Quick Jump Bangladesh & Dhaka Hubs -->
+                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3 space-y-2">
+                        <div>
+                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)] mb-1.5">
+                                Quick jump • Dhaka hubs
+                            </p>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach([
+                                    ['area' => 'Banani', 'city' => 'Dhaka', 'lat' => 23.7937, 'lng' => 90.4066, 'address' => 'Road 11, Banani, Dhaka 1213'],
+                                    ['area' => 'Gulshan', 'city' => 'Dhaka', 'lat' => 23.7925, 'lng' => 90.4158, 'address' => 'Gulshan 2 Circle, Gulshan, Dhaka 1212'],
+                                    ['area' => 'Dhanmondi', 'city' => 'Dhaka', 'lat' => 23.7461, 'lng' => 90.3742, 'address' => 'Satmasjid Road, Dhanmondi, Dhaka 1209'],
+                                    ['area' => 'Hatirpool', 'city' => 'Dhaka', 'lat' => 23.7422, 'lng' => 90.3918, 'address' => 'Hatirpool Eastern Plaza Rd, Dhaka 1205'],
+                                    ['area' => 'Mirpur', 'city' => 'Dhaka', 'lat' => 23.8071, 'lng' => 90.3686, 'address' => 'Mirpur 10 Roundabout, Mirpur, Dhaka 1216'],
+                                    ['area' => 'Uttara', 'city' => 'Dhaka', 'lat' => 23.8759, 'lng' => 90.3795, 'address' => 'Sector 7, Uttara, Dhaka 1230'],
+                                    ['area' => 'Bashundhara', 'city' => 'Dhaka', 'lat' => 23.8191, 'lng' => 90.4526, 'address' => 'Block C, Bashundhara R/A, Dhaka 1229'],
+                                ] as $hub)
+                                    <button
+                                        type="button"
+                                        @click="selectQuickHub(@js($hub))"
+                                        class="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-[11px] font-semibold text-[var(--foreground)] transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
+                                    >
+                                        {{ $hub['area'] }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div class="border-t border-[var(--border)] pt-2">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)] mb-1.5">
+                                Nationwide Bangladesh cities
+                            </p>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach([
+                                    ['area' => 'Agrabad', 'city' => 'Chattogram', 'lat' => 22.3264, 'lng' => 91.8155, 'address' => 'Agrabad Commercial Area, Chattogram 4100'],
+                                    ['area' => 'Zindabazar', 'city' => 'Sylhet', 'lat' => 24.8949, 'lng' => 91.8687, 'address' => 'Zindabazar Main Road, Sylhet 3100'],
+                                    ['area' => 'Joydebpur', 'city' => 'Gazipur', 'lat' => 23.9999, 'lng' => 90.4203, 'address' => 'Joydebpur Chowrasta, Gazipur'],
+                                    ['area' => 'Shaheb Bazar', 'city' => 'Rajshahi', 'lat' => 24.3653, 'lng' => 88.6003, 'address' => 'Shaheb Bazar Zero Point, Rajshahi'],
+                                    ['area' => 'Shib Bari', 'city' => 'Khulna', 'lat' => 22.8206, 'lng' => 89.5535, 'address' => 'Shib Bari More, Khulna'],
+                                    ['area' => 'Satmatha', 'city' => 'Bogura', 'lat' => 24.8481, 'lng' => 89.3730, 'address' => 'Satmatha Zero Point, Bogura'],
+                                    ['area' => 'Ganginarpar', 'city' => 'Mymensingh', 'lat' => 24.7564, 'lng' => 90.4065, 'address' => 'Ganginarpar, Mymensingh'],
+                                ] as $cityHub)
+                                    <button
+                                        type="button"
+                                        @click="selectQuickHub(@js($cityHub))"
+                                        class="rounded-full border border-[var(--border)] bg-[var(--mint-50)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent-dark)] transition hover:border-[var(--accent-dark)] hover:bg-[var(--card)]"
+                                    >
+                                        {{ $cityHub['city'] }}
+                                    </button>
+                                @endforeach
+                            </div>
                         </div>
                     </div>
 

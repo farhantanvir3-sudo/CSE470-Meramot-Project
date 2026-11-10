@@ -57,11 +57,19 @@
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-start justify-between gap-2">
                                             <div class="min-w-0">
-                                                <h3 class="line-clamp-2 font-bold text-[var(--foreground)] text-base md:text-lg">
-                                                    {{ $shop->name }}
-                                                </h3>
+                                                <div class="flex flex-wrap items-center gap-1.5">
+                                                    <h3 class="line-clamp-2 font-bold text-[var(--foreground)] text-base md:text-lg">
+                                                        {{ $shop->name }}
+                                                    </h3>
+                                                    @if($shop->display_branch_tag)
+                                                        <span class="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-foreground)] shadow-sm">
+                                                            <i class="fa-solid fa-code-branch text-[9px]"></i>
+                                                            <span>{{ $shop->display_branch_tag }}</span>
+                                                        </span>
+                                                    @endif
+                                                </div>
                                                 <p class="mt-0.5 text-[var(--muted-foreground)] line-clamp-1 text-xs md:text-sm">
-                                                    {{ $shop->address ?? $shop->city }}
+                                                    {{ $shop->public_address }}
                                                 </p>
                                                 <div class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--foreground)]">
                                                     <span>⭐ {{ number_format($shop->rating, 1) }}</span>
@@ -128,11 +136,17 @@
                             </div>
                         </div>
 
-                        <!-- Title -->
+                        <!-- Title & Branch Tag -->
                         <div class="mt-2 min-w-0">
                             <h3 class="line-clamp-2 text-xs font-bold leading-tight tracking-tight text-[var(--foreground)]">
                                 {{ $shop->name }}
                             </h3>
+                            @if($shop->display_branch_tag)
+                                <span class="mt-1 inline-flex max-w-full items-center gap-1 truncate rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[8px] font-bold text-[var(--accent-foreground)]">
+                                    <i class="fa-solid fa-code-branch text-[7px]"></i>
+                                    <span class="truncate">{{ $shop->display_branch_tag }}</span>
+                                </span>
+                            @endif
                         </div>
 
                         <!-- Bottom: Price & Badges -->

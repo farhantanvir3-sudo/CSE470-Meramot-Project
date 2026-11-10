@@ -140,8 +140,16 @@
                                         </span>
                                         <span class="text-xs font-bold text-amber-700">★ {{ number_format($activeShop->rating, 1) }}</span>
                                     </div>
-                                    <h3 class="text-base font-black text-[var(--foreground)] mt-0.5">{{ $activeShop->name }}</h3>
-                                    <p class="text-xs text-[var(--muted-foreground)]">{{ $activeShop->address ?? ($activeShop->area . ', Dhaka') }}</p>
+                                    <div class="flex flex-wrap items-center gap-2 mt-0.5">
+                                        <h3 class="text-base font-black text-[var(--foreground)]">{{ $activeShop->name }}</h3>
+                                        @if($activeShop->display_branch_tag)
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-foreground)]">
+                                                <i class="fa-solid fa-code-branch text-[9px]"></i>
+                                                <span>{{ $activeShop->display_branch_tag }}</span>
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <p class="text-xs text-[var(--muted-foreground)]">{{ $activeShop->public_address }}</p>
                                 </div>
                             </div>
 
@@ -151,7 +159,7 @@
                                     <select name="shop_id" onchange="this.form.submit()" class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] outline-none">
                                         @foreach($verifiedShops as $vShop)
                                             <option value="{{ $vShop->id }}" {{ $activeShop->id === $vShop->id ? 'selected' : '' }}>
-                                                {{ $vShop->name }} ({{ $vShop->area }})
+                                                {{ $vShop->name }}{{ $vShop->display_branch_tag ? ' [' . $vShop->display_branch_tag . ']' : ' (' . $vShop->area . ')' }}
                                             </option>
                                         @endforeach
                                     </select>
