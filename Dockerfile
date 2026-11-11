@@ -46,6 +46,7 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction \
 ENV APACHE_DOCUMENT_ROOT=/var/www/meramot/backend/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf \
     && printf "<Directory /var/www/meramot/backend/public>\n    Options Indexes FollowSymLinks\n    AllowOverride All\n    Require all granted\n</Directory>\n" > /etc/apache2/conf-enabled/meramot.conf
 
 COPY docker/start.sh /usr/local/bin/start.sh

@@ -28,6 +28,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'stderr' => [
+            'driver' => 'monolog',
+            'level' => env('LOG_LEVEL', 'debug'),
+            'handler' => StreamHandler::class,
+            'with' => [
+                'stream' => 'php://stderr',
+            ],
+            'processors' => [PsrLogMessageProcessor::class],
+        ],
+
         'null' => [
             'driver' => 'monolog',
             'handler' => NullHandler::class,

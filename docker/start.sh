@@ -8,21 +8,45 @@ PORT="${PORT:-8000}"
 sed -ri "s/Listen [0-9]+/Listen ${PORT}/g" /etc/apache2/ports.conf
 sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/g" /etc/apache2/sites-available/000-default.conf
 
-# Ensure runtime cache and storage directories exist and are writable
+# Ensure runtime cache and storage directories exist
 mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/logs bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
 
 # Generate APP_KEY fallback if not set in environment
 if [ -z "${APP_KEY}" ]; then
     export APP_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"
 fi
 
+export LOG_CHANNEL="${LOG_CHANNEL:-stderr}"
+
+# Materialize runtime .env file so Apache mod_php workers always see Render env vars
+cat > /var/www/meramot/backend/.env <<EOF
+APP_NAME="${APP_NAME:-Meramot}"
+APP_ENV="${APP_ENV:-production}"
+APP_DEBUG="${APP_DEBUG:-false}"
+APP_KEY="${APP_KEY}"
+APP_URL="${APP_URL:-https://cse470-meramot-project.onrender.com}"
+LOG_CHANNEL="${LOG_CHANNEL}"
+DB_CONNECTION="${DB_CONNECTION:-pgsql}"
+DB_SSLMODE="${DB_SSLMODE:-require}"
+DATABASE_URL="${DATABASE_URL}"
+DATABASE_URL_UNPOOLED="${DATABASE_URL_UNPOOLED}"
+CACHE_DRIVER="${CACHE_DRIVER:-file}"
+SESSION_DRIVER="${SESSION_DRIVER:-file}"
+QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"
+FILESYSTEM_DISK="${FILESYSTEM_DISK:-local}"
+AWS_BUCKET="${AWS_BUCKET:-docs-imgs}"
+AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
+AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
+AWS_ENDPOINT_URL_S3="${AWS_ENDPOINT_URL_S3}"
+AWS_REGION="${AWS_REGION:-ap-southeast-1}"
+EOF
+
 php artisan config:clear
 
-# Run migrations and seed automatically on first boot (when users table is empty or FORCE_SEED=true)
+# Run migrations (using direct unpooled URL when available) and seed if DB is empty
 if [ "${AUTO_MIGRATE:-true}" = "true" ]; then
     echo "Running PostgreSQL schema migrations on Neon..."
-    php artisan migrate --force
+    DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan migrate --force
 
     USER_COUNT=$(php -r '
         require "vendor/autoload.php";
@@ -33,11 +57,16 @@ if [ "${AUTO_MIGRATE:-true}" = "true" ]; then
 
     if [ "${USER_COUNT}" = "0" ] || [ "${FORCE_SEED:-false}" = "true" ]; then
         echo "Seeding Meramot marketplace data into Neon PostgreSQL..."
-        php artisan db:seed --force
+        DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --force
     fi
 fi
 
+# Cache configuration & Blade views, then fix ownership for Apache (www-data)
+php artisan config:cache
 php artisan view:cache
+
+chown -R www-data:www-data /var/www/meramot/backend/storage /var/www/meramot/backend/bootstrap/cache /var/www/meramot/backend/.env
+chmod -R 775 /var/www/meramot/backend/storage /var/www/meramot/backend/bootstrap/cache
 
 echo "Starting Meramot Apache/PHP 8.2 server on port ${PORT}..."
 exec apache2-foreground
