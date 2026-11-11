@@ -1,9 +1,16 @@
 # Meramot — Digital Electronic Repair Marketplace
 
+[![Live Demo on Render](https://img.shields.io/badge/Live_Demo-cse470--meramot--project.onrender.com-16a34a?style=for-the-badge&logo=render&logoColor=white)](https://cse470-meramot-project.onrender.com)
+[![Database on Neon](https://img.shields.io/badge/Database-Neon_PostgreSQL_18-00e599?style=for-the-badge&logo=postgresql&logoColor=black)](https://cse470-meramot-project.onrender.com)
 [![BRAC University](https://img.shields.io/badge/BRAC_University-CSE470_Software_Engineering-0056b3?style=for-the-badge)](https://www.bracu.ac.bd/)
 [![Course Faculty](https://img.shields.io/badge/Faculty-Nazmul_Islam_[NZU]-blueviolet?style=for-the-badge)](#)
 [![Section](https://img.shields.io/badge/Section-06-orange?style=for-the-badge)](#)
 [![Group](https://img.shields.io/badge/Group-06-green?style=for-the-badge)](#)
+
+> **🌐 Live Cloud Deployment (Render + Neon PostgreSQL 18):**  
+> **[https://cse470-meramot-project.onrender.com](https://cse470-meramot-project.onrender.com)**  
+> - **Academic Defense Mode (with Feature IDs & Role Switcher):** [`https://cse470-meramot-project.onrender.com/?dev=1`](https://cse470-meramot-project.onrender.com/?dev=1)  
+> - **1-Click Demo Logins:** [`/login`](https://cse470-meramot-project.onrender.com/login) (`Meramot Admin`, `ProTech Solutions Vendor`, `Approved Courier`, `Demo Customer`)
 
 ---
 
