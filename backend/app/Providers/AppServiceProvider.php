@@ -13,26 +13,29 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Automatically attach Neon's endpoint ID option when connecting to *.neon.tech
-        // so both SNI and non-SNI libpq clients connect seamlessly to pooled & direct endpoints.
-        $this->app->bind('db.connector.pgsql', function () {
-            return new class extends PostgresConnector {
-                protected function getDsn(array $config)
-                {
-                    $dsn = parent::getDsn($config);
-                    $host = (string) ($config['host'] ?? '');
+        // Windows PHP bundles an older libpq.dll without TLS SNI support, requiring
+        // options='endpoint=...' on *.neon.tech. Linux (Render Docker) libpq sends SNI
+        // natively and rejects mismatched endpoint options on -pooler hosts.
+        if (PHP_OS_FAMILY === 'Windows') {
+            $this->app->bind('db.connector.pgsql', function () {
+                return new class extends PostgresConnector {
+                    protected function getDsn(array $config)
+                    {
+                        $dsn = parent::getDsn($config);
+                        $host = (string) ($config['host'] ?? '');
 
-                    if (
-                        str_contains($host, '.neon.tech') &&
-                        preg_match('/^(ep-[a-z0-9-]+?)(?:-pooler)?\./i', $host, $matches)
-                    ) {
-                        $dsn .= ";options='endpoint={$matches[1]}'";
+                        if (
+                            str_contains($host, '.neon.tech') &&
+                            preg_match('/^(ep-[a-z0-9-]+?)(?:-pooler)?\./i', $host, $matches)
+                        ) {
+                            $dsn .= ";options='endpoint={$matches[1]}'";
+                        }
+
+                        return $dsn;
                     }
-
-                    return $dsn;
-                }
-            };
-        });
+                };
+            });
+        }
     }
 
     /**
