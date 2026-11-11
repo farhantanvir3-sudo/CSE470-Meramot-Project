@@ -322,9 +322,13 @@
                                         </div>
 
                                         <div class="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-[var(--muted-foreground)] md:text-xs">
-                                            <span>⭐ {{ number_format($shop->rating, 1) }}</span>
-                                            <span class="opacity-60">·</span>
-                                            <span>{{ $shop->review_count ?? 12 }} reviews</span>
+                                            @if((int) ($shop->review_count ?? 0) > 0)
+                                                <span>⭐ {{ number_format($shop->rating, 1) }}</span>
+                                                <span class="opacity-60">·</span>
+                                                <span>{{ $shop->review_count }} {{ \Illuminate\Support\Str::plural('review', $shop->review_count) }}</span>
+                                            @else
+                                                <span class="font-semibold text-[var(--accent-dark)]">New · No reviews yet</span>
+                                            @endif
                                             <span class="opacity-60">·</span>
                                             <span><i class="fa-solid fa-location-dot text-[10px] text-[var(--accent-dark)]"></i> {{ $shop->area }}{{ ($shop->city && !str_contains(strtolower((string)$shop->area), strtolower($shop->city))) ? ', ' . $shop->city : '' }}</span>
                                             <span class="distance-display {{ isset($shop->distance_km) ? '' : 'hidden' }} rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">

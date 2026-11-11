@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -115,19 +116,20 @@ class VendorBranchController extends Controller
             ->where('entry_type', 'CUSTOMER_PAYMENT')
             ->sum('amount');
 
+        $reviewedBranches = $branches->where('review_count', '>', 0);
         $avgRating = $activeBranch
             ? (float) $activeBranch->rating
-            : round((float) $branches->avg('rating'), 1);
+            : ($reviewedBranches->isNotEmpty() ? round((float) $reviewedBranches->avg('rating'), 2) : 0.00);
 
         $totalReviews = $activeBranch
             ? (int) $activeBranch->review_count
             : (int) $branches->sum('review_count');
 
         $branchMetrics = [
-            'gross_inflow' => $ledgerGross > 0 ? $ledgerGross : ($activeBranch ? 18500 : 48500),
-            'active_jobs_count' => $activeJobs->count() > 0 ? $activeJobs->count() : ($activeBranch ? 3 : 8),
-            'avg_rating' => $avgRating > 0 ? $avgRating : 4.9,
-            'total_reviews' => $totalReviews > 0 ? $totalReviews : 84,
+            'gross_inflow' => $ledgerGross,
+            'active_jobs_count' => $activeJobs->count(),
+            'avg_rating' => $avgRating,
+            'total_reviews' => $totalReviews,
             'branch_count' => $branches->count(),
         ];
 
@@ -299,6 +301,8 @@ class VendorBranchController extends Controller
             ? (float) $validated['base_labor_fee']
             : (float) ($templateShop->base_labor_fee ?? 500);
 
+        $isApprovedVendor = ($vendorProfile->verification_status ?? 'approved') === 'approved';
+
         $newBranch = RepairShop::create([
             'vendor_profile_id' => $vendorProfile->id,
             'name' => $brandName,
@@ -315,8 +319,8 @@ class VendorBranchController extends Controller
             'area' => $area,
             'latitude' => $lat,
             'longitude' => $lng,
-            'rating' => 5.0,
-            'review_count' => 1,
+            'rating' => 0.00,
+            'review_count' => 0,
             'price_level' => $templateShop->price_level ?? 2,
             'inspection_fee' => $inspectionFee,
             'base_labor_fee' => $baseLaborFee,
@@ -328,9 +332,9 @@ class VendorBranchController extends Controller
             'has_deals' => false,
             'is_featured' => false,
             'is_active' => true,
-            'is_public' => true,
-            'setup_complete' => true,
-            'accepts_direct_orders' => true,
+            'is_public' => $isApprovedVendor,
+            'setup_complete' => $isApprovedVendor,
+            'accepts_direct_orders' => $isApprovedVendor,
             'supports_pickup' => in_array('COURIER_PICKUP', $categories, true),
             'phone' => !empty($validated['phone']) ? trim($validated['phone']) : ($templateShop->phone ?? $vendorProfile->phone ?? '+8801711000001'),
             'email' => Str::limit($slug, 40, '') . '@meramot.local',
@@ -356,6 +360,18 @@ class VendorBranchController extends Controller
                     'sort_order' => $idx,
                     'is_featured' => $idx === 0,
                     'is_active' => true,
+                ]
+            );
+        }
+
+        if ($vendorProfile->user_id) {
+            DB::table('shop_staff')->updateOrInsert(
+                ['shop_id' => $newBranch->id, 'user_id' => $vendorProfile->user_id],
+                [
+                    'role' => 'OWNER',
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ]
             );
         }
@@ -572,24 +588,134 @@ class VendorBranchController extends Controller
             }
             $job->repairRequest->update($reqUpdates);
 
-            // When repair completes, record captured payment & 10%/90% double-entry ledger entries if not yet logged
+            // When repair completes, generate Invoice + Warranty + Escrow Release + 10%/90% Double-Entry Ledger
             if ($newStatus === 'COMPLETED') {
                 $gross = (float) ($job->final_quoted_amount ?? $job->repairRequest->quoted_final_amount ?? 2500);
                 if ($gross > 0) {
+                    $now = now();
+                    $commission = round($gross * 0.10, 2);
+                    $vendorNet = round($gross - $commission, 2);
+
+                    $existingInvoice = DB::table('invoices')
+                        ->where('repair_job_id', $job->id)
+                        ->first();
+
+                    if ($existingInvoice) {
+                        $invoiceId = (int) $existingInvoice->id;
+                        DB::table('invoices')->where('id', $invoiceId)->update([
+                            'status' => 'PAID',
+                            'subtotal_amount' => $gross,
+                            'commission_amount' => $commission,
+                            'total_amount' => $gross + (float) ($existingInvoice->delivery_amount ?? 0),
+                            'paid_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                    } else {
+                        $invoiceId = DB::table('invoices')->insertGetId([
+                            'repair_request_id' => $job->repairRequest->id,
+                            'repair_job_id' => $job->id,
+                            'shop_id' => $job->shop_id,
+                            'type' => 'FINAL',
+                            'status' => 'PAID',
+                            'invoice_number' => 'INV-' . $now->format('Y') . '-' . str_pad((string) $job->id, 4, '0', STR_PAD_LEFT) . '-' . strtoupper(Str::random(3)),
+                            'subtotal_amount' => $gross,
+                            'delivery_amount' => 0.00,
+                            'discount_amount' => 0.00,
+                            'commission_amount' => $commission,
+                            'total_amount' => $gross,
+                            'issued_at' => $now,
+                            'due_at' => $now,
+                            'paid_at' => $now,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+
+                        $primarySvcId = ShopService::where('shop_id', $job->shop_id)->value('id');
+                        DB::table('invoice_line_items')->insert([
+                            'invoice_id' => $invoiceId,
+                            'shop_service_id' => $primarySvcId,
+                            'title' => $job->repairRequest->title,
+                            'description' => $job->diagnosis_notes ?: 'Completed workshop repair & quality calibration',
+                            'quantity' => 1,
+                            'unit_price' => $gross,
+                            'total_price' => $gross,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                    }
+
+                    DB::table('warranties')->updateOrInsert(
+                        ['repair_job_id' => $job->id],
+                        [
+                            'title' => '90-Day Meramot Verified Repair Warranty',
+                            'details' => 'Covers replaced hardware components and bench workmanship for 90 days from completion.',
+                            'duration_days' => 90,
+                            'starts_at' => $now,
+                            'ends_at' => $now->copy()->addDays(90),
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]
+                    );
+
                     $payment = PaymentTransaction::firstOrCreate(
                         ['repair_request_id' => $job->repairRequest->id],
                         [
                             'user_id' => $job->repairRequest->customer_id,
+                            'invoice_id' => $invoiceId,
                             'amount' => $gross,
                             'currency' => 'BDT',
                             'payment_method' => 'CASH',
                             'status' => 'PAID',
-                            'paid_at' => now(),
+                            'paid_at' => $now,
                             'transaction_reference' => 'MRM-JOB-' . $job->id . '-' . strtoupper(Str::random(4)),
                         ]
                     );
-                    if ($payment->status !== 'PAID') {
-                        $payment->update(['status' => 'PAID', 'paid_at' => now(), 'amount' => $gross]);
+                    if ($payment->status !== 'PAID' || !$payment->invoice_id) {
+                        $payment->update([
+                            'invoice_id' => $invoiceId,
+                            'status' => 'PAID',
+                            'paid_at' => $now,
+                            'amount' => $gross,
+                        ]);
+                    }
+
+                    $vendorUserId = $job->shop?->vendorProfile?->user_id;
+                    $hasEscrowRelease = DB::table('escrow_ledgers')
+                        ->where('payment_id', $payment->id)
+                        ->where('action', 'RELEASE')
+                        ->exists();
+
+                    if (!$hasEscrowRelease) {
+                        DB::table('escrow_ledgers')->insert([
+                            [
+                                'payment_id' => $payment->id,
+                                'repair_request_id' => $job->repairRequest->id,
+                                'customer_user_id' => $job->repairRequest->customer_id,
+                                'vendor_user_id' => $vendorUserId,
+                                'amount' => $gross,
+                                'gross_amount' => $gross,
+                                'platform_commission_amount' => $commission,
+                                'vendor_net_amount' => $vendorNet,
+                                'action' => 'HOLD',
+                                'note' => "Escrow hold captured for Repair Job #{$job->id}",
+                                'created_at' => $job->started_at ?? $now,
+                                'updated_at' => $job->started_at ?? $now,
+                            ],
+                            [
+                                'payment_id' => $payment->id,
+                                'repair_request_id' => $job->repairRequest->id,
+                                'customer_user_id' => $job->repairRequest->customer_id,
+                                'vendor_user_id' => $vendorUserId,
+                                'amount' => $gross,
+                                'gross_amount' => $gross,
+                                'platform_commission_amount' => $commission,
+                                'vendor_net_amount' => $vendorNet,
+                                'action' => 'RELEASE',
+                                'note' => "Escrow released upon completion of Repair Job #{$job->id}",
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ],
+                        ]);
                     }
 
                     $alreadySettled = FinancialLedger::where('payment_id', $payment->id)
@@ -601,7 +727,7 @@ class VendorBranchController extends Controller
                             $gross,
                             (int) $job->shop_id,
                             (int) $payment->id,
-                            null,
+                            $invoiceId,
                             0.10,
                             "Repair Job #{$job->id} ({$job->repairRequest->title})"
                         );
@@ -615,7 +741,7 @@ class VendorBranchController extends Controller
                 'success',
                 "Updated Job #{$job->id} status to {$newStatus}"
                 . ($newStatus === 'WAITING_APPROVAL' ? ' — Quote 2 sent to customer for approval!' : '')
-                . ($newStatus === 'COMPLETED' ? ' — 10%/90% double-entry ledger recorded in Admin Financial Overview!' : '.')
+                . ($newStatus === 'COMPLETED' ? ' — Invoice, Warranty & 10%/90% double-entry ledger recorded!' : '.')
             );
     }
 
@@ -664,7 +790,7 @@ class VendorBranchController extends Controller
             'shop_longitude' => 90.398003,
             'categories' => ['Laptop repair', 'Smartphone repair'],
             'commission_rate' => 10.00,
-            'rating' => 4.9,
+            'rating' => 0.00,
         ]);
     }
 }

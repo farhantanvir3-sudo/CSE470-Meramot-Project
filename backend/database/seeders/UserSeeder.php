@@ -2,13 +2,14 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\DeliveryAgent;
 use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
- * Meramot User Seeder — Ports original user accounts from previous Meramot
+ * Meramot User Seeder — Baseline System, Customer, Vendor & Delivery Accounts
  */
 class UserSeeder extends Seeder
 {
@@ -17,11 +18,17 @@ class UserSeeder extends Seeder
         $passwordHash = Hash::make('password123');
         $adminPasswordHash = Hash::make(env('ADMIN_PASSWORD', 'Admin@Meramot2026'));
 
-        // 1. System Admin
+        // Remove any stale placeholder admin accounts if re-seeding without migrate:fresh
+        User::where('role', 'admin')
+            ->whereNotIn('email', ['admin@meramot.demo', 'delivery.admin@meramot.demo'])
+            ->delete();
+
+        // 1. System Admin (Meramot)
         User::updateOrCreate(
-            ['email' => 'mustahid000@gmail.com'],
+            ['email' => 'admin@meramot.demo'],
             [
-                'name' => 'Mustahid (System Admin)',
+                'name' => 'Meramot',
+                'username' => 'meramot_admin',
                 'password' => $adminPasswordHash,
                 'phone' => '+8801700000001',
                 'role' => 'admin',
@@ -29,11 +36,12 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // 2. Delivery Admin
+        // 2. Delivery Operations Admin
         User::updateOrCreate(
-            ['email' => 'delivery.admin.demo@meeramoot.test'],
+            ['email' => 'delivery.admin@meramot.demo'],
             [
-                'name' => 'Delivery Operations Admin',
+                'name' => 'Meramot Logistics',
+                'username' => 'meramot_logistics',
                 'password' => Hash::make('DeliveryAdmin@123'),
                 'phone' => '+8801700000002',
                 'role' => 'admin',
@@ -41,11 +49,12 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // 3. Customer Demo
+        // 3. Primary Customer Demo Account
         User::updateOrCreate(
             ['email' => 'customer@meramot.demo'],
             [
                 'name' => 'Customer Demo User',
+                'username' => 'customer_demo',
                 'password' => $passwordHash,
                 'phone' => '+8801700000000',
                 'role' => 'customer',
@@ -53,11 +62,40 @@ class UserSeeder extends Seeder
             ]
         );
 
+        // 3B. Distinct Bangladesh Customer Accounts (For Realistic Historical Orders & Verified Reviews)
+        $verifiedCustomers = [
+            ['name' => 'Nusrat Jahan', 'email' => 'nusrat.jahan@meramot.demo', 'phone' => '+8801714100201'],
+            ['name' => 'Tanvir Hasan', 'email' => 'tanvir.hasan@meramot.demo', 'phone' => '+8801714100202'],
+            ['name' => 'Mahmudul Karim', 'email' => 'mahmudul.karim@meramot.demo', 'phone' => '+8801714100203'],
+            ['name' => 'Farzana Yasmin', 'email' => 'farzana.yasmin@meramot.demo', 'phone' => '+8801714100204'],
+            ['name' => 'Rafiul Alam', 'email' => 'rafiul.alam@meramot.demo', 'phone' => '+8801714100205'],
+            ['name' => 'Sadia Afrin', 'email' => 'sadia.afrin@meramot.demo', 'phone' => '+8801816200306'],
+            ['name' => 'Mehedi Hasan', 'email' => 'mehedi.hasan@meramot.demo', 'phone' => '+8801816200307'],
+            ['name' => 'Tahmid Chowdhury', 'email' => 'tahmid.chowdhury@meramot.demo', 'phone' => '+8801816200308'],
+            ['name' => 'Tasnim Akter', 'email' => 'tasnim.akter@meramot.demo', 'phone' => '+8801912300409'],
+            ['name' => 'Imran Kabir', 'email' => 'imran.kabir@meramot.demo', 'phone' => '+8801912300410'],
+        ];
+
+        foreach ($verifiedCustomers as $idx => $cust) {
+            User::updateOrCreate(
+                ['email' => $cust['email']],
+                [
+                    'name' => $cust['name'],
+                    'username' => 'customer_bd_' . ($idx + 1),
+                    'password' => $passwordHash,
+                    'phone' => $cust['phone'],
+                    'role' => 'customer',
+                    'is_active' => true,
+                ]
+            );
+        }
+
         // 4. Test Demo Vendors
         User::updateOrCreate(
             ['email' => 'sakib.tech@gmail.com'],
             [
                 'name' => 'Sakib Al Hasan (Vendor)',
+                'username' => 'protech_vendor',
                 'password' => $passwordHash,
                 'phone' => '+8801712345001',
                 'role' => 'vendor',
@@ -69,6 +107,7 @@ class UserSeeder extends Seeder
             ['email' => 'dhaka.devices@meramot.demo'],
             [
                 'name' => 'Kazi Tanvir (Dhaka Device Doctors)',
+                'username' => 'dhaka_device_doctors',
                 'password' => $passwordHash,
                 'phone' => '+8801712345002',
                 'role' => 'vendor',
@@ -76,11 +115,41 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // 5. Test Delivery Agents & Pending Onboarding Applications (Feature R1 — Md. Nafiul Islam [22299035])
+        // 5. Coverage Zones & Delivery Agents (Feature R1 — Md. Nafiul Islam [22299035])
+        $zones = [
+            ['name' => 'Banani Metro Hub', 'city' => 'Dhaka', 'area' => 'Banani', 'postal_code' => '1213'],
+            ['name' => 'Gulshan Diplomatic Zone', 'city' => 'Dhaka', 'area' => 'Gulshan', 'postal_code' => '1212'],
+            ['name' => 'Dhanmondi Residential Zone', 'city' => 'Dhaka', 'area' => 'Dhanmondi', 'postal_code' => '1209'],
+            ['name' => 'Uttara North Corridor', 'city' => 'Dhaka', 'area' => 'Uttara', 'postal_code' => '1230'],
+            ['name' => 'Mirpur Central Hub', 'city' => 'Dhaka', 'area' => 'Mirpur', 'postal_code' => '1216'],
+            ['name' => 'Mohakhali & Tejgaon Belt', 'city' => 'Dhaka', 'area' => 'Mohakhali', 'postal_code' => '1206'],
+            ['name' => 'Bashundhara R/A Zone', 'city' => 'Dhaka', 'area' => 'Bashundhara', 'postal_code' => '1229'],
+            ['name' => 'Agrabad Commercial Zone', 'city' => 'Chattogram', 'area' => 'Agrabad', 'postal_code' => '4100'],
+        ];
+
+        $zoneIdsByArea = [];
+        foreach ($zones as $z) {
+            DB::table('coverage_zones')->updateOrInsert(
+                ['city' => $z['city'], 'area' => $z['area']],
+                [
+                    'name' => $z['name'],
+                    'postal_code' => $z['postal_code'],
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+            $zoneIdsByArea[$z['city'] . ':' . $z['area']] = DB::table('coverage_zones')
+                ->where('city', $z['city'])
+                ->where('area', $z['area'])
+                ->value('id');
+        }
+
         $approvedRiderUser = User::updateOrCreate(
             ['email' => 'rider.demo@meramot.test'],
             [
                 'name' => 'Rahim Uddin (Express Rider)',
+                'username' => 'rahim_rider',
                 'password' => $passwordHash,
                 'phone' => '+8801799998888',
                 'role' => 'delivery_agent',
@@ -88,7 +157,7 @@ class UserSeeder extends Seeder
             ]
         );
 
-        DeliveryAgent::updateOrCreate(
+        $approvedDhakaAgent = DeliveryAgent::updateOrCreate(
             ['user_id' => $approvedRiderUser->id],
             [
                 'nid_number' => '1996269481011',
@@ -98,13 +167,61 @@ class UserSeeder extends Seeder
                 'status' => 'AVAILABLE',
                 'is_active' => true,
                 'rejection_reason' => null,
+                'current_latitude' => 23.79250000,
+                'current_longitude' => 90.40520000,
+                'total_earnings' => 0.00,
             ]
         );
+
+        foreach ($zoneIdsByArea as $cityArea => $zoneId) {
+            if (str_starts_with($cityArea, 'Dhaka:') && $zoneId) {
+                DB::table('rider_coverages')->updateOrInsert(
+                    ['delivery_agent_id' => $approvedDhakaAgent->id, 'coverage_zone_id' => $zoneId],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+            }
+        }
+
+        $approvedCtgRiderUser = User::updateOrCreate(
+            ['email' => 'ctg.rider@meramot.test'],
+            [
+                'name' => 'Tariqul Islam (Chattogram Rider)',
+                'username' => 'tariqul_ctg_rider',
+                'password' => $passwordHash,
+                'phone' => '+8801819776655',
+                'role' => 'delivery_agent',
+                'is_active' => true,
+            ]
+        );
+
+        $approvedCtgAgent = DeliveryAgent::updateOrCreate(
+            ['user_id' => $approvedCtgRiderUser->id],
+            [
+                'nid_number' => '1997319485522',
+                'vehicle_type' => 'motorcycle',
+                'license_number' => 'CTG-0519204-M',
+                'registration_status' => 'APPROVED',
+                'status' => 'AVAILABLE',
+                'is_active' => true,
+                'rejection_reason' => null,
+                'current_latitude' => 22.32900000,
+                'current_longitude' => 91.81400000,
+                'total_earnings' => 0.00,
+            ]
+        );
+
+        if (!empty($zoneIdsByArea['Chattogram:Agrabad'])) {
+            DB::table('rider_coverages')->updateOrInsert(
+                ['delivery_agent_id' => $approvedCtgAgent->id, 'coverage_zone_id' => $zoneIdsByArea['Chattogram:Agrabad']],
+                ['created_at' => now(), 'updated_at' => now()]
+            );
+        }
 
         $pendingRider1 = User::updateOrCreate(
             ['email' => 'kamal.rider@meramot.test'],
             [
                 'name' => 'Kamal Hossain (Rider Applicant)',
+                'username' => 'kamal_applicant',
                 'password' => $passwordHash,
                 'phone' => '+8801711223344',
                 'role' => 'customer',
@@ -122,6 +239,7 @@ class UserSeeder extends Seeder
                 'status' => 'OFFLINE',
                 'is_active' => false,
                 'rejection_reason' => null,
+                'total_earnings' => 0.00,
             ]
         );
 
@@ -129,6 +247,7 @@ class UserSeeder extends Seeder
             ['email' => 'tarek.scooter@meramot.test'],
             [
                 'name' => 'Tarek Mahmud (Rider Applicant)',
+                'username' => 'tarek_applicant',
                 'password' => $passwordHash,
                 'phone' => '+8801811556677',
                 'role' => 'customer',
@@ -146,6 +265,7 @@ class UserSeeder extends Seeder
                 'status' => 'OFFLINE',
                 'is_active' => false,
                 'rejection_reason' => null,
+                'total_earnings' => 0.00,
             ]
         );
 
@@ -153,6 +273,7 @@ class UserSeeder extends Seeder
             ['email' => 'sohag.van@meramot.test'],
             [
                 'name' => 'Sohag Mia (Rider Applicant)',
+                'username' => 'sohag_applicant',
                 'password' => $passwordHash,
                 'phone' => '+8801911889900',
                 'role' => 'customer',
@@ -170,6 +291,7 @@ class UserSeeder extends Seeder
                 'status' => 'OFFLINE',
                 'is_active' => false,
                 'rejection_reason' => 'BRTA driving license number expired; please renew and re-apply.',
+                'total_earnings' => 0.00,
             ]
         );
     }

@@ -34,26 +34,55 @@ INSTRUCTIONS FOR NAFIUL:
     </div>
 </div>
 
-<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+@php
+    $resolvedLat = (float) ($latestLocation->latitude ?? $job->deliveryAgent->current_latitude ?? 23.7461);
+    $resolvedLng = (float) ($latestLocation->longitude ?? $job->deliveryAgent->current_longitude ?? 90.3742);
+    $riderLabel = $job->rider_name ?? $job->deliveryAgent?->user?->name ?? 'Assigned Meramot Courier';
+@endphp
+
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+        <div>
+            <span class="font-bold text-slate-900">{{ $job->tracking_code ?? ('Delivery Job #' . $job->id) }}</span>
+            <span class="mx-1.5">•</span>
+            <span>Courier: <strong>{{ $riderLabel }}</strong></span>
+            <span class="mx-1.5">•</span>
+            <span class="uppercase font-semibold text-teal-700">{{ $job->status }}</span>
+        </div>
+        @if($job->repairRequest)
+            <a href="{{ route('requests.track', $job->repairRequest->id) }}" class="font-bold text-teal-700 hover:underline">
+                Order #{{ $job->repairRequest->id }}: {{ $job->repairRequest->title }} &rarr;
+            </a>
+        @endif
+    </div>
+
     <!-- Map Canvas Container -->
     <div id="map" class="w-full h-96 rounded-lg bg-slate-100 z-10"></div>
-    <div class="mt-4 flex justify-between items-center text-xs text-slate-500 font-mono">
-        <span>Delivery Job #{{ $job->id ?? 'DEMO-101' }}</span>
-        <span>Lat: {{ $latestLocation->latitude ?? 23.7461 }} | Lng: {{ $latestLocation->longitude ?? 90.3742 }}</span>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50 rounded-lg p-3 border border-slate-100">
+        <div><span class="font-bold text-slate-800">Pickup:</span> {{ $job->pickup_address }}</div>
+        <div><span class="font-bold text-slate-800">Dropoff:</span> {{ $job->dropoff_address }}</div>
+    </div>
+
+    <div class="flex justify-between items-center text-xs text-slate-500 font-mono">
+        <span>Delivery Job #{{ $job->id }} ({{ $job->direction }})</span>
+        <span>Lat: {{ number_format($resolvedLat, 6) }} | Lng: {{ number_format($resolvedLng, 6) }}</span>
     </div>
 </div>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        var map = L.map('map').setView([23.7461, 90.3742], 13);
+        var lat = @json($resolvedLat);
+        var lng = @json($resolvedLng);
+        var popupLabel = @json($riderLabel . ' • ' . ($job->status ?? 'IN_TRANSIT'));
+
+        var map = L.map('map').setView([lat, lng], 14);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        var riderMarker = L.marker([23.7461, 90.3742]).addTo(map).bindPopup('Delivery Agent in Transit').openPopup();
-
-        // TODO (Nafiul): Connect to Pusher and update riderMarker coordinates dynamically
+        L.marker([lat, lng]).addTo(map).bindPopup(popupLabel).openPopup();
     });
 </script>
 @endsection

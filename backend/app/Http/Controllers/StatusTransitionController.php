@@ -141,7 +141,18 @@ class StatusTransitionController extends Controller
             $repairRequest->transitionTo(RepairRequest::STATUS_ASSIGNED);
             $repairRequest->update(['approved_at' => now()]);
             if ($repairRequest->repairJob) {
-                $repairRequest->repairJob->update(['started_at' => now()]);
+                $repairRequest->repairJob->update([
+                    'status' => 'CREATED',
+                    'started_at' => now(),
+                ]);
+            } elseif ($repairRequest->requested_shop_id) {
+                RepairJob::create([
+                    'repair_request_id' => $repairRequest->id,
+                    'shop_id' => $repairRequest->requested_shop_id,
+                    'status' => 'CREATED',
+                    'final_quoted_amount' => $repairRequest->quoted_final_amount,
+                    'started_at' => now(),
+                ]);
             }
 
             return back()->with('success', "Direct Order #{$repairRequest->id} accepted! Status moved to ASSIGNED for courier pickup.");

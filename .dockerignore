@@ -1,0 +1,13 @@
+.git
+.github
+.agents
+.neon
+node_modules
+frontend/node_modules
+backend/vendor
+backend/.env
+backend/storage/logs/*.log
+backend/storage/framework/views/*.php
+backend/storage/framework/sessions/*
+.env
+.env.*
