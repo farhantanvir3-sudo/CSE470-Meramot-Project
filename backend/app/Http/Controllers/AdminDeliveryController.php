@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 /**
@@ -204,7 +205,7 @@ class AdminDeliveryController extends Controller
      * sets status to AVAILABLE, and generates partner credentials.
      * Route: POST /admin/delivery-agents/{id}/approve
      * ------------------------------------------------------------------------ */
-    public function approve($id)
+        public function approve($id)
     {
         $agent = DeliveryAgent::with('user')->findOrFail($id);
 
@@ -212,6 +213,9 @@ class AdminDeliveryController extends Controller
         if (!$generatedUsername || str_starts_with($generatedUsername, 'pending_')) {
             $generatedUsername = 'rider_' . $agent->id . '_' . strtolower(Str::random(4));
         }
+
+        // R1: temporary password for the rider's first login
+        $temporaryPassword = Str::random(10);
 
         $agent->update([
             'registration_status' => 'APPROVED',
@@ -223,10 +227,24 @@ class AdminDeliveryController extends Controller
         if ($agent->user) {
             $agent->user->update([
                 'username' => $generatedUsername,
+                'password' => Hash::make($temporaryPassword),
                 'role' => 'delivery_agent',
                 'status' => 'active',
                 'is_active' => true,
             ]);
+
+            // R1: credentials email. It goes to the log file until real SMTP settings exist.
+            $body = "Hello {$agent->user->name},\n\n"
+                . "Your Meramot delivery agent application has been approved.\n\n"
+                . "Username: {$generatedUsername}\n"
+                . "Temporary password: {$temporaryPassword}\n\n"
+                . "Please sign in and change your password.\n\n"
+                . "Meramot Delivery Operations";
+
+            Mail::mailer('log')->raw($body, function ($message) use ($agent) {
+                $message->to($agent->user->email)
+                    ->subject('Your Meramot delivery agent account is approved');
+            });
         }
 
         Log::info("Delivery partner #{$agent->id} approved by Admin.", [
