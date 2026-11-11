@@ -21,19 +21,25 @@ class RiderChatMessage extends Model
     use HasFactory;
 
     protected $fillable = [
-        'delivery_agent_id',
-        'sender_role', // 'admin', 'rider'
-        'message_text',
-        'attachment_url',
-        'is_read',
+        'delivery_job_id',
+        'sender_user_id',
+        'sender_role',
+        'recipient_user_id',
+        'message',
     ];
 
-    protected $casts = [
-        'is_read' => 'boolean',
-    ];
-
-    public function deliveryAgent()
+    public function deliveryJob()
     {
-        return $this->belongsTo(DeliveryAgent::class);
+        return $this->belongsTo(DeliveryJob::class, 'delivery_job_id');
+    }
+
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_user_id');
+    }
+
+    public function recipient()
+    {
+        return $this->belongsTo(User::class, 'recipient_user_id');
     }
 }

@@ -36,8 +36,13 @@
             </div>
         </div>
         <div class="text-right shrink-0 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] px-4 py-2">
-            <div class="text-xl font-black text-[var(--accent-dark)]">★ {{ number_format($shop->rating, 1) }}</div>
-            <div class="text-[10px] text-[var(--muted-foreground)]">{{ $shop->review_count }} reviews</div>
+            @if((int) ($shop->review_count ?? 0) > 0)
+                <div class="text-xl font-black text-[var(--accent-dark)]">★ {{ number_format($shop->rating, 1) }}</div>
+                <div class="text-[10px] text-[var(--muted-foreground)]">{{ $shop->review_count }} {{ \Illuminate\Support\Str::plural('review', $shop->review_count) }}</div>
+            @else
+                <div class="text-base font-black text-[var(--accent-dark)]">First Review</div>
+                <div class="text-[10px] text-[var(--muted-foreground)]">0 reviews yet</div>
+            @endif
         </div>
     </div>
 

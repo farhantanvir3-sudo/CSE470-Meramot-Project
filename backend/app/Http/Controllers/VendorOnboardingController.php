@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\RepairShop;
 use App\Models\User;
 use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -159,11 +161,15 @@ class VendorOnboardingController extends Controller
                 'categories' => $validated['categories'],
                 'verification_status' => 'pending',
                 'rejection_reason' => null,
+                'rejected_at' => null,
+                'reviewed_by_admin_id' => null,
+                'reviewed_at' => null,
                 'commission_rate' => 10.00,
+                'rating' => 0.00,
             ]
         );
 
-        // Synchronize primary RepairShop record coherently; keep hidden from public directory until Admin approves
+        // Synchronize primary RepairShop record coherently; keep hidden & non-bookable until Admin approves
         $primaryShop = RepairShop::where('vendor_profile_id', $profile->id)->orderBy('id')->first();
         $baseSlug = Str::slug($validated['shop_name'] . ($branchName ? '-' . $branchName : ''));
         if ($baseSlug === '') {
@@ -185,13 +191,15 @@ class VendorOnboardingController extends Controller
                 'specialties' => $validated['categories'],
                 'is_active' => true,
                 'is_public' => false,
+                'setup_complete' => false,
+                'accepts_direct_orders' => false,
             ]);
         } else {
             $slug = $baseSlug;
             if (RepairShop::where('slug', $slug)->exists()) {
                 $slug .= '-' . $profile->id;
             }
-            RepairShop::create([
+            $primaryShop = RepairShop::create([
                 'vendor_profile_id' => $profile->id,
                 'name' => $validated['shop_name'],
                 'slug' => $slug,
@@ -205,6 +213,8 @@ class VendorOnboardingController extends Controller
                 'area' => $area,
                 'latitude' => $lat,
                 'longitude' => $lng,
+                'rating' => 0.00,
+                'review_count' => 0,
                 'categories' => ['IN_SHOP_REPAIR', 'COURIER_PICKUP'],
                 'specialties' => $validated['categories'],
                 'inspection_fee' => 250,
@@ -212,8 +222,20 @@ class VendorOnboardingController extends Controller
                 'phone' => $user->phone ?? '+8801711000000',
                 'is_active' => true,
                 'is_public' => false,
+                'setup_complete' => false,
+                'accepts_direct_orders' => false,
             ]);
         }
+
+        DB::table('shop_staff')->updateOrInsert(
+            ['shop_id' => $primaryShop->id, 'user_id' => $user->id],
+            [
+                'role' => 'OWNER',
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
 
         if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([
@@ -289,10 +311,14 @@ class VendorOnboardingController extends Controller
     public function approve($id)
     {
         $profile = VendorProfile::with('user')->findOrFail($id);
+        $previousStatus = $profile->verification_status;
 
         $profile->update([
             'verification_status' => 'approved',
             'rejection_reason' => null,
+            'rejected_at' => null,
+            'reviewed_by_admin_id' => auth()->id(),
+            'reviewed_at' => now(),
         ]);
 
         if ($profile->user) {
@@ -305,6 +331,17 @@ class VendorOnboardingController extends Controller
         RepairShop::where('vendor_profile_id', $profile->id)->update([
             'is_active' => true,
             'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+        ]);
+
+        AuditLog::create([
+            'actor_id' => auth()->id(),
+            'action' => 'vendor_approved',
+            'target_resource' => "vendor_profiles:{$profile->id}",
+            'payload_before' => ['verification_status' => $previousStatus],
+            'payload_after' => ['verification_status' => 'approved', 'shop_name' => $profile->shop_name],
+            'ip_address' => request()->ip() ?? '127.0.0.1',
         ]);
 
         return redirect()->back()->with(
@@ -324,14 +361,29 @@ class VendorOnboardingController extends Controller
         ]);
 
         $profile = VendorProfile::findOrFail($id);
+        $previousStatus = $profile->verification_status;
 
         $profile->update([
             'verification_status' => 'rejected',
             'rejection_reason' => $validated['rejection_reason'],
+            'rejected_at' => now(),
+            'reviewed_by_admin_id' => $request->user()?->id,
+            'reviewed_at' => now(),
         ]);
 
         RepairShop::where('vendor_profile_id', $profile->id)->update([
             'is_public' => false,
+            'setup_complete' => false,
+            'accepts_direct_orders' => false,
+        ]);
+
+        AuditLog::create([
+            'actor_id' => $request->user()?->id,
+            'action' => 'vendor_rejected',
+            'target_resource' => "vendor_profiles:{$profile->id}",
+            'payload_before' => ['verification_status' => $previousStatus],
+            'payload_after' => ['verification_status' => 'rejected', 'rejection_reason' => $validated['rejection_reason']],
+            'ip_address' => $request->ip() ?? '127.0.0.1',
         ]);
 
         return redirect()->back()->with(
@@ -367,14 +419,21 @@ class VendorOnboardingController extends Controller
     {
         $profile = VendorProfile::findOrFail($id);
         $status = $request->input('action') === 'approve' ? 'approved' : 'rejected';
+        $isApproved = $status === 'approved';
+
         $profile->update([
             'verification_status' => $status,
-            'rejection_reason' => $status === 'approved' ? null : $request->input('reason'),
+            'rejection_reason' => $isApproved ? null : $request->input('reason'),
+            'rejected_at' => $isApproved ? null : now(),
+            'reviewed_by_admin_id' => $request->user()?->id,
+            'reviewed_at' => now(),
         ]);
 
         RepairShop::where('vendor_profile_id', $profile->id)->update([
-            'is_active' => true,
-            'is_public' => $status === 'approved',
+            'is_active' => $isApproved,
+            'is_public' => $isApproved,
+            'setup_complete' => $isApproved,
+            'accepts_direct_orders' => $isApproved,
         ]);
 
         return response()->json([

@@ -111,3 +111,6 @@ Desktop.ini
 *.log
 *.sqlite
 *.sqlite3
+.neon
+.agents/
+skills-lock.json

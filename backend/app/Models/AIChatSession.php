@@ -20,21 +20,26 @@ class AIChatSession extends Model
 {
     use HasFactory;
 
+    protected $table = 'ai_chat_sessions';
+
     protected $fillable = [
-        'customer_id',
-        'session_token',
+        'user_id',
+        'title',
         'device_category',
-        'conversation_history', // JSON array of messages between customer & AI consultant
-        'is_resolved',
     ];
 
-    protected $casts = [
-        'conversation_history' => 'array',
-        'is_resolved' => 'boolean',
-    ];
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
     public function customer()
     {
-        return $this->belongsTo(User::class, 'customer_id');
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(AIChatMessage::class, 'ai_chat_session_id');
     }
 }

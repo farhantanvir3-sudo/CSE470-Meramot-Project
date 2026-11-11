@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AIChatMessage;
 use App\Models\AIChatSession;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -53,7 +55,33 @@ class AIChatController extends Controller
             ]);
 
             if ($response->successful()) {
-                return response()->json($response->json());
+                $payload = $response->json();
+
+                if (Auth::check()) {
+                    $session = AIChatSession::firstOrCreate(
+                        [
+                            'user_id' => Auth::id(),
+                            'device_category' => $validated['device_category'],
+                            'title' => $validated['device_category'] . ' Hardware Diagnostic',
+                        ]
+                    );
+
+                    AIChatMessage::create([
+                        'ai_chat_session_id' => $session->id,
+                        'role' => 'user',
+                        'text' => $validated['user_message'],
+                    ]);
+
+                    if (!empty($payload['reply'])) {
+                        AIChatMessage::create([
+                            'ai_chat_session_id' => $session->id,
+                            'role' => 'assistant',
+                            'text' => (string) $payload['reply'],
+                        ]);
+                    }
+                }
+
+                return response()->json($payload);
             }
 
             return response()->json([

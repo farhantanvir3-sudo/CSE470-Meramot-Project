@@ -72,8 +72,12 @@
                                                     {{ $shop->public_address }}
                                                 </p>
                                                 <div class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-[var(--foreground)]">
-                                                    <span>⭐ {{ number_format($shop->rating, 1) }}</span>
-                                                    <span class="text-[var(--muted-foreground)]">({{ $shop->review_count ?? 12 }} reviews)</span>
+                                                    @if((int) ($shop->review_count ?? 0) > 0)
+                                                        <span>⭐ {{ number_format($shop->rating, 1) }}</span>
+                                                        <span class="text-[var(--muted-foreground)]">({{ $shop->review_count }} {{ \Illuminate\Support\Str::plural('review', $shop->review_count) }})</span>
+                                                    @else
+                                                        <span class="font-semibold text-[var(--accent-dark)]">New · No reviews yet</span>
+                                                    @endif
                                                 </div>
                                             </div>
 
@@ -132,7 +136,7 @@
                                 @endif
                             </div>
                             <div class="flex shrink-0 items-center rounded-full bg-[var(--mint-50)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
-                                ★ {{ number_format($shop->rating, 1) }}
+                                {{ (int) ($shop->review_count ?? 0) > 0 ? '★ ' . number_format($shop->rating, 1) : 'New' }}
                             </div>
                         </div>
 

@@ -25,8 +25,6 @@ class LocationLog extends Model
         'delivery_job_id',
         'latitude',
         'longitude',
-        'speed',
-        'heading',
         'recorded_at',
     ];
 
@@ -39,5 +37,10 @@ class LocationLog extends Model
     public function deliveryAgent()
     {
         return $this->belongsTo(DeliveryAgent::class);
+    }
+
+    public function deliveryJob()
+    {
+        return $this->belongsTo(DeliveryJob::class);
     }
 }

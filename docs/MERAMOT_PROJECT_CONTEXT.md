@@ -1,4 +1,4 @@
-# Meramot (Meeramoot) Project — Context & Knowledge Base (Living Dossier)
+# Meramot Project — Context & Knowledge Base (Living Dossier)
 
 > **IMPORTANT NOTICE FOR AI ASSISTANTS & DEVELOPERS**:
 > This file is a **persistent living context dossier** designed to survive context window limitations.
@@ -12,8 +12,7 @@
 
 ### Architectural Evolution:
 1. **Version 1.0 (Legacy / Historical Prototype)**:
-   - Built with Next.js 16 + React 19 + Express.js REST API + Prisma ORM.
-   - 435 commits by Farhan Tanvir in [`AsirMahmud/Meramot-Electiontric-Item-reparing-management-system-`](https://github.com/AsirMahmud/Meramot-Electiontric-Item-reparing-management-system-).
+   - Built with Next.js 16 + React 19 + Express.js REST API + Prisma ORM (435 commits by Farhan Tanvir).
    - Prohibited under current academic course regulations due to Express/MERN restriction.
 2. **Version 2.0 (Active CSE 470 Project — Launched Nov 1, 2026)**:
    - Built strictly adhering to BRAC University CSE 470 (Software Engineering, Section 06) guidelines under **Faculty Nazmul Islam [NZU]**.
@@ -83,18 +82,22 @@ C:\Users\USER\Desktop\CSE 470\CSE470-Meramot-Project\
 │   │   │   ├── AdminModerationController.php # R19 (Nawshad)
 │   │   │   └── AuditLogController.php        # R20 (Nawshad)
 │   │   └── Models/                       # Eloquent ORM Models
-│   │       ├── User.php, VendorProfile.php, RepairShop.php, RepairRequest.php, Bid.php
+│   │       ├── User.php, VendorProfile.php, RepairShop.php, ShopService.php, RepairRequest.php, Bid.php, RepairJob.php
 │   │       ├── DeliveryAgent.php, DeliveryJob.php, RiderEarnings.php, LocationLog.php
-│   │       ├── RiderChatMessage.php, ServicePackage.php, ShopReview.php, AIChatSession.php
-│   │       ├── FinancialLedger.php, PaymentTransaction.php, VendorPayout.php
-│   │       ├── ModerationLog.php, AuditLog.php
+│   │       ├── RiderChatMessage.php, ServicePackage.php, Cart.php, CartItem.php, ShopReview.php
+│   │       ├── AIChatSession.php, AIChatMessage.php, FinancialLedger.php, PaymentTransaction.php
+│   │       ├── VendorPayout.php, ModerationLog.php, AuditLog.php
 │   ├── database/
 │   │   ├── factories/                    # Eloquent Model Factories for PostgreSQL Feature Tests
-│   │   ├── migrations/                   # 7 Schema migration files covering all 20 features + Direct-Order Cart
+│   │   ├── migrations/                   # Schema migration files covering all 39 PostgreSQL tables
 │   │   └── seeders/
 │   │       ├── DatabaseSeeder.php        # Master seeder entrypoint
-│   │       ├── ShopSeeder.php            # 32 original shops from legacy Meramot with lat/lng
-│   │       └── UserSeeder.php            # Admin, Customer, Vendor & Rider baseline accounts
+│   │       ├── UserSeeder.php            # System Admin 'Meramot', Logistics Admin, 11 customers, riders & coverage zones
+│   │       ├── ShopSeeder.php            # 1,294 verified shops across all 8 Bangladesh divisions + shop_services & shop_staff
+│   │       ├── ServicePackageSeeder.php  # 6 fixed-price service packages + active offer_banners
+│   │       ├── FinancialLedgerSeeder.php # 50 end-to-end COMPLETED order chains, invoices, warranties, courier legs & dispute refund
+│   │       ├── ReviewSeeder.php          # 50 1:1 verified ShopReviews derived from COMPLETED RepairRequests + rating sync
+│   │       └── SprintOneDemoSeeder.php   # Pending/rejected audits, live AI session, open bids, Quote 2, support, live GPS & audit logs
 │   ├── resources/views/README.md         # Signpost pointing to root frontend/views/
 │   ├── routes/
 │   │   ├── api.php                       # REST API endpoints
@@ -139,14 +142,8 @@ C:\Users\USER\Desktop\CSE 470\CSE470-Meramot-Project\
 
 ## 5. Historical Repositories & Archives (Version 1.0)
 
-- **Legacy Shared Repo**: [`AsirMahmud/Meramot-Electiontric-Item-reparing-management-system-`](https://github.com/AsirMahmud/Meramot-Electiontric-Item-reparing-management-system-) (Public, 435 commits by Farhan)
 - **Legacy Frontend Standalone**: [`farhantanvir3-sudo/meramot-frontend`](https://github.com/farhantanvir3-sudo/meramot-frontend) (Private)
 - **Legacy Course Group Repo**: [`Nafiul141/Meramot_CSE470_G-6`](https://github.com/Nafiul141/Meramot_CSE470_G-6) (Historical submission)
-- **Legacy Local Clone**: `C:\Users\USER\Desktop\Meeramoot-Electiontric-Item-reparing-management-system-`
-- **Legacy Zip Archives**:
-  - `C:\Users\USER\Desktop\Meeramoot-Electiontric-Item-reparing-management-system-.zip`
-  - `C:\Users\USER\Desktop\Meeramoot-Electiontric-Item-reparing-management-system- (2).zip`
-  - `C:\Users\USER\Desktop\Meeramoot-Electiontric-Item-reparing-management-system- (3).zip`
 
 ---
 
@@ -332,4 +329,11 @@ To preserve a 100% clean, professional consumer-facing product while simultaneou
    - **Feature R11 Completed End-to-End**: Guest-safe `/vendor/onboarding` with status banners (`approved` / `pending` / `rejected` + `rejection_reason`), paired with `/admin/vendors/pending` (`Approve`, `Reject` with mandatory reason, and `Featured` toggle).
    - **Feature R7 / R12 / R15 / R16 Live Sync**: Customer Request History Hub (`/requests` & `/orders`), real Vendor Quote 1 bidding (`POST /vendor/requests/{id}/bid`), Quote 2 bench updates (`WAITING_APPROVAL`), and automatic 10% platform commission / 90% vendor net double-entry `FinancialLedger` settlement when a vendor marks a `RepairJob` `COMPLETED`.
    - **Zero Dead Links / Universal `"Coming Soon"` Landing (`ComingSoonController` & `frontend/views/coming-soon.blade.php`)**: Every button, form, and link scheduled for Sprint 2, Sprint 3, or Sprint 4 routes cleanly to a Mint-styled `"Coming Soon"` roadmap page with zero `href="#"`, zero 404s, and zero 500s.
-   - **Automated Verification**: **68 PHPUnit tests (320 assertions)** passing 100% against PostgreSQL.
+4. **100% End-to-End Relational Seed Interconnection & E-Commerce Integrity**:
+   - **System Admin Identity**: Official System Admin account is **`Meramot`** (`admin@meramot.demo`), alongside **`Meramot Logistics`** (`delivery.admin@meramot.demo`).
+   - **Zero Pre-Onboarding Ratings/Reviews**: Pending (`ElectroBench Diagnostics`, `Karnaphuli MicroSolder Lab`) and rejected (`QuickPatch Kiosk`) vendor applications strictly carry `0.00` rating, `0` reviews, `is_public = false`, and `accepts_direct_orders = false` until approved by Admin.
+   - **Full 38-Domain-Table Referential Graph**:
+     - Every `ShopReview` (`50` total: `49` visible + `1` hidden/moderated spam review) links `1:1` via `repair_request_id` to a `COMPLETED` `RepairRequest` by that exact customer at that exact shop; `RepairShop.rating`, `RepairShop.review_count`, and `VendorProfile.rating` are mathematically aggregated strictly from visible reviews.
+     - Every `COMPLETED` `RepairRequest` (`50` orders across flagship multi-branch hubs, curated metro shops, and OpenStreetMap multi-branch storefronts) connects upstream & downstream across `recently_viewed` -> (`Cart` `CHECKED_OUT` + `CartItem` + `ServicePackage.order_count` or `Bid`s) -> `RepairJob` (`COMPLETED`) -> `warranties` (`90`-day) -> round-trip `DeliveryJob`s + `LocationLog`s + `RiderEarnings` (city-matched approved couriers & `coverage_zones` when `supports_pickup = true`) -> `invoices` (`PAID`) + `invoice_line_items` -> `payment_transactions` (`PAID`) -> `escrow_ledgers` (`HOLD` & `RELEASE`) -> `financial_ledgers` (`CUSTOMER_PAYMENT`, `PLATFORM_COMMISSION`, `VENDOR_EARNING`, `DELIVERY_FEE`, `DELIVERY_PAYOUT`).
+     - Governance, dispute, AI triage, support, and live tracking tables (`vendor_profiles.reviewed_by_admin_id`, `shop_staff`, `rider_coverages`, `rider_chat_messages`, `dispute_cases` -> `dispute_notes` -> `refunds` -> `REFUND` ledger, `support_tickets` -> `support_messages`, `ai_chat_sessions` -> `ai_chat_messages`, `notification_logs`, `offer_banners`, `moderation_logs`, `audit_logs`, `vendor_payouts`) are 100% referentially synced, and runtime controllers (`VendorBranchController`, `VendorOnboardingController`, `AdminDeliveryController`, `ServicePackageController`, `ReviewController`, `AIChatController`) preserve these exact links on live actions.
+   - **Automated Verification**: **69 PHPUnit tests (388 assertions)** passing 100% against PostgreSQL.

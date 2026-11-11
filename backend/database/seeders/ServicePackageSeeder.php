@@ -2,8 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\ServicePackage;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Meramot Service Package Seeder — Feature R8
@@ -103,7 +104,54 @@ class ServicePackageSeeder extends Seeder
         foreach ($packages as $pkg) {
             ServicePackage::updateOrCreate(
                 ['title' => $pkg['title']],
-                $pkg
+                array_merge($pkg, [
+                    'is_active' => true,
+                    'order_count' => 0,
+                ])
+            );
+        }
+
+        // Seed active promotional offer banners interconnected with live routes
+        $banners = [
+            [
+                'title' => 'Same-Day Certified Display & Battery Packages',
+                'subtitle' => 'Transparent fixed-price servicing with 90–365 day Meramot escrow warranty.',
+                'cta_label' => 'Browse Fixed Packages',
+                'cta_href' => '/packages/catalog',
+                'background_color' => '#0f3d2e',
+                'position' => 1,
+                'section_type' => 'HERO_OFFER',
+            ],
+            [
+                'title' => 'Doorstep Courier Pickup Across Dhaka & Chattogram',
+                'subtitle' => 'OTP-verified rider pickup and ESD-safe return delivery on verified workshops.',
+                'cta_label' => 'Explore Pickup Shops',
+                'cta_href' => '/shops/explore?has_voucher=1',
+                'background_color' => '#14532d',
+                'position' => 2,
+                'section_type' => 'HERO_OFFER',
+            ],
+            [
+                'title' => 'Unsure What Failed? Compare Itemized Technician Quotes',
+                'subtitle' => 'Post a diagnostic request and compare parts + labor breakdowns before committing.',
+                'cta_label' => 'Post Repair Request',
+                'cta_href' => '/requests/create',
+                'background_color' => '#1e3a2f',
+                'position' => 3,
+                'section_type' => 'HERO_OFFER',
+            ],
+        ];
+
+        foreach ($banners as $banner) {
+            DB::table('offer_banners')->updateOrInsert(
+                ['title' => $banner['title']],
+                array_merge($banner, [
+                    'is_active' => true,
+                    'starts_at' => now()->subDays(30),
+                    'ends_at' => now()->addMonths(6),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])
             );
         }
     }

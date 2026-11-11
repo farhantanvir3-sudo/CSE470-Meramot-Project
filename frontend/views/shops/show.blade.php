@@ -3,6 +3,16 @@
 @section('title', $shop->name . ' — Verified Electronic Repair Shop | Meramot')
 
 @section('content')
+@php
+    $verificationStatus = $shop->vendorProfile?->verification_status ?? ($shop->is_public ? 'approved' : 'pending');
+    $isOperational = (bool) $shop->is_active && (bool) $shop->is_public && $verificationStatus === 'approved';
+    $reviewsList = ($shop->reviews ?? collect())->where('is_hidden', false)->values();
+    $totalReviewsCount = $reviewsList->count() > 0 ? $reviewsList->count() : (int) ($shop->review_count ?? 0);
+    $avgRating = $reviewsList->count() > 0
+        ? round((float) $reviewsList->avg('rating'), 2)
+        : ($totalReviewsCount > 0 ? (float) $shop->rating : 0.0);
+@endphp
+
 <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
 
     <!-- Breadcrumb -->
@@ -14,10 +24,44 @@
         <span class="text-[var(--accent-dark)] font-semibold">{{ $shop->name }}</span>
     </div>
 
-    <!-- Shop Profile Hero Header (Exact match to shops/[slug]/page.tsx) -->
+    <!-- Pre-Onboarding / Inactive Storefront Preview Banner -->
+    @if(!$isOperational)
+        <div class="mb-6 rounded-[1.6rem] border-2 {{ $verificationStatus === 'rejected' ? 'border-rose-400 bg-rose-50/95 text-rose-950' : 'border-amber-400 bg-amber-50/95 text-amber-950' }} p-4 md:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="rounded-full {{ $verificationStatus === 'rejected' ? 'bg-rose-700' : 'bg-amber-600' }} px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                        {{ $verificationStatus === 'rejected' ? 'Application Declined · Inactive' : 'Preview Mode · Pending Admin Verification' }}
+                    </span>
+                    <span class="text-xs font-bold">
+                        {{ $verificationStatus === 'rejected' ? 'This vendor application was declined during compliance audit.' : 'This workshop has not yet been approved and onboarded.' }}
+                    </span>
+                </div>
+                <p class="text-xs opacity-90 leading-relaxed">
+                    @if($verificationStatus === 'rejected' && $shop->vendorProfile?->rejection_reason)
+                        Audit Note: {{ $shop->vendorProfile->rejection_reason }}
+                    @else
+                        Hidden from public search results. Direct-Order bookings, repair request dispatch, and customer reviews unlock only after Trade License &amp; NID approval.
+                    @endif
+                </p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                @if(auth()->check() && auth()->user()->role === 'admin')
+                    <a href="/admin/vendors/pending" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                        <i class="fa-solid fa-shield-halved mr-1"></i> Return to Vendor Audit Desk
+                    </a>
+                @else
+                    <a href="/shops" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                        Browse Verified Shops &rarr;
+                    </a>
+                @endif
+            </div>
+        </div>
+    @endif
+
+    <!-- Shop Profile Hero Header -->
     <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-8 shadow-sm mb-6 min-w-0 max-w-full">
         <div class="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[130px_minmax(0,1fr)_260px] lg:items-start">
-            
+
             <!-- Left: Shop Logo / Avatar -->
             <div class="h-24 w-24 sm:h-28 sm:w-28 lg:h-[130px] lg:w-[130px] rounded-[1.5rem] border-2 border-[var(--border)] bg-[var(--mint-100)] flex items-center justify-center font-black text-4xl text-[var(--accent-dark)] shrink-0 overflow-hidden shadow-sm">
                 @if($shop->logo_url)
@@ -33,7 +77,7 @@
                     @if(!empty($shop->specialties))
                         {{ is_array($shop->specialties) ? implode(' · ', array_slice($shop->specialties, 0, 4)) : $shop->specialties }}
                     @else
-                        Electronics Repair & Diagnostics
+                        Electronics Repair &amp; Diagnostics
                     @endif
                 </p>
 
@@ -50,10 +94,17 @@
                 </div>
 
                 <div class="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs sm:text-sm text-[var(--foreground)]">
-                    <span class="font-bold flex items-center gap-1 text-amber-700">
-                        ⭐ {{ number_format($shop->rating, 1) }}
-                        <span class="text-[var(--muted-foreground)] font-normal">({{ $shop->review_count ?? count($shop->reviews) }} reviews)</span>
-                    </span>
+                    @if($totalReviewsCount > 0)
+                        <span class="font-bold flex items-center gap-1 text-amber-700">
+                            ⭐ {{ number_format($avgRating, 1) }}
+                            <span class="text-[var(--muted-foreground)] font-normal">({{ $totalReviewsCount }} {{ \Illuminate\Support\Str::plural('review', $totalReviewsCount) }})</span>
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-xs font-bold text-[var(--accent-dark)]">
+                            <i class="fa-solid {{ $isOperational ? 'fa-sparkles' : 'fa-clock' }} text-[10px]"></i>
+                            <span>{{ $isOperational ? 'New Shop · No reviews yet' : 'Not yet onboarded · 0 reviews' }}</span>
+                        </span>
+                    @endif
                     <span class="opacity-40">·</span>
                     <span class="flex items-center gap-1 text-[var(--muted-foreground)]">
                         <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
@@ -66,11 +117,16 @@
                 </div>
 
                 <p class="mt-3 text-xs sm:text-sm text-[var(--muted-foreground)] leading-relaxed max-w-3xl">
-                    {{ $shop->description ?: "Professional device repair support with diagnostics, component level repairs, and courier handling from this verified repair shop." }}
+                    {{ $shop->description ?: "Professional device repair support with diagnostics, component level repairs, and courier handling from this repair workshop." }}
                 </p>
 
                 <!-- Badges & Perks -->
                 <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
+                    @if(!$isOperational)
+                        <span class="rounded-full bg-amber-100 border border-amber-300 px-3 py-1 font-bold text-amber-900">
+                            <i class="fa-solid fa-hourglass-half mr-1"></i> {{ ucfirst($verificationStatus) }} Verification
+                        </span>
+                    @endif
                     @if($shop->has_voucher)
                         <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-[var(--accent-dark)]">
                             <i class="fa-solid fa-ticket text-amber-600 mr-1"></i> Coupon Voucher
@@ -105,9 +161,15 @@
                 </div>
 
                 <div class="space-y-2">
-                    <a href="/requests/create?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
-                        Post Repair Request
-                    </a>
+                    @if($isOperational)
+                        <a href="/requests/create?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                            Post Repair Request
+                        </a>
+                    @else
+                        <span class="inline-flex w-full items-center justify-center rounded-full border border-amber-400 bg-amber-100/80 px-4 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
+                            <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Booking Locked Until Approved
+                        </span>
+                    @endif
                     <a href="/ai-consultant/chat" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                         <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-amber-600"></i> AI Diagnose Device
                     </a>
@@ -117,7 +179,7 @@
         </div>
     </div>
 
-    <!-- Main Two-Column Layout (Matching shops/[slug]/page.tsx) -->
+    <!-- Main Two-Column Layout -->
     <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] items-start">
 
         <!-- ── Left Column: Available Services & Customer Reviews ── -->
@@ -129,13 +191,24 @@
                     <div>
                         <h2 class="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Available services</h2>
                         <p class="mt-1 text-xs md:text-sm text-[var(--muted-foreground)]">
-                            Add fixed services to your Direct-Order Cart for {{ $shop->name }}, or request a custom diagnostic quote.
+                            @if($isOperational)
+                                Add fixed services to your Direct-Order Cart for {{ $shop->name }}, or request a custom diagnostic quote.
+                            @else
+                                Proposed service catalog submitted with {{ $shop->name }}'s onboarding application (read-only until verified).
+                            @endif
                         </p>
                     </div>
-                    <a href="/cart" class="inline-flex items-center gap-2 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
-                        <i class="fa-solid fa-cart-shopping"></i>
-                        <span>Open Direct Cart</span>
-                    </a>
+                    @if($isOperational)
+                        <a href="/cart" class="inline-flex items-center gap-2 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                            <span>Open Direct Cart</span>
+                        </a>
+                    @else
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3.5 py-1.5 text-xs font-bold text-amber-900">
+                            <i class="fa-solid fa-eye text-[10px]"></i>
+                            <span>Catalog Preview</span>
+                        </span>
+                    @endif
                 </div>
 
                 @php
@@ -157,7 +230,7 @@
                                 'Display & Touchscreen Replacement',
                                 'Battery Diagnostics & Cell Replacement',
                                 'Logic Board & Ultrasonic Liquid Treatment',
-                                'Port, Jack & Keyboard Replacement'
+                                'Port, Jack & Keyboard Replacement',
                             ];
                         }
 
@@ -171,7 +244,7 @@
                         foreach ($specialtiesList as $spec) {
                             $meta = $serviceCatalog[$spec] ?? [
                                 'estimate' => $shop->base_labor_fee ? ($shop->base_labor_fee + 500) : 1500,
-                                'summary' => 'Comprehensive inspection, OEM replacement components, certified labor, and functional warranty included.'
+                                'summary' => 'Comprehensive hardware inspection, genuine replacement components, certified bench labor, and functional warranty.',
                             ];
                             $displayServices[] = [
                                 'name' => $spec,
@@ -202,31 +275,37 @@
                             </div>
 
                             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto md:pl-4">
-                                <button
-                                    type="button"
-                                    onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"
-                                    class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
-                                >
-                                    <i class="fa-solid fa-cart-plus text-xs"></i>
-                                    <span>Add to Cart</span>
-                                </button>
-                                <a
-                                    href="/requests/create?shop_id={{ $shop->id }}&issue={{ urlencode($svcItem['name']) }}"
-                                    class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap"
-                                >
-                                    Custom Quote
-                                </a>
+                                @if($isOperational && $shop->accepts_direct_orders)
+                                    <button
+                                        type="button"
+                                        onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"
+                                        class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
+                                    >
+                                        <i class="fa-solid fa-cart-plus text-xs"></i>
+                                        <span>Add to Cart</span>
+                                    </button>
+                                @endif
+
+                                @if($isOperational)
+                                    <a
+                                        href="/requests/create?shop_id={{ $shop->id }}&issue={{ urlencode($svcItem['name']) }}"
+                                        class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap"
+                                    >
+                                        Custom Quote
+                                    </a>
+                                @else
+                                    <span class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed whitespace-nowrap">
+                                        <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Available After Approval
+                                    </span>
+                                @endif
                             </div>
                         </article>
                     @endforeach
                 </div>
             </div>
 
-            <!-- 2. Customer Reviews Section (Exact 2-Card Layout from commit 8e44218) -->
+            <!-- 2. Customer Reviews Section (Strictly Derived from Real Database Reviews — Zero Fabricated Reviews) -->
             @php
-                $reviewsList = $shop->reviews ?? collect();
-                $totalReviewsCount = count($reviewsList);
-                $avgRating = $totalReviewsCount > 0 ? $reviewsList->avg('rating') : ($shop->rating ?: 4.8);
                 $starCounts = [
                     5 => $reviewsList->where('rating', 5)->count(),
                     4 => $reviewsList->where('rating', 4)->count(),
@@ -234,10 +313,9 @@
                     2 => $reviewsList->where('rating', 2)->count(),
                     1 => $reviewsList->where('rating', 1)->count(),
                 ];
-                // If seeded reviews count is 0, provide illustrative seed baseline matching mock data
-                if ($totalReviewsCount === 0) {
-                    $totalReviewsCount = $shop->review_count ?: 18;
-                    $starCounts = [5 => intval($totalReviewsCount * 0.7), 4 => intval($totalReviewsCount * 0.2), 3 => intval($totalReviewsCount * 0.08), 2 => 0, 1 => 0];
+                if ($reviewsList->isEmpty() && $totalReviewsCount > 0) {
+                    $bucketStar = max(1, min(5, (int) round($avgRating ?: 5)));
+                    $starCounts[$bucketStar] = $totalReviewsCount;
                 }
             @endphp
 
@@ -249,13 +327,23 @@
                     <h2 class="mt-1 text-xl font-bold text-[var(--foreground)]">Rating summary</h2>
 
                     <div class="mt-4 rounded-[1.5rem] bg-[var(--mint-50)] px-4 py-4 text-center">
-                        <div class="text-4xl font-black text-[var(--accent-dark)]">{{ number_format($avgRating, 1) }}</div>
-                        <div class="text-amber-500 text-sm mt-1">
-                            @for($i = 1; $i <= 5; $i++)
-                                <i class="fa-solid fa-star {{ $i <= round($avgRating) ? 'text-amber-500' : 'text-gray-300' }}"></i>
-                            @endfor
-                        </div>
-                        <p class="mt-1 text-xs text-[var(--muted-foreground)]">{{ $totalReviewsCount }} verified reviews</p>
+                        @if($totalReviewsCount > 0)
+                            <div class="text-4xl font-black text-[var(--accent-dark)]">{{ number_format($avgRating, 1) }}</div>
+                            <div class="text-amber-500 text-sm mt-1">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="fa-solid fa-star {{ $i <= round($avgRating) ? 'text-amber-500' : 'text-gray-300' }}"></i>
+                                @endfor
+                            </div>
+                            <p class="mt-1 text-xs text-[var(--muted-foreground)]">{{ $totalReviewsCount }} verified {{ \Illuminate\Support\Str::plural('review', $totalReviewsCount) }}</p>
+                        @else
+                            <div class="text-2xl font-black text-[var(--accent-dark)]">{{ $isOperational ? 'New' : '—' }}</div>
+                            <div class="text-gray-300 text-sm mt-1">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="fa-solid fa-star"></i>
+                                @endfor
+                            </div>
+                            <p class="mt-1 text-xs text-[var(--muted-foreground)]">0 verified reviews</p>
+                        @endif
                     </div>
 
                     <div class="mt-4 space-y-2">
@@ -283,11 +371,17 @@
                         </p>
                         <div class="flex items-center gap-2">
                             <span class="rounded-full bg-[var(--mint-100)] px-3 py-0.5 text-xs font-semibold text-[var(--accent-dark)]">
-                                All Dhaka Hubs
+                                {{ $shop->area ? $shop->area . ', ' . $shop->city : ($shop->city ?: 'Bangladesh') }}
                             </span>
-                            <a href="/reviews/create/{{ $shop->id }}" class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-xs font-semibold text-white hover:opacity-90 transition">
-                                <i class="fa-solid fa-pen-to-square mr-1 text-[10px]"></i> Write Review
-                            </a>
+                            @if($isOperational)
+                                <a href="/reviews/create/{{ $shop->id }}" class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-xs font-semibold text-white hover:opacity-90 transition">
+                                    <i class="fa-solid fa-pen-to-square mr-1 text-[10px]"></i> Write Review
+                                </a>
+                            @else
+                                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed">
+                                    <i class="fa-solid fa-lock mr-1 text-[10px]"></i> Reviews Locked
+                                </span>
+                            @endif
                         </div>
                     </div>
 
@@ -305,7 +399,7 @@
                                             @endif
                                         </div>
                                         <p class="text-[10px] text-[var(--muted-foreground)] mt-0.5">
-                                            {{ $rev->created_at ? $rev->created_at->diffForHumans() : '2 weeks ago' }}
+                                            {{ $rev->created_at ? $rev->created_at->diffForHumans() : 'Recently verified' }}
                                         </p>
                                     </div>
                                     <div class="text-amber-500">
@@ -315,49 +409,21 @@
                                     </div>
                                 </div>
                                 <p class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
-                                    "{{ $rev->review_comment ?? 'Excellent repair service. The technician was transparent about pricing and completed the inspection in under two hours.' }}"
+                                    "{{ $rev->review_comment }}"
                                 </p>
                             </article>
                         @empty
-                            <!-- Default baseline reviews when none in DB yet -->
-                            <article class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 shadow-sm text-xs">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <p class="font-bold text-[var(--foreground)] text-sm">Fahim Ahmed</p>
-                                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
-                                                Verified repair
-                                            </span>
-                                        </div>
-                                        <p class="text-[10px] text-[var(--muted-foreground)] mt-0.5">3 days ago</p>
-                                    </div>
-                                    <div class="text-amber-500">
-                                        <i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i>
-                                    </div>
-                                </div>
-                                <p class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
-                                    "Fast battery replacement for my MacBook Pro. Very satisfied with the precision work and warranty provided."
+                            <div class="rounded-[1.5rem] border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center text-xs text-[var(--muted-foreground)] space-y-2">
+                                <i class="fa-regular fa-comment-dots text-2xl text-[var(--accent-dark)] opacity-70 block"></i>
+                                <p class="font-bold text-sm text-[var(--foreground)]">No verified customer reviews yet</p>
+                                <p class="max-w-md mx-auto leading-relaxed">
+                                    @if(!$isOperational)
+                                        {{ $shop->name }} has not yet completed onboarding verification and has served 0 orders on Meramot.
+                                    @else
+                                        Customer ratings and feedback appear automatically once verified repair orders are completed with {{ $shop->name }}.
+                                    @endif
                                 </p>
-                            </article>
-                            <article class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 shadow-sm text-xs">
-                                <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <p class="font-bold text-[var(--foreground)] text-sm">Sumaiya Rahman</p>
-                                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
-                                                Verified repair
-                                            </span>
-                                        </div>
-                                        <p class="text-[10px] text-[var(--muted-foreground)] mt-0.5">1 week ago</p>
-                                    </div>
-                                    <div class="text-amber-500">
-                                        <i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i><i class="fa-solid fa-star text-[10px]"></i>
-                                    </div>
-                                </div>
-                                <p class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
-                                    "Clean diagnostic report and fair price. Doorstep courier pickup was seamless and on time."
-                                </p>
-                            </article>
+                            </div>
                         @endforelse
                     </div>
                 </div>
@@ -373,13 +439,13 @@
             <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
                 <h3 class="text-base font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
                     <i class="fa-solid fa-store text-[var(--accent-dark)]"></i>
-                    Shop details & hours
+                    Shop details &amp; hours
                 </h3>
-                
+
                 <div class="space-y-3 text-xs text-[var(--foreground)]">
                     <div class="flex items-start gap-2.5">
                         <i class="fa-solid fa-phone text-[var(--accent-dark)] mt-0.5"></i>
-                        <span>{{ $shop->phone ?? '+880 1711-234567' }}</span>
+                        <span>{{ $shop->phone ?: 'Verified via Meramot Dispatch Desk' }}</span>
                     </div>
                     <div class="flex items-start gap-2.5">
                         <i class="fa-solid fa-envelope text-[var(--accent-dark)] mt-0.5"></i>
@@ -399,9 +465,15 @@
                 </div>
 
                 <div class="mt-5 pt-4 border-t border-[var(--border)]">
-                    <a href="/requests/create?shop_id={{ $shop->id }}" class="block w-full text-center rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
-                        Select This Shop &rarr;
-                    </a>
+                    @if($isOperational)
+                        <a href="/requests/create?shop_id={{ $shop->id }}" class="block w-full text-center rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
+                            Select This Shop &rarr;
+                        </a>
+                    @else
+                        <span class="block w-full text-center rounded-full border border-amber-400 bg-amber-100/80 px-4 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
+                            Pending Onboarding Approval
+                        </span>
+                    @endif
                 </div>
             </div>
 
@@ -425,7 +497,11 @@
                                         <i class="fa-solid fa-code-branch text-[8px]"></i>
                                         <span>{{ $branch->display_branch_tag ?: $branch->area }}</span>
                                     </span>
-                                    <span class="text-amber-700 font-bold shrink-0">⭐ {{ number_format($branch->rating, 1) }}</span>
+                                    @if((int) ($branch->review_count ?? 0) > 0)
+                                        <span class="text-amber-700 font-bold shrink-0">⭐ {{ number_format($branch->rating, 1) }}</span>
+                                    @else
+                                        <span class="text-[var(--accent-dark)] font-bold text-[10px] shrink-0">New</span>
+                                    @endif
                                 </div>
                                 <div class="text-[11px] text-[var(--muted-foreground)] mt-1.5 line-clamp-1">
                                     {{ $branch->public_address }}
@@ -450,7 +526,11 @@
                                     <div class="font-bold text-[var(--foreground)] group-hover:text-[var(--accent-dark)] truncate">
                                         {{ $rel->name }}{{ $rel->display_branch_tag ? ' [' . $rel->display_branch_tag . ']' : '' }}
                                     </div>
-                                    <span class="text-amber-700 font-bold shrink-0">⭐ {{ number_format($rel->rating, 1) }}</span>
+                                    @if((int) ($rel->review_count ?? 0) > 0)
+                                        <span class="text-amber-700 font-bold shrink-0">⭐ {{ number_format($rel->rating, 1) }}</span>
+                                    @else
+                                        <span class="text-[var(--accent-dark)] font-bold text-[10px] shrink-0">New</span>
+                                    @endif
                                 </div>
                                 <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
                                     Inspection: ৳{{ number_format($rel->inspection_fee ?: 200) }} · Labor: ৳{{ number_format($rel->base_labor_fee ?: 400) }}

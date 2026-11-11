@@ -49,7 +49,7 @@ class ServicePackageController extends Controller
     private function resolveTargetShop(?int $requestedShopId = null): ?RepairShop
     {
         if ($requestedShopId) {
-            $shop = RepairShop::find($requestedShopId);
+            $shop = RepairShop::where('is_active', true)->where('is_public', true)->find($requestedShopId);
             if ($shop) {
                 return $shop;
             }
@@ -57,16 +57,17 @@ class ServicePackageController extends Controller
 
         $sessionShopId = session('cart_shop_id');
         if ($sessionShopId) {
-            $shop = RepairShop::find($sessionShopId);
+            $shop = RepairShop::where('is_active', true)->where('is_public', true)->find($sessionShopId);
             if ($shop) {
                 return $shop;
             }
         }
 
         return RepairShop::where('is_active', true)
+            ->where('is_public', true)
             ->orderBy('rating', 'desc')
             ->orderBy('review_count', 'desc')
-            ->first() ?? RepairShop::first();
+            ->first() ?? RepairShop::where('is_active', true)->first();
     }
 
     /**
@@ -156,7 +157,10 @@ class ServicePackageController extends Controller
             ->pluck('device_category')
             ->toArray();
 
-        $verifiedShops = RepairShop::orderBy('rating', 'desc')->get(['id', 'name', 'area', 'rating']);
+        $verifiedShops = RepairShop::where('is_active', true)
+            ->where('is_public', true)
+            ->orderBy('rating', 'desc')
+            ->get(['id', 'name', 'area', 'rating']);
         $cartCount = count(session()->get('cart', []));
 
         return view('packages.catalog', compact('packages', 'categories', 'verifiedShops', 'cartCount'));
@@ -281,7 +285,10 @@ class ServicePackageController extends Controller
         $serviceCharge = self::calculateServiceCharge($total);
         $activeShop = !empty($cart) ? $this->resolveTargetShop() : null;
         $shopLocked = (bool) session('cart_shop_locked', false);
-        $verifiedShops = RepairShop::orderBy('rating', 'desc')->get(['id', 'name', 'area', 'rating', 'address']);
+        $verifiedShops = RepairShop::where('is_active', true)
+            ->where('is_public', true)
+            ->orderBy('rating', 'desc')
+            ->get(['id', 'name', 'area', 'rating', 'address']);
 
         return view('packages.cart', compact(
             'cart',
@@ -374,7 +381,10 @@ class ServicePackageController extends Controller
 
         $serviceCharge = self::calculateServiceCharge($total);
         $activeShop = $this->resolveTargetShop();
-        $verifiedShops = RepairShop::orderBy('rating', 'desc')->get(['id', 'name', 'area', 'rating']);
+        $verifiedShops = RepairShop::where('is_active', true)
+            ->where('is_public', true)
+            ->orderBy('rating', 'desc')
+            ->get(['id', 'name', 'area', 'rating']);
 
         return view('packages.checkout', compact('cart', 'total', 'serviceCharge', 'activeShop', 'verifiedShops'));
     }
@@ -438,13 +448,16 @@ class ServicePackageController extends Controller
         }
 
         $repairRequest = DB::transaction(function () use (
-            $user, $shop, $cart, $validated, $title, $serviceLines, $scheduleLabel,
+            $user, $shop, $cart, $firstItem, $validated, $title, $serviceLines, $scheduleLabel,
             $subtotal, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress
         ) {
+            $requestedServiceId = is_numeric($firstItem['id'] ?? null) ? (int) $firstItem['id'] : null;
+
             $req = RepairRequest::create([
                 'customer_id' => $user->id,
                 'source' => 'DIRECT_SERVICE',
                 'requested_shop_id' => $shop->id,
+                'requested_service_id' => $requestedServiceId,
                 'title' => $title,
                 'description' => "Direct Order Cart Checkout ({$shop->name})\n"
                     . "Schedule: {$scheduleLabel}\n"

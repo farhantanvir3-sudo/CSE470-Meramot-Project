@@ -7,6 +7,7 @@ use App\Models\ShopService;
 use App\Models\User;
 use App\Models\VendorProfile;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -41,6 +42,10 @@ class ShopSeeder extends Seeder
     public function run(): void
     {
         $now = now();
+        $reviewedAt = $now->copy()->subDays(45);
+
+        $meramotAdmin = User::where('email', 'admin@meramot.demo')->first()
+            ?? User::where('role', 'admin')->orderBy('id')->first();
 
         // Dedicated demo vendor accounts
         $sakibVendorUser = User::where('email', 'sakib.tech@gmail.com')->first()
@@ -91,7 +96,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => false,
                 'is_featured' => true,
                 'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR'],
-                'specialties' => ['MacBook Air M2 repair', 'battery replacement', 'logic board repair', 'laptop', 'phone'],
+                'specialties' => ['MacBook Air M2 repair', 'Laptop Battery Replacement', 'Logic Board Micro-Soldering', 'Smartphone OLED Display Repair'],
                 'eta_minutes' => 140,
                 'result_tag' => 'Best Value',
                 'offer_summary' => 'Inspection ৳300',
@@ -124,7 +129,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => false,
                 'is_featured' => false,
                 'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR'],
-                'specialties' => ['MacBook Air M2 repair', 'battery replacement', 'screen replacement', 'laptop', 'phone'],
+                'specialties' => ['MacBook Air M2 repair', 'Laptop Battery Replacement', 'Ultrabook Screen Replacement', 'Smartphone Display & Port Repair'],
                 'eta_minutes' => 75,
                 'result_tag' => 'North Hub',
                 'offer_summary' => 'Inspection ৳300',
@@ -157,7 +162,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => true,
                 'is_featured' => false,
                 'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR', 'SPARE_PARTS'],
-                'specialties' => ['MacBook Air M2 repair', 'logic board repair', 'OLED display swap', 'laptop', 'phone'],
+                'specialties' => ['MacBook Air M2 repair', 'Logic Board Micro-Soldering', 'Smartphone OLED Display Swap', 'Corporate Laptop Diagnostics'],
                 'eta_minutes' => 90,
                 'result_tag' => 'Chattogram Hub',
                 'offer_summary' => 'Inspection ৳300',
@@ -185,7 +190,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => false,
                 'is_featured' => true,
                 'categories' => ['IN_SHOP_REPAIR'],
-                'specialties' => ['MacBook Air M2 repair', 'screen replacement', 'keyboard repair', 'tablet', 'smartwatch'],
+                'specialties' => ['Smartphone Screen Replacement', 'Laptop Keyboard Repair', 'Tablet Digitizer Replacement', 'Smartwatch Glass & Sensor Repair'],
                 'eta_minutes' => 60,
                 'result_tag' => 'Lowest Price',
                 'offer_summary' => 'Inspection ৳500',
@@ -213,7 +218,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => true,
                 'is_featured' => true,
                 'categories' => ['IN_SHOP_REPAIR'],
-                'specialties' => ['MacBook Air M2 repair', 'display replacement', 'screen repair', 'console', 'printer'],
+                'specialties' => ['Smartphone Display Replacement', 'Laptop Screen Repair', 'Gaming Console HDMI & Fan Servicing', 'Printer Roller & Feed Repair'],
                 'eta_minutes' => 1440,
                 'result_tag' => 'Most Affordable',
                 'offer_summary' => 'Inspection ৳100',
@@ -297,7 +302,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => false,
                 'is_featured' => true,
                 'categories' => ['IN_SHOP_REPAIR'],
-                'specialties' => ['MacBook Air M2 repair', 'screen replacement', 'keyboard repair'],
+                'specialties' => ['Express Phone Screen Replacement', 'Laptop Display Panel Swap', 'Keyboard Ribbon & Switch Repair'],
                 'eta_minutes' => 1440,
                 'result_tag' => 'Generic Screen Option',
                 'offer_summary' => 'Inspection ৳400',
@@ -353,7 +358,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => false,
                 'is_featured' => false,
                 'categories' => ['IN_SHOP_REPAIR'],
-                'specialties' => ['MacBook Air M2 repair', 'trackpad replacement', 'battery replacement'],
+                'specialties' => ['Laptop Trackpad Replacement', 'Battery Cell Replacement', 'USB-C & Charging Port Repair'],
                 'eta_minutes' => 120,
                 'result_tag' => null,
                 'offer_summary' => 'Inspection ৳200',
@@ -381,7 +386,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => false,
                 'is_featured' => false,
                 'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR'],
-                'specialties' => ['MacBook Air M2 repair', 'battery replacement', 'pickup service'],
+                'specialties' => ['Laptop Battery Replacement', 'Smartphone Battery Calibration', 'Charging Circuit Diagnostics'],
                 'eta_minutes' => 60,
                 'result_tag' => null,
                 'offer_summary' => 'Inspection ৳200',
@@ -409,7 +414,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => false,
                 'is_featured' => false,
                 'categories' => ['IN_SHOP_REPAIR'],
-                'specialties' => ['MacBook Air M2 repair', 'micro soldering', 'board repair'],
+                'specialties' => ['SMD Micro-Soldering', 'Motherboard Short-Circuit Repair', 'BGA Chip Rework'],
                 'eta_minutes' => 60,
                 'result_tag' => null,
                 'offer_summary' => 'Inspection ৳350',
@@ -437,7 +442,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => false,
                 'is_featured' => false,
                 'categories' => ['IN_SHOP_REPAIR'],
-                'specialties' => ['MacBook Air M2 repair', 'storage replacement', 'keyboard repair'],
+                'specialties' => ['NVMe SSD & Storage Replacement', 'Laptop Keyboard Replacement', 'Desktop CPU & Thermal Servicing'],
                 'eta_minutes' => 60,
                 'result_tag' => null,
                 'offer_summary' => 'Inspection ৳150',
@@ -465,7 +470,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => false,
                 'is_featured' => false,
                 'categories' => ['IN_SHOP_REPAIR', 'SPARE_PARTS'],
-                'specialties' => ['MacBook Air M2 repair', 'replacement parts', 'screen repair'],
+                'specialties' => ['Smartphone Screen Repair', 'Genuine Spare Parts Installation', 'Battery & Housing Replacement'],
                 'eta_minutes' => 120,
                 'result_tag' => null,
                 'offer_summary' => 'Inspection ৳250',
@@ -495,7 +500,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => true,
                 'is_featured' => true,
                 'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR'],
-                'specialties' => ['Motherboard repair', 'IC replacement', 'Phone', 'Laptop'],
+                'specialties' => ['Motherboard Chip-Level Repair', 'Power IC Replacement', 'Smartphone Board Diagnostics', 'Laptop Logic Board Servicing'],
                 'eta_minutes' => 90,
                 'result_tag' => 'Top Pick',
                 'offer_summary' => 'Inspection ৳200',
@@ -747,7 +752,7 @@ class ShopSeeder extends Seeder
                 'has_deals' => true,
                 'is_featured' => false,
                 'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR'],
-                'specialties' => ['Student discount', 'SSD upgrade', 'RAM expansion', 'Thermal service'],
+                'specialties' => ['Campus Laptop Diagnostic & Tune-Up', 'NVMe SSD Upgrade', 'RAM Capacity Expansion', 'Thermal Servicing'],
                 'eta_minutes' => 60,
                 'result_tag' => 'Campus Favorite',
                 'offer_summary' => 'Inspection ৳150',
@@ -1073,8 +1078,8 @@ class ShopSeeder extends Seeder
                 'area' => $s['area'],
                 'lat' => (float) $s['lat'],
                 'lng' => (float) $s['lng'],
-                'rating' => (float) $s['rating'],
-                'review_count' => (int) ($s['review_count'] ?? 50),
+                'rating' => 0.00,
+                'review_count' => 0,
                 'price_level' => (int) ($s['price_level'] ?? 2),
                 'inspection_fee' => (float) ($s['inspection_fee'] ?? 200),
                 'base_labor_fee' => (float) ($s['base_labor_fee'] ?? 400),
@@ -1087,7 +1092,7 @@ class ShopSeeder extends Seeder
                 'is_featured' => (bool) ($s['is_featured'] ?? false),
                 'categories' => $s['categories'] ?? ['IN_SHOP_REPAIR'],
                 'specialties' => $s['specialties'] ?? ['Laptop repair', 'Phone repair'],
-                'phone' => $s['phone'] ?? '+8801700000000',
+                'phone' => $s['phone'] ?? null,
                 'email' => $s['email'] ?? ($slug . '@meramot.local'),
                 'opening_hours_text' => 'Sat – Thu: 10:00 AM – 8:30 PM',
                 'is_curated' => true,
@@ -1118,8 +1123,8 @@ class ShopSeeder extends Seeder
                 'area' => $osm['area'],
                 'lat' => (float) $osm['lat'],
                 'lng' => (float) $osm['lng'],
-                'rating' => (float) ($osm['rating'] ?? 4.5),
-                'review_count' => (int) ($osm['review_count'] ?? 24),
+                'rating' => 0.00,
+                'review_count' => 0,
                 'price_level' => (int) ($osm['price_level'] ?? 2),
                 'inspection_fee' => $inspFee,
                 'base_labor_fee' => (float) ($osm['base_labor_fee'] ?? 450),
@@ -1132,7 +1137,7 @@ class ShopSeeder extends Seeder
                 'is_featured' => false,
                 'categories' => $osm['categories'] ?? ['IN_SHOP_REPAIR', 'SPARE_PARTS'],
                 'specialties' => $osm['specialties'] ?? ['Electronics Diagnostics', 'Circuit & Component Repair'],
-                'phone' => $osm['phone'] ?? '+8801700000000',
+                'phone' => !empty($osm['phone']) ? $osm['phone'] : null,
                 'email' => Str::limit($slug, 42, '') . '@osm.meramot.bd',
                 'opening_hours_text' => $osm['opening_hours_text'] ?? 'Sat – Thu: 10:00 AM – 8:30 PM',
                 'is_curated' => false,
@@ -1175,7 +1180,9 @@ class ShopSeeder extends Seeder
                     'in_shop_repair' => in_array('IN_SHOP_REPAIR', $entry['categories'], true),
                     'spare_parts' => in_array('SPARE_PARTS', $entry['categories'], true),
                     'commission_rate' => 10.00,
-                    'rating' => $entry['rating'],
+                    'rating' => 0.00,
+                    'reviewed_by_admin_id' => $meramotAdmin?->id,
+                    'reviewed_at' => $reviewedAt,
                     'notes' => 'group_key:' . $gKey,
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -1205,6 +1212,9 @@ class ShopSeeder extends Seeder
                     'same_as_gps_location' => $bp['same_as_gps_location'],
                     'city' => $bp['city'],
                     'area' => $bp['area'],
+                    'rating' => 0.00,
+                    'reviewed_by_admin_id' => $meramotAdmin?->id,
+                    'reviewed_at' => $reviewedAt,
                     'updated_at' => $now,
                 ]);
             } else {
@@ -1223,6 +1233,8 @@ class ShopSeeder extends Seeder
 
         // ---------------------------------------------------------------------
         // PART 4: Batch Upsert All `RepairShop` Rows (Curated + Nationwide OSM)
+        //         Ratings & review counts start at 0.00 / 0 until ReviewSeeder
+        //         computes them strictly from verified completed-order reviews!
         // ---------------------------------------------------------------------
         $shopRows = [];
         foreach ($combinedEntries as $entry) {
@@ -1245,8 +1257,8 @@ class ShopSeeder extends Seeder
                 'area' => $entry['area'],
                 'latitude' => $entry['lat'],
                 'longitude' => $entry['lng'],
-                'rating' => $entry['rating'],
-                'review_count' => $entry['review_count'],
+                'rating' => 0.00,
+                'review_count' => 0,
                 'price_level' => $entry['price_level'],
                 'inspection_fee' => $entry['inspection_fee'],
                 'base_labor_fee' => $entry['base_labor_fee'],
@@ -1292,6 +1304,8 @@ class ShopSeeder extends Seeder
         // ---------------------------------------------------------------------
         // PART 5: Batch Upsert Bookable Direct-Order `ShopService` Rows
         // ---------------------------------------------------------------------
+        ShopService::query()->delete();
+
         $shopIdBySlug = RepairShop::pluck('id', 'slug')->all();
         $serviceRows = [];
 
@@ -1310,7 +1324,8 @@ class ShopSeeder extends Seeder
             $seenSvcSlugs = [];
 
             foreach ($specsToSeed as $svcIdx => $specName) {
-                $svcSlug = Str::slug($specName) ?: ('service-' . ($svcIdx + 1));
+                $normalizedSvc = $this->normalizeBookableService((string) $specName);
+                $svcSlug = Str::slug($normalizedSvc['name']) ?: ('service-' . ($svcIdx + 1));
                 if (isset($seenSvcSlugs[$svcSlug])) {
                     $svcSlug .= '-' . ($svcIdx + 1);
                 }
@@ -1319,10 +1334,10 @@ class ShopSeeder extends Seeder
                 $serviceRows[] = [
                     'shop_id' => $shopId,
                     'slug' => $svcSlug,
-                    'name' => ucfirst($specName),
-                    'short_description' => 'Certified workshop service with genuine components and bench warranty.',
-                    'device_type' => 'Electronics',
-                    'issue_category' => ucfirst($specName),
+                    'name' => $normalizedSvc['name'],
+                    'short_description' => $normalizedSvc['description'],
+                    'device_type' => $normalizedSvc['device_type'],
+                    'issue_category' => $normalizedSvc['issue_category'],
                     'pricing_type' => 'STARTING_FROM',
                     'base_price' => $baseLabor + ($svcIdx * 250),
                     'estimated_days_min' => 1,
@@ -1348,5 +1363,128 @@ class ShopSeeder extends Seeder
                 ]
             );
         }
+
+        // ---------------------------------------------------------------------
+        // PART 6: Batch Upsert `shop_staff` OWNER Links (Shop <-> Vendor User)
+        // ---------------------------------------------------------------------
+        $staffRows = [];
+        $vendorUserByProfileId = VendorProfile::pluck('user_id', 'id')->all();
+
+        foreach (RepairShop::whereNotNull('vendor_profile_id')->get(['id', 'vendor_profile_id']) as $s) {
+            $ownerUserId = $vendorUserByProfileId[$s->vendor_profile_id] ?? null;
+            if (!$ownerUserId) {
+                continue;
+            }
+            $staffRows[] = [
+                'shop_id' => $s->id,
+                'user_id' => $ownerUserId,
+                'role' => 'OWNER',
+                'is_active' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        foreach (array_chunk($staffRows, 400) as $chunk) {
+            DB::table('shop_staff')->upsert(
+                $chunk,
+                ['shop_id', 'user_id'],
+                ['role', 'is_active', 'updated_at']
+            );
+        }
+    }
+
+    /**
+     * Normalize any specialty tag into a genuine bookable hardware repair service item.
+     */
+    private function normalizeBookableService(string $rawSpec): array
+    {
+        $clean = trim($rawSpec);
+        $lower = strtolower($clean);
+
+        $exactMap = [
+            'laptop' => [
+                'name' => 'Laptop Full Hardware Diagnostic & Servicing',
+                'device_type' => 'Laptop',
+                'issue_category' => 'Hardware Diagnostics',
+                'description' => 'Full motherboard rail check, thermal repasting, cooling fan cleaning, and storage health inspection.',
+            ],
+            'phone' => [
+                'name' => 'Smartphone Component & Display Repair',
+                'device_type' => 'Phone',
+                'issue_category' => 'Screen / Display',
+                'description' => 'Precision screen digitizer check, charging port reflow, battery calibration, and board inspection.',
+            ],
+            'tablet' => [
+                'name' => 'Tablet Digitizer & Charging Port Repair',
+                'device_type' => 'Tablet',
+                'issue_category' => 'Screen / Display',
+                'description' => 'Touch glass lamination, USB-C charging port replacement, and battery health restoration.',
+            ],
+            'smartwatch' => [
+                'name' => 'Smartwatch Glass & Sensor Calibration',
+                'device_type' => 'Smartwatch',
+                'issue_category' => 'Screen / Display',
+                'description' => 'Micro-sealed OLED glass bonding, crown/button repair, and waterproof gasket resealing.',
+            ],
+            'console' => [
+                'name' => 'Gaming Console HDMI & Thermal Servicing',
+                'device_type' => 'Gaming Console',
+                'issue_category' => 'Overheating / Port',
+                'description' => 'HDMI 2.1 port micro-soldering, liquid metal / thermal paste renewal, and PSU diagnostics.',
+            ],
+            'printer' => [
+                'name' => 'Printer Roller, Fuser & Ink System Servicing',
+                'device_type' => 'Printer',
+                'issue_category' => 'Mechanical Servicing',
+                'description' => 'Paper feed roller replacement, printhead ultrasonic cleaning, and formatter board repair.',
+            ],
+            'student discount' => [
+                'name' => 'Campus Laptop Diagnostic & Tune-Up',
+                'device_type' => 'Laptop',
+                'issue_category' => 'Preventive Maintenance',
+                'description' => 'Comprehensive laptop inspection, dust removal, thermal repasting, and OS optimization.',
+            ],
+            'pickup service' => [
+                'name' => 'Express Bench Hardware Diagnostic',
+                'device_type' => 'Electronics',
+                'issue_category' => 'Hardware Diagnostics',
+                'description' => 'Priority bench fault isolation with itemized component repair estimate and doorstep courier option.',
+            ],
+            'replacement parts' => [
+                'name' => 'Genuine Spare Parts Fitting & Calibration',
+                'device_type' => 'Electronics',
+                'issue_category' => 'Parts Replacement',
+                'description' => 'Certified installation of OEM-grade replacement modules with post-repair functional verification.',
+            ],
+        ];
+
+        if (isset($exactMap[$lower])) {
+            return $exactMap[$lower];
+        }
+
+        $deviceType = 'Electronics';
+        if (str_contains($lower, 'macbook') || str_contains($lower, 'laptop') || str_contains($lower, 'thinkpad') || str_contains($lower, 'ultrabook') || str_contains($lower, 'ssd') || str_contains($lower, 'ram')) {
+            $deviceType = 'Laptop';
+        } elseif (str_contains($lower, 'phone') || str_contains($lower, 'iphone') || str_contains($lower, 'oled')) {
+            $deviceType = 'Phone';
+        } elseif (str_contains($lower, 'tablet') || str_contains($lower, 'ipad')) {
+            $deviceType = 'Tablet';
+        } elseif (str_contains($lower, 'console') || str_contains($lower, 'hdmi') || str_contains($lower, 'joy-con')) {
+            $deviceType = 'Gaming Console';
+        } elseif (str_contains($lower, 'printer')) {
+            $deviceType = 'Printer';
+        } elseif (str_contains($lower, 'smartwatch')) {
+            $deviceType = 'Smartwatch';
+        }
+
+        $title = preg_match('/^[a-z]/', $clean) ? ucwords($clean) : $clean;
+
+        return [
+            'name' => $title,
+            'device_type' => $deviceType,
+            'issue_category' => $title,
+            'description' => 'Certified workshop service with genuine replacement components, bench testing, and repair warranty.',
+        ];
     }
 }

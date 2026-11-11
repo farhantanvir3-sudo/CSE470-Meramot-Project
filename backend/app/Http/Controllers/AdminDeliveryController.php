@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AuditLog;
 use App\Models\DeliveryAgent;
 use App\Models\DeliveryJob;
 use App\Models\User;
@@ -213,6 +214,8 @@ class AdminDeliveryController extends Controller
             $generatedUsername = 'rider_' . $agent->id . '_' . strtolower(Str::random(4));
         }
 
+        $previousStatus = $agent->registration_status;
+
         $agent->update([
             'registration_status' => 'APPROVED',
             'status' => 'AVAILABLE',
@@ -228,6 +231,15 @@ class AdminDeliveryController extends Controller
                 'is_active' => true,
             ]);
         }
+
+        AuditLog::create([
+            'actor_id' => auth()->id(),
+            'action' => 'delivery_agent_approved',
+            'target_resource' => "delivery_agents:{$agent->id}",
+            'payload_before' => ['registration_status' => $previousStatus],
+            'payload_after' => ['registration_status' => 'APPROVED', 'username' => $generatedUsername],
+            'ip_address' => request()->ip() ?? '127.0.0.1',
+        ]);
 
         Log::info("Delivery partner #{$agent->id} approved by Admin.", [
             'agent_id' => $agent->id,
@@ -253,6 +265,8 @@ class AdminDeliveryController extends Controller
         ]);
 
         $agent = DeliveryAgent::with('user')->findOrFail($id);
+        $previousStatus = $agent->registration_status;
+
         $agent->update([
             'registration_status' => 'REJECTED',
             'rejection_reason' => $validated['rejection_reason'],
@@ -266,6 +280,15 @@ class AdminDeliveryController extends Controller
                 'is_active' => false,
             ]);
         }
+
+        AuditLog::create([
+            'actor_id' => $request->user()?->id,
+            'action' => 'delivery_agent_rejected',
+            'target_resource' => "delivery_agents:{$agent->id}",
+            'payload_before' => ['registration_status' => $previousStatus],
+            'payload_after' => ['registration_status' => 'REJECTED', 'rejection_reason' => $validated['rejection_reason']],
+            'ip_address' => $request->ip() ?? '127.0.0.1',
+        ]);
 
         return redirect()->back()->with('warning', 'Delivery agent application rejected and reason recorded.');
     }

@@ -36,14 +36,11 @@ class AdminDashboardController extends Controller
             'open_requests' => RepairRequest::whereIn('status', ['PENDING', 'BIDDING', 'ASSIGNED', 'WAITING_APPROVAL', 'REPAIRING'])->count(),
             'platform_volume' => (float) FinancialLedger::where('entry_type', 'CUSTOMER_PAYMENT')->sum('amount'),
             'platform_commission' => (float) FinancialLedger::where('entry_type', 'PLATFORM_COMMISSION')->sum('amount'),
-            'unsettled_tx_count' => PaymentTransaction::where('status', 'CAPTURED')
-                ->whereNotExists(function ($q) {
-                    $q->selectRaw('1')
-                        ->from('financial_ledgers')
-                        ->whereColumn('financial_ledgers.payment_id', 'payment_transactions.id')
-                        ->where('financial_ledgers.entry_type', 'VENDOR_PAYOUT');
-                })
-                ->count(),
+            'unsettled_tx_count' => max(
+                0,
+                FinancialLedger::where('entry_type', 'VENDOR_EARNING')->count()
+                - FinancialLedger::where('entry_type', 'VENDOR_PAYOUT')->count()
+            ) + PaymentTransaction::where('status', 'PENDING')->count(),
         ];
 
         $recentPendingVendors = VendorProfile::with(['user', 'shops'])

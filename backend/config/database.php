@@ -38,7 +38,9 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-            'url' => env('DATABASE_URL'),
+            'url' => (PHP_SAPI === 'cli' && env('DATABASE_URL_UNPOOLED'))
+                ? env('DATABASE_URL_UNPOOLED')
+                : env('DATABASE_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'meramot'),
@@ -47,8 +49,8 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-            'search_path' => 'public',
-            'sslmode' => 'prefer',
+            'search_path' => str_contains((string) env('DATABASE_URL', ''), '-pooler.') ? null : 'public',
+            'sslmode' => env('DB_SSLMODE', str_contains((string) env('DATABASE_URL', ''), '.neon.tech') ? 'require' : 'prefer'),
         ],
 
     ],

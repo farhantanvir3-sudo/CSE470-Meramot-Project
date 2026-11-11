@@ -27,11 +27,17 @@ class ShopReview extends Model
         'rating', // 1 to 5 stars
         'review_comment',
         'is_verified_purchase',
+        'is_hidden',
+        'moderated_at',
+        'moderated_by_id',
+        'moderation_note',
     ];
 
     protected $casts = [
         'rating' => 'integer',
         'is_verified_purchase' => 'boolean',
+        'is_hidden' => 'boolean',
+        'moderated_at' => 'datetime',
     ];
 
     public function customer()
@@ -42,5 +48,15 @@ class ShopReview extends Model
     public function shop()
     {
         return $this->belongsTo(RepairShop::class, 'repair_shop_id');
+    }
+
+    public function repairRequest()
+    {
+        return $this->belongsTo(RepairRequest::class, 'repair_request_id');
+    }
+
+    public function moderator()
+    {
+        return $this->belongsTo(User::class, 'moderated_by_id');
     }
 }

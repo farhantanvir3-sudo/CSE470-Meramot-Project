@@ -123,9 +123,9 @@ class AuthController extends Controller
         $role = $request->get('role', 'customer');
         $email = match ($role) {
             'vendor' => 'sakib.tech@gmail.com',
-            'admin' => 'mustahid000@gmail.com',
+            'admin' => 'admin@meramot.demo',
             'delivery' => 'rider.demo@meramot.test',
-            'delivery_admin' => 'delivery.admin.demo@meeramoot.test',
+            'delivery_admin' => 'delivery.admin@meramot.demo',
             default => 'customer@meramot.demo',
         };
 

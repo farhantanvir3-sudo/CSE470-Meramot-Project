@@ -48,6 +48,8 @@ Route::get('/styles/{filename}', [FrontendAssetController::class, 'style'])->whe
 |--------------------------------------------------------------------------
 */
 
+Route::get('/healthz', fn () => response()->json(['status' => 'ok', 'service' => 'Meramot Laravel 10 MVC'], 200));
+
 Route::get('/', [ShopDiscoveryController::class, 'home'])->name('home');
 
 // -------------------------------------------------------------

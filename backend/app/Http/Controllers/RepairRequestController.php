@@ -62,7 +62,7 @@ class RepairRequestController extends Controller
     public function create(Request $request)
     {
         $selectedShop = $request->filled('shop_id')
-            ? RepairShop::find($request->query('shop_id'))
+            ? RepairShop::where('is_active', true)->where('is_public', true)->find($request->query('shop_id'))
             : null;
         $prefilledIssue = (string) $request->query('issue', '');
 
