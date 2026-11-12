@@ -183,6 +183,7 @@ Route::prefix('admin')->group(function () {
     Route::post('/vendors/{id}/approve', [VendorOnboardingController::class, 'approve'])->name('admin.vendors.approve');
     Route::post('/vendors/{id}/reject', [VendorOnboardingController::class, 'reject'])->name('admin.vendors.reject');
     Route::post('/vendors/shops/{shopId}/toggle-featured', [VendorOnboardingController::class, 'toggleFeatured'])->name('admin.vendors.toggle-featured');
+    Route::get('/vendors/{id}/document/{type}', [VendorOnboardingController::class, 'viewDocument'])->name('admin.vendors.document');
 
     // Feature R16: Platform Financial Summary & Double-Entry Ledger (Md. Nawshad Zaman Khan [23301622] — Commit 4742c9c)
     Route::get('/financial-overview', [AdminLedgerController::class, 'index'])->name('admin.financial-overview');         // R16

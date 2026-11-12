@@ -13,7 +13,7 @@ Models Touched: VendorProfile, RepairShop, User
 @section('title', 'Admin — Verify Vendor Partners | Meramot')
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8">
+<div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8" x-data="{ lightboxDoc: null }">
 
     @include('admin.partials.nav')
 
@@ -78,6 +78,9 @@ Models Touched: VendorProfile, RepairShop, User
         @forelse($pendingVendors as $vendor)
             @php
                 $primaryShop = $vendor->shops->first();
+                $vendorLogoRaw = (string) ($vendor->logo_url ?: ($primaryShop->logo_url ?? ''));
+                $vendorDocRaw = (string) ($vendor->documents_path ?? '');
+                $vendorDocIsPdf = str_starts_with($vendorDocRaw, 'data:application/pdf') || str_ends_with(strtolower($vendorDocRaw), '.pdf');
             @endphp
             <div class="rounded-2xl border-2 border-amber-300 bg-[var(--mint-100)]/50 p-5 space-y-4" x-data="{ rejectOpen: false }">
                 <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
@@ -111,6 +114,45 @@ Models Touched: VendorProfile, RepairShop, User
                                 <span class="text-[11px] text-[var(--muted-foreground)] block">GPS Pin: {{ $vendor->gps_address ?? $vendor->shop_address }} ({{ $vendor->area }}, {{ $vendor->city }})</span>
                             </div>
                         </div>
+
+                        <!-- Inline Document & Logo Thumbnails (Click-to-Zoom Lightbox) -->
+                        @if($vendorLogoRaw || $vendorDocRaw)
+                            <div class="flex flex-wrap items-center gap-3 pt-1">
+                                @if($vendorLogoRaw)
+                                    <button
+                                        type="button"
+                                        @click="lightboxDoc = { url: '/admin/vendors/{{ $vendor->id }}/document/logo', title: @js($vendor->shop_name . ' — Shop Logo'), isPdf: false }"
+                                        class="group flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1.5 pr-3 text-xs font-bold text-[var(--accent-dark)] shadow-sm hover:border-[var(--accent-dark)] transition"
+                                        title="Click to zoom Shop Logo"
+                                    >
+                                        <img src="/admin/vendors/{{ $vendor->id }}/document/logo" alt="Logo" class="h-10 w-10 rounded-lg object-cover border border-[var(--border)]">
+                                        <div class="text-left">
+                                            <span class="block text-[11px] font-bold text-[var(--foreground)]">Shop Logo</span>
+                                            <span class="text-[10px] text-[var(--accent-dark)]"><i class="fa-solid fa-magnifying-glass-plus mr-0.5"></i>Click to Zoom</span>
+                                        </div>
+                                    </button>
+                                @endif
+
+                                @if($vendorDocRaw)
+                                    <button
+                                        type="button"
+                                        @click="lightboxDoc = { url: '/admin/vendors/{{ $vendor->id }}/document/document', title: @js($vendor->shop_name . ' — Trade License / NID Scan'), isPdf: {{ $vendorDocIsPdf ? 'true' : 'false' }} }"
+                                        class="group flex items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--card)] p-1.5 pr-3 text-xs font-bold text-[var(--accent-dark)] shadow-sm hover:border-[var(--accent-dark)] transition"
+                                        title="Click to zoom Trade License / NID Scan"
+                                    >
+                                        @if(!$vendorDocIsPdf)
+                                            <img src="/admin/vendors/{{ $vendor->id }}/document/document" alt="License Scan" class="h-10 w-10 rounded-lg object-cover border border-[var(--border)]">
+                                        @else
+                                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 text-rose-700"><i class="fa-solid fa-file-pdf text-lg"></i></span>
+                                        @endif
+                                        <div class="text-left">
+                                            <span class="block text-[11px] font-bold text-[var(--foreground)]">Trade License / NID Scan</span>
+                                            <span class="text-[10px] text-[var(--accent-dark)]"><i class="fa-solid fa-magnifying-glass-plus mr-0.5"></i>Click to Inspect</span>
+                                        </div>
+                                    </button>
+                                @endif
+                            </div>
+                        @endif
 
                         @if(!empty($vendor->categories))
                             <div class="flex flex-wrap items-center gap-1.5 pt-1">
@@ -271,6 +313,38 @@ Models Touched: VendorProfile, RepairShop, User
 
         <div class="pt-2">
             {{ $approvedVendors->links() }}
+        </div>
+    </div>
+
+    <!-- ── Click-to-Zoom Document Lightbox Modal ── -->
+    <div
+        x-show="lightboxDoc"
+        x-cloak
+        @keydown.escape.window="lightboxDoc = null"
+        class="fixed inset-0 z-[160] flex items-center justify-center p-4"
+    >
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" @click="lightboxDoc = null"></div>
+        <div class="relative z-[161] w-full max-w-4xl rounded-[2rem] border border-[#c8dac2] bg-white p-4 md:p-6 shadow-2xl space-y-3">
+            <div class="flex items-center justify-between gap-3 border-b border-[#e7efe2] pb-3">
+                <div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-[#214c34]">Vendor Verification Lightbox</span>
+                    <h3 class="text-base font-black text-[#163625]" x-text="lightboxDoc?.title"></h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a :href="lightboxDoc?.url" target="_blank" class="rounded-full border border-[#c8dac2] bg-[#eef5ea] px-3.5 py-1.5 text-xs font-bold text-[#163625] hover:bg-[#dcebd5]">
+                        Open Original &nearr;
+                    </a>
+                    <button type="button" @click="lightboxDoc = null" class="h-9 w-9 rounded-full bg-[#163625] text-white font-bold">✕</button>
+                </div>
+            </div>
+            <div class="flex max-h-[75vh] min-h-[320px] w-full items-center justify-center overflow-auto rounded-2xl bg-[#0f1c12] p-3">
+                <template x-if="lightboxDoc && !lightboxDoc.isPdf">
+                    <img :src="lightboxDoc.url" :alt="lightboxDoc.title" class="max-h-[70vh] max-w-full rounded-xl object-contain shadow-lg">
+                </template>
+                <template x-if="lightboxDoc && lightboxDoc.isPdf">
+                    <iframe :src="lightboxDoc.url" class="h-[70vh] w-full rounded-xl bg-white"></iframe>
+                </template>
+            </div>
         </div>
     </div>
 

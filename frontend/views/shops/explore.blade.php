@@ -58,7 +58,19 @@
                 </h3>
                 <div class="space-y-3">
                     @php
-                        $currSort = request('sort', 'topRated');
+                        $rawCurrSort = request('sort', 'relevance');
+                        $currSortMap = [
+                            'rating' => 'topRated',
+                            'top_rated' => 'topRated',
+                            'topRated' => 'topRated',
+                            'lowest_price' => 'price',
+                            'price' => 'price',
+                            'nearest' => 'distance',
+                            'distance' => 'distance',
+                            'best_match' => 'relevance',
+                            'relevance' => 'relevance',
+                        ];
+                        $currSort = $currSortMap[$rawCurrSort] ?? 'relevance';
                         $sortOptions = [
                             ['label' => 'Top rated', 'value' => 'topRated'],
                             ['label' => 'Relevance', 'value' => 'relevance'],
@@ -71,7 +83,7 @@
                             $sParams = array_merge(request()->query(), ['sort' => $opt['value'], 'page' => 1]);
                             $isActive = ($currSort === $opt['value']);
                         @endphp
-                        <a href="/shops?{{ http_build_query($sParams) }}" class="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left text-sm text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                        <a href="/shops?{{ http_build_query($sParams) }}" data-sort-link="{{ $opt['value'] }}" class="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left text-sm text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                             <span class="h-4 w-4 rounded-full border flex items-center justify-center {{ $isActive ? 'border-[var(--accent-dark)] bg-[var(--accent-dark)]' : 'border-[var(--border)] bg-[var(--card)]' }}">
                                 @if($isActive)
                                     <span class="h-1.5 w-1.5 rounded-full bg-white"></span>
@@ -84,7 +96,22 @@
             </div>
 
             <!-- 2. Distance & OpenStreetMap Filter Card -->
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm" x-data="{ dist: {{ request('maxDistanceKm', 12) }} }">
+            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm" x-data="{
+                dist: {{ request('maxDistanceKm', 12) }},
+                applyDistanceFilter() {
+                    const params = new URLSearchParams(window.location.search);
+                    params.set('maxDistanceKm', this.dist);
+                    params.set('page', '1');
+                    if (!params.get('lat') || !params.get('lng')) {
+                        const stored = window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null;
+                        if (stored && typeof stored.lat === 'number' && typeof stored.lng === 'number') {
+                            params.set('lat', stored.lat.toFixed(5));
+                            params.set('lng', stored.lng.toFixed(5));
+                        }
+                    }
+                    window.location.href = '/shops?' + params.toString();
+                }
+            }">
                 <div class="mb-3 flex items-center justify-between">
                     <h3 class="text-[1.05rem] font-semibold text-[var(--foreground)]">
                         Distance
@@ -99,7 +126,7 @@
                     max="25"
                     step="1"
                     x-model="dist"
-                    @change="window.location.href = '/shops?' + new URLSearchParams({...Object.fromEntries(new URLSearchParams(window.location.search)), maxDistanceKm: dist, page: 1}).toString()"
+                    @change="applyDistanceFilter()"
                     class="w-full accent-[var(--accent-dark)]"
                 />
                 <div class="mt-3 flex flex-col gap-2">
@@ -133,15 +160,19 @@
                 <div class="space-y-3">
                     @php
                         $offers = [
-                            ['label' => 'Vouchers', 'key' => 'voucher'],
-                            ['label' => 'Free delivery', 'key' => 'freeDelivery'],
-                            ['label' => 'Deals', 'key' => 'deals'],
+                            ['label' => 'Vouchers', 'key' => 'voucher', 'alt' => 'has_voucher'],
+                            ['label' => 'Free delivery', 'key' => 'freeDelivery', 'alt' => 'free_delivery'],
+                            ['label' => 'Deals', 'key' => 'deals', 'alt' => 'has_deals'],
                         ];
                     @endphp
                     @foreach($offers as $off)
                         @php
-                            $isCheck = request()->boolean($off['key']);
-                            $offParams = array_merge(request()->query(), [$off['key'] => $isCheck ? null : 'true', 'page' => 1]);
+                            $isCheck = request()->boolean($off['key']) || request()->boolean($off['alt']);
+                            $offParams = array_merge(request()->query(), [
+                                $off['key'] => $isCheck ? null : 'true',
+                                $off['alt'] => null,
+                                'page' => 1,
+                            ]);
                         @endphp
                         <a href="/shops?{{ http_build_query(array_filter($offParams)) }}" class="flex cursor-pointer items-center gap-3 rounded-2xl px-2 py-2 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
                             <input
@@ -176,6 +207,8 @@
                             $cityParams = array_merge(request()->query(), [
                                 'city' => $cityItem === 'All' ? null : $cityItem,
                                 'area' => null,
+                                'lat' => null,
+                                'lng' => null,
                                 'page' => 1,
                             ]);
                         @endphp
@@ -196,9 +229,14 @@
                     @endphp
                     @foreach($areas as $area)
                         @php
-                            $areaParams = array_merge(request()->query(), ['area' => $area, 'page' => 1]);
+                            $areaParams = array_merge(request()->query(), [
+                                'area' => $area === 'All' ? null : $area,
+                                'lat' => null,
+                                'lng' => null,
+                                'page' => 1,
+                            ]);
                         @endphp
-                        <a href="/shops?{{ http_build_query($areaParams) }}" 
+                        <a href="/shops?{{ http_build_query(array_filter($areaParams)) }}" 
                            class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition {{ ($activeArea === $area || ($area === 'All' && empty(request('area')))) ? 'bg-[var(--accent-dark)] text-white shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
                             {{ $area }}
                         </a>
@@ -222,7 +260,8 @@
                             @php
                                 $sortParams = array_merge(request()->query(), ['sort' => $st['value'], 'page' => 1]);
                             @endphp
-                            <a href="/shops?{{ http_build_query($sortParams) }}" 
+                            <a href="/shops?{{ http_build_query($sortParams) }}"
+                               data-sort-link="{{ $st['value'] }}"
                                class="shrink-0 px-3 py-1 rounded-xl transition flex items-center gap-1.5 {{ $currSort === $st['value'] ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid {{ $st['icon'] }} text-[10px]"></i>
                                 <span>{{ $st['label'] }}</span>
@@ -236,14 +275,14 @@
                             $hasBranched = request()->boolean('branched');
                             $branchedParams = array_merge(request()->query(), ['branched' => $hasBranched ? null : 'true', 'page' => 1]);
 
-                            $hasVoucher = request()->boolean('voucher');
-                            $voucherParams = array_merge(request()->query(), ['voucher' => $hasVoucher ? null : 'true', 'page' => 1]);
+                            $hasVoucher = request()->boolean('voucher') || request()->boolean('has_voucher');
+                            $voucherParams = array_merge(request()->query(), ['voucher' => $hasVoucher ? null : 'true', 'has_voucher' => null, 'page' => 1]);
 
-                            $hasFreeDel = request()->boolean('freeDelivery');
-                            $delParams = array_merge(request()->query(), ['freeDelivery' => $hasFreeDel ? null : 'true', 'page' => 1]);
+                            $hasFreeDel = request()->boolean('freeDelivery') || request()->boolean('free_delivery');
+                            $delParams = array_merge(request()->query(), ['freeDelivery' => $hasFreeDel ? null : 'true', 'free_delivery' => null, 'page' => 1]);
 
-                            $hasDeals = request()->boolean('deals');
-                            $dealsParams = array_merge(request()->query(), ['deals' => $hasDeals ? null : 'true', 'page' => 1]);
+                            $hasDeals = request()->boolean('deals') || request()->boolean('has_deals');
+                            $dealsParams = array_merge(request()->query(), ['deals' => $hasDeals ? null : 'true', 'has_deals' => null, 'page' => 1]);
                         @endphp
 
                         <a href="/shops?{{ http_build_query(array_filter($branchedParams)) }}"
@@ -341,8 +380,8 @@
                                         <div class="text-base font-black leading-tight text-[var(--accent-dark)] md:text-lg">
                                             ৳{{ number_format($shop->inspection_fee ?: 200) }}
                                         </div>
-                                        <div class="text-[10px] font-semibold text-[var(--muted-foreground)]">
-                                            {{ $shop->eta_minutes < 60 ? $shop->eta_minutes . ' min' : round($shop->eta_minutes / 60) . ' hr' }}
+                                        <div class="eta-display text-[10px] font-semibold text-[var(--muted-foreground)]">
+                                            {{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}
                                         </div>
                                     </div>
                                 </div>
@@ -361,8 +400,8 @@
                             </div>
                             <div>
                                 <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">ETA</span>
-                                <div class="text-xs font-bold text-[var(--foreground)] sm:text-sm">
-                                    {{ $shop->eta_minutes < 60 ? $shop->eta_minutes . ' min' : round($shop->eta_minutes / 60) . ' hr' }}
+                                <div class="eta-display text-xs font-bold text-[var(--foreground)] sm:text-sm">
+                                    {{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}
                                 </div>
                             </div>
                         </div>

@@ -123,6 +123,39 @@ class ShopDiscoveryTest extends TestCase
     }
 
     /** @test */
+    public function it_sorts_shops_by_nearest_distance_and_calculates_distance_based_eta()
+    {
+        RepairShop::factory()->create([
+            'name' => 'Far Distant Sony Rangs',
+            'area' => 'Sreemangal',
+            'city' => 'Sylhet',
+            'latitude' => 24.3065,
+            'longitude' => 91.7296,
+            'eta_minutes' => 45,
+        ]);
+
+        RepairShop::factory()->create([
+            'name' => 'Nearest Sony New Market',
+            'area' => 'New Market',
+            'city' => 'Dhaka',
+            'latitude' => 23.7339,
+            'longitude' => 90.3868,
+            'eta_minutes' => 120,
+        ]);
+
+        // Sort by distance from New Market coordinates (even when static eta_minutes was misleadingly 120 vs 45)
+        $response = $this->get('/shops/explore?q=Sony&sort=distance&lat=23.7333&lng=90.3836');
+        $response->assertStatus(200);
+
+        $shops = $response->viewData('shops');
+        $this->assertEquals('Nearest Sony New Market', $shops->first()->name);
+        $this->assertLessThan($shops->last()->distance_km, $shops->first()->distance_km);
+        // Dynamic ETA must be calculated from Haversine distance (minimum 10 min for <2.5km, ~10+ hr for >150km)
+        $this->assertEquals(10, $shops->first()->eta_minutes);
+        $this->assertGreaterThan(400, $shops->last()->eta_minutes);
+    }
+
+    /** @test */
     public function it_paginates_results()
     {
         // Create more shops to trigger pagination

@@ -123,6 +123,25 @@ const MeramotGeolocation = {
         return distanceKm.toFixed(1) + 'km';
     },
 
+    estimateTravelTime(distanceKm) {
+        const averageSpeedKmh = 15;
+        const minutes = Math.round((distanceKm / averageSpeedKmh) * 60);
+        return Math.max(10, minutes);
+    },
+
+    formatEta(minutes) {
+        const mins = Math.max(10, Math.round(minutes));
+        if (mins < 60) {
+            return `${mins} min`;
+        }
+        const hours = Math.floor(mins / 60);
+        const rem = mins % 60;
+        if (rem === 0 || hours >= 4) {
+            return `${Math.round(mins / 60)} hr`;
+        }
+        return `${hours} hr ${rem} min`;
+    },
+
     async fetchNearbyShops(lat, lng, radiusKm = 10) {
         const response = await fetch(`/api/shops/nearby?lat=${lat}&lng=${lng}&radius=${radiusKm}`);
         return await response.json();
@@ -518,26 +537,75 @@ const MeramotLocationPicker = {
 };
 
 /* ============================================================================
- * DOM Ready Bindings (Distance Badges & Form Synchronization)
+ * DOM Ready Bindings (Distance Badges, Dynamic ETA & Distance Sort Sync)
  * ============================================================================ */
 function renderShopDistanceBadges(userLat, userLng) {
     if (typeof userLat !== 'number' || typeof userLng !== 'number' || isNaN(userLat) || isNaN(userLng)) {
         return;
     }
 
-    document.querySelectorAll('[data-shop-lat][data-shop-lng]').forEach((shopCard) => {
+    const cards = Array.from(document.querySelectorAll('[data-shop-lat][data-shop-lng]'));
+    cards.forEach((shopCard) => {
         const shopLat = parseFloat(shopCard.dataset.shopLat);
         const shopLng = parseFloat(shopCard.dataset.shopLng);
 
         if (!isNaN(shopLat) && !isNaN(shopLng)) {
             const distance = MeramotGeolocation.calculateDistance(userLat, userLng, shopLat, shopLng);
+            shopCard.dataset.computedDistanceKm = String(distance);
+
             const distanceEl = shopCard.querySelector('.distance-display');
             if (distanceEl) {
                 distanceEl.textContent = MeramotGeolocation.formatDistance(distance);
                 distanceEl.classList.remove('hidden');
             }
+
+            const etaMinutes = MeramotGeolocation.estimateTravelTime(distance);
+            const etaFormatted = MeramotGeolocation.formatEta(etaMinutes);
+            shopCard.querySelectorAll('.eta-display').forEach((etaEl) => {
+                etaEl.textContent = etaFormatted;
+            });
         }
     });
+
+    // Inject user's pinned coordinates into Nearest Distance sort links so server SQL sorts from exact pin
+    document.querySelectorAll('a[data-sort-link="distance"]').forEach((link) => {
+        try {
+            const u = new URL(link.href, window.location.origin);
+            u.searchParams.set('lat', userLat.toFixed(5));
+            u.searchParams.set('lng', userLng.toFixed(5));
+            link.href = u.pathname + '?' + u.searchParams.toString();
+        } catch (e) {}
+    });
+
+    // Ensure search forms preserve lat/lng when sorting by distance
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('sort') === 'distance') {
+        document.querySelectorAll('form[action="/shops"]').forEach((form) => {
+            ['lat', 'lng', 'sort'].forEach((field) => {
+                let input = form.querySelector(`input[name="${field}"]`);
+                if (!input) {
+                    input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = field;
+                    form.appendChild(input);
+                }
+                if (field === 'lat') input.value = userLat.toFixed(5);
+                if (field === 'lng') input.value = userLng.toFixed(5);
+                if (field === 'sort') input.value = 'distance';
+            });
+        });
+
+        // If the page loaded with sort=distance, ensure visible cards are ordered strictly ascending by distance
+        if (cards.length > 1 && cards[0].parentElement) {
+            const parent = cards[0].parentElement;
+            const sorted = [...cards].sort((a, b) => {
+                const da = parseFloat(a.dataset.computedDistanceKm ?? '999999');
+                const db = parseFloat(b.dataset.computedDistanceKm ?? '999999');
+                return da - db;
+            });
+            sorted.forEach((card) => parent.appendChild(card));
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -557,18 +625,33 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const urlParams = new URLSearchParams(window.location.search);
+    const stored = MeramotLocationPicker.parseStoredLocation();
+
     if (urlParams.has('lat') && urlParams.has('lng')) {
         renderShopDistanceBadges(parseFloat(urlParams.get('lat')), parseFloat(urlParams.get('lng')));
-    } else {
-        const stored = MeramotLocationPicker.parseStoredLocation();
-        if (stored && typeof stored.lat === 'number' && typeof stored.lng === 'number') {
-            renderShopDistanceBadges(stored.lat, stored.lng);
+    } else if (stored && typeof stored.lat === 'number' && typeof stored.lng === 'number') {
+        // If user selected sort=distance or maxDistanceKm without lat/lng in URL, sync URL with their pinned coordinates
+        if ((urlParams.get('sort') === 'distance' || urlParams.has('maxDistanceKm')) && window.location.pathname.startsWith('/shops')) {
+            const nextUrl = new URL(window.location.href);
+            nextUrl.searchParams.set('lat', stored.lat.toFixed(5));
+            nextUrl.searchParams.set('lng', stored.lng.toFixed(5));
+            window.location.replace(nextUrl.toString());
+            return;
         }
+        renderShopDistanceBadges(stored.lat, stored.lng);
     }
 
     window.addEventListener('meramot-location-changed', function (e) {
         const loc = e.detail;
         if (loc && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
+            const currentParams = new URLSearchParams(window.location.search);
+            if ((currentParams.get('sort') === 'distance' || currentParams.has('maxDistanceKm')) && window.location.pathname.startsWith('/shops')) {
+                const nextUrl = new URL(window.location.href);
+                nextUrl.searchParams.set('lat', loc.lat.toFixed(5));
+                nextUrl.searchParams.set('lng', loc.lng.toFixed(5));
+                window.location.href = nextUrl.toString();
+                return;
+            }
             renderShopDistanceBadges(loc.lat, loc.lng);
         }
     });

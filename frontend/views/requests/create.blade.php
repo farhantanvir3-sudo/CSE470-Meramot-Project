@@ -138,22 +138,127 @@
                 <textarea name="issue_description" rows="4" placeholder="Describe symptoms: Was there any liquid spill? Does the fan spin? Did it drop? Any smoke or burning odor?" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 leading-relaxed outline-none" required></textarea>
             </div>
 
-            <!-- 4.5. Photo Upload -->
-            <div>
-                <label class="block font-bold text-[var(--foreground)] mb-1">Upload Device Photos (Optional)</label>
-                <p class="text-[11px] text-[var(--muted-foreground)] mb-2">
-                    Attach up to 5 photos showing the issue, cracks, water damage indicators, or error screens (Max 5MB each)
-                </p>
-                <input 
-                    type="file" 
-                    name="photos[]" 
-                    multiple 
-                    accept="image/jpeg,image/jpg,image/png,image/webp" 
-                    class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-[var(--accent-dark)] file:text-white hover:file:opacity-90"
+            <!-- 4.5. Interactive Dashed Dropzone Photo Upload -->
+            <div
+                x-data="{
+                    files: [],
+                    dragging: false,
+                    formatSize(bytes) {
+                        const kb = bytes / 1024;
+                        return kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : Math.round(kb) + ' KB';
+                    },
+                    syncInputFiles() {
+                        const dt = new DataTransfer();
+                        this.files.forEach(item => dt.items.add(item.raw));
+                        this.$refs.photosInput.files = dt.files;
+                    },
+                    addFiles(fileList) {
+                        if (!fileList || !fileList.length) return;
+                        Array.from(fileList).forEach(file => {
+                            if (this.files.length >= 5) return;
+                            if (!file.type.startsWith('image/')) return;
+                            const ext = (file.type.split('/')[1] || 'IMG').toUpperCase();
+                            this.files.push({
+                                id: Math.random().toString(36).slice(2),
+                                raw: file,
+                                name: file.name,
+                                size: this.formatSize(file.size),
+                                type: ext,
+                                url: URL.createObjectURL(file)
+                            });
+                        });
+                        this.syncInputFiles();
+                    },
+                    removePhoto(idx) {
+                        const removed = this.files[idx];
+                        if (removed && removed.url) URL.revokeObjectURL(removed.url);
+                        this.files.splice(idx, 1);
+                        this.syncInputFiles();
+                    },
+                    clearAll() {
+                        this.files.forEach(f => f.url && URL.revokeObjectURL(f.url));
+                        this.files = [];
+                        this.$refs.photosInput.value = '';
+                    }
+                }"
+            >
+                <div class="mb-1.5 flex items-center justify-between">
+                    <div>
+                        <label class="block font-bold text-[var(--foreground)]">
+                            <i class="fa-solid fa-images mr-1.5 text-[var(--accent-dark)]"></i>Upload Device Photos (Optional)
+                        </label>
+                        <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                            Attach up to 5 photos showing hardware symptoms, cracks, liquid indicators, or error screens (Max 5MB each)
+                        </p>
+                    </div>
+                    <template x-if="files.length > 0">
+                        <div class="flex items-center gap-2">
+                            <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800" x-text="files.length + ' / 5 selected'"></span>
+                            <button type="button" @click="clearAll()" class="text-[11px] font-bold text-rose-700 hover:underline">Clear all</button>
+                        </div>
+                    </template>
+                </div>
+
+                <input
+                    x-ref="photosInput"
+                    type="file"
+                    name="photos[]"
+                    multiple
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    class="hidden"
+                    @change="addFiles($event.target.files)"
                 >
-                <p class="text-[10px] text-[var(--muted-foreground)] mt-1">
-                    Supported: JPG, PNG, WebP • Max 5 files • 5MB per file
-                </p>
+
+                <!-- Interactive Dashed Dropzone Card -->
+                <div
+                    @dragover.prevent="dragging = true"
+                    @dragleave.prevent="dragging = false"
+                    @drop.prevent="dragging = false; addFiles($event.dataTransfer.files)"
+                    :class="dragging ? 'border-[#163625] bg-[#e4f3df] scale-[1.005]' : (files.length > 0 ? 'border-emerald-600/60 bg-white' : 'border-[#b9cfb2] bg-[var(--mint-100)]/60 hover:border-[#163625] hover:bg-white/80')"
+                    class="rounded-2xl border-2 border-dashed p-4 transition-all duration-200 shadow-sm space-y-3.5"
+                >
+                    <div
+                        @click="$refs.photosInput.click()"
+                        class="group flex cursor-pointer flex-col items-center justify-center py-3 text-center"
+                    >
+                        <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                            <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                        </div>
+                        <p class="text-xs font-extrabold text-[var(--foreground)]">
+                            Click to choose device photos <span class="font-normal text-[var(--muted-foreground)]">or drag &amp; drop here</span>
+                        </p>
+                        <p class="mt-0.5 text-[10px] text-[var(--muted-foreground)]">
+                            Supported: JPG, PNG, WebP &bull; Up to 5 photos &bull; Max 5MB per photo
+                        </p>
+                    </div>
+
+                    <!-- Live Image Thumbnail Preview Grid -->
+                    <template x-if="files.length > 0">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 pt-2 border-t border-[#e2ece0]">
+                            <template x-for="(item, idx) in files" :key="item.id">
+                                <div class="group relative overflow-hidden rounded-xl border border-[#c8dac2] bg-[#f8fbf6] p-1.5 shadow-sm">
+                                    <!-- Top-right ✕ Remove Button -->
+                                    <button
+                                        type="button"
+                                        @click.stop="removePhoto(idx)"
+                                        title="Remove photo"
+                                        class="absolute right-2 top-2 z-10 inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-600 text-[11px] font-bold text-white shadow transition hover:scale-105 hover:bg-rose-700"
+                                    >
+                                        ✕
+                                    </button>
+                                    <div class="h-24 w-full overflow-hidden rounded-lg bg-white flex items-center justify-center">
+                                        <img :src="item.url" :alt="item.name" class="h-full w-full object-cover">
+                                    </div>
+                                    <div class="mt-1.5 flex items-center justify-between gap-1 px-0.5">
+                                        <span class="shrink-0 rounded bg-[#eef5ea] border border-[#c8dac2] px-1.5 py-0.5 text-[9px] font-extrabold text-[#163625]" x-text="item.type"></span>
+                                        <span class="truncate text-[10px] font-semibold text-[#163625]" x-text="item.name"></span>
+                                    </div>
+                                    <div class="px-0.5 text-[9px] text-[#5e6d64]" x-text="item.size"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
             </div>
 
             <!-- 5. Logistics & OpenStreetMap Pickup Location Picker -->
