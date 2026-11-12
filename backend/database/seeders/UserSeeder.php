@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\DeliveryAgent;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -145,21 +146,41 @@ class UserSeeder extends Seeder
                 ->value('id');
         }
 
+        // Migrate any legacy demo rider email in-place when re-seeding an existing database
+        $legacyDemoRider = User::where('email', 'rider.demo@meramot.test')->first();
+        if ($legacyDemoRider && !User::where('email', 'rahim.uddin@meramotbd.com')->exists()) {
+            $legacyDemoRider->update(['email' => 'rahim.uddin@meramotbd.com']);
+        }
+        $legacyCtgRider = User::where('email', 'ctg.rider@meramot.test')->first();
+        if ($legacyCtgRider && !User::where('email', 'tariqul.ctg@meramotbd.com')->exists()) {
+            $legacyCtgRider->update(['email' => 'tariqul.ctg@meramotbd.com']);
+        }
+
+        $demoRiderPlainPassword = 'MRM#DemoRider2026';
+        $ctgRiderPlainPassword = 'MRM#CtgRider2026';
+
         $approvedRiderUser = User::updateOrCreate(
-            ['email' => 'rider.demo@meramot.test'],
+            ['email' => 'rahim.uddin@meramotbd.com'],
             [
                 'name' => 'Rahim Uddin (Express Rider)',
                 'username' => 'rahim_rider',
-                'password' => $passwordHash,
+                'password' => Hash::make($demoRiderPlainPassword),
                 'phone' => '+8801799998888',
                 'role' => 'delivery_agent',
+                'status' => 'active',
                 'is_active' => true,
+                'is_email_verified' => true,
             ]
         );
 
         $approvedDhakaAgent = DeliveryAgent::updateOrCreate(
             ['user_id' => $approvedRiderUser->id],
             [
+                'applicant_name' => 'Rahim Uddin (Express Rider)',
+                'applicant_phone' => '+8801799998888',
+                'personal_email' => 'rahim.uddin@gmail.com',
+                'company_email' => 'rahim.uddin@meramotbd.com',
+                'company_password_vault' => Crypt::encryptString($demoRiderPlainPassword),
                 'nid_number' => '1996269481011',
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'DK-0492811-A',
@@ -167,6 +188,7 @@ class UserSeeder extends Seeder
                 'status' => 'AVAILABLE',
                 'is_active' => true,
                 'rejection_reason' => null,
+                'approved_at' => now()->subDays(35),
                 'current_latitude' => 23.79250000,
                 'current_longitude' => 90.40520000,
                 'total_earnings' => 0.00,
@@ -183,20 +205,27 @@ class UserSeeder extends Seeder
         }
 
         $approvedCtgRiderUser = User::updateOrCreate(
-            ['email' => 'ctg.rider@meramot.test'],
+            ['email' => 'tariqul.ctg@meramotbd.com'],
             [
                 'name' => 'Tariqul Islam (Chattogram Rider)',
                 'username' => 'tariqul_ctg_rider',
-                'password' => $passwordHash,
+                'password' => Hash::make($ctgRiderPlainPassword),
                 'phone' => '+8801819776655',
                 'role' => 'delivery_agent',
+                'status' => 'active',
                 'is_active' => true,
+                'is_email_verified' => true,
             ]
         );
 
         $approvedCtgAgent = DeliveryAgent::updateOrCreate(
             ['user_id' => $approvedCtgRiderUser->id],
             [
+                'applicant_name' => 'Tariqul Islam (Chattogram Rider)',
+                'applicant_phone' => '+8801819776655',
+                'personal_email' => 'tariqul.ctg@gmail.com',
+                'company_email' => 'tariqul.ctg@meramotbd.com',
+                'company_password_vault' => Crypt::encryptString($ctgRiderPlainPassword),
                 'nid_number' => '1997319485522',
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'CTG-0519204-M',
@@ -204,6 +233,7 @@ class UserSeeder extends Seeder
                 'status' => 'AVAILABLE',
                 'is_active' => true,
                 'rejection_reason' => null,
+                'approved_at' => now()->subDays(20),
                 'current_latitude' => 22.32900000,
                 'current_longitude' => 91.81400000,
                 'total_earnings' => 0.00,
@@ -222,16 +252,22 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Kamal Hossain (Rider Applicant)',
                 'username' => 'kamal_applicant',
-                'password' => $passwordHash,
+                'password' => null,
                 'phone' => '+8801711223344',
-                'role' => 'customer',
-                'is_active' => true,
+                'role' => 'delivery_agent',
+                'status' => 'suspended',
+                'is_active' => false,
             ]
         );
 
         DeliveryAgent::updateOrCreate(
             ['user_id' => $pendingRider1->id],
             [
+                'applicant_name' => 'Kamal Hossain (Rider Applicant)',
+                'applicant_phone' => '+8801711223344',
+                'personal_email' => 'kamal.rider@gmail.com',
+                'company_email' => null,
+                'company_password_vault' => null,
                 'nid_number' => '1998269482045',
                 'vehicle_type' => 'motorcycle',
                 'license_number' => 'DK-0837421-M',
@@ -248,16 +284,22 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Tarek Mahmud (Rider Applicant)',
                 'username' => 'tarek_applicant',
-                'password' => $passwordHash,
+                'password' => null,
                 'phone' => '+8801811556677',
-                'role' => 'customer',
-                'is_active' => true,
+                'role' => 'delivery_agent',
+                'status' => 'suspended',
+                'is_active' => false,
             ]
         );
 
         DeliveryAgent::updateOrCreate(
             ['user_id' => $pendingRider2->id],
             [
+                'applicant_name' => 'Tarek Mahmud (Rider Applicant)',
+                'applicant_phone' => '+8801811556677',
+                'personal_email' => 'tarek.scooter@gmail.com',
+                'company_email' => null,
+                'company_password_vault' => null,
                 'nid_number' => '2000269483099',
                 'vehicle_type' => 'scooter',
                 'license_number' => 'DK-0912345-S',
@@ -274,16 +316,22 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Sohag Mia (Rider Applicant)',
                 'username' => 'sohag_applicant',
-                'password' => $passwordHash,
+                'password' => null,
                 'phone' => '+8801911889900',
-                'role' => 'customer',
-                'is_active' => true,
+                'role' => 'delivery_agent',
+                'status' => 'suspended',
+                'is_active' => false,
             ]
         );
 
         DeliveryAgent::updateOrCreate(
             ['user_id' => $rejectedRider->id],
             [
+                'applicant_name' => 'Sohag Mia (Rider Applicant)',
+                'applicant_phone' => '+8801911889900',
+                'personal_email' => 'sohag.van@gmail.com',
+                'company_email' => null,
+                'company_password_vault' => null,
                 'nid_number' => '1995269489900',
                 'vehicle_type' => 'van',
                 'license_number' => 'DK-0112233-V',

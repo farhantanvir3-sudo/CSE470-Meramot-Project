@@ -210,62 +210,89 @@ class GmailApiService
     }
 
     /**
-     * Feature R1: Send Delivery Agent Application Received Acknowledgement.
+     * Feature R1: Send Delivery Agent Application Received / Resubmitted Acknowledgement.
      */
-    public function sendDeliveryRegistrationAcknowledgement(string $toEmail, string $recipientName): array
-    {
-        $subject = 'Delivery Registration Received - Under Review | Meramot';
+    public function sendDeliveryRegistrationAcknowledgement(
+        string $personalEmail,
+        string $recipientName,
+        bool $isResubmission = false
+    ): array {
+        $statusUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/delivery-agent/status';
+        $subject = $isResubmission
+            ? 'Updated Delivery Application Received - Pending Review | Meramot'
+            : 'Delivery Registration Received - Under Review | Meramot';
+        $heading = $isResubmission
+            ? 'Updated Delivery Partner Application Received'
+            : 'Delivery Partner Registration Received';
+
         $html = "
             <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px;\">
-                <h2 style=\"color: #214c34; margin-top: 0;\">Delivery Partner Registration Received</h2>
+                <h2 style=\"color: #214c34; margin-top: 0;\">{$heading}</h2>
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
-                <p>We have received your delivery partner onboarding application and NID/license documents.</p>
-                <p>Our logistics verification desk will review your submission and email your official Rider Portal login credentials once approved.</p>
+                <p>We have received your delivery partner onboarding application and verification documents.</p>
+                <div style=\"background-color: #eef5ea; padding: 14px 18px; border-radius: 12px; margin: 18px 0; border: 1px solid #cbe0c2;\">
+                    <p style=\"margin: 4px 0;\"><strong>What happens next:</strong></p>
+                    <ul style=\"margin: 6px 0 0 18px; padding: 0;\">
+                        <li>If <strong>accepted</strong>, your auto-generated unique <code>@meramotbd.com</code> company email and secure system password will be emailed here to <strong>" . e($personalEmail) . "</strong>.</li>
+                        <li>If <strong>rejected</strong>, our admin verification team's reason will be emailed here and shown on the Check Application Status page so you can edit and resubmit anytime.</li>
+                    </ul>
+                </div>
+                <p>You can check your application status or edit your application anytime at <a href=\"{$statusUrl}\">{$statusUrl}</a> using OTP verification on this personal email.</p>
                 <p style=\"margin-top: 24px;\">Thank you,<br/><strong>Meramot Delivery Operations</strong></p>
             </div>
         ";
 
-        return $this->sendEmail($toEmail, $subject, $html);
+        return $this->sendEmail($personalEmail, $subject, $html);
     }
 
     /**
-     * Feature R1: Send Automated Delivery Partner Login Credentials on Admin Approval.
+     * Feature R1: Send Official `@meramotbd.com` Company Email & System Password to Personal Email.
+     * Used both upon one-time Admin Approval and on OTP-verified "Forgot Company Credentials".
      */
     public function sendDeliveryApprovalCredentials(
-        string $toEmail,
+        string $personalEmail,
         string $recipientName,
-        string $username,
-        string $plainPassword
+        string $companyEmail,
+        string $plainPassword,
+        bool $isResend = false
     ): array {
-        $loginUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/login';
-        $subject = 'Delivery Partner Approved - Your Meramot Login Credentials';
+        $loginUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/delivery/login';
+        $subject = $isResend
+            ? 'Your Meramot Delivery Partner Company Credentials (Reminder)'
+            : 'Delivery Partner Approved - Your @meramotbd.com Company Credentials';
+        $heading = $isResend
+            ? 'Your Meramot Company Login Credentials'
+            : 'Delivery Partner Registration Approved!';
+        $intro = $isResend
+            ? 'As requested from the verified Check Application Status page, here are your assigned Meramot Delivery Partner company credentials:'
+            : 'Congratulations! Your identity and driving license documents have been verified and approved by Meramot Logistics. Use your official company credentials below to sign in to the Delivery Partner Portal:';
+
         $html = "
             <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px;\">
-                <h2 style=\"color: #214c34; margin-top: 0;\">Delivery Partner Registration Approved!</h2>
+                <h2 style=\"color: #214c34; margin-top: 0;\">{$heading}</h2>
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
-                <p>Congratulations! Your NID and driving license credentials have been verified and approved by Meramot Logistics.</p>
-                <p>Use the generated credentials below to sign in to the Meramot Delivery Partner Portal:</p>
+                <p>{$intro}</p>
                 <div style=\"background-color: #eef5ea; padding: 16px 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #cbe0c2;\">
-                    <p style=\"margin: 4px 0;\"><strong>Login Email:</strong> " . e($toEmail) . "</p>
-                    <p style=\"margin: 4px 0;\"><strong>Rider Username:</strong> <code>" . e($username) . "</code></p>
-                    <p style=\"margin: 4px 0;\"><strong>Generated Password:</strong> <code>" . e($plainPassword) . "</code></p>
+                    <p style=\"margin: 6px 0;\"><strong>Company Email:</strong> <code>" . e($companyEmail) . "</code></p>
+                    <p style=\"margin: 6px 0;\"><strong>Company Password:</strong> <code>" . e($plainPassword) . "</code></p>
                 </div>
+                <p style=\"font-size: 12px; color: #5e6d64;\">Note: Your <code>@meramotbd.com</code> company email and system-generated password are fixed for security and cannot be changed manually. Keep this email safe.</p>
                 <div style=\"margin: 24px 0; text-align: center;\">
-                    <a href=\"{$loginUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 26px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Sign In to Rider Portal</a>
+                    <a href=\"{$loginUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 26px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Sign In to Delivery Partner Portal</a>
                 </div>
                 <p style=\"margin-top: 20px;\">Safe riding,<br/><strong>Meramot Logistics Team</strong></p>
             </div>
         ";
 
-        return $this->sendEmail($toEmail, $subject, $html);
+        return $this->sendEmail($personalEmail, $subject, $html);
     }
 
     /**
-     * Feature R1: Send Delivery Agent Rejection Notice with Reason.
+     * Feature R1: Send Delivery Agent Rejection Notice with Reason to Personal Email.
      */
-    public function sendDeliveryRejectionNotice(string $toEmail, string $recipientName, string $reason): array
+    public function sendDeliveryRejectionNotice(string $personalEmail, string $recipientName, string $reason): array
     {
-        $reapplyUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/delivery-agent/register';
+        $statusUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/delivery-agent/status';
         $subject = 'Update on Your Meramot Delivery Partner Application';
         $html = "
             <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #f3d4d4; border-radius: 16px;\">
@@ -273,14 +300,40 @@ class GmailApiService
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
                 <p>Our verification team reviewed your delivery partner application and requires the following correction before approval:</p>
                 <div style=\"background-color: #fef2f2; padding: 14px 18px; border-radius: 10px; margin: 18px 0; color: #7f1d1d; border: 1px solid #fecaca;\">
-                    <strong>Reason:</strong> " . e($reason) . "
+                    <strong>Reason for Rejection:</strong> " . e($reason) . "
                 </div>
-                <p>You can update your documents and re-submit your application anytime at <a href=\"{$reapplyUrl}\">{$reapplyUrl}</a>.</p>
+                <p>Verify your personal email via OTP on the <strong>Check Application Status</strong> page to edit and resubmit your application for fresh admin review:</p>
+                <div style=\"margin: 22px 0; text-align: center;\">
+                    <a href=\"{$statusUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Check Status &amp; Edit Application</a>
+                </div>
                 <p style=\"margin-top: 20px;\">Regards,<br/><strong>Meramot Logistics Team</strong></p>
             </div>
         ";
 
-        return $this->sendEmail($toEmail, $subject, $html);
+        return $this->sendEmail($personalEmail, $subject, $html);
+    }
+
+    /**
+     * Feature R1: Send 6-Digit OTP to Personal Email for "Check Application Status" Verification.
+     */
+    public function sendDeliveryStatusOtpEmail(string $personalEmail, string $recipientName, string $otp): array
+    {
+        $subject = "Meramot Delivery Partner: Application Status OTP ({$otp})";
+        $html = "
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px; background: #ffffff;\">
+                <h2 style=\"color: #214c34; margin-top: 0; margin-bottom: 8px;\">Verify Your Application Status Check</h2>
+                <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
+                <p>Enter the 6-digit OTP below to view your Meramot Delivery Partner application status, edit your application, or retrieve your company credentials:</p>
+                <div style=\"background-color: #eef5ea; padding: 18px; border-radius: 12px; margin: 22px 0; text-align: center; border: 1px solid #cbe0c2;\">
+                    <span style=\"font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; color: #5a7566; display: block; margin-bottom: 6px;\">Application Status OTP</span>
+                    <span style=\"font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #214c34;\">{$otp}</span>
+                </div>
+                <p style=\"font-size: 13px; color: #5e6d64;\">This code expires in <strong>10 minutes</strong>.</p>
+                <p style=\"margin-top: 24px; font-size: 13px; color: #214c34;\">Thanks,<br/><strong>Meramot Delivery Operations</strong></p>
+            </div>
+        ";
+
+        return $this->sendEmail($personalEmail, $subject, $html);
     }
 
     /**

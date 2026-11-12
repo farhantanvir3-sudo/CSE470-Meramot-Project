@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 // Import all single-CRUD & marketplace controllers for R1 to R20
 use App\Http\Controllers\AdminDashboardController;     // Unified Admin Console Hub — Farhan
 use App\Http\Controllers\AdminDeliveryController;      // R1 - Nafiul
+use App\Http\Controllers\DeliveryPortalController;     // R1/R2/R3/R4 Delivery Partner Portal & Company Auth
 use App\Http\Controllers\DeliveryJobController;        // R2 - Nafiul
 use App\Http\Controllers\RiderLedgerController;        // R3 - Nafiul
 use App\Http\Controllers\TrackingController;           // R4 - Nafiul
@@ -75,19 +76,39 @@ Route::get('/forgot-password', fn (Request $r) => app(ComingSoonController::clas
 // MODULE: Delivery & Rider Logistics (Assigned: Md. Nafiul Islam [22299035])
 // -------------------------------------------------------------
 Route::prefix('delivery')->group(function () {
+    Route::get('/login', [DeliveryPortalController::class, 'showLogin'])->name('delivery.login');       // R1 Company Login
+    Route::post('/login', [DeliveryPortalController::class, 'login'])->name('delivery.login.submit');   // R1 Company Login
+    Route::post('/logout', [DeliveryPortalController::class, 'logout'])->name('delivery.logout');       // R1 Sign Out
+    Route::get('/', [DeliveryPortalController::class, 'dashboard'])->name('delivery.dashboard');        // R1/R2 Rider Dashboard
+    Route::get('/map', [DeliveryPortalController::class, 'map'])->name('delivery.map');                 // R4 Live Rider Map
+    Route::post('/location', [DeliveryPortalController::class, 'updateLocation'])->name('delivery.location'); // R4 GPS Sync
+    Route::get('/order/{id}', [DeliveryPortalController::class, 'orderDetails'])->name('delivery.order.show'); // R2 Order Details
+    Route::post('/order/{id}/status', [DeliveryPortalController::class, 'advanceOrderStatus'])->name('delivery.order.status'); // R2 Milestone
+    Route::get('/profile', [DeliveryPortalController::class, 'profile'])->name('delivery.profile');     // R1 Rider Profile
+
     Route::get('/jobs-queue', [DeliveryJobController::class, 'index'])->name('delivery.jobs-queue');   // R2
     Route::post('/jobs/{id}/claim', [DeliveryJobController::class, 'claimJob']);                       // R2
     Route::post('/jobs/{id}/milestone', [DeliveryJobController::class, 'updateMilestone']);            // R2
     Route::get('/earnings', [RiderLedgerController::class, 'index'])->name('delivery.earnings');       // R3
     Route::post('/payout/request', [RiderLedgerController::class, 'requestPayout']);                   // R3
 });
-// Feature R1 Routes (Added by Md. Nafiul Islam [22299035] in c6c0781 & fdf5e6f)
+// Feature R1 Routes (Added by Md. Nafiul Islam [22299035] in c6c0781 & fdf5e6f + Renewed Onboarding & OTP Status Flow)
 Route::get('/admin/delivery-agents/pending', [AdminDeliveryController::class, 'index'])->name('admin.delivery-agents.pending');   // R1
 Route::post('/admin/delivery-agents/{id}/approve', [AdminDeliveryController::class, 'approve'])->name('admin.delivery-agents.approve'); // R1
 Route::post('/admin/delivery-agents/{id}/reject', [AdminDeliveryController::class, 'reject'])->name('admin.delivery-agents.reject');     // R1
 Route::post('/admin/delivery-agents/{id}/block', [AdminDeliveryController::class, 'block'])->name('admin.delivery-agents.block');         // R1
+Route::delete('/admin/delivery-agents/{id}', [AdminDeliveryController::class, 'destroy'])->name('admin.delivery-agents.destroy');         // R1 Delete
+Route::get('/admin/delivery-agents/{id}/document/{type}', [AdminDeliveryController::class, 'viewDocument'])->name('admin.delivery-agents.document'); // R1 Doc Preview
+
 Route::get('/delivery-agent/register', [AdminDeliveryController::class, 'create'])->name('delivery.register');                            // R1
 Route::post('/delivery-agent/register', [AdminDeliveryController::class, 'store'])->name('delivery.register.store');                      // R1
+Route::get('/delivery-agent/status', [AdminDeliveryController::class, 'showStatus'])->name('delivery.status');                            // R1 OTP Status
+Route::post('/delivery-agent/status/send-otp', [AdminDeliveryController::class, 'sendStatusOtp'])->name('delivery.status.send-otp');      // R1
+Route::post('/delivery-agent/status/verify-otp', [AdminDeliveryController::class, 'verifyStatusOtp'])->name('delivery.status.verify-otp'); // R1
+Route::post('/delivery-agent/status/reset', [AdminDeliveryController::class, 'resetStatusCheck'])->name('delivery.status.reset');          // R1
+Route::post('/delivery-agent/status/resend-credentials', [AdminDeliveryController::class, 'resendCompanyCredentials'])->name('delivery.status.resend-credentials'); // R1 Forgot Credentials
+Route::get('/delivery-agent/edit', [AdminDeliveryController::class, 'editApplication'])->name('delivery.edit');                           // R1 Unlimited Edit
+Route::post('/delivery-agent/edit', [AdminDeliveryController::class, 'updateApplication'])->name('delivery.edit.update');                 // R1
 Route::get('/tracking/{jobId}', [TrackingController::class, 'showMap'])->name('tracking.show');        // R4
 Route::get('/support/rider-chat/{riderId}', [RiderChatController::class, 'index']);                    // R5
 Route::post('/support/rider-chat/send', [RiderChatController::class, 'sendMessage']);                  // R5

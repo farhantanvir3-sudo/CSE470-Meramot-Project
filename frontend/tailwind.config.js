@@ -3,6 +3,7 @@ module.exports = {
   content: [
     "./src/**/*.{html,js,ts,jsx,tsx}",
     "./public/**/*.html",
+    "./views/**/*.blade.php",
     "../backend/resources/views/**/*.blade.php"
   ],
   theme: {
