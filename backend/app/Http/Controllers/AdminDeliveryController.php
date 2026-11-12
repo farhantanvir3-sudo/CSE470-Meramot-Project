@@ -167,11 +167,11 @@ class AdminDeliveryController extends Controller
             'phone' => $isJsonApi ? 'nullable|string|max:30' : 'required|string|max:30',
             'personal_email' => $isJsonApi ? 'nullable|email|max:150' : 'required_without:email|nullable|email|max:150',
             'email' => 'nullable|email|max:150',
-            'profile_picture' => 'nullable|file|mimes:jpeg,jpg,png,webp|max:15360',
-            'nid_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
-            'license_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
-            'education_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
-            'cv_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'profile_picture' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
+            'nid_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
+            'license_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
+            'education_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
+            'cv_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
             'profile_picture_url' => 'nullable|string',
             'nid_document_url' => 'nullable|string',
             'license_document_url' => 'nullable|string',
@@ -218,66 +218,91 @@ class AdminDeliveryController extends Controller
         $applicantPhone = trim((string) ($validated['phone'] ?? ($isJsonApi ? ($request->user()?->phone ?? '+8801700000000') : '')));
         $vehicleType = $validated['vehicle_type'] === 'car' ? 'van' : $validated['vehicle_type'];
 
-        $agent = DB::transaction(function () use (
-            $request,
-            $isJsonApi,
-            $validated,
-            $personalEmail,
-            $applicantName,
-            $applicantPhone,
-            $vehicleType,
-            $profilePicUrl,
-            $nidDocUrl,
-            $licenseDocUrl,
-            $eduDocUrl,
-            $cvDocUrl
-        ) {
-            if ($isJsonApi && $request->user()) {
-                $user = $request->user();
-            } else {
-                // Create an isolated inactive User record placeholder until Admin approves & assigns `@meramotbd.com`
-                $placeholderEmail = 'pending.' . Str::uuid() . '@pending.meramot.internal';
-                $user = User::create([
-                    'name' => $applicantName,
-                    'username' => 'pending_rider_' . strtolower(Str::random(8)),
-                    'email' => $placeholderEmail,
-                    'phone' => $applicantPhone !== '' ? $applicantPhone : null,
-                    'password' => null,
-                    'role' => 'delivery_agent',
-                    'status' => 'suspended',
-                    'is_active' => false,
-                    'avatar_url' => $profilePicUrl,
-                ]);
-            }
-
-            return DeliveryAgent::updateOrCreate(
-                ['user_id' => $user->id],
-                [
-                    'applicant_name' => $applicantName,
-                    'applicant_phone' => $applicantPhone !== '' ? $applicantPhone : null,
-                    'personal_email' => $personalEmail,
-                    'nid_number' => trim($validated['nid_number']),
-                    'vehicle_type' => $vehicleType,
-                    'license_number' => trim($validated['license_number']),
-                    'profile_picture_url' => $profilePicUrl,
-                    'nid_document_url' => $nidDocUrl,
-                    'license_document_url' => $licenseDocUrl,
-                    'education_document_url' => $eduDocUrl,
-                    'cv_document_url' => $cvDocUrl,
-                    'registration_status' => 'PENDING',
-                    'status' => 'OFFLINE',
-                    'is_active' => false,
-                    'rejection_reason' => null,
-                ]
-            );
-        });
-
-        if ($personalEmail) {
-            app(GmailApiService::class)->sendDeliveryRegistrationAcknowledgement(
+        try {
+            $agent = DB::transaction(function () use (
+                $request,
+                $isJsonApi,
+                $validated,
                 $personalEmail,
                 $applicantName,
-                false
-            );
+                $applicantPhone,
+                $vehicleType,
+                $profilePicUrl,
+                $nidDocUrl,
+                $licenseDocUrl,
+                $eduDocUrl,
+                $cvDocUrl
+            ) {
+                if ($isJsonApi && $request->user()) {
+                    $user = $request->user();
+                } else {
+                    // Create an isolated inactive User record placeholder until Admin approves & assigns `@meramotbd.com`
+                    $placeholderEmail = 'pending.' . Str::uuid() . '@pending.meramot.internal';
+                    $user = User::create([
+                        'name' => $applicantName,
+                        'username' => 'pending_rider_' . strtolower(Str::random(8)),
+                        'email' => $placeholderEmail,
+                        'phone' => $applicantPhone !== '' ? $applicantPhone : null,
+                        'password' => null,
+                        'role' => 'delivery_agent',
+                        'status' => 'suspended',
+                        'is_active' => false,
+                        'avatar_url' => $profilePicUrl,
+                    ]);
+                }
+
+                return DeliveryAgent::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'applicant_name' => $applicantName,
+                        'applicant_phone' => $applicantPhone !== '' ? $applicantPhone : null,
+                        'personal_email' => $personalEmail,
+                        'nid_number' => trim($validated['nid_number']),
+                        'vehicle_type' => $vehicleType,
+                        'license_number' => trim($validated['license_number']),
+                        'profile_picture_url' => $profilePicUrl,
+                        'nid_document_url' => $nidDocUrl,
+                        'license_document_url' => $licenseDocUrl,
+                        'education_document_url' => $eduDocUrl,
+                        'cv_document_url' => $cvDocUrl,
+                        'registration_status' => 'PENDING',
+                        'status' => 'OFFLINE',
+                        'is_active' => false,
+                        'rejection_reason' => null,
+                    ]
+                );
+            });
+        } catch (\Throwable $e) {
+            Log::error('[AdminDeliveryController@store] Failed to save delivery agent application', [
+                'email' => $personalEmail,
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+            ]);
+
+            if ($isJsonApi) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Could not submit application at this moment. Please try again.',
+                ], 500);
+            }
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'application' => 'Could not save your application due to a temporary database connection issue. Please try submitting again.',
+                ]);
+        }
+
+        if ($personalEmail) {
+            try {
+                app(GmailApiService::class)->sendDeliveryRegistrationAcknowledgement(
+                    $personalEmail,
+                    $applicantName,
+                    false
+                );
+            } catch (\Throwable $e) {
+                Log::warning('[AdminDeliveryController@store] Acknowledgement email failed: ' . $e->getMessage());
+            }
         }
 
         if ($isJsonApi) {
@@ -288,14 +313,14 @@ class AdminDeliveryController extends Controller
             ], 201);
         }
 
-        return redirect('/delivery-agent/register')
+        return redirect('/delivery/login')
             ->with('application_submitted_popup', [
                 'name' => $applicantName,
                 'personal_email' => $personalEmail,
             ])
             ->with(
                 'success',
-                "Application submitted! Once reviewed, your @meramotbd.com company credentials (or rejection reason) will be emailed from meramotbd.official@gmail.com to {$personalEmail}."
+                "Application submitted! Once reviewed, your @meramotbd.com company email and password (or rejection reason) will be emailed from meramotbd.official@gmail.com to {$personalEmail}."
             );
     }
 
@@ -517,11 +542,11 @@ class AdminDeliveryController extends Controller
             'nid_number' => 'required|string|max:30',
             'vehicle_type' => 'required|in:motorcycle,bicycle,scooter,van,car',
             'license_number' => 'required|string|max:50',
-            'profile_picture' => 'nullable|file|mimes:jpeg,jpg,png,webp|max:15360',
-            'nid_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
-            'license_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
-            'education_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
-            'cv_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'profile_picture' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
+            'nid_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
+            'license_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
+            'education_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
+            'cv_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
         ]);
 
         $previousStatus = $agent->registration_status;
@@ -535,49 +560,67 @@ class AdminDeliveryController extends Controller
         $eduDocUrl = $this->encodeUploadedDocument($request, 'education_document', $agent->education_document_url);
         $cvDocUrl = $this->encodeUploadedDocument($request, 'cv_document', $agent->cv_document_url);
 
-        DB::transaction(function () use (
-            $agent,
-            $applicantName,
-            $applicantPhone,
-            $validated,
-            $vehicleType,
-            $profilePicUrl,
-            $nidDocUrl,
-            $licenseDocUrl,
-            $eduDocUrl,
-            $cvDocUrl
-        ) {
-            // Whenever a REJECTED (or PENDING) application is edited, it goes back to PENDING for Admin review
-            $agent->update([
-                'applicant_name' => $applicantName,
-                'applicant_phone' => $applicantPhone,
-                'nid_number' => trim($validated['nid_number']),
-                'vehicle_type' => $vehicleType,
-                'license_number' => trim($validated['license_number']),
-                'profile_picture_url' => $profilePicUrl,
-                'nid_document_url' => $nidDocUrl,
-                'license_document_url' => $licenseDocUrl,
-                'education_document_url' => $eduDocUrl,
-                'cv_document_url' => $cvDocUrl,
-                'registration_status' => 'PENDING',
-                'rejection_reason' => null,
+        try {
+            DB::transaction(function () use (
+                $agent,
+                $applicantName,
+                $applicantPhone,
+                $validated,
+                $vehicleType,
+                $profilePicUrl,
+                $nidDocUrl,
+                $licenseDocUrl,
+                $eduDocUrl,
+                $cvDocUrl
+            ) {
+                // Whenever a REJECTED (or PENDING) application is edited, it goes back to PENDING for Admin review
+                $agent->update([
+                    'applicant_name' => $applicantName,
+                    'applicant_phone' => $applicantPhone,
+                    'nid_number' => trim($validated['nid_number']),
+                    'vehicle_type' => $vehicleType,
+                    'license_number' => trim($validated['license_number']),
+                    'profile_picture_url' => $profilePicUrl,
+                    'nid_document_url' => $nidDocUrl,
+                    'license_document_url' => $licenseDocUrl,
+                    'education_document_url' => $eduDocUrl,
+                    'cv_document_url' => $cvDocUrl,
+                    'registration_status' => 'PENDING',
+                    'rejection_reason' => null,
+                ]);
+
+                if ($agent->user) {
+                    $agent->user->update([
+                        'name' => $applicantName,
+                        'phone' => $applicantPhone,
+                        'avatar_url' => $profilePicUrl ?: $agent->user->avatar_url,
+                    ]);
+                }
+            });
+        } catch (\Throwable $e) {
+            Log::error('[AdminDeliveryController@updateApplication] Failed to update delivery agent application', [
+                'agent_id' => $agent->id,
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
             ]);
 
-            if ($agent->user) {
-                $agent->user->update([
-                    'name' => $applicantName,
-                    'phone' => $applicantPhone,
-                    'avatar_url' => $profilePicUrl ?: $agent->user->avatar_url,
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'application' => 'Could not save your application updates due to a temporary database connection issue. Please try again.',
                 ]);
-            }
-        });
+        }
 
         if ($agent->personal_email) {
-            $gmailService->sendDeliveryRegistrationAcknowledgement(
-                $agent->personal_email,
-                $applicantName,
-                true
-            );
+            try {
+                $gmailService->sendDeliveryRegistrationAcknowledgement(
+                    $agent->personal_email,
+                    $applicantName,
+                    true
+                );
+            } catch (\Throwable $e) {
+                Log::warning('[AdminDeliveryController@updateApplication] Acknowledgement email failed: ' . $e->getMessage());
+            }
         }
 
         AuditLog::create([

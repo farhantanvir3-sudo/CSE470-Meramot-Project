@@ -49,6 +49,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => str_contains((string) env('DATABASE_URL', ''), '-pooler.') ? null : 'public',
             'sslmode' => env('DB_SSLMODE', str_contains((string) env('DATABASE_URL', ''), '.neon.tech') ? 'require' : 'prefer'),
+            'options' => extension_loaded('pdo_pgsql') ? [
+                PDO::ATTR_EMULATE_PREPARES => true,
+            ] : [],
         ],
 
     ],

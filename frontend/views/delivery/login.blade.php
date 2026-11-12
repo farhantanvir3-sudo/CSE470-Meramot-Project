@@ -3,7 +3,64 @@
 @section('title', 'Delivery Partner Login | Meramot')
 
 @section('content')
-<div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
+@php
+    $submittedPopup = session('application_submitted_popup');
+@endphp
+<div
+    class="min-h-[80vh] flex items-center justify-center px-4 py-8"
+    x-data="{ showSubmittedModal: {{ $submittedPopup ? 'true' : 'false' }} }"
+>
+    @if($submittedPopup)
+        <div
+            x-show="showSubmittedModal"
+            x-cloak
+            class="fixed inset-0 z-[140] flex items-center justify-center p-4"
+        >
+            <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="showSubmittedModal = false"></div>
+            <div class="relative z-[141] w-full max-w-lg rounded-[2rem] border border-[var(--border)] bg-white p-7 shadow-2xl space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        <i class="fa-solid fa-envelope-circle-check text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800">Application Submitted &bull; Pending Review</span>
+                        <h2 class="text-xl font-black text-[#163625]">Check Your Personal Email for Updates</h2>
+                    </div>
+                </div>
+
+                <div class="rounded-2xl border border-[#cbe0c2] bg-[#eef5ea] p-4 text-xs text-[#163625] space-y-2 leading-relaxed">
+                    <p>
+                        Thank you, <strong>{{ $submittedPopup['name'] ?? 'Applicant' }}</strong>! Your delivery agent application has been queued for Admin verification.
+                    </p>
+                    <p>
+                        All official updates from <strong>meramotbd.official@gmail.com</strong> will be sent to your personal email:
+                        <strong class="font-mono underline">{{ $submittedPopup['personal_email'] ?? '' }}</strong>
+                    </p>
+                    <ul class="list-disc pl-5 space-y-1 text-[#163625]/90">
+                        <li><strong>If Accepted:</strong> Your auto-generated unique <code class="font-mono font-bold">@meramotbd.com</code> company email and secure system password will be emailed to your personal email.</li>
+                        <li><strong>If Rejected:</strong> The rejection notice along with the Admin's reason will be emailed to you and displayed on the <strong>Check Application Status</strong> page so you can edit and re-submit anytime.</li>
+                    </ul>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
+                    <a
+                        href="/delivery-agent/status"
+                        class="w-full sm:w-auto text-center rounded-full border-2 border-[#214c34] bg-[#eef5ea] px-5 py-2.5 text-xs font-bold text-[#214c34] hover:bg-[#dcebd5] transition"
+                    >
+                        Check Application Status
+                    </a>
+                    <button
+                        type="button"
+                        @click="showSubmittedModal = false"
+                        class="w-full sm:w-auto rounded-full bg-[#214c34] px-6 py-2.5 text-xs font-bold text-white hover:opacity-95 transition"
+                    >
+                        Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="flex w-full max-w-[460px] flex-col gap-6">
 
         <!-- Top Logo -->
@@ -39,6 +96,12 @@
                     Sign in using your approved <code class="font-mono font-semibold text-[#214c34]">@meramotbd.com</code> company email and system-generated password.
                 </p>
             </div>
+
+            @if(session('success'))
+                <div class="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-900 font-semibold">
+                    <i class="fa-solid fa-circle-check text-emerald-700 mr-1.5"></i>{{ session('success') }}
+                </div>
+            @endif
 
             @if($errors->any())
                 <div class="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-700 space-y-1">

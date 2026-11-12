@@ -1121,7 +1121,7 @@
             const MAX_DIMENSION = 1600;
             const JPEG_QUALITY = 0.84;
             const COMPRESS_THRESHOLD_BYTES = 800 * 1024;
-            const IMAGE_MIME_RE = /^image\/(jpeg|jpg|png|webp)$/i;
+            const IMAGE_MIME_RE = /^image\/(jpeg|jpg|pjpeg|png|webp|bmp)$/i;
 
             function shouldCompress(file) {
                 return file && !file._meramotOptimized && IMAGE_MIME_RE.test(file.type) && file.size > COMPRESS_THRESHOLD_BYTES;

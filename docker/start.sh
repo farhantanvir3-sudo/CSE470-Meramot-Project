@@ -18,6 +18,7 @@ if [ -z "${APP_KEY}" ]; then
 fi
 
 export LOG_CHANNEL="${LOG_CHANNEL:-stderr}"
+DIRECT_DB_URL="${DATABASE_URL_UNPOOLED:-${DATABASE_URL/-pooler./.}}"
 
 # Materialize runtime .env file so Apache mod_php workers always see Render env vars
 cat > /var/www/meramot/backend/.env <<EOF
@@ -29,8 +30,8 @@ APP_URL="${APP_URL:-https://cse470-meramot-project.onrender.com}"
 LOG_CHANNEL="${LOG_CHANNEL}"
 DB_CONNECTION="${DB_CONNECTION:-pgsql}"
 DB_SSLMODE="${DB_SSLMODE:-require}"
-DATABASE_URL="${DATABASE_URL}"
-DATABASE_URL_UNPOOLED="${DATABASE_URL_UNPOOLED}"
+DATABASE_URL="${DIRECT_DB_URL}"
+DATABASE_URL_UNPOOLED="${DIRECT_DB_URL}"
 CACHE_DRIVER="${CACHE_DRIVER:-file}"
 SESSION_DRIVER="${SESSION_DRIVER:-file}"
 QUEUE_CONNECTION="${QUEUE_CONNECTION:-sync}"

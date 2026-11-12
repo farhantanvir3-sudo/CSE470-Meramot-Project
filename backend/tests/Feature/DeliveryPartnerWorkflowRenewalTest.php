@@ -136,7 +136,7 @@ class DeliveryPartnerWorkflowRenewalTest extends TestCase
             'cv_document' => $this->fakePngUpload('cv.png'),
         ]);
 
-        $submitResp->assertRedirect('/delivery-agent/register');
+        $submitResp->assertRedirect('/delivery/login');
         $submitResp->assertSessionHas('application_submitted_popup', function (array $popup) {
             return $popup['personal_email'] === 'arif.hossain@gmail.com'
                 && $popup['name'] === 'Arif Hossain';
@@ -178,7 +178,7 @@ class DeliveryPartnerWorkflowRenewalTest extends TestCase
             'vehicle_type' => 'scooter',
             'license_number' => 'DK-554433-S',
             'nid_document' => $this->fakePngUpload('nid.png'),
-        ])->assertRedirect('/delivery-agent/register');
+        ])->assertRedirect('/delivery/login');
 
         $agent = DeliveryAgent::where('personal_email', 'nayeem.rider@gmail.com')->firstOrFail();
 
