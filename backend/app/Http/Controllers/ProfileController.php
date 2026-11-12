@@ -74,7 +74,7 @@ class ProfileController extends Controller
             'area' => 'nullable|string|max:120',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
-            'avatar' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
+            'avatar' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
             'avatar_url' => 'nullable|string',
         ]);
 

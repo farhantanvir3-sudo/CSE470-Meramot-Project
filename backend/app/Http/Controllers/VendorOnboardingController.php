@@ -132,9 +132,9 @@ class VendorOnboardingController extends Controller
             'in_shop_repair' => 'nullable|boolean',
             'spare_parts' => 'nullable|boolean',
             'notes' => 'nullable|string|max:2000',
-            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
+            'logo' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
             'logo_url' => 'nullable|string',
-            'verification_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'verification_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
         ];
 
         if (!$isEditMode) {
@@ -476,7 +476,7 @@ class VendorOnboardingController extends Controller
             'express_fee' => 'nullable|numeric|min:0',
             'skill_tags' => 'required|array|min:1',
             'skill_tags.*' => 'string|max:180',
-            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
+            'logo' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
         ], [
             'skill_tags.required' => 'Please add at least one available service / skill tag.',
             'skill_tags.min' => 'Please add at least one available service / skill tag.',
@@ -680,8 +680,8 @@ class VendorOnboardingController extends Controller
             'is_branched' => 'nullable|boolean',
             'branch_name' => 'nullable|string|max:120',
             'categories' => 'required|array|min:1',
-            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
-            'verification_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'logo' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
+            'verification_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
         ]);
 
         $sameAsGps = $request->boolean('same_as_gps_location');

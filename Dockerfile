@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && docker-php-ext-configure gd --with-jpeg --with-webp \
     && docker-php-ext-install pdo pdo_pgsql pgsql zip gd opcache \
     && a2enmod rewrite headers \
-    && printf "upload_max_filesize = 32M\npost_max_size = 64M\nmemory_limit = 256M\nmax_execution_time = 120\nmax_input_time = 120\nmax_file_uploads = 20\n" > /usr/local/etc/php/conf.d/uploads.ini \
+    && printf "upload_max_filesize = 32M\npost_max_size = 64M\nmemory_limit = 512M\nmax_execution_time = 120\nmax_input_time = 120\nmax_file_uploads = 20\n" > /usr/local/etc/php/conf.d/uploads.ini \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer

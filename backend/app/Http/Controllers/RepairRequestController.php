@@ -98,7 +98,7 @@ class RepairRequestController extends Controller
             'estimated_budget' => 'nullable|numeric|min:0|max:1000000',
             'preferred_shop_id' => 'nullable|integer|exists:repair_shops,id',
             'photos' => 'nullable|array|max:5',
-            'photos.*' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
+            'photos.*' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
         ]);
 
         $photoPaths = null;
