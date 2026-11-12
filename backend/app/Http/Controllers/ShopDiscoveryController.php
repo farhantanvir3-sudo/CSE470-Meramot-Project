@@ -146,35 +146,65 @@ class ShopDiscoveryController extends Controller
             $query->where('rating', '>=', (float) $request->input('min_rating'));
         }
 
-        // 8. PostgreSQL Haversine Distance Filter on Private GPS Pin (Shanid Sajjatuz Islam [23201465])
-        $hasCoords = $request->filled('lat') && $request->filled('lng');
-        if ($hasCoords) {
-            $userLat = (float) $request->input('lat');
-            $userLng = (float) $request->input('lng');
-            $haversine = self::HAVERSINE_SQL;
+        // 8. PostgreSQL Haversine Distance & Dynamic Distance-Based ETA (Shanid Sajjatuz Islam [23201465])
+        $rawSort = $request->input('sort', 'relevance');
+        $sortMap = [
+            'rating' => 'topRated',
+            'top_rated' => 'topRated',
+            'topRated' => 'topRated',
+            'lowest_price' => 'price',
+            'price' => 'price',
+            'nearest' => 'distance',
+            'distance' => 'distance',
+            'best_match' => 'relevance',
+            'relevance' => 'relevance',
+        ];
+        $sort = $sortMap[$rawSort] ?? 'relevance';
 
-            $query->whereNotNull('latitude')
-                  ->whereNotNull('longitude')
-                  ->selectRaw("*, {$haversine} AS distance_km", [$userLat, $userLng, $userLat]);
+        $hasExplicitCoords = $request->filled('lat') && $request->filled('lng');
+        $hasDistanceRadius = $request->filled('maxDistanceKm') || $request->filled('max_distance_km');
 
-            if ($request->filled('maxDistanceKm')) {
-                $maxDistance = (float) $request->input('maxDistanceKm', 12);
-                $query->whereRaw("{$haversine} <= ?", [$userLat, $userLng, $userLat, $maxDistance]);
-            }
+        $refCoords = null;
+        if ($request->filled('area') && $request->input('area') !== 'All') {
+            $refCoords = GeolocationService::getAreaCoordinates($request->input('area'));
+        }
+        if (!$refCoords && $request->filled('city') && $request->input('city') !== 'All') {
+            $refCoords = GeolocationService::getAreaCoordinates($request->input('city'));
+        }
+        $userLat = $hasExplicitCoords
+            ? (float) $request->input('lat')
+            : (float) ($refCoords['lat'] ?? 23.8103);
+        $userLng = $hasExplicitCoords
+            ? (float) $request->input('lng')
+            : (float) ($refCoords['lng'] ?? 90.4125);
+
+        $haversine = self::HAVERSINE_SQL;
+
+        // Always compute Haversine distance_km when coordinates exist so ETA & distance badges are accurate
+        $query->selectRaw(
+            "*, CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN {$haversine} ELSE NULL END AS distance_km",
+            [$userLat, $userLng, $userLat]
+        );
+
+        if ($sort === 'distance' || $hasDistanceRadius) {
+            $query->whereNotNull('latitude')->whereNotNull('longitude');
+        }
+
+        if ($hasDistanceRadius) {
+            $maxDistance = (float) ($request->input('maxDistanceKm', $request->input('max_distance_km', 12)));
+            $query->whereRaw("{$haversine} <= ?", [$userLat, $userLng, $userLat, $maxDistance]);
         }
 
         // 9. Sorting Order
-        $sort = $request->input('sort', 'relevance');
         switch ($sort) {
             case 'price':
-                $query->orderBy('price_level', 'asc')->orderBy('inspection_fee', 'asc');
+                $query->orderBy('price_level', 'asc')
+                      ->orderBy('inspection_fee', 'asc')
+                      ->orderBy('base_labor_fee', 'asc')
+                      ->orderBy('rating', 'desc');
                 break;
             case 'distance':
-                if ($hasCoords) {
-                    $query->orderBy('distance_km', 'asc');
-                } else {
-                    $query->orderBy('eta_minutes', 'asc')->orderBy('is_featured', 'desc');
-                }
+                $query->orderBy('distance_km', 'asc')->orderBy('rating', 'desc');
                 break;
             case 'topRated':
                 $query->orderBy('rating', 'desc')->orderBy('review_count', 'desc');
@@ -187,6 +217,14 @@ class ShopDiscoveryController extends Controller
 
         $shops = $query->paginate(12)->withQueryString();
 
+        // Synchronize each shop's ETA dynamically with its calculated Haversine distance
+        $shops->getCollection()->transform(function ($shop) {
+            if (isset($shop->distance_km) && is_numeric($shop->distance_km)) {
+                $shop->eta_minutes = GeolocationService::estimateTravelTime((float) $shop->distance_km);
+            }
+            return $shop;
+        });
+
         $cities = [
             'All', 'Dhaka', 'Chattogram', 'Gazipur', 'Sylhet', 'Mymensingh',
             'Narayanganj', 'Bogura', 'Rajshahi', 'Khulna', 'Cumilla',
@@ -196,12 +234,51 @@ class ShopDiscoveryController extends Controller
             $cities[] = $request->input('city');
         }
 
-        $areas = [
-            'All', 'Banani', 'Gulshan', 'Dhanmondi', 'Hatirpool', 'Mirpur',
-            'Uttara', 'Mohammadpur', 'Bashundhara', 'Farmgate',
-            'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Motijheel', 'Wari',
-            'Agrabad', 'GEC Circle', 'Zindabazar', 'Shaheb Bazar', 'Shib Bari',
+        $cityAreasMap = [
+            'Dhaka' => [
+                'All', 'Banani', 'Gulshan', 'Dhanmondi', 'Hatirpool', 'Mirpur',
+                'Uttara', 'Mohammadpur', 'Bashundhara', 'Farmgate',
+                'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Motijheel', 'Wari',
+            ],
+            'Chattogram' => ['All', 'Agrabad', 'GEC Circle', 'Nasirabad', 'Panchlaish', 'Chawkbazar', 'Halishahar'],
+            'Sylhet' => ['All', 'Zindabazar', 'Amberkhana', 'Subhanighat', 'Upashahar'],
+            'Rajshahi' => ['All', 'Shaheb Bazar', 'Boalia', 'Kazla'],
+            'Khulna' => ['All', 'Shib Bari', 'Sonadanga', 'Khalishpur'],
+            'Gazipur' => ['All', 'Joydebpur', 'Tongi', 'Chandana'],
+            'Mymensingh' => ['All', 'Ganginarpar', 'Charpara'],
+            'Bogura' => ['All', 'Satmatha', 'Jaleswaritola'],
+            'Narayanganj' => ['All', 'Chashara', 'Siddhirganj'],
+            'Cumilla' => ['All', 'Kandirpar', 'Tomsom Bridge'],
+            'Rangpur' => ['All', 'Jahaj Company More', 'Dhap'],
+            'Barishal' => ['All', 'Sadar Road', 'Nathullabad'],
         ];
+
+        $selectedCity = $request->input('city', 'All');
+        if ($selectedCity && $selectedCity !== 'All') {
+            $dbCityAreas = RepairShop::where('is_active', true)
+                ->where('is_public', true)
+                ->where('city', $selectedCity)
+                ->whereNotNull('area')
+                ->distinct()
+                ->orderBy('area')
+                ->pluck('area')
+                ->filter()
+                ->values()
+                ->all();
+            $presetAreas = $cityAreasMap[$selectedCity] ?? ['All'];
+            $areas = array_values(array_unique(array_merge(['All'], $presetAreas, $dbCityAreas)));
+        } else {
+            $areas = [
+                'All', 'Banani', 'Gulshan', 'Dhanmondi', 'Hatirpool', 'Mirpur',
+                'Uttara', 'Mohammadpur', 'Bashundhara', 'Farmgate',
+                'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Motijheel', 'Wari',
+                'Agrabad', 'GEC Circle', 'Zindabazar', 'Shaheb Bazar', 'Shib Bari',
+            ];
+        }
+
+        if ($request->filled('area') && !in_array($request->input('area'), $areas, true)) {
+            $areas[] = $request->input('area');
+        }
 
         return view('shops.explore', compact('shops', 'areas', 'cities'));
     }
@@ -210,7 +287,7 @@ class ShopDiscoveryController extends Controller
      * Show detailed profile for a selected repair shop + sibling branches if branched.
      * Route: GET /shops/{slug}
      */
-    public function show($slug)
+    public function show(Request $request, $slug)
     {
         $shop = RepairShop::with([
             'vendorProfile',
@@ -219,6 +296,23 @@ class ShopDiscoveryController extends Controller
                 $q->where('is_active', true)->orderBy('sort_order', 'asc');
             },
         ])->where('slug', $slug)->firstOrFail();
+
+        if ($shop->latitude !== null && $shop->longitude !== null) {
+            $refCoords = GeolocationService::getAreaCoordinates((string) $shop->area)
+                ?? GeolocationService::getAreaCoordinates((string) $shop->city)
+                ?? ['lat' => 23.8103, 'lng' => 90.4125];
+            $userLat = $request->filled('lat') ? (float) $request->input('lat') : (float) $refCoords['lat'];
+            $userLng = $request->filled('lng') ? (float) $request->input('lng') : (float) $refCoords['lng'];
+
+            $distanceKm = GeolocationService::calculateDistance(
+                $userLat,
+                $userLng,
+                (float) $shop->latitude,
+                (float) $shop->longitude
+            );
+            $shop->distance_km = $distanceKm;
+            $shop->eta_minutes = GeolocationService::estimateTravelTime($distanceKm);
+        }
 
         $siblingBranches = $shop->siblingBranches();
 
@@ -331,42 +425,77 @@ class ShopDiscoveryController extends Controller
             $query->where('price_level', '<=', (int) $request->input('max_price_level'));
         }
 
-        if ($request->boolean('has_deals')) {
+        if ($request->boolean('has_deals') || $request->boolean('deals')) {
             $query->where('has_deals', true);
         }
-        if ($request->boolean('has_voucher')) {
+        if ($request->boolean('has_voucher') || $request->boolean('voucher')) {
             $query->where('has_voucher', true);
         }
-        if ($request->boolean('free_delivery')) {
+        if ($request->boolean('free_delivery') || $request->boolean('freeDelivery')) {
             $query->where('free_delivery', true);
         }
 
-        $hasCoords = $request->filled('lat') && $request->filled('lng');
-        if ($hasCoords) {
-            $userLat = (float) $request->input('lat');
-            $userLng = (float) $request->input('lng');
-            $maxDistance = (float) $request->input('max_distance_km', 15);
-            $haversine = self::HAVERSINE_SQL;
+        $rawSort = $request->input('sort', 'rating');
+        $sortMap = [
+            'rating' => 'topRated',
+            'top_rated' => 'topRated',
+            'topRated' => 'topRated',
+            'lowest_price' => 'price',
+            'price' => 'price',
+            'nearest' => 'distance',
+            'distance' => 'distance',
+            'best_match' => 'relevance',
+            'relevance' => 'relevance',
+        ];
+        $sort = $sortMap[$rawSort] ?? 'topRated';
 
-            $query->whereNotNull('latitude')
-                  ->whereNotNull('longitude')
-                  ->selectRaw("*, {$haversine} AS distance_km", [$userLat, $userLng, $userLat])
-                  ->whereRaw("{$haversine} <= ?", [$userLat, $userLng, $userLat, $maxDistance]);
+        $hasExplicitCoords = $request->filled('lat') && $request->filled('lng');
+        $hasDistanceRadius = $request->filled('max_distance_km') || $request->filled('maxDistanceKm');
+
+        $refCoords = null;
+        if ($request->filled('area') && $request->input('area') !== 'All') {
+            $refCoords = GeolocationService::getAreaCoordinates($request->input('area'));
+        }
+        if (!$refCoords && $request->filled('city') && $request->input('city') !== 'All') {
+            $refCoords = GeolocationService::getAreaCoordinates($request->input('city'));
+        }
+        $userLat = $hasExplicitCoords
+            ? (float) $request->input('lat')
+            : (float) ($refCoords['lat'] ?? 23.8103);
+        $userLng = $hasExplicitCoords
+            ? (float) $request->input('lng')
+            : (float) ($refCoords['lng'] ?? 90.4125);
+
+        $haversine = self::HAVERSINE_SQL;
+
+        $query->selectRaw(
+            "*, CASE WHEN latitude IS NOT NULL AND longitude IS NOT NULL THEN {$haversine} ELSE NULL END AS distance_km",
+            [$userLat, $userLng, $userLat]
+        );
+
+        if ($sort === 'distance' || $hasDistanceRadius) {
+            $query->whereNotNull('latitude')->whereNotNull('longitude');
         }
 
-        $sort = $request->input('sort', 'rating');
+        if ($hasDistanceRadius) {
+            $maxDistance = (float) ($request->input('max_distance_km', $request->input('maxDistanceKm', 15)));
+            $query->whereRaw("{$haversine} <= ?", [$userLat, $userLng, $userLat, $maxDistance]);
+        }
+
         switch ($sort) {
             case 'price':
-                $query->orderBy('price_level', 'asc');
+                $query->orderBy('price_level', 'asc')
+                      ->orderBy('inspection_fee', 'asc')
+                      ->orderBy('base_labor_fee', 'asc')
+                      ->orderBy('rating', 'desc');
                 break;
             case 'distance':
-                if ($hasCoords) {
-                    $query->orderBy('distance_km', 'asc');
-                } else {
-                    $query->orderBy('eta_minutes', 'asc');
-                }
+                $query->orderBy('distance_km', 'asc')->orderBy('rating', 'desc');
                 break;
-            case 'rating':
+            case 'relevance':
+                $query->orderBy('is_featured', 'desc')->orderBy('rating', 'desc')->orderBy('review_count', 'desc');
+                break;
+            case 'topRated':
             default:
                 $query->orderBy('rating', 'desc')->orderBy('review_count', 'desc');
                 break;
@@ -375,11 +504,21 @@ class ShopDiscoveryController extends Controller
         $perPage = (int) $request->input('per_page', 15);
         $shops = $query->paginate($perPage);
 
+        $shops->getCollection()->transform(function ($shop) {
+            if (isset($shop->distance_km) && is_numeric($shop->distance_km)) {
+                $shop->distance_formatted = GeolocationService::formatDistance((float) $shop->distance_km);
+                $shop->eta_minutes = GeolocationService::estimateTravelTime((float) $shop->distance_km);
+                $shop->eta_formatted = GeolocationService::formatEta((int) $shop->eta_minutes);
+            }
+            return $shop;
+        });
+
         return response()->json([
             'success' => true,
             'filters_applied' => $request->only([
                 'q', 'category', 'city', 'area', 'branched', 'min_rating', 'max_price_level',
-                'has_deals', 'has_voucher', 'free_delivery', 'sort',
+                'has_deals', 'deals', 'has_voucher', 'voucher', 'free_delivery', 'freeDelivery',
+                'max_distance_km', 'maxDistanceKm', 'lat', 'lng', 'sort',
             ]),
             'data' => $shops,
         ]);

@@ -38,9 +38,9 @@ class GeolocationService
     }
 
     /**
-     * Get approximate coordinates for major Dhaka areas
+     * Get approximate coordinates for major Dhaka areas & Bangladesh districts
      * 
-     * @param string $area Area name
+     * @param string $area Area or city name
      * @return array|null ['lat' => float, 'lng' => float] or null
      */
     public static function getAreaCoordinates(string $area): ?array
@@ -49,6 +49,7 @@ class GeolocationService
             'Banani' => ['lat' => 23.7937, 'lng' => 90.4066],
             'Gulshan' => ['lat' => 23.7808, 'lng' => 90.4177],
             'Dhanmondi' => ['lat' => 23.7461, 'lng' => 90.3742],
+            'Hatirpool' => ['lat' => 23.7422, 'lng' => 90.3918],
             'Mirpur' => ['lat' => 23.8223, 'lng' => 90.3654],
             'Uttara' => ['lat' => 23.8759, 'lng' => 90.3795],
             'Mohammadpur' => ['lat' => 23.7654, 'lng' => 90.3568],
@@ -59,10 +60,48 @@ class GeolocationService
             'Badda' => ['lat' => 23.7805, 'lng' => 90.4267],
             'Rampura' => ['lat' => 23.7633, 'lng' => 90.4251],
             'New Market' => ['lat' => 23.7339, 'lng' => 90.3868],
+            'Motijheel' => ['lat' => 23.7330, 'lng' => 90.4172],
             'Wari' => ['lat' => 23.7185, 'lng' => 90.4114],
+            'Agrabad' => ['lat' => 22.3264, 'lng' => 91.8155],
+            'GEC Circle' => ['lat' => 22.3591, 'lng' => 91.8215],
+            'Zindabazar' => ['lat' => 24.8949, 'lng' => 91.8687],
+            'Shaheb Bazar' => ['lat' => 24.3653, 'lng' => 88.6003],
+            'Shib Bari' => ['lat' => 22.8206, 'lng' => 89.5535],
+            'Joydebpur' => ['lat' => 23.9999, 'lng' => 90.4203],
+            'Satmatha' => ['lat' => 24.8481, 'lng' => 89.3730],
+            'Ganginarpar' => ['lat' => 24.7564, 'lng' => 90.4065],
+            'Dhaka' => ['lat' => 23.8103, 'lng' => 90.4125],
+            'Chattogram' => ['lat' => 22.3569, 'lng' => 91.7832],
+            'Gazipur' => ['lat' => 23.9999, 'lng' => 90.4203],
+            'Sylhet' => ['lat' => 24.8949, 'lng' => 91.8687],
+            'Mymensingh' => ['lat' => 24.7564, 'lng' => 90.4065],
+            'Narayanganj' => ['lat' => 23.6238, 'lng' => 90.5000],
+            'Bogura' => ['lat' => 24.8465, 'lng' => 89.3773],
+            'Rajshahi' => ['lat' => 24.3745, 'lng' => 88.6042],
+            'Khulna' => ['lat' => 22.8456, 'lng' => 89.5403],
+            'Cumilla' => ['lat' => 23.4607, 'lng' => 91.1809],
+            'Rangpur' => ['lat' => 25.7439, 'lng' => 89.2752],
+            'Barishal' => ['lat' => 22.7010, 'lng' => 90.3535],
+            'Jashore' => ['lat' => 23.1664, 'lng' => 89.2081],
+            "Cox's Bazar" => ['lat' => 21.4272, 'lng' => 92.0058],
+            'Narail' => ['lat' => 23.1725, 'lng' => 89.5127],
+            'Tangail' => ['lat' => 24.2513, 'lng' => 89.9167],
+            'Moulvibazar' => ['lat' => 24.4829, 'lng' => 91.7774],
+            'Sreemangal' => ['lat' => 24.3065, 'lng' => 91.7296],
         ];
 
-        return $coordinates[$area] ?? null;
+        $normalized = trim($area);
+        if (isset($coordinates[$normalized])) {
+            return $coordinates[$normalized];
+        }
+
+        foreach ($coordinates as $key => $coords) {
+            if (strcasecmp($key, $normalized) === 0) {
+                return $coords;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -81,16 +120,34 @@ class GeolocationService
     }
 
     /**
-     * Estimate travel time based on distance (Dhaka traffic conditions)
+     * Estimate travel time based on distance (Dhaka & inter-district traffic conditions)
      * 
      * @param float $distanceKm Distance in kilometers
-     * @return int Estimated time in minutes
+     * @return int Estimated time in minutes (minimum 10 min)
      */
     public static function estimateTravelTime(float $distanceKm): int
     {
-        // Assume average 15 km/h in Dhaka traffic
+        // Assume average 15 km/h in city traffic (4 min per km), minimum 10 minutes dispatch prep
         $averageSpeedKmh = 15;
-        return (int) round(($distanceKm / $averageSpeedKmh) * 60);
+        $minutes = (int) round(($distanceKm / $averageSpeedKmh) * 60);
+        return max(10, $minutes);
+    }
+
+    /**
+     * Format ETA minutes into a readable label (e.g. "15 min", "1 hr 20 min", "10 hr")
+     */
+    public static function formatEta(int $minutes): string
+    {
+        $minutes = max(10, $minutes);
+        if ($minutes < 60) {
+            return $minutes . ' min';
+        }
+        $hours = intdiv($minutes, 60);
+        $rem = $minutes % 60;
+        if ($rem === 0 || $hours >= 4) {
+            return round($minutes / 60) . ' hr';
+        }
+        return $hours . ' hr ' . $rem . ' min';
     }
 
     /**

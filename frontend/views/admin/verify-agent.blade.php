@@ -15,7 +15,7 @@
      ========================================================================== --}}
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8" x-data="{ inspectAgent: null }">
+<div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8" x-data="{ inspectAgent: null, lightboxDoc: null }">
 
     @include('admin.partials.nav')
 
@@ -106,6 +106,11 @@
                             $dispName = $agent->applicant_name ?: ($agent->user?->name ?? 'Delivery Applicant');
                             $dispPersonalEmail = $agent->personal_email ?: ($agent->user && !str_ends_with((string) $agent->user->email, '.meramot.internal') ? $agent->user->email : '—');
                             $dispPhone = $agent->applicant_phone ?: ($agent->user?->phone ?? '—');
+                            $rawProfile = (string) ($agent->profile_picture_url ?: ($agent->user?->avatar_url ?? ''));
+                            $rawNid = (string) ($agent->nid_document_url ?? '');
+                            $rawLic = (string) ($agent->license_document_url ?? '');
+                            $rawEdu = (string) ($agent->education_document_url ?? '');
+                            $rawCv = (string) ($agent->cv_document_url ?? '');
                             $inspectorPayload = [
                                 'id' => $agent->id,
                                 'name' => $dispName,
@@ -118,11 +123,16 @@
                                 'status' => $agent->registration_status,
                                 'rejection_reason' => $agent->rejection_reason,
                                 'submitted_at' => optional($agent->updated_at)->format('d M Y, h:i A'),
-                                'has_profile' => (bool) ($agent->profile_picture_url || $agent->user?->avatar_url),
-                                'has_nid' => (bool) $agent->nid_document_url,
-                                'has_license' => (bool) $agent->license_document_url,
-                                'has_education' => (bool) $agent->education_document_url,
-                                'has_cv' => (bool) $agent->cv_document_url,
+                                'has_profile' => (bool) $rawProfile,
+                                'has_nid' => (bool) $rawNid,
+                                'has_license' => (bool) $rawLic,
+                                'has_education' => (bool) $rawEdu,
+                                'has_cv' => (bool) $rawCv,
+                                'profile_is_pdf' => str_starts_with($rawProfile, 'data:application/pdf') || str_ends_with(strtolower($rawProfile), '.pdf'),
+                                'nid_is_pdf' => str_starts_with($rawNid, 'data:application/pdf') || str_ends_with(strtolower($rawNid), '.pdf'),
+                                'license_is_pdf' => str_starts_with($rawLic, 'data:application/pdf') || str_ends_with(strtolower($rawLic), '.pdf'),
+                                'education_is_pdf' => str_starts_with($rawEdu, 'data:application/pdf') || str_ends_with(strtolower($rawEdu), '.pdf'),
+                                'cv_is_pdf' => str_starts_with($rawCv, 'data:application/pdf') || str_ends_with(strtolower($rawCv), '.pdf'),
                             ];
                         @endphp
                         <tr class="hover:bg-[var(--mint-100)]/50 transition align-top">
@@ -140,7 +150,7 @@
                                 <div>NID: {{ $agent->nid_number ?? '-' }}</div>
                                 <div>License: {{ $agent->license_number ?? '-' }}</div>
                             </td>
-                            <td class="px-5 py-4 space-y-2">
+                            <td class="px-5 py-4 space-y-2.5">
                                 <button
                                     type="button"
                                     @click='inspectAgent = @json($inspectorPayload)'
@@ -150,21 +160,81 @@
                                     <span>Inspect Info &amp; Docs</span>
                                 </button>
 
-                                <div class="flex flex-wrap gap-1.5 text-[11px] font-semibold">
-                                    @if($agent->profile_picture_url || $agent->user?->avatar_url)
-                                        <a href="/admin/delivery-agents/{{ $agent->id }}/document/profile" target="_blank" class="px-2 py-0.5 rounded-md bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] hover:underline">Photo</a>
+                                <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+                                    @if($rawProfile)
+                                        <button
+                                            type="button"
+                                            @click="lightboxDoc = { url: '/admin/delivery-agents/{{ $agent->id }}/document/profile', title: @js($dispName . ' — Profile Photo'), isPdf: {{ $inspectorPayload['profile_is_pdf'] ? 'true' : 'false' }} }"
+                                            class="group relative flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] p-1 pr-2.5 text-[var(--accent-dark)] hover:border-[var(--accent-dark)] transition shadow-sm"
+                                            title="Click to zoom Profile Photo"
+                                        >
+                                            @if(!$inspectorPayload['profile_is_pdf'])
+                                                <img src="/admin/delivery-agents/{{ $agent->id }}/document/profile" alt="Photo" class="h-8 w-8 rounded-lg object-cover border border-[var(--border)]">
+                                            @else
+                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-700"><i class="fa-solid fa-file-pdf"></i></span>
+                                            @endif
+                                            <span>Photo</span>
+                                        </button>
                                     @endif
-                                    @if($agent->nid_document_url)
-                                        <a href="/admin/delivery-agents/{{ $agent->id }}/document/nid" target="_blank" class="px-2 py-0.5 rounded-md bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] hover:underline">NID Scan</a>
+                                    @if($rawNid)
+                                        <button
+                                            type="button"
+                                            @click="lightboxDoc = { url: '/admin/delivery-agents/{{ $agent->id }}/document/nid', title: @js($dispName . ' — NID Scan'), isPdf: {{ $inspectorPayload['nid_is_pdf'] ? 'true' : 'false' }} }"
+                                            class="group relative flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] p-1 pr-2.5 text-[var(--accent-dark)] hover:border-[var(--accent-dark)] transition shadow-sm"
+                                            title="Click to zoom NID Scan"
+                                        >
+                                            @if(!$inspectorPayload['nid_is_pdf'])
+                                                <img src="/admin/delivery-agents/{{ $agent->id }}/document/nid" alt="NID" class="h-8 w-8 rounded-lg object-cover border border-[var(--border)]">
+                                            @else
+                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-700"><i class="fa-solid fa-file-pdf"></i></span>
+                                            @endif
+                                            <span>NID Scan</span>
+                                        </button>
                                     @endif
-                                    @if($agent->license_document_url)
-                                        <a href="/admin/delivery-agents/{{ $agent->id }}/document/license" target="_blank" class="px-2 py-0.5 rounded-md bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] hover:underline">License Scan</a>
+                                    @if($rawLic)
+                                        <button
+                                            type="button"
+                                            @click="lightboxDoc = { url: '/admin/delivery-agents/{{ $agent->id }}/document/license', title: @js($dispName . ' — Driving License'), isPdf: {{ $inspectorPayload['license_is_pdf'] ? 'true' : 'false' }} }"
+                                            class="group relative flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] p-1 pr-2.5 text-[var(--accent-dark)] hover:border-[var(--accent-dark)] transition shadow-sm"
+                                            title="Click to zoom License Scan"
+                                        >
+                                            @if(!$inspectorPayload['license_is_pdf'])
+                                                <img src="/admin/delivery-agents/{{ $agent->id }}/document/license" alt="License" class="h-8 w-8 rounded-lg object-cover border border-[var(--border)]">
+                                            @else
+                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-700"><i class="fa-solid fa-file-pdf"></i></span>
+                                            @endif
+                                            <span>License</span>
+                                        </button>
                                     @endif
-                                    @if($agent->education_document_url)
-                                        <a href="/admin/delivery-agents/{{ $agent->id }}/document/education" target="_blank" class="px-2 py-0.5 rounded-md bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] hover:underline">Education</a>
+                                    @if($rawEdu)
+                                        <button
+                                            type="button"
+                                            @click="lightboxDoc = { url: '/admin/delivery-agents/{{ $agent->id }}/document/education', title: @js($dispName . ' — Education Certificate'), isPdf: {{ $inspectorPayload['education_is_pdf'] ? 'true' : 'false' }} }"
+                                            class="group relative flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] p-1 pr-2.5 text-[var(--accent-dark)] hover:border-[var(--accent-dark)] transition shadow-sm"
+                                            title="Click to preview Education Certificate"
+                                        >
+                                            @if(!$inspectorPayload['education_is_pdf'])
+                                                <img src="/admin/delivery-agents/{{ $agent->id }}/document/education" alt="Education" class="h-8 w-8 rounded-lg object-cover border border-[var(--border)]">
+                                            @else
+                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-700"><i class="fa-solid fa-file-pdf"></i></span>
+                                            @endif
+                                            <span>Education</span>
+                                        </button>
                                     @endif
-                                    @if($agent->cv_document_url)
-                                        <a href="/admin/delivery-agents/{{ $agent->id }}/document/cv" target="_blank" class="px-2 py-0.5 rounded-md bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] hover:underline">CV</a>
+                                    @if($rawCv)
+                                        <button
+                                            type="button"
+                                            @click="lightboxDoc = { url: '/admin/delivery-agents/{{ $agent->id }}/document/cv', title: @js($dispName . ' — CV / Resume'), isPdf: {{ $inspectorPayload['cv_is_pdf'] ? 'true' : 'false' }} }"
+                                            class="group relative flex items-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] p-1 pr-2.5 text-[var(--accent-dark)] hover:border-[var(--accent-dark)] transition shadow-sm"
+                                            title="Click to preview CV"
+                                        >
+                                            @if(!$inspectorPayload['cv_is_pdf'])
+                                                <img src="/admin/delivery-agents/{{ $agent->id }}/document/cv" alt="CV" class="h-8 w-8 rounded-lg object-cover border border-[var(--border)]">
+                                            @else
+                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-700"><i class="fa-solid fa-file-pdf"></i></span>
+                                            @endif
+                                            <span>CV</span>
+                                        </button>
                                     @endif
                                 </div>
                             </td>
@@ -344,42 +414,166 @@
                 </div>
             </div>
 
-            <div class="space-y-2">
-                <h4 class="text-xs font-black uppercase tracking-wider text-[#163625]">Uploaded Verification Documents</h4>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+            <div class="space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-black uppercase tracking-wider text-[#163625]">Uploaded Verification Documents</h4>
+                    <span class="text-[11px] font-semibold text-[#5e6d64]">Click any card to zoom in Lightbox</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <template x-if="inspectAgent?.has_profile">
-                        <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/profile'" target="_blank" class="flex items-center justify-between rounded-xl border border-[#c8dac2] bg-[#eef5ea] px-4 py-2.5 font-bold text-[#163625] hover:bg-[#dcebd5]">
-                            <span><i class="fa-solid fa-camera mr-2"></i>Profile Photo</span>
-                            <span>Open &nearr;</span>
-                        </a>
+                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
+                            <div
+                                @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/profile', title: inspectAgent.name + ' — Profile Photo', isPdf: inspectAgent.profile_is_pdf }"
+                                class="group relative h-32 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
+                            >
+                                <template x-if="!inspectAgent.profile_is_pdf">
+                                    <img :src="'/admin/delivery-agents/' + inspectAgent.id + '/document/profile'" alt="Profile Photo" class="max-h-full max-w-full object-contain transition duration-200 group-hover:scale-105">
+                                </template>
+                                <template x-if="inspectAgent.profile_is_pdf">
+                                    <div class="flex flex-col items-center text-rose-700">
+                                        <i class="fa-solid fa-file-pdf text-3xl"></i>
+                                        <span class="text-[10px] font-bold mt-1">PDF Document</span>
+                                    </div>
+                                </template>
+                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
+                            </div>
+                            <div class="flex items-center justify-between font-bold text-[#163625]">
+                                <span><i class="fa-solid fa-camera mr-1.5"></i>Profile Photo</span>
+                                <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/profile'" target="_blank" class="text-[11px] underline">New Tab &nearr;</a>
+                            </div>
+                        </div>
                     </template>
+
                     <template x-if="inspectAgent?.has_nid">
-                        <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/nid'" target="_blank" class="flex items-center justify-between rounded-xl border border-[#c8dac2] bg-[#eef5ea] px-4 py-2.5 font-bold text-[#163625] hover:bg-[#dcebd5]">
-                            <span><i class="fa-solid fa-id-card mr-2"></i>NID Scan</span>
-                            <span>Open &nearr;</span>
-                        </a>
+                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
+                            <div
+                                @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/nid', title: inspectAgent.name + ' — NID Scan', isPdf: inspectAgent.nid_is_pdf }"
+                                class="group relative h-32 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
+                            >
+                                <template x-if="!inspectAgent.nid_is_pdf">
+                                    <img :src="'/admin/delivery-agents/' + inspectAgent.id + '/document/nid'" alt="NID Scan" class="max-h-full max-w-full object-contain transition duration-200 group-hover:scale-105">
+                                </template>
+                                <template x-if="inspectAgent.nid_is_pdf">
+                                    <div class="flex flex-col items-center text-rose-700">
+                                        <i class="fa-solid fa-file-pdf text-3xl"></i>
+                                        <span class="text-[10px] font-bold mt-1">PDF Document</span>
+                                    </div>
+                                </template>
+                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
+                            </div>
+                            <div class="flex items-center justify-between font-bold text-[#163625]">
+                                <span><i class="fa-solid fa-id-card mr-1.5"></i>NID Scan</span>
+                                <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/nid'" target="_blank" class="text-[11px] underline">New Tab &nearr;</a>
+                            </div>
+                        </div>
                     </template>
+
                     <template x-if="inspectAgent?.has_license">
-                        <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/license'" target="_blank" class="flex items-center justify-between rounded-xl border border-[#c8dac2] bg-[#eef5ea] px-4 py-2.5 font-bold text-[#163625] hover:bg-[#dcebd5]">
-                            <span><i class="fa-solid fa-id-badge mr-2"></i>Driving License Scan</span>
-                            <span>Open &nearr;</span>
-                        </a>
+                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
+                            <div
+                                @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/license', title: inspectAgent.name + ' — Driving License Scan', isPdf: inspectAgent.license_is_pdf }"
+                                class="group relative h-32 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
+                            >
+                                <template x-if="!inspectAgent.license_is_pdf">
+                                    <img :src="'/admin/delivery-agents/' + inspectAgent.id + '/document/license'" alt="Driving License Scan" class="max-h-full max-w-full object-contain transition duration-200 group-hover:scale-105">
+                                </template>
+                                <template x-if="inspectAgent.license_is_pdf">
+                                    <div class="flex flex-col items-center text-rose-700">
+                                        <i class="fa-solid fa-file-pdf text-3xl"></i>
+                                        <span class="text-[10px] font-bold mt-1">PDF Document</span>
+                                    </div>
+                                </template>
+                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
+                            </div>
+                            <div class="flex items-center justify-between font-bold text-[#163625]">
+                                <span><i class="fa-solid fa-id-badge mr-1.5"></i>Driving License Scan</span>
+                                <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/license'" target="_blank" class="text-[11px] underline">New Tab &nearr;</a>
+                            </div>
+                        </div>
                     </template>
+
                     <template x-if="inspectAgent?.has_education">
-                        <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/education'" target="_blank" class="flex items-center justify-between rounded-xl border border-[#c8dac2] bg-[#eef5ea] px-4 py-2.5 font-bold text-[#163625] hover:bg-[#dcebd5]">
-                            <span><i class="fa-solid fa-graduation-cap mr-2"></i>Education Certificate</span>
-                            <span>Open &nearr;</span>
-                        </a>
+                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
+                            <div
+                                @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/education', title: inspectAgent.name + ' — Education Certificate', isPdf: inspectAgent.education_is_pdf }"
+                                class="group relative h-32 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
+                            >
+                                <template x-if="!inspectAgent.education_is_pdf">
+                                    <img :src="'/admin/delivery-agents/' + inspectAgent.id + '/document/education'" alt="Education Certificate" class="max-h-full max-w-full object-contain transition duration-200 group-hover:scale-105">
+                                </template>
+                                <template x-if="inspectAgent.education_is_pdf">
+                                    <div class="flex flex-col items-center text-rose-700">
+                                        <i class="fa-solid fa-file-pdf text-3xl"></i>
+                                        <span class="text-[10px] font-bold mt-1">PDF Document</span>
+                                    </div>
+                                </template>
+                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
+                            </div>
+                            <div class="flex items-center justify-between font-bold text-[#163625]">
+                                <span><i class="fa-solid fa-graduation-cap mr-1.5"></i>Education Certificate</span>
+                                <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/education'" target="_blank" class="text-[11px] underline">New Tab &nearr;</a>
+                            </div>
+                        </div>
                     </template>
+
                     <template x-if="inspectAgent?.has_cv">
-                        <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/cv'" target="_blank" class="flex items-center justify-between rounded-xl border border-[#c8dac2] bg-[#eef5ea] px-4 py-2.5 font-bold text-[#163625] hover:bg-[#dcebd5] sm:col-span-2">
-                            <span><i class="fa-solid fa-file-lines mr-2"></i>CV / Resume</span>
-                            <span>Open &nearr;</span>
-                        </a>
+                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2 sm:col-span-2">
+                            <div
+                                @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/cv', title: inspectAgent.name + ' — CV / Resume', isPdf: inspectAgent.cv_is_pdf }"
+                                class="group relative h-28 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
+                            >
+                                <template x-if="!inspectAgent.cv_is_pdf">
+                                    <img :src="'/admin/delivery-agents/' + inspectAgent.id + '/document/cv'" alt="CV / Resume" class="max-h-full max-w-full object-contain transition duration-200 group-hover:scale-105">
+                                </template>
+                                <template x-if="inspectAgent.cv_is_pdf">
+                                    <div class="flex flex-col items-center text-rose-700">
+                                        <i class="fa-solid fa-file-pdf text-3xl"></i>
+                                        <span class="text-[10px] font-bold mt-1">Click to preview PDF Resume</span>
+                                    </div>
+                                </template>
+                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Preview</span>
+                            </div>
+                            <div class="flex items-center justify-between font-bold text-[#163625]">
+                                <span><i class="fa-solid fa-file-lines mr-1.5"></i>CV / Resume</span>
+                                <a :href="'/admin/delivery-agents/' + inspectAgent.id + '/document/cv'" target="_blank" class="text-[11px] underline">New Tab &nearr;</a>
+                            </div>
+                        </div>
                     </template>
                 </div>
                 <template x-if="inspectAgent && !inspectAgent.has_profile && !inspectAgent.has_nid && !inspectAgent.has_license && !inspectAgent.has_education && !inspectAgent.has_cv">
                     <p class="rounded-xl border border-dashed border-[#d9e5d5] p-4 text-xs text-[#5e6d64]">No file scans attached — verify NID &amp; BRTA license numbers above or reject with a note requesting document scans.</p>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Click-to-Zoom Document Lightbox Modal ── -->
+    <div
+        x-show="lightboxDoc"
+        x-cloak
+        @keydown.escape.window="lightboxDoc = null"
+        class="fixed inset-0 z-[160] flex items-center justify-center p-4"
+    >
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" @click="lightboxDoc = null"></div>
+        <div class="relative z-[161] w-full max-w-4xl rounded-[2rem] border border-[#c8dac2] bg-white p-4 md:p-6 shadow-2xl space-y-3">
+            <div class="flex items-center justify-between gap-3 border-b border-[#e7efe2] pb-3">
+                <div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-[#214c34]">Document Lightbox Preview</span>
+                    <h3 class="text-base font-black text-[#163625]" x-text="lightboxDoc?.title"></h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a :href="lightboxDoc?.url" target="_blank" class="rounded-full border border-[#c8dac2] bg-[#eef5ea] px-3.5 py-1.5 text-xs font-bold text-[#163625] hover:bg-[#dcebd5]">
+                        Open Original &nearr;
+                    </a>
+                    <button type="button" @click="lightboxDoc = null" class="h-9 w-9 rounded-full bg-[#163625] text-white font-bold">✕</button>
+                </div>
+            </div>
+            <div class="flex max-h-[75vh] min-h-[320px] w-full items-center justify-center overflow-auto rounded-2xl bg-[#0f1c12] p-3">
+                <template x-if="lightboxDoc && !lightboxDoc.isPdf">
+                    <img :src="lightboxDoc.url" :alt="lightboxDoc.title" class="max-h-[70vh] max-w-full rounded-xl object-contain shadow-lg">
+                </template>
+                <template x-if="lightboxDoc && lightboxDoc.isPdf">
+                    <iframe :src="lightboxDoc.url" class="h-[70vh] w-full rounded-xl bg-white"></iframe>
                 </template>
             </div>
         </div>

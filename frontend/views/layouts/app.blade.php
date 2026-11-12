@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Meramot (মেরামত) — Digital Electronic Repair Marketplace')</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+    <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
+    <link rel="apple-touch-icon" href="/favicon.svg?v=2">
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -659,6 +662,16 @@
                         <i class="fa-solid fa-location-dot text-2xl"></i>
                     </button>
                     <form action="/shops" method="GET" class="flex-1">
+                        @if(request('category'))
+                            <input type="hidden" name="category" value="{{ request('category') }}">
+                        @endif
+                        @if(request('sort'))
+                            <input type="hidden" name="sort" value="{{ request('sort') }}">
+                        @endif
+                        @if(request('lat') && request('lng'))
+                            <input type="hidden" name="lat" value="{{ request('lat') }}">
+                            <input type="hidden" name="lng" value="{{ request('lng') }}">
+                        @endif
                         <input
                             type="text"
                             name="q"
@@ -705,6 +718,13 @@
                 <form action="/shops" method="GET" class="hidden w-full md:block md:flex-1 md:max-w-[640px]">
                     @if(request('category'))
                         <input type="hidden" name="category" value="{{ request('category') }}">
+                    @endif
+                    @if(request('sort'))
+                        <input type="hidden" name="sort" value="{{ request('sort') }}">
+                    @endif
+                    @if(request('lat') && request('lng'))
+                        <input type="hidden" name="lat" value="{{ request('lat') }}">
+                        <input type="hidden" name="lng" value="{{ request('lng') }}">
                     @endif
                     <input
                         type="text"

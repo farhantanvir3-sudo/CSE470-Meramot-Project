@@ -111,44 +111,248 @@
         <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
             <div>
                 <h2 class="text-sm font-black text-[var(--foreground)]">3. Replace or Attach Verification Documents</h2>
-                <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Leave a file field blank to keep your previously uploaded document.</p>
+                <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Preview your existing scans or drag &amp; drop a new file to replace them. Leave untouched to keep your previously uploaded document.</p>
             </div>
 
+            @php
+                $editUploadCards = [
+                    [
+                        'name' => 'profile_picture',
+                        'label' => 'Profile Picture',
+                        'icon' => 'fa-camera',
+                        'accept' => 'image/jpeg,image/jpg,image/png,image/webp',
+                        'hint' => 'JPG, PNG, WebP • Max 4MB',
+                        'span' => '',
+                        'existingUrl' => $agent->profile_picture_url ?: ($agent->user?->avatar_url ?? ''),
+                    ],
+                    [
+                        'name' => 'nid_document',
+                        'label' => 'NID Document Scan',
+                        'icon' => 'fa-id-card',
+                        'accept' => 'image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf',
+                        'hint' => 'Image or PDF Scan • Max 4MB',
+                        'span' => '',
+                        'existingUrl' => $agent->nid_document_url ?? '',
+                    ],
+                    [
+                        'name' => 'license_document',
+                        'label' => 'Driving License Scan',
+                        'icon' => 'fa-id-badge',
+                        'accept' => 'image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf',
+                        'hint' => 'BRTA License Image or PDF • Max 4MB',
+                        'span' => '',
+                        'existingUrl' => $agent->license_document_url ?? '',
+                    ],
+                    [
+                        'name' => 'education_document',
+                        'label' => 'Education Certificate',
+                        'icon' => 'fa-graduation-cap',
+                        'accept' => 'image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf',
+                        'hint' => 'Certificate Image or PDF • Max 4MB',
+                        'span' => '',
+                        'existingUrl' => $agent->education_document_url ?? '',
+                    ],
+                    [
+                        'name' => 'cv_document',
+                        'label' => 'CV / Resume Document',
+                        'icon' => 'fa-file-lines',
+                        'accept' => 'image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf',
+                        'hint' => 'PDF or Image • Max 4MB',
+                        'span' => 'sm:col-span-2',
+                        'existingUrl' => $agent->cv_document_url ?? '',
+                    ],
+                ];
+            @endphp
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3.5">
-                    <label class="block font-bold text-[var(--foreground)] mb-1">
-                        Profile Picture @if($agent->profile_picture_url) <span class="text-emerald-700 font-semibold">(Uploaded ✓)</span> @endif
-                    </label>
-                    <input type="file" name="profile_picture" accept="image/*" class="w-full text-[11px] text-[var(--muted-foreground)]">
-                </div>
+                @foreach($editUploadCards as $card)
+                    @php
+                        $existingRaw = (string) ($card['existingUrl'] ?? '');
+                        $hasExisting = $existingRaw !== '';
+                        $existingIsPdf = str_starts_with($existingRaw, 'data:application/pdf') || str_ends_with(strtolower($existingRaw), '.pdf');
+                    @endphp
+                    <div
+                        class="{{ $card['span'] }}"
+                        x-data="{
+                            existingUrl: @js($existingRaw),
+                            existingIsPdf: {{ $existingIsPdf ? 'true' : 'false' }},
+                            fileName: '',
+                            fileSize: '',
+                            fileType: '',
+                            previewUrl: '',
+                            isPdf: false,
+                            dragging: false,
+                            handleFile(file) {
+                                if (!file) return;
+                                if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+                                this.fileName = file.name;
+                                const kb = file.size / 1024;
+                                this.fileSize = kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : Math.round(kb) + ' KB';
+                                this.isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                                this.fileType = this.isPdf ? 'PDF' : ((file.type.split('/')[1] || 'IMAGE').toUpperCase());
+                                this.previewUrl = URL.createObjectURL(file);
+                            },
+                            onInputChange(e) {
+                                const file = e.target.files?.[0];
+                                if (file) this.handleFile(file);
+                            },
+                            onDrop(e) {
+                                this.dragging = false;
+                                const file = e.dataTransfer?.files?.[0];
+                                if (!file) return;
+                                const dt = new DataTransfer();
+                                dt.items.add(file);
+                                this.$refs.fileInput.files = dt.files;
+                                this.handleFile(file);
+                            },
+                            clearNewFile() {
+                                if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+                                this.fileName = '';
+                                this.fileSize = '';
+                                this.fileType = '';
+                                this.previewUrl = '';
+                                this.isPdf = false;
+                                this.$refs.fileInput.value = '';
+                            }
+                        }"
+                    >
+                        <div class="mb-1.5 flex items-center justify-between">
+                            <label class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                                <i class="fa-solid {{ $card['icon'] }} text-[var(--accent-dark)]"></i>
+                                <span>{{ $card['label'] }}</span>
+                            </label>
+                            <template x-if="previewUrl">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                                    <i class="fa-solid fa-sparkles"></i> New File Selected
+                                </span>
+                            </template>
+                            <template x-if="!previewUrl && existingUrl">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-[#e4f3df] border border-[#c8dac2] px-2.5 py-0.5 text-[10px] font-extrabold text-[#163625]">
+                                    <i class="fa-solid fa-circle-check text-emerald-700"></i> Uploaded ✓
+                                </span>
+                            </template>
+                        </div>
 
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3.5">
-                    <label class="block font-bold text-[var(--foreground)] mb-1">
-                        NID Document Scan @if($agent->nid_document_url) <span class="text-emerald-700 font-semibold">(Uploaded ✓)</span> @endif
-                    </label>
-                    <input type="file" name="nid_document" accept="image/*,.pdf" class="w-full text-[11px] text-[var(--muted-foreground)]">
-                </div>
+                        <div
+                            @dragover.prevent="dragging = true"
+                            @dragleave.prevent="dragging = false"
+                            @drop.prevent="onDrop($event)"
+                            :class="dragging ? 'border-[#163625] bg-[#e4f3df] scale-[1.01]' : ((previewUrl || existingUrl) ? 'border-emerald-600/60 bg-white' : 'border-[#b9cfb2] bg-[var(--mint-100)]/60 hover:border-[#163625] hover:bg-white/80')"
+                            class="relative overflow-hidden rounded-2xl border-2 border-dashed p-3.5 transition-all duration-200 shadow-sm"
+                        >
+                            <input
+                                x-ref="fileInput"
+                                type="file"
+                                name="{{ $card['name'] }}"
+                                accept="{{ $card['accept'] }}"
+                                class="hidden"
+                                @change="onInputChange($event)"
+                            >
 
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3.5">
-                    <label class="block font-bold text-[var(--foreground)] mb-1">
-                        Driving License Scan @if($agent->license_document_url) <span class="text-emerald-700 font-semibold">(Uploaded ✓)</span> @endif
-                    </label>
-                    <input type="file" name="license_document" accept="image/*,.pdf" class="w-full text-[11px] text-[var(--muted-foreground)]">
-                </div>
+                            <!-- State 1: New File Selected -->
+                            <template x-if="previewUrl">
+                                <div class="relative space-y-2.5">
+                                    <button
+                                        type="button"
+                                        @click="clearNewFile()"
+                                        title="Revert new file"
+                                        class="absolute right-1.5 top-1.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow-md transition hover:scale-105 hover:bg-rose-700"
+                                    >
+                                        ✕
+                                    </button>
 
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3.5">
-                    <label class="block font-bold text-[var(--foreground)] mb-1">
-                        Education Certificate @if($agent->education_document_url) <span class="text-emerald-700 font-semibold">(Uploaded ✓)</span> @endif
-                    </label>
-                    <input type="file" name="education_document" accept="image/*,.pdf" class="w-full text-[11px] text-[var(--muted-foreground)]">
-                </div>
+                                    <template x-if="!isPdf">
+                                        <div class="flex items-center justify-center overflow-hidden rounded-xl border border-[#d9e5d5] bg-[#f8fbf6] p-2">
+                                            <img :src="previewUrl" :alt="fileName" class="max-h-36 w-auto rounded-lg object-contain shadow-sm">
+                                        </div>
+                                    </template>
 
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3.5 sm:col-span-2">
-                    <label class="block font-bold text-[var(--foreground)] mb-1">
-                        CV / Resume Document @if($agent->cv_document_url) <span class="text-emerald-700 font-semibold">(Uploaded ✓)</span> @endif
-                    </label>
-                    <input type="file" name="cv_document" accept="image/*,.pdf" class="w-full text-[11px] text-[var(--muted-foreground)]">
-                </div>
+                                    <template x-if="isPdf">
+                                        <div class="flex items-center gap-3 rounded-xl border border-[#d9e5d5] bg-[#f8fbf6] p-3.5">
+                                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+                                                <i class="fa-solid fa-file-pdf text-2xl"></i>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="truncate text-xs font-extrabold text-[#163625]" x-text="fileName"></p>
+                                                <a :href="previewUrl" target="_blank" class="mt-0.5 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 hover:underline">
+                                                    <span>Preview new PDF</span>
+                                                    <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <div class="flex items-center justify-between gap-2 pt-0.5 text-[11px]">
+                                        <div class="flex items-center gap-1.5 min-w-0">
+                                            <span class="shrink-0 rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-900" x-text="fileType"></span>
+                                            <span class="truncate font-semibold text-[#163625]" x-text="fileName"></span>
+                                            <span class="shrink-0 text-[10px] text-[#5e6d64]" x-text="'(' + fileSize + ')'"></span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            @click="$refs.fileInput.click()"
+                                            class="shrink-0 rounded-full border border-[#c8dac2] bg-[#eef5ea] px-2.5 py-1 text-[10px] font-bold text-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] transition"
+                                        >
+                                            Change
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- State 2: Existing Uploaded Document Preview -->
+                            <template x-if="!previewUrl && existingUrl">
+                                <div class="space-y-2.5">
+                                    <template x-if="!existingIsPdf">
+                                        <div class="flex items-center justify-center overflow-hidden rounded-xl border border-[#d9e5d5] bg-[#f8fbf6] p-2">
+                                            <img :src="existingUrl" alt="{{ $card['label'] }}" class="max-h-36 w-auto rounded-lg object-contain shadow-sm">
+                                        </div>
+                                    </template>
+
+                                    <template x-if="existingIsPdf">
+                                        <div class="flex items-center gap-3 rounded-xl border border-[#d9e5d5] bg-[#f8fbf6] p-3.5">
+                                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+                                                <i class="fa-solid fa-file-pdf text-2xl"></i>
+                                            </div>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="text-xs font-extrabold text-[#163625]">Saved PDF Document</p>
+                                                <p class="text-[10px] text-[#5e6d64]">Currently attached to your application</p>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <div class="flex items-center justify-between gap-2 pt-0.5 text-[11px]">
+                                        <span class="text-[11px] font-semibold text-emerald-800">
+                                            <i class="fa-solid fa-check-double mr-1"></i>Saved on file
+                                        </span>
+                                        <button
+                                            type="button"
+                                            @click="$refs.fileInput.click()"
+                                            class="rounded-full border border-[#c8dac2] bg-[#eef5ea] px-3 py-1 text-[10px] font-bold text-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] transition"
+                                        >
+                                            <i class="fa-solid fa-upload mr-1"></i>Replace File
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <!-- State 3: Empty Dropzone -->
+                            <template x-if="!previewUrl && !existingUrl">
+                                <div
+                                    @click="$refs.fileInput.click()"
+                                    class="group flex cursor-pointer flex-col items-center justify-center py-4 text-center"
+                                >
+                                    <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                                        <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                                    </div>
+                                    <p class="text-xs font-extrabold text-[var(--foreground)]">
+                                        Click to upload <span class="font-normal text-[var(--muted-foreground)]">or drag &amp; drop</span>
+                                    </p>
+                                    <p class="mt-0.5 text-[10px] text-[var(--muted-foreground)]">{{ $card['hint'] }}</p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                @endforeach
             </div>
         </section>
 

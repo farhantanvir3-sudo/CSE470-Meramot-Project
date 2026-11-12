@@ -133,6 +133,7 @@ class VendorOnboardingController extends Controller
             'notes' => 'nullable|string|max:2000',
             'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
             'logo_url' => 'nullable|string',
+            'verification_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
         ];
 
         if (!$isEditMode) {
@@ -227,11 +228,18 @@ class VendorOnboardingController extends Controller
             $logoUrl = trim((string) $validated['logo_url']) ?: null;
         }
 
+        $documentsPath = $existingProfile?->documents_path;
+        if ($request->hasFile('verification_document')) {
+            $docFile = $request->file('verification_document');
+            $docMime = $docFile->getMimeType() ?: 'application/octet-stream';
+            $documentsPath = 'data:' . $docMime . ';base64,' . base64_encode((string) file_get_contents($docFile->getRealPath()));
+        }
+
         $profile = DB::transaction(function () use (
             $isEditMode, $authUser, $existingProfile, $validated, $email, $cleanPhone,
             $lat, $lng, $city, $area, $gpsAddress, $vendorAddress, $sameAsGps,
             $isBranched, $branchName, $specialties, $courierPickup, $inShopRepair, $spareParts,
-            $serviceCategories, $logoUrl
+            $serviceCategories, $logoUrl, $documentsPath
         ) {
             if ($isEditMode && $authUser && $existingProfile) {
                 $authUser->update([
@@ -291,6 +299,7 @@ class VendorOnboardingController extends Controller
                 'spare_parts' => $spareParts,
                 'notes' => !empty($validated['notes']) ? trim($validated['notes']) : null,
                 'logo_url' => $logoUrl,
+                'documents_path' => $documentsPath,
                 'verification_status' => 'pending',
                 'rejection_reason' => null,
                 'rejected_at' => null,
@@ -682,6 +691,8 @@ class VendorOnboardingController extends Controller
             'is_branched' => 'nullable|boolean',
             'branch_name' => 'nullable|string|max:120',
             'categories' => 'required|array|min:1',
+            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:4096',
+            'verification_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
         ]);
 
         $sameAsGps = $request->boolean('same_as_gps_location');
@@ -749,6 +760,21 @@ class VendorOnboardingController extends Controller
             $user->update(['role' => 'vendor']);
         }
 
+        $existingVendorProfile = VendorProfile::where('user_id', $user->id)->first();
+        $logoUrl = $existingVendorProfile?->logo_url;
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $mime = $file->getMimeType() ?: 'image/jpeg';
+            $logoUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($file->getRealPath()));
+        }
+
+        $documentsPath = $existingVendorProfile?->documents_path;
+        if ($request->hasFile('verification_document')) {
+            $docFile = $request->file('verification_document');
+            $docMime = $docFile->getMimeType() ?: 'application/octet-stream';
+            $documentsPath = 'data:' . $docMime . ';base64,' . base64_encode((string) file_get_contents($docFile->getRealPath()));
+        }
+
         $profile = VendorProfile::updateOrCreate(
             ['user_id' => $user->id],
             [
@@ -769,6 +795,8 @@ class VendorOnboardingController extends Controller
                 'shop_longitude' => $lng,
                 'categories' => $validated['categories'],
                 'specialties' => $validated['categories'],
+                'logo_url' => $logoUrl,
+                'documents_path' => $documentsPath,
                 'verification_status' => 'pending',
                 'rejection_reason' => null,
                 'rejected_at' => null,
@@ -791,6 +819,7 @@ class VendorOnboardingController extends Controller
                 'name' => $validated['shop_name'],
                 'is_branch' => $isBranched,
                 'branch_name' => $branchName,
+                'logo_url' => $logoUrl ?: $primaryShop->logo_url,
                 'address' => $vendorAddress,
                 'gps_address' => $gpsAddress,
                 'same_as_gps_location' => ($vendorAddress === $gpsAddress) && $sameAsGps,
@@ -815,6 +844,7 @@ class VendorOnboardingController extends Controller
                 'slug' => $slug,
                 'is_branch' => $isBranched,
                 'branch_name' => $branchName,
+                'logo_url' => $logoUrl,
                 'description' => "Verified electronic repair workshop in {$area}, {$city}.",
                 'address' => $vendorAddress,
                 'gps_address' => $gpsAddress,
@@ -1080,5 +1110,39 @@ class VendorOnboardingController extends Controller
             'message' => "Vendor profile has been {$status}.",
             'data' => $profile,
         ]);
+    }
+
+    /**
+     * Inline Admin Document Preview Endpoint for Vendor Profiles
+     * Route: GET /admin/vendors/{id}/document/{type}
+     */
+    public function viewDocument($id, string $type)
+    {
+        $profile = VendorProfile::with('shops')->findOrFail($id);
+        $primaryShop = $profile->shops->sortBy('id')->first();
+
+        $raw = match ($type) {
+            'logo' => $profile->logo_url ?: $primaryShop?->logo_url,
+            'document' => $profile->documents_path,
+            default => null,
+        };
+
+        if (!$raw) {
+            abort(404, 'Document not uploaded for this vendor application.');
+        }
+
+        if (preg_match('/^data:([^;]+);base64,(.+)$/s', $raw, $matches)) {
+            $mime = $matches[1];
+            $binary = base64_decode($matches[2], true);
+            if ($binary === false) {
+                abort(422, 'Corrupted document data.');
+            }
+
+            return response($binary, 200)
+                ->header('Content-Type', $mime)
+                ->header('Content-Disposition', 'inline; filename="vendor-' . $profile->id . '-' . $type . '"');
+        }
+
+        return redirect($raw);
     }
 }

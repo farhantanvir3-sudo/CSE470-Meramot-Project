@@ -374,7 +374,7 @@ Models Touched: User, VendorProfile, RepairShop
             </div>
         </summary>
 
-        <form method="POST" action="/vendor/onboarding" class="space-y-5 text-xs mt-6 pt-5 border-t border-[var(--border)]">
+        <form method="POST" action="/vendor/onboarding" enctype="multipart/form-data" class="space-y-5 text-xs mt-6 pt-5 border-t border-[var(--border)]">
             @csrf
 
             @guest
@@ -465,6 +465,214 @@ Models Touched: User, VendorProfile, RepairShop
                         class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] p-3 text-xs outline-none"
                         required
                     >
+                </div>
+            </div>
+
+            <!-- ── Interactive Dashed Dropzone Cards (Shop Logo + Trade License / NID Scan) ── -->
+            @php
+                $existingLogoUrl = $profile->logo_url ?? $primaryShop->logo_url ?? null;
+                $existingDocUrl = $profile->documents_path ?? null;
+                $existingDocIsPdf = $existingDocUrl && str_starts_with((string) $existingDocUrl, 'data:application/pdf');
+            @endphp
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Dropzone 1: Shop Logo / Storefront Photo -->
+                <div
+                    x-data="{
+                        dragging: false,
+                        fileName: '',
+                        fileSize: '',
+                        fileType: '',
+                        previewUrl: null,
+                        existingUrl: @js($existingLogoUrl),
+                        formatBytes(bytes) {
+                            if (!bytes) return '';
+                            return bytes < 1048576 ? (bytes / 1024).toFixed(1) + ' KB' : (bytes / 1048576).toFixed(2) + ' MB';
+                        },
+                        handleFile(file) {
+                            if (!file) return;
+                            this.fileName = file.name;
+                            this.fileSize = this.formatBytes(file.size);
+                            this.fileType = (file.name.split('.').pop() || 'IMG').toUpperCase();
+                            if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+                            this.previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+                        },
+                        onDrop(e) {
+                            this.dragging = false;
+                            const files = e.dataTransfer.files;
+                            if (files && files.length > 0) {
+                                this.$refs.fileInput.files = files;
+                                this.handleFile(files[0]);
+                            }
+                        },
+                        clearFile() {
+                            this.$refs.fileInput.value = '';
+                            if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+                            this.fileName = '';
+                            this.fileSize = '';
+                            this.fileType = '';
+                            this.previewUrl = null;
+                        }
+                    }"
+                    class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-3.5 flex flex-col justify-between"
+                >
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                        <label class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                            <i class="fa-solid fa-store text-[var(--accent-dark)]"></i>
+                            <span>Shop Logo / Storefront Photo</span>
+                        </label>
+                        <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">JPG / PNG</span>
+                    </div>
+
+                    <input x-ref="fileInput" type="file" name="logo" accept="image/*" class="hidden" @change="handleFile($event.target.files[0])">
+
+                    <div
+                        x-show="!fileName && !existingUrl"
+                        @click="$refs.fileInput.click()"
+                        @dragover.prevent="dragging = true"
+                        @dragleave.prevent="dragging = false"
+                        @drop.prevent="onDrop($event)"
+                        :class="dragging ? 'border-[var(--accent-dark)] bg-[var(--mint-200)]/60 scale-[1.01]' : 'border-[var(--border)] bg-[var(--card)]/90 hover:border-[var(--accent-dark)] hover:bg-[var(--card)]'"
+                        class="cursor-pointer rounded-xl border-2 border-dashed p-4 text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[120px]"
+                    >
+                        <div class="h-9 w-9 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] flex items-center justify-center mb-1.5 shadow-sm">
+                            <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+                        </div>
+                        <p class="text-[11px] font-bold text-[var(--foreground)]">Drop shop logo or <span class="underline text-[var(--accent-dark)]">browse</span></p>
+                        <p class="text-[10px] text-[var(--muted-foreground)] mt-0.5">Instant thumbnail preview • Max 5 MB</p>
+                    </div>
+
+                    <div x-show="!fileName && existingUrl" x-cloak class="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 space-y-2">
+                        <div class="relative h-24 w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/40 flex items-center justify-center">
+                            <img :src="existingUrl" alt="Current Shop Logo" class="max-h-full max-w-full object-contain">
+                            <span class="absolute top-1.5 left-1.5 rounded-md bg-emerald-800/90 px-2 py-0.5 text-[9px] font-bold uppercase text-white">Saved Logo</span>
+                        </div>
+                        <button type="button" @click="$refs.fileInput.click()" class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] py-1.5 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <i class="fa-solid fa-arrows-rotate mr-1"></i> Replace Logo
+                        </button>
+                    </div>
+
+                    <div x-show="fileName" x-cloak class="rounded-xl border-2 border-[var(--accent-dark)]/40 bg-[var(--card)] p-3 space-y-2">
+                        <div class="relative h-24 w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/40 flex items-center justify-center">
+                            <template x-if="previewUrl">
+                                <img :src="previewUrl" alt="New Logo Preview" class="max-h-full max-w-full object-contain">
+                            </template>
+                            <span class="absolute top-1.5 left-1.5 rounded-md bg-[var(--accent-dark)] px-2 py-0.5 text-[9px] font-bold uppercase text-white" x-text="fileType"></span>
+                            <button type="button" @click="clearFile()" class="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-rose-600 text-white text-xs font-bold shadow hover:bg-rose-700 flex items-center justify-center" title="Remove selected file">✕</button>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 text-[11px]">
+                            <span class="font-bold text-[var(--foreground)] truncate" x-text="fileName"></span>
+                            <span class="shrink-0 rounded-md bg-[var(--mint-100)] px-2 py-0.5 font-mono text-[10px] font-semibold text-[var(--accent-dark)]" x-text="fileSize"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dropzone 2: Trade License / Owner NID Scan -->
+                <div
+                    x-data="{
+                        dragging: false,
+                        fileName: '',
+                        fileSize: '',
+                        fileType: '',
+                        isPdf: false,
+                        previewUrl: null,
+                        existingUrl: @js($existingDocUrl),
+                        existingIsPdf: {{ $existingDocIsPdf ? 'true' : 'false' }},
+                        formatBytes(bytes) {
+                            if (!bytes) return '';
+                            return bytes < 1048576 ? (bytes / 1024).toFixed(1) + ' KB' : (bytes / 1048576).toFixed(2) + ' MB';
+                        },
+                        handleFile(file) {
+                            if (!file) return;
+                            this.fileName = file.name;
+                            this.fileSize = this.formatBytes(file.size);
+                            this.fileType = (file.name.split('.').pop() || 'DOC').toUpperCase();
+                            this.isPdf = file.type === 'application/pdf' || this.fileType === 'PDF';
+                            if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+                            this.previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+                        },
+                        onDrop(e) {
+                            this.dragging = false;
+                            const files = e.dataTransfer.files;
+                            if (files && files.length > 0) {
+                                this.$refs.fileInput.files = files;
+                                this.handleFile(files[0]);
+                            }
+                        },
+                        clearFile() {
+                            this.$refs.fileInput.value = '';
+                            if (this.previewUrl) URL.revokeObjectURL(this.previewUrl);
+                            this.fileName = '';
+                            this.fileSize = '';
+                            this.fileType = '';
+                            this.isPdf = false;
+                            this.previewUrl = null;
+                        }
+                    }"
+                    class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-3.5 flex flex-col justify-between"
+                >
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                        <label class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-shield text-[var(--accent-dark)]"></i>
+                            <span>Trade License / NID Scan</span>
+                        </label>
+                        <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">IMG / PDF</span>
+                    </div>
+
+                    <input x-ref="fileInput" type="file" name="verification_document" accept="image/*,.pdf" class="hidden" @change="handleFile($event.target.files[0])">
+
+                    <div
+                        x-show="!fileName && !existingUrl"
+                        @click="$refs.fileInput.click()"
+                        @dragover.prevent="dragging = true"
+                        @dragleave.prevent="dragging = false"
+                        @drop.prevent="onDrop($event)"
+                        :class="dragging ? 'border-[var(--accent-dark)] bg-[var(--mint-200)]/60 scale-[1.01]' : 'border-[var(--border)] bg-[var(--card)]/90 hover:border-[var(--accent-dark)] hover:bg-[var(--card)]'"
+                        class="cursor-pointer rounded-xl border-2 border-dashed p-4 text-center transition-all duration-150 flex flex-col items-center justify-center min-h-[120px]"
+                    >
+                        <div class="h-9 w-9 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] flex items-center justify-center mb-1.5 shadow-sm">
+                            <i class="fa-solid fa-id-card text-sm"></i>
+                        </div>
+                        <p class="text-[11px] font-bold text-[var(--foreground)]">Drop license/NID scan or <span class="underline text-[var(--accent-dark)]">browse</span></p>
+                        <p class="text-[10px] text-[var(--muted-foreground)] mt-0.5">JPG, PNG or PDF • Max 8 MB</p>
+                    </div>
+
+                    <div x-show="!fileName && existingUrl" x-cloak class="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 space-y-2">
+                        <div class="relative h-24 w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/40 flex items-center justify-center">
+                            <template x-if="!existingIsPdf">
+                                <img :src="existingUrl" alt="Verification Scan" class="max-h-full max-w-full object-contain">
+                            </template>
+                            <template x-if="existingIsPdf">
+                                <div class="flex flex-col items-center text-[var(--accent-dark)]">
+                                    <i class="fa-solid fa-file-pdf text-2xl text-rose-600"></i>
+                                    <span class="text-[10px] font-bold mt-1">Uploaded PDF Document</span>
+                                </div>
+                            </template>
+                            <span class="absolute top-1.5 left-1.5 rounded-md bg-emerald-800/90 px-2 py-0.5 text-[9px] font-bold uppercase text-white">On File</span>
+                        </div>
+                        <button type="button" @click="$refs.fileInput.click()" class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] py-1.5 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <i class="fa-solid fa-arrows-rotate mr-1"></i> Replace Scan
+                        </button>
+                    </div>
+
+                    <div x-show="fileName" x-cloak class="rounded-xl border-2 border-[var(--accent-dark)]/40 bg-[var(--card)] p-3 space-y-2">
+                        <div class="relative h-24 w-full overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/40 flex items-center justify-center">
+                            <template x-if="previewUrl && !isPdf">
+                                <img :src="previewUrl" alt="New Scan Preview" class="max-h-full max-w-full object-contain">
+                            </template>
+                            <template x-if="isPdf">
+                                <div class="flex flex-col items-center text-[var(--accent-dark)]">
+                                    <i class="fa-solid fa-file-pdf text-2xl text-rose-600"></i>
+                                    <span class="text-[10px] font-bold mt-1">PDF Document Ready</span>
+                                </div>
+                            </template>
+                            <span class="absolute top-1.5 left-1.5 rounded-md bg-[var(--accent-dark)] px-2 py-0.5 text-[9px] font-bold uppercase text-white" x-text="fileType"></span>
+                            <button type="button" @click="clearFile()" class="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-rose-600 text-white text-xs font-bold shadow hover:bg-rose-700 flex items-center justify-center" title="Remove selected file">✕</button>
+                        </div>
+                        <div class="flex items-center justify-between gap-2 text-[11px]">
+                            <span class="font-bold text-[var(--foreground)] truncate" x-text="fileName"></span>
+                            <span class="shrink-0 rounded-md bg-[var(--mint-100)] px-2 py-0.5 font-mono text-[10px] font-semibold text-[var(--accent-dark)]" x-text="fileSize"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

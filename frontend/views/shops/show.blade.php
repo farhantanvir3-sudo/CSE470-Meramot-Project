@@ -59,7 +59,11 @@
     @endif
 
     <!-- Shop Profile Hero Header -->
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-8 shadow-sm mb-6 min-w-0 max-w-full">
+    <div
+        class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-8 shadow-sm mb-6 min-w-0 max-w-full"
+        data-shop-lat="{{ $shop->latitude }}"
+        data-shop-lng="{{ $shop->longitude }}"
+    >
         <div class="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[130px_minmax(0,1fr)_260px] lg:items-start">
 
             <!-- Left: Shop Logo / Avatar -->
@@ -110,6 +114,9 @@
                         <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
                         {{ $shop->public_address }}
                     </span>
+                    <span class="distance-display {{ isset($shop->distance_km) ? '' : 'hidden' }} rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-xs font-bold text-[var(--accent-dark)]">
+                        {{ isset($shop->distance_km) ? \App\Services\GeolocationService::formatDistance((float) $shop->distance_km) : '' }}
+                    </span>
                     @if($shop->phone)
                         <span class="opacity-40">·</span>
                         <span class="text-[var(--muted-foreground)]">{{ $shop->phone }}</span>
@@ -156,7 +163,7 @@
                         ৳{{ number_format($shop->inspection_fee ?: 200) }}
                     </div>
                     <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
-                        Base Labor: ৳{{ number_format($shop->base_labor_fee ?: 400) }} · ETA: {{ $shop->eta_minutes < 60 ? $shop->eta_minutes . ' min' : round($shop->eta_minutes / 60) . ' hr' }}
+                        Base Labor: ৳{{ number_format($shop->base_labor_fee ?: 400) }} · ETA: <span class="eta-display font-semibold text-[var(--foreground)]">{{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}</span>
                     </div>
                 </div>
 

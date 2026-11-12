@@ -167,34 +167,212 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
         <form method="POST" action="{{ route('vendor.apply.store') }}" enctype="multipart/form-data" class="space-y-5" autocomplete="off">
             @csrf
 
-            <!-- Shop Logo Upload -->
-            <div class="flex flex-col sm:flex-row items-center gap-4 rounded-2xl border border-[var(--border)] bg-white p-4 md:p-5">
-                <div class="relative h-24 w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[var(--border)] bg-[var(--mint-50)] transition hover:border-[#244229]">
+            <!-- Shop Logo & Trade Verification Document Dashed Dropzone Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Card 1: Shop Logo Interactive Dropzone -->
+                <div
+                    x-data="{
+                        logoName: '',
+                        logoSize: '',
+                        logoType: 'IMAGE',
+                        draggingLogo: false,
+                        pickLogo(file) {
+                            if (!file) return;
+                            this.logoName = file.name;
+                            const kb = file.size / 1024;
+                            this.logoSize = kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : Math.round(kb) + ' KB';
+                            this.logoType = (file.type.split('/')[1] || 'IMAGE').toUpperCase();
+                            logoPreview = URL.createObjectURL(file);
+                        },
+                        dropLogo(e) {
+                            this.draggingLogo = false;
+                            const file = e.dataTransfer?.files?.[0];
+                            if (!file) return;
+                            const dt = new DataTransfer();
+                            dt.items.add(file);
+                            $refs.logoInput.files = dt.files;
+                            this.pickLogo(file);
+                        },
+                        clearLogo() {
+                            logoPreview = '';
+                            this.logoName = '';
+                            this.logoSize = '';
+                            $refs.logoInput.value = '';
+                        }
+                    }"
+                    @dragover.prevent="draggingLogo = true"
+                    @dragleave.prevent="draggingLogo = false"
+                    @drop.prevent="dropLogo($event)"
+                    :class="draggingLogo ? 'border-[#244229] bg-[#e4f3df] scale-[1.01]' : (logoPreview ? 'border-emerald-600/60 bg-white' : 'border-[#b9cfb2] bg-[var(--mint-50)]/60 hover:border-[#244229] hover:bg-white')"
+                    class="relative rounded-2xl border-2 border-dashed p-4 transition-all duration-200 shadow-sm"
+                >
+                    <input
+                        x-ref="logoInput"
+                        type="file"
+                        name="logo"
+                        accept="image/png,image/jpeg,image/webp"
+                        class="hidden"
+                        @change="pickLogo($event.target.files?.[0])"
+                    >
+
+                    <div class="mb-2 flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-[#203126] flex items-center gap-1.5">
+                            <i class="fa-solid fa-store text-[#244229]"></i>
+                            <span>Shop Logo / Storefront Photo</span>
+                        </span>
+                        <template x-if="logoPreview">
+                            <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">Ready ✓</span>
+                        </template>
+                    </div>
+
+                    <template x-if="!logoPreview">
+                        <div @click="$refs.logoInput.click()" class="group flex cursor-pointer flex-col items-center justify-center py-4 text-center">
+                            <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition group-hover:scale-105 group-hover:bg-[#244229] group-hover:text-[#E4FCD5]">
+                                <i class="fa-solid fa-image text-base"></i>
+                            </div>
+                            <p class="text-xs font-bold text-[#203126]">Click to upload logo <span class="font-normal text-[#5e6d64]">or drag &amp; drop</span></p>
+                            <p class="mt-0.5 text-[10px] text-[#5e6d64]">Square PNG, JPG, WebP • Max 2MB</p>
+                        </div>
+                    </template>
+
                     <template x-if="logoPreview">
-                        <div class="h-full w-full relative">
-                            <img :src="logoPreview" alt="Shop Logo" class="h-full w-full object-cover">
+                        <div class="relative space-y-2">
                             <button
                                 type="button"
-                                @click="logoPreview = ''; $refs.logoInput.value = ''"
-                                class="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-red-600"
+                                @click="clearLogo()"
+                                title="Remove logo"
+                                class="absolute right-1.5 top-1.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow transition hover:scale-105 hover:bg-rose-700"
                             >
                                 ✕
                             </button>
+                            <div class="flex items-center justify-center overflow-hidden rounded-xl border border-[#d9e5d5] bg-[#f8fbf6] p-2">
+                                <img :src="logoPreview" alt="Shop Logo Preview" class="max-h-32 w-auto rounded-lg object-contain shadow-sm">
+                            </div>
+                            <div class="flex items-center justify-between gap-2 text-[11px]">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <span class="rounded bg-[#eef5ea] border border-[#c8dac2] px-2 py-0.5 text-[10px] font-extrabold text-[#163625]" x-text="logoType"></span>
+                                    <span class="truncate font-semibold text-[#163625]" x-text="logoName || 'Saved shop logo'"></span>
+                                    <span x-show="logoSize" class="text-[10px] text-[#5e6d64]" x-text="'(' + logoSize + ')'"></span>
+                                </div>
+                                <button type="button" @click="$refs.logoInput.click()" class="rounded-full border border-[#c8dac2] bg-[#eef5ea] px-2.5 py-1 text-[10px] font-bold text-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] transition">
+                                    Replace
+                                </button>
+                            </div>
                         </div>
                     </template>
-                    <template x-if="!logoPreview">
-                        <label class="flex h-full w-full cursor-pointer flex-col items-center justify-center text-[var(--muted-foreground)] hover:text-[#244229]">
-                            <i class="fa-solid fa-image text-xl mb-1"></i>
-                            <span class="text-[10px] font-bold uppercase tracking-wider">Logo</span>
-                            <input x-ref="logoInput" type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="hidden" @change="handleLogoFile($event)">
-                        </label>
-                    </template>
                 </div>
-                <div class="text-center sm:text-left">
-                    <p class="text-sm md:text-lg font-bold text-[#203126]">Shop Logo</p>
-                    <p class="mt-1 max-w-sm text-xs md:text-sm leading-relaxed text-[#5e6d64]">
-                        Upload an optional logo or storefront photo to make your shop stand out. A square image works best.
-                    </p>
+
+                <!-- Card 2: Trade License / NID Verification Scan Interactive Dropzone -->
+                <div
+                    x-data="{
+                        docPreview: @js($profile->documents_path ?? ''),
+                        docName: '',
+                        docSize: '',
+                        docType: 'SCAN',
+                        docIsPdf: {{ str_starts_with((string) ($profile->documents_path ?? ''), 'data:application/pdf') ? 'true' : 'false' }},
+                        draggingDoc: false,
+                        pickDoc(file) {
+                            if (!file) return;
+                            this.docName = file.name;
+                            const kb = file.size / 1024;
+                            this.docSize = kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : Math.round(kb) + ' KB';
+                            this.docIsPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                            this.docType = this.docIsPdf ? 'PDF' : ((file.type.split('/')[1] || 'IMG').toUpperCase());
+                            this.docPreview = URL.createObjectURL(file);
+                        },
+                        dropDoc(e) {
+                            this.draggingDoc = false;
+                            const file = e.dataTransfer?.files?.[0];
+                            if (!file) return;
+                            const dt = new DataTransfer();
+                            dt.items.add(file);
+                            this.$refs.docInput.files = dt.files;
+                            this.pickDoc(file);
+                        },
+                        clearDoc() {
+                            this.docPreview = '';
+                            this.docName = '';
+                            this.docSize = '';
+                            this.docIsPdf = false;
+                            this.$refs.docInput.value = '';
+                        }
+                    }"
+                    @dragover.prevent="draggingDoc = true"
+                    @dragleave.prevent="draggingDoc = false"
+                    @drop.prevent="dropDoc($event)"
+                    :class="draggingDoc ? 'border-[#244229] bg-[#e4f3df] scale-[1.01]' : (docPreview ? 'border-emerald-600/60 bg-white' : 'border-[#b9cfb2] bg-[var(--mint-50)]/60 hover:border-[#244229] hover:bg-white')"
+                    class="relative rounded-2xl border-2 border-dashed p-4 transition-all duration-200 shadow-sm"
+                >
+                    <input
+                        x-ref="docInput"
+                        type="file"
+                        name="verification_document"
+                        accept="image/png,image/jpeg,image/webp,application/pdf,.pdf"
+                        class="hidden"
+                        @change="pickDoc($event.target.files?.[0])"
+                    >
+
+                    <div class="mb-2 flex items-center justify-between">
+                        <span class="text-xs font-extrabold text-[#203126] flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-shield text-[#244229]"></i>
+                            <span>Trade License / NID Scan <span class="font-normal text-[#5e6d64]">(Optional)</span></span>
+                        </span>
+                        <template x-if="docPreview">
+                            <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">Attached ✓</span>
+                        </template>
+                    </div>
+
+                    <template x-if="!docPreview">
+                        <div @click="$refs.docInput.click()" class="group flex cursor-pointer flex-col items-center justify-center py-4 text-center">
+                            <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition group-hover:scale-105 group-hover:bg-[#244229] group-hover:text-[#E4FCD5]">
+                                <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                            </div>
+                            <p class="text-xs font-bold text-[#203126]">Click to attach scan <span class="font-normal text-[#5e6d64]">or drag &amp; drop</span></p>
+                            <p class="mt-0.5 text-[10px] text-[#5e6d64]">Trade License or NID Image/PDF • Max 4MB</p>
+                        </div>
+                    </template>
+
+                    <template x-if="docPreview">
+                        <div class="relative space-y-2">
+                            <button
+                                type="button"
+                                @click="clearDoc()"
+                                title="Remove document"
+                                class="absolute right-1.5 top-1.5 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white shadow transition hover:scale-105 hover:bg-rose-700"
+                            >
+                                ✕
+                            </button>
+
+                            <template x-if="!docIsPdf">
+                                <div class="flex items-center justify-center overflow-hidden rounded-xl border border-[#d9e5d5] bg-[#f8fbf6] p-2">
+                                    <img :src="docPreview" alt="Verification Document" class="max-h-32 w-auto rounded-lg object-contain shadow-sm">
+                                </div>
+                            </template>
+
+                            <template x-if="docIsPdf">
+                                <div class="flex items-center gap-3 rounded-xl border border-[#d9e5d5] bg-[#f8fbf6] p-3.5">
+                                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-700">
+                                        <i class="fa-solid fa-file-pdf text-xl"></i>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-xs font-extrabold text-[#163625]" x-text="docName || 'Trade License / NID PDF'"></p>
+                                        <a :href="docPreview" target="_blank" class="text-[11px] font-bold text-emerald-800 hover:underline">Preview PDF ↗</a>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div class="flex items-center justify-between gap-2 text-[11px]">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <span class="rounded bg-[#eef5ea] border border-[#c8dac2] px-2 py-0.5 text-[10px] font-extrabold text-[#163625]" x-text="docType"></span>
+                                    <span class="truncate font-semibold text-[#163625]" x-text="docName || 'Verification scan'"></span>
+                                    <span x-show="docSize" class="text-[10px] text-[#5e6d64]" x-text="'(' + docSize + ')'"></span>
+                                </div>
+                                <button type="button" @click="$refs.docInput.click()" class="rounded-full border border-[#c8dac2] bg-[#eef5ea] px-2.5 py-1 text-[10px] font-bold text-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] transition">
+                                    Replace
+                                </button>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
 
