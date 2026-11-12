@@ -128,6 +128,12 @@ Models Touched: User, VendorProfile, RepairShop
         </div>
     @endif
 
+    @if(session('warning'))
+        <div class="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-900 shadow-sm">
+            <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>{{ session('warning') }}
+        </div>
+    @endif
+
     @if($errors->any())
         <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1 shadow-sm">
             @foreach($errors->all() as $error)
@@ -162,6 +168,10 @@ Models Touched: User, VendorProfile, RepairShop
                     <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
                         <i class="fa-solid fa-triangle-exclamation"></i> REJECTED
                     </span>
+                @elseif($vStatus === 'under_review')
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-sky-600 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                        <i class="fa-solid fa-magnifying-glass"></i> UNDER REVIEW
+                    </span>
                 @else
                     <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
                         <i class="fa-solid fa-clock"></i> PENDING
@@ -172,7 +182,7 @@ Models Touched: User, VendorProfile, RepairShop
             <div class="space-y-2.5 text-xs">
                 <div class="flex items-center justify-between">
                     <span class="text-[var(--muted-foreground)]">Application status</span>
-                    <span class="font-bold uppercase text-[var(--foreground)]">{{ strtoupper($vStatus) }}</span>
+                    <span class="font-bold uppercase text-[var(--foreground)]">{{ strtoupper(str_replace('_', ' ', $vStatus)) }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-[var(--muted-foreground)]">Shop setup</span>
@@ -198,9 +208,9 @@ Models Touched: User, VendorProfile, RepairShop
                         Click <strong>Edit application</strong> below to update your trade credentials and resubmit for review.
                     </div>
                 </div>
-            @elseif($vStatus === 'pending')
+            @elseif(in_array($vStatus, ['pending', 'under_review'], true))
                 <div class="rounded-2xl border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs text-amber-950">
-                    Your application is under administrative review. Shop visibility stays hidden until an administrator verifies your Trade License
+                    Your application is {{ $vStatus === 'under_review' ? 'currently being audited by an administrator' : 'under administrative review' }}. Shop visibility stays hidden until an administrator verifies your Trade License
                     @if($profile->business_license_no)
                         (<span class="font-mono font-bold">{{ $profile->business_license_no }}</span>)
                     @endif

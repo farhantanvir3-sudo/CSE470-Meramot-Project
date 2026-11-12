@@ -5,21 +5,22 @@
 @section('content')
 @php
     $statusUpper = strtoupper($profile->verification_status ?? 'pending');
+    $statusDisplay = str_replace('_', ' ', $statusUpper);
     $setupComplete = (bool) optional($primaryShop)->setup_complete;
     $isPublic = (bool) optional($primaryShop)->is_public;
 @endphp
 
 <div class="grid min-h-[75vh] place-items-center px-4 py-10">
-    <div class="w-full max-w-3xl rounded-[1.5rem] md:rounded-[2rem] border border-white/60 bg-white/90 p-6 md:p-8 shadow-2xl backdrop-blur">
+    <div class="w-full max-w-3xl rounded-[1.5rem] md:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-2xl backdrop-blur">
         <div class="flex items-center justify-between gap-3">
-            <h1 class="text-2xl md:text-3xl font-bold text-[#244229]">
+            <h1 class="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
                 Vendor application status
             </h1>
             <a
                 href="{{ route('vendor.onboarding') }}"
                 title="Back to Onboarding Hub"
                 aria-label="Back to Onboarding Hub"
-                class="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#244229] hover:bg-[#244229] hover:text-[#E4FCD5] hover:shadow-md"
+                class="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] text-[var(--foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-dark)] hover:bg-[var(--accent-dark)] hover:text-[var(--accent-foreground)] hover:shadow-md"
             >
                 <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
             </a>
@@ -31,19 +32,24 @@
             </div>
         @endif
 
-        <div class="mt-6 grid gap-3 sm:grid-cols-2 rounded-3xl bg-[#f6faf4] p-5 text-sm text-slate-700">
-            <p><span class="font-semibold text-slate-900">Application ID:</span> #{{ $profile->id }}</p>
-            <p><span class="font-semibold text-slate-900">Owner:</span> {{ $profile->owner_name ?: $user->name }}</p>
-            <p><span class="font-semibold text-slate-900">Business email:</span> {{ $profile->business_email ?: $user->email }}</p>
-            <p><span class="font-semibold text-slate-900">Shop name:</span> {{ $profile->shop_name }}</p>
-            <p><span class="font-semibold text-slate-900">Status:</span> {{ $statusUpper }}</p>
-            <p><span class="font-semibold text-slate-900">Shop setup:</span> {{ $setupComplete ? 'Completed' : 'Pending' }}</p>
-            <p><span class="font-semibold text-slate-900">Visibility:</span> {{ $isPublic ? 'Public' : 'Hidden' }}</p>
+        <div class="mt-6 grid gap-3 sm:grid-cols-2 rounded-3xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-5 text-sm text-[var(--muted-foreground)]">
+            <p><span class="font-semibold text-[var(--foreground)]">Application ID:</span> #{{ $profile->id }}</p>
+            <p><span class="font-semibold text-[var(--foreground)]">Owner:</span> {{ $profile->owner_name ?: $user->name }}</p>
+            <p><span class="font-semibold text-[var(--foreground)]">Business email:</span> {{ $profile->business_email ?: $user->email }}</p>
+            <p><span class="font-semibold text-[var(--foreground)]">Shop name:</span> {{ $profile->shop_name }}</p>
+            <p><span class="font-semibold text-[var(--foreground)]">Status:</span> {{ $statusDisplay }}</p>
+            <p><span class="font-semibold text-[var(--foreground)]">Shop setup:</span> {{ $setupComplete ? 'Completed' : 'Pending' }}</p>
+            <p><span class="font-semibold text-[var(--foreground)]">Visibility:</span> {{ $isPublic ? 'Public' : 'Hidden' }}</p>
+            @if($profile->reviewed_at)
+                <p><span class="font-semibold text-[var(--foreground)]">Last reviewed:</span> {{ $profile->reviewed_at->format('M d, Y h:i A') }}</p>
+            @endif
         </div>
 
-        @if($statusUpper === 'PENDING')
+        @if(in_array($statusUpper, ['PENDING', 'UNDER_REVIEW'], true))
             <div class="mt-6 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-900">
-                <p class="font-semibold">Your application is under review.</p>
+                <p class="font-semibold">
+                    {{ $statusUpper === 'UNDER_REVIEW' ? 'Your application is actively being audited by our verification desk.' : 'Your application is under review.' }}
+                </p>
                 <p class="mt-1 text-xs md:text-sm">
                     Please check back later. You can also update your submitted information if needed.
                 </p>
@@ -73,10 +79,10 @@
         @endif
 
         <div class="mt-8 flex flex-wrap gap-3">
-            @if(in_array($statusUpper, ['PENDING', 'REJECTED'], true))
+            @if(in_array($statusUpper, ['PENDING', 'UNDER_REVIEW', 'REJECTED'], true))
                 <a
                     href="{{ route('vendor.apply') }}"
-                    class="rounded-2xl border border-[#c8dac2] bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#244229] hover:bg-[var(--mint-100)] hover:shadow-md"
+                    class="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-5 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-dark)] hover:bg-[var(--mint-100)] hover:shadow-md"
                 >
                     Edit submitted information
                 </a>
