@@ -309,6 +309,24 @@
                             <span>Deals</span>
                         </a>
 
+                        <button
+                            type="button"
+                            @click="$dispatch('meramot-open-location-modal')"
+                            class="lg:hidden px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold transition flex items-center gap-1.5 hover:opacity-90"
+                        >
+                            <i class="fa-solid fa-map-location-dot text-[10px]"></i>
+                            <span>Pin on Map</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            data-detect-location
+                            class="lg:hidden px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold transition flex items-center gap-1.5 hover:bg-[var(--mint-200)]"
+                        >
+                            <i class="fa-solid fa-location-crosshairs text-[10px]"></i>
+                            <span>Near Me</span>
+                        </button>
+
                         @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm']))
                             <a href="/shops" class="text-[11px] text-rose-700 font-bold hover:underline ml-1">
                                 Reset

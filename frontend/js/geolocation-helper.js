@@ -609,12 +609,11 @@ function renderShopDistanceBadges(userLat, userLng) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    const useLocationBtn = document.getElementById('use-my-location-btn');
-    if (useLocationBtn) {
-        useLocationBtn.addEventListener('click', function (e) {
+    document.querySelectorAll('#use-my-location-btn, [data-detect-location]').forEach((btn) => {
+        btn.addEventListener('click', function (e) {
             e.preventDefault();
             const originalHtml = this.innerHTML;
-            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Locating...';
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Locating...';
             this.disabled = true;
 
             MeramotGeolocation.enableDistanceFilter().finally(() => {
@@ -622,7 +621,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 this.disabled = false;
             });
         });
-    }
+    });
 
     const urlParams = new URLSearchParams(window.location.search);
     const stored = MeramotLocationPicker.parseStoredLocation();

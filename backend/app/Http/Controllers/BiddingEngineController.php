@@ -21,8 +21,21 @@ class BiddingEngineController extends Controller
     public function index(Request $request, $requestId = null)
     {
         if (!$requestId && !$request->is('api/*')) {
+            if ($request->user() && $request->user()->role === 'vendor') {
+                $ownedProfile = VendorProfile::with('shops')->where('user_id', $request->user()->id)->first();
+                if ($ownedProfile && $ownedProfile->verification_status !== 'approved') {
+                    return redirect()->route('vendor.onboarding')->with(
+                        'warning',
+                        "Your vendor application for '{$ownedProfile->shop_name}' must be approved by an admin before placing marketplace bids."
+                    );
+                }
+            }
+
             $openRequests = RepairRequest::with(['customer', 'bids.shop'])
-                ->where('status', 'BIDDING')
+                ->whereIn('status', ['PENDING', 'BIDDING'])
+                ->where(function ($q) {
+                    $q->whereNull('source')->orWhere('source', '!=', 'DIRECT_SERVICE');
+                })
                 ->latest()
                 ->take(10)
                 ->get();
@@ -32,9 +45,11 @@ class BiddingEngineController extends Controller
                 : null;
             if (!$vendorProfile) {
                 $vendorProfile = VendorProfile::with('shops')->where('shop_name', 'ProTech Solutions')->first()
-                    ?? VendorProfile::with('shops')->first();
+                    ?? VendorProfile::with('shops')->where('verification_status', 'approved')->first();
             }
-            $vendorShops = $vendorProfile ? $vendorProfile->shops : RepairShop::take(3)->get();
+            $vendorShops = $vendorProfile
+                ? $vendorProfile->shops->where('is_active', true)->values()
+                : RepairShop::where('is_active', true)->where('is_public', true)->take(3)->get();
 
             return view('vendor.bidding-board', compact('openRequests', 'vendorShops'));
         }

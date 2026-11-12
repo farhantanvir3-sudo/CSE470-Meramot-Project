@@ -130,7 +130,7 @@
                     @forelse($recentPendingRiders as $agent)
                         <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3.5 flex items-center justify-between gap-3">
                             <div>
-                                <div class="font-bold text-[var(--foreground)]">{{ $agent->user->name ?? 'Rider Applicant #' . $agent->id }}</div>
+                                <div class="font-bold text-[var(--foreground)]">{{ $agent->applicant_name ?: ($agent->user->name ?? 'Rider Applicant #' . $agent->id) }}</div>
                                 <div class="text-[11px] text-[var(--muted-foreground)]">
                                     NID: <span class="font-mono">{{ $agent->nid_number }}</span> • License: <span class="font-mono">{{ $agent->license_number }}</span> ({{ ucfirst($agent->vehicle_type) }})
                                 </div>

@@ -406,7 +406,14 @@ class VendorBranchController extends Controller
      */
     public function updateBranchAddresses(Request $request, $shopId)
     {
-        $shop = RepairShop::findOrFail($shopId);
+        $shop = RepairShop::with('vendorProfile')->findOrFail($shopId);
+
+        if ($request->user() && $request->user()->role === 'vendor') {
+            $ownedProfile = VendorProfile::where('user_id', $request->user()->id)->first();
+            if ($ownedProfile && (int) $shop->vendor_profile_id !== (int) $ownedProfile->id) {
+                abort(403, 'You can only update locations for your own repair workshops.');
+            }
+        }
 
         $validated = $request->validate([
             'branch_name' => ($shop->is_branch ? 'required' : 'nullable') . '|string|max:120',
@@ -491,6 +498,14 @@ class VendorBranchController extends Controller
 
         $repairRequest = RepairRequest::findOrFail($requestId);
 
+        if (!in_array(strtoupper((string) $repairRequest->status), ['PENDING', 'BIDDING'], true)) {
+            $msg = "Repair Request #{$repairRequest->id} is currently {$repairRequest->status} and is no longer accepting new marketplace bids.";
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json(['status' => 'error', 'message' => $msg], 422);
+            }
+            return redirect()->back()->withErrors(['bid' => $msg]);
+        }
+
         $validated = $request->validate([
             'shop_id' => 'nullable|integer|exists:repair_shops,id',
             'parts_cost' => 'nullable|numeric|min:0|max:1000000',
@@ -505,6 +520,13 @@ class VendorBranchController extends Controller
         $shop = !empty($validated['shop_id'])
             ? RepairShop::findOrFail($validated['shop_id'])
             : ($vendorProfile->shops()->orderBy('id')->first() ?? RepairShop::orderBy('id')->firstOrFail());
+
+        if ($request->user() && $request->user()->role === 'vendor') {
+            $ownedProfile = VendorProfile::where('user_id', $request->user()->id)->first();
+            if ($ownedProfile && (int) $shop->vendor_profile_id !== (int) $ownedProfile->id) {
+                abort(403, 'You can only submit bids on behalf of your own verified workshop.');
+            }
+        }
 
         $partsCost = (float) ($validated['parts_cost'] ?? 0);
         $laborCost = (float) ($validated['labor_cost'] ?? 0);
@@ -571,7 +593,18 @@ class VendorBranchController extends Controller
      */
     public function updateJobStatus(Request $request, $jobId)
     {
-        $job = RepairJob::with(['repairRequest', 'shop'])->findOrFail($jobId);
+        if ($redirect = $this->guardUnapprovedAuthenticatedVendor($request)) {
+            return $redirect;
+        }
+
+        $job = RepairJob::with(['repairRequest', 'shop.vendorProfile'])->findOrFail($jobId);
+
+        if ($request->user() && $request->user()->role === 'vendor') {
+            $ownedProfile = VendorProfile::where('user_id', $request->user()->id)->first();
+            if ($ownedProfile && (int) ($job->shop?->vendor_profile_id) !== (int) $ownedProfile->id) {
+                abort(403, 'You can only update bench milestones for repair jobs assigned to your own workshop.');
+            }
+        }
 
         $validated = $request->validate([
             'status' => 'required|in:AT_SHOP,DIAGNOSING,WAITING_APPROVAL,REPAIRING,COMPLETED',
@@ -606,149 +639,7 @@ class VendorBranchController extends Controller
 
             // When repair completes, generate Invoice + Warranty + Escrow Release + 10%/90% Double-Entry Ledger
             if ($newStatus === 'COMPLETED') {
-                $gross = (float) ($job->final_quoted_amount ?? $job->repairRequest->quoted_final_amount ?? 2500);
-                if ($gross > 0) {
-                    $now = now();
-                    $commission = round($gross * 0.10, 2);
-                    $vendorNet = round($gross - $commission, 2);
-
-                    $existingInvoice = DB::table('invoices')
-                        ->where('repair_job_id', $job->id)
-                        ->first();
-
-                    if ($existingInvoice) {
-                        $invoiceId = (int) $existingInvoice->id;
-                        DB::table('invoices')->where('id', $invoiceId)->update([
-                            'status' => 'PAID',
-                            'subtotal_amount' => $gross,
-                            'commission_amount' => $commission,
-                            'total_amount' => $gross + (float) ($existingInvoice->delivery_amount ?? 0),
-                            'paid_at' => $now,
-                            'updated_at' => $now,
-                        ]);
-                    } else {
-                        $invoiceId = DB::table('invoices')->insertGetId([
-                            'repair_request_id' => $job->repairRequest->id,
-                            'repair_job_id' => $job->id,
-                            'shop_id' => $job->shop_id,
-                            'type' => 'FINAL',
-                            'status' => 'PAID',
-                            'invoice_number' => 'INV-' . $now->format('Y') . '-' . str_pad((string) $job->id, 4, '0', STR_PAD_LEFT) . '-' . strtoupper(Str::random(3)),
-                            'subtotal_amount' => $gross,
-                            'delivery_amount' => 0.00,
-                            'discount_amount' => 0.00,
-                            'commission_amount' => $commission,
-                            'total_amount' => $gross,
-                            'issued_at' => $now,
-                            'due_at' => $now,
-                            'paid_at' => $now,
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ]);
-
-                        $primarySvcId = ShopService::where('shop_id', $job->shop_id)->value('id');
-                        DB::table('invoice_line_items')->insert([
-                            'invoice_id' => $invoiceId,
-                            'shop_service_id' => $primarySvcId,
-                            'title' => $job->repairRequest->title,
-                            'description' => $job->diagnosis_notes ?: 'Completed workshop repair & quality calibration',
-                            'quantity' => 1,
-                            'unit_price' => $gross,
-                            'total_price' => $gross,
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ]);
-                    }
-
-                    DB::table('warranties')->updateOrInsert(
-                        ['repair_job_id' => $job->id],
-                        [
-                            'title' => '90-Day Meramot Verified Repair Warranty',
-                            'details' => 'Covers replaced hardware components and bench workmanship for 90 days from completion.',
-                            'duration_days' => 90,
-                            'starts_at' => $now,
-                            'ends_at' => $now->copy()->addDays(90),
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ]
-                    );
-
-                    $payment = PaymentTransaction::firstOrCreate(
-                        ['repair_request_id' => $job->repairRequest->id],
-                        [
-                            'user_id' => $job->repairRequest->customer_id,
-                            'invoice_id' => $invoiceId,
-                            'amount' => $gross,
-                            'currency' => 'BDT',
-                            'payment_method' => 'CASH',
-                            'status' => 'PAID',
-                            'paid_at' => $now,
-                            'transaction_reference' => 'MRM-JOB-' . $job->id . '-' . strtoupper(Str::random(4)),
-                        ]
-                    );
-                    if ($payment->status !== 'PAID' || !$payment->invoice_id) {
-                        $payment->update([
-                            'invoice_id' => $invoiceId,
-                            'status' => 'PAID',
-                            'paid_at' => $now,
-                            'amount' => $gross,
-                        ]);
-                    }
-
-                    $vendorUserId = $job->shop?->vendorProfile?->user_id;
-                    $hasEscrowRelease = DB::table('escrow_ledgers')
-                        ->where('payment_id', $payment->id)
-                        ->where('action', 'RELEASE')
-                        ->exists();
-
-                    if (!$hasEscrowRelease) {
-                        DB::table('escrow_ledgers')->insert([
-                            [
-                                'payment_id' => $payment->id,
-                                'repair_request_id' => $job->repairRequest->id,
-                                'customer_user_id' => $job->repairRequest->customer_id,
-                                'vendor_user_id' => $vendorUserId,
-                                'amount' => $gross,
-                                'gross_amount' => $gross,
-                                'platform_commission_amount' => $commission,
-                                'vendor_net_amount' => $vendorNet,
-                                'action' => 'HOLD',
-                                'note' => "Escrow hold captured for Repair Job #{$job->id}",
-                                'created_at' => $job->started_at ?? $now,
-                                'updated_at' => $job->started_at ?? $now,
-                            ],
-                            [
-                                'payment_id' => $payment->id,
-                                'repair_request_id' => $job->repairRequest->id,
-                                'customer_user_id' => $job->repairRequest->customer_id,
-                                'vendor_user_id' => $vendorUserId,
-                                'amount' => $gross,
-                                'gross_amount' => $gross,
-                                'platform_commission_amount' => $commission,
-                                'vendor_net_amount' => $vendorNet,
-                                'action' => 'RELEASE',
-                                'note' => "Escrow released upon completion of Repair Job #{$job->id}",
-                                'created_at' => $now,
-                                'updated_at' => $now,
-                            ],
-                        ]);
-                    }
-
-                    $alreadySettled = FinancialLedger::where('payment_id', $payment->id)
-                        ->where('entry_type', 'CUSTOMER_PAYMENT')
-                        ->exists();
-
-                    if (!$alreadySettled) {
-                        AdminLedgerController::settleOrderWithCommission(
-                            $gross,
-                            (int) $job->shop_id,
-                            (int) $payment->id,
-                            $invoiceId,
-                            0.10,
-                            "Repair Job #{$job->id} ({$job->repairRequest->title})"
-                        );
-                    }
-                }
+                self::settleCompletedJobFinancials($job->fresh(['repairRequest', 'shop.vendorProfile']));
             }
         }
 
@@ -759,6 +650,164 @@ class VendorBranchController extends Controller
                 . ($newStatus === 'WAITING_APPROVAL' ? ' — Quote 2 sent to customer for approval!' : '')
                 . ($newStatus === 'COMPLETED' ? ' — Invoice, Warranty & 10%/90% double-entry ledger recorded!' : '.')
             );
+    }
+
+    /**
+     * Idempotent end-to-end completion settlement: PAID Invoice + Line Items + 90-Day Warranty
+     * + PaymentTransaction + Escrow HOLD/RELEASE + R16 10%/90% Double-Entry FinancialLedger.
+     */
+    public static function settleCompletedJobFinancials(RepairJob $job): void
+    {
+        $job->loadMissing(['repairRequest', 'shop.vendorProfile']);
+        if (!$job->repairRequest) {
+            return;
+        }
+
+        $gross = (float) ($job->final_quoted_amount ?? $job->repairRequest->quoted_final_amount ?? 2500);
+        if ($gross <= 0) {
+            return;
+        }
+
+        $now = now();
+        $commission = round($gross * 0.10, 2);
+        $vendorNet = round($gross - $commission, 2);
+
+        $existingInvoice = DB::table('invoices')
+            ->where('repair_job_id', $job->id)
+            ->first();
+
+        if ($existingInvoice) {
+            $invoiceId = (int) $existingInvoice->id;
+            DB::table('invoices')->where('id', $invoiceId)->update([
+                'status' => 'PAID',
+                'subtotal_amount' => $gross,
+                'commission_amount' => $commission,
+                'total_amount' => $gross + (float) ($existingInvoice->delivery_amount ?? 0),
+                'paid_at' => $now,
+                'updated_at' => $now,
+            ]);
+        } else {
+            $invoiceId = DB::table('invoices')->insertGetId([
+                'repair_request_id' => $job->repairRequest->id,
+                'repair_job_id' => $job->id,
+                'shop_id' => $job->shop_id,
+                'type' => 'FINAL',
+                'status' => 'PAID',
+                'invoice_number' => 'INV-' . $now->format('Y') . '-' . str_pad((string) $job->id, 4, '0', STR_PAD_LEFT) . '-' . strtoupper(Str::random(3)),
+                'subtotal_amount' => $gross,
+                'delivery_amount' => 0.00,
+                'discount_amount' => 0.00,
+                'commission_amount' => $commission,
+                'total_amount' => $gross,
+                'issued_at' => $now,
+                'due_at' => $now,
+                'paid_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $primarySvcId = ShopService::where('shop_id', $job->shop_id)->value('id');
+            DB::table('invoice_line_items')->insert([
+                'invoice_id' => $invoiceId,
+                'shop_service_id' => $primarySvcId,
+                'title' => $job->repairRequest->title,
+                'description' => $job->diagnosis_notes ?: 'Completed workshop repair & quality calibration',
+                'quantity' => 1,
+                'unit_price' => $gross,
+                'total_price' => $gross,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        DB::table('warranties')->updateOrInsert(
+            ['repair_job_id' => $job->id],
+            [
+                'title' => '90-Day Meramot Verified Repair Warranty',
+                'details' => 'Covers replaced hardware components and bench workmanship for 90 days from completion.',
+                'duration_days' => 90,
+                'starts_at' => $now,
+                'ends_at' => $now->copy()->addDays(90),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]
+        );
+
+        $payment = PaymentTransaction::firstOrCreate(
+            ['repair_request_id' => $job->repairRequest->id],
+            [
+                'user_id' => $job->repairRequest->customer_id,
+                'invoice_id' => $invoiceId,
+                'amount' => $gross,
+                'currency' => 'BDT',
+                'payment_method' => 'CASH',
+                'status' => 'PAID',
+                'paid_at' => $now,
+                'transaction_reference' => 'MRM-JOB-' . $job->id . '-' . strtoupper(Str::random(4)),
+            ]
+        );
+        if ($payment->status !== 'PAID' || !$payment->invoice_id) {
+            $payment->update([
+                'invoice_id' => $invoiceId,
+                'status' => 'PAID',
+                'paid_at' => $now,
+                'amount' => $gross,
+            ]);
+        }
+
+        $vendorUserId = $job->shop?->vendorProfile?->user_id;
+        $hasEscrowRelease = DB::table('escrow_ledgers')
+            ->where('payment_id', $payment->id)
+            ->where('action', 'RELEASE')
+            ->exists();
+
+        if (!$hasEscrowRelease) {
+            DB::table('escrow_ledgers')->insert([
+                [
+                    'payment_id' => $payment->id,
+                    'repair_request_id' => $job->repairRequest->id,
+                    'customer_user_id' => $job->repairRequest->customer_id,
+                    'vendor_user_id' => $vendorUserId,
+                    'amount' => $gross,
+                    'gross_amount' => $gross,
+                    'platform_commission_amount' => $commission,
+                    'vendor_net_amount' => $vendorNet,
+                    'action' => 'HOLD',
+                    'note' => "Escrow hold captured for Repair Job #{$job->id}",
+                    'created_at' => $job->started_at ?? $now,
+                    'updated_at' => $job->started_at ?? $now,
+                ],
+                [
+                    'payment_id' => $payment->id,
+                    'repair_request_id' => $job->repairRequest->id,
+                    'customer_user_id' => $job->repairRequest->customer_id,
+                    'vendor_user_id' => $vendorUserId,
+                    'amount' => $gross,
+                    'gross_amount' => $gross,
+                    'platform_commission_amount' => $commission,
+                    'vendor_net_amount' => $vendorNet,
+                    'action' => 'RELEASE',
+                    'note' => "Escrow released upon completion of Repair Job #{$job->id}",
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ],
+            ]);
+        }
+
+        $alreadySettled = FinancialLedger::where('payment_id', $payment->id)
+            ->where('entry_type', 'CUSTOMER_PAYMENT')
+            ->exists();
+
+        if (!$alreadySettled) {
+            AdminLedgerController::settleOrderWithCommission(
+                $gross,
+                (int) $job->shop_id,
+                (int) $payment->id,
+                $invoiceId,
+                0.10,
+                "Repair Job #{$job->id} ({$job->repairRequest->title})"
+            );
+        }
     }
 
     /**

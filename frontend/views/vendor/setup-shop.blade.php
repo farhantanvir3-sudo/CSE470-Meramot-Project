@@ -10,14 +10,38 @@
         $rawSpecs = [];
     }
     $initialServices = [];
-    foreach ($rawSpecs as $item) {
-        $trimmed = trim((string) $item);
-        if ($trimmed === '') continue;
-        if (str_contains($trimmed, '|')) {
-            [$sName, $sPrice] = explode('|', $trimmed, 2);
-            $initialServices[] = ['name' => trim($sName), 'price' => trim($sPrice)];
-        } else {
-            $initialServices[] = ['name' => $trimmed, 'price' => ''];
+    if (old('skill_tags')) {
+        foreach ((array) old('skill_tags') as $item) {
+            $trimmed = trim((string) $item);
+            if ($trimmed === '') continue;
+            if (str_contains($trimmed, '|')) {
+                [$sName, $sPrice] = explode('|', $trimmed, 2);
+                $initialServices[] = ['name' => trim($sName), 'price' => trim($sPrice)];
+            } elseif (preg_match('/^(.*?)\s*\(\s*(?:৳|BDT|Tk\.?)?\s*([\d,]+(?:\.\d+)?)\s*\)\s*$/iu', $trimmed, $m)) {
+                $initialServices[] = ['name' => trim($m[1]), 'price' => str_replace(',', '', $m[2])];
+            } else {
+                $initialServices[] = ['name' => $trimmed, 'price' => ''];
+            }
+        }
+    } elseif ($primaryShop && $primaryShop->relationLoaded('services') && $primaryShop->services->isNotEmpty()) {
+        foreach ($primaryShop->services->sortBy('sort_order') as $svc) {
+            $initialServices[] = [
+                'name' => $svc->name,
+                'price' => $svc->base_price !== null ? (string) (float) $svc->base_price : '',
+            ];
+        }
+    } else {
+        foreach ($rawSpecs as $item) {
+            $trimmed = trim((string) $item);
+            if ($trimmed === '') continue;
+            if (str_contains($trimmed, '|')) {
+                [$sName, $sPrice] = explode('|', $trimmed, 2);
+                $initialServices[] = ['name' => trim($sName), 'price' => trim($sPrice)];
+            } elseif (preg_match('/^(.*?)\s*\(\s*(?:৳|BDT|Tk\.?)?\s*([\d,]+(?:\.\d+)?)\s*\)\s*$/iu', $trimmed, $m)) {
+                $initialServices[] = ['name' => trim($m[1]), 'price' => str_replace(',', '', $m[2])];
+            } else {
+                $initialServices[] = ['name' => $trimmed, 'price' => ''];
+            }
         }
     }
 

@@ -7,6 +7,7 @@ use App\Models\DeliveryJob;
 use App\Models\RepairJob;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
+use App\Models\VendorProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -36,7 +37,16 @@ class StatusTransitionController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $repairRequest = RepairRequest::findOrFail($id);
+        $repairRequest = RepairRequest::with('repairJob')->findOrFail($id);
+
+        if (
+            $request->user()
+            && $request->user()->role === 'customer'
+            && (int) $repairRequest->customer_id !== (int) $request->user()->id
+        ) {
+            abort(403, 'You are not authorized to modify another customer\'s repair request.');
+        }
+
         $previousStatus = $repairRequest->status;
 
         if ($repairRequest->transitionTo($validated['status'])) {
@@ -44,7 +54,17 @@ class StatusTransitionController extends Controller
                 'PICKUP_SCHEDULED', 'PICKED_UP', 'AT_SHOP', 'DIAGNOSING',
                 'WAITING_APPROVAL', 'REPAIRING', 'RETURNING', 'COMPLETED', 'CANCELLED'
             ], true)) {
-                $repairRequest->repairJob->update(['status' => $validated['status']]);
+                $jobUpdates = ['status' => $validated['status']];
+                if ($validated['status'] === 'COMPLETED' && !$repairRequest->repairJob->completed_at) {
+                    $jobUpdates['completed_at'] = now();
+                }
+                $repairRequest->repairJob->update($jobUpdates);
+
+                if ($validated['status'] === 'COMPLETED') {
+                    VendorBranchController::settleCompletedJobFinancials(
+                        $repairRequest->repairJob->fresh(['repairRequest', 'shop.vendorProfile'])
+                    );
+                }
             } elseif ($repairRequest->repairJob && in_array($validated['status'], ['RETURN_SCHEDULED', 'RETURNED_TO_CUSTOMER'], true)) {
                 $repairRequest->repairJob->update([
                     'status' => $validated['status'] === 'RETURN_SCHEDULED' ? 'READY_TO_RETURN' : 'COMPLETED',
@@ -104,6 +124,21 @@ class StatusTransitionController extends Controller
         ]);
 
         $repairRequest = RepairRequest::findOrFail($id);
+
+        if (
+            $request->user()
+            && $request->user()->role === 'customer'
+            && (int) $repairRequest->customer_id !== (int) $request->user()->id
+        ) {
+            abort(403, 'You are not authorized to accept bids on another customer\'s repair request.');
+        }
+
+        if (!in_array(strtoupper((string) $repairRequest->status), ['PENDING', 'BIDDING'], true)) {
+            return redirect()
+                ->route('requests.track', $repairRequest->id)
+                ->with('error', 'A bid has already been accepted or this request is no longer open for bidding.');
+        }
+
         $bid = $repairRequest->bids()->with('shop')->findOrFail($validated['bid_id']);
 
         DB::transaction(function () use ($repairRequest, $bid) {
@@ -156,6 +191,17 @@ class StatusTransitionController extends Controller
         ]);
 
         $repairRequest = RepairRequest::with(['repairJob', 'payments', 'requestedShop'])->findOrFail($id);
+
+        if ($request->user() && $request->user()->role === 'vendor') {
+            $vp = VendorProfile::where('user_id', $request->user()->id)->first();
+            if (
+                !$vp
+                || !$repairRequest->requestedShop
+                || (int) $repairRequest->requestedShop->vendor_profile_id !== (int) $vp->id
+            ) {
+                abort(403, 'You are not authorized to respond to direct orders for another workshop.');
+            }
+        }
 
         if ($validated['decision'] === 'accept') {
             $repairRequest->transitionTo(RepairRequest::STATUS_ASSIGNED);
@@ -214,6 +260,14 @@ class StatusTransitionController extends Controller
 
         $repairRequest = RepairRequest::with('repairJob')->findOrFail($id);
 
+        if (
+            $request->user()
+            && $request->user()->role === 'customer'
+            && (int) $repairRequest->customer_id !== (int) $request->user()->id
+        ) {
+            abort(403, 'You are not authorized to respond to quotes on another customer\'s repair request.');
+        }
+
         if ($validated['decision'] === 'approve') {
             if ($repairRequest->transitionTo(RepairRequest::STATUS_REPAIRING)) {
                 $finalAmount = $repairRequest->repairJob?->final_quoted_amount ?? $repairRequest->quoted_final_amount;
@@ -262,6 +316,14 @@ class StatusTransitionController extends Controller
         ]);
 
         $repairRequest = RepairRequest::with(['repairJob', 'payments'])->findOrFail($id);
+
+        if (
+            $request->user()
+            && $request->user()->role === 'customer'
+            && (int) $repairRequest->customer_id !== (int) $request->user()->id
+        ) {
+            abort(403, 'You are not authorized to cancel another customer\'s repair request.');
+        }
 
         if ($repairRequest->transitionTo(RepairRequest::STATUS_CANCELLED)) {
             $repairRequest->update([
