@@ -93,12 +93,14 @@ Route::prefix('delivery')->group(function () {
     Route::post('/payout/request', [RiderLedgerController::class, 'requestPayout']);                   // R3
 });
 // Feature R1 Routes (Added by Md. Nafiul Islam [22299035] in c6c0781 & fdf5e6f + Renewed Onboarding & OTP Status Flow)
-Route::get('/admin/delivery-agents/pending', [AdminDeliveryController::class, 'index'])->name('admin.delivery-agents.pending');   // R1
-Route::post('/admin/delivery-agents/{id}/approve', [AdminDeliveryController::class, 'approve'])->name('admin.delivery-agents.approve'); // R1
-Route::post('/admin/delivery-agents/{id}/reject', [AdminDeliveryController::class, 'reject'])->name('admin.delivery-agents.reject');     // R1
-Route::post('/admin/delivery-agents/{id}/block', [AdminDeliveryController::class, 'block'])->name('admin.delivery-agents.block');         // R1
-Route::delete('/admin/delivery-agents/{id}', [AdminDeliveryController::class, 'destroy'])->name('admin.delivery-agents.destroy');         // R1 Delete
-Route::get('/admin/delivery-agents/{id}/document/{type}', [AdminDeliveryController::class, 'viewDocument'])->name('admin.delivery-agents.document'); // R1 Doc Preview
+Route::middleware('admin.access')->group(function () {
+    Route::get('/admin/delivery-agents/pending', [AdminDeliveryController::class, 'index'])->name('admin.delivery-agents.pending');   // R1
+    Route::post('/admin/delivery-agents/{id}/approve', [AdminDeliveryController::class, 'approve'])->name('admin.delivery-agents.approve'); // R1
+    Route::post('/admin/delivery-agents/{id}/reject', [AdminDeliveryController::class, 'reject'])->name('admin.delivery-agents.reject');     // R1
+    Route::post('/admin/delivery-agents/{id}/block', [AdminDeliveryController::class, 'block'])->name('admin.delivery-agents.block');         // R1
+    Route::delete('/admin/delivery-agents/{id}', [AdminDeliveryController::class, 'destroy'])->name('admin.delivery-agents.destroy');         // R1 Delete
+    Route::get('/admin/delivery-agents/{id}/document/{type}', [AdminDeliveryController::class, 'viewDocument'])->name('admin.delivery-agents.document'); // R1 Doc Preview
+});
 
 Route::get('/delivery-agent/register', [AdminDeliveryController::class, 'create'])->name('delivery.register');                            // R1
 Route::post('/delivery-agent/register', [AdminDeliveryController::class, 'store'])->name('delivery.register.store');                      // R1
@@ -175,7 +177,7 @@ Route::prefix('vendor')->group(function () {
 // -------------------------------------------------------------
 // MODULE: Admin Hub, Vendor Verification (R11) & Finance/Governance (Nawshad [23301622])
 // -------------------------------------------------------------
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware('admin.access')->group(function () {
     Route::get('/', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
 
     // Feature R11: Admin Vendor Verification Desk (Farhan Tanvir [22299179])

@@ -74,7 +74,7 @@ class ShopDiscoveryController extends Controller
             ['label' => 'iPad Pro 11-inch digitizer', 'href' => '/shops?q=iPad%20Pro%20digitizer'],
         ];
 
-        $popularPackages = ServicePackage::where('is_popular', true)->take(4)->get();
+        $popularPackages = ServicePackage::where('is_active', true)->where('is_popular', true)->take(4)->get();
 
         return view('home', compact(
             'featuredShops',

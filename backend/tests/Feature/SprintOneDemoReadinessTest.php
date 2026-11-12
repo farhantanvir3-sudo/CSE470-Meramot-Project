@@ -282,6 +282,9 @@ class SprintOneDemoReadinessTest extends TestCase
         $this->get('/auth/demo?role=delivery')->assertRedirect('/delivery');
         $this->get('/auth/demo?role=customer')->assertRedirect('/');
 
+        // Switch back to demo admin before verifying Admin Console & Coming Soon endpoints
+        $this->get('/auth/demo?role=admin')->assertRedirect('/admin');
+
         // Later-sprint GET pages & Coming Soon placeholders all return HTTP 200
         $getEndpoints = [
             '/delivery/jobs-queue',

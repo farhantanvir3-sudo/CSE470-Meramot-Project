@@ -30,21 +30,17 @@ class AdminDashboardController extends Controller
             'total_users' => User::count(),
             'public_shops' => RepairShop::where('is_active', true)->where('is_public', true)->count(),
             'branched_brands' => VendorProfile::where('is_branched', true)->count(),
-            'pending_vendors' => VendorProfile::where('verification_status', 'pending')->count(),
+            'pending_vendors' => VendorProfile::whereIn('verification_status', ['pending', 'under_review'])->count(),
             'pending_riders' => DeliveryAgent::where('registration_status', 'PENDING')->count(),
             'approved_riders' => DeliveryAgent::where('registration_status', 'APPROVED')->count(),
             'open_requests' => RepairRequest::whereIn('status', ['PENDING', 'BIDDING', 'ASSIGNED', 'WAITING_APPROVAL', 'REPAIRING'])->count(),
             'platform_volume' => (float) FinancialLedger::where('entry_type', 'CUSTOMER_PAYMENT')->sum('amount'),
             'platform_commission' => (float) FinancialLedger::where('entry_type', 'PLATFORM_COMMISSION')->sum('amount'),
-            'unsettled_tx_count' => max(
-                0,
-                FinancialLedger::where('entry_type', 'VENDOR_EARNING')->count()
-                - FinancialLedger::where('entry_type', 'VENDOR_PAYOUT')->count()
-            ) + PaymentTransaction::where('status', 'PENDING')->count(),
+            'unsettled_tx_count' => AdminLedgerController::countUnsettledShops() + PaymentTransaction::where('status', 'PENDING')->count(),
         ];
 
         $recentPendingVendors = VendorProfile::with(['user', 'shops'])
-            ->where('verification_status', 'pending')
+            ->whereIn('verification_status', ['pending', 'under_review'])
             ->latest()
             ->take(4)
             ->get();

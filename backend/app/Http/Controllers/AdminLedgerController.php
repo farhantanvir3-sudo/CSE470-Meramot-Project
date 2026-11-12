@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\FinancialLedger;
 use App\Models\PaymentTransaction;
 use App\Models\RepairShop;
+use App\Models\VendorPayout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * ============================================================================
@@ -50,12 +52,8 @@ class AdminLedgerController extends Controller
         // Escrow pending payout = (Customer inflow - refunds) - (Vendor payouts + Rider payouts + Platform commission)
         $pendingEscrowReserve = max(0, ($totalCustomerInflow - $totalRefunds) - ($totalVendorDisbursed + $totalRiderDisbursed + $totalCommissionRevenue));
 
-        // Open settlements count (unsettledVendorEarnings + pending PaymentTransactions)
-        $pendingSettlementCount = max(
-            0,
-            FinancialLedger::where('entry_type', 'VENDOR_EARNING')->count()
-            - FinancialLedger::where('entry_type', 'VENDOR_PAYOUT')->count()
-        );
+        // Open settlements count (shops with positive unsettled vendor escrow balances)
+        $pendingSettlementCount = self::countUnsettledShops();
 
         // Fund Distribution breakdown by entry_type (Ported from Original Meramot AdminFinancePage)
         $rawDistribution = FinancialLedger::select(
@@ -201,40 +199,90 @@ class AdminLedgerController extends Controller
     {
         $limit = max(1, min(50, (int) $request->input('limit', 20)));
 
-        $earnings = FinancialLedger::where('entry_type', 'VENDOR_EARNING')
+        $unsettledShops = FinancialLedger::query()
+            ->select(
+                'shop_id',
+                DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_EARNING' THEN amount ELSE 0 END) as total_earned"),
+                DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_PAYOUT' THEN amount ELSE 0 END) as total_paid")
+            )
             ->whereNotNull('shop_id')
-            ->orderBy('id', 'asc')
+            ->whereIn('entry_type', ['VENDOR_EARNING', 'VENDOR_PAYOUT'])
+            ->groupBy('shop_id')
+            ->orderBy('shop_id', 'asc')
+            ->get()
+            ->filter(fn ($row) => round((float) $row->total_earned - (float) $row->total_paid, 2) > 0.009)
             ->take($limit)
-            ->get();
+            ->values();
 
         $settledCount = 0;
         $totalDisbursed = 0.0;
 
-        foreach ($earnings as $earning) {
-            $alreadyPaid = FinancialLedger::where('entry_type', 'VENDOR_PAYOUT')
-                ->where('shop_id', $earning->shop_id)
-                ->where('amount', $earning->amount)
-                ->where('created_at', '>=', $earning->created_at)
-                ->exists();
+        DB::transaction(function () use ($unsettledShops, &$settledCount, &$totalDisbursed) {
+            foreach ($unsettledShops as $row) {
+                $shopId = (int) $row->shop_id;
+                $unsettledAmount = round((float) $row->total_earned - (float) $row->total_paid, 2);
+                if ($unsettledAmount <= 0.009) {
+                    continue;
+                }
 
-            if ($alreadyPaid) {
-                continue;
+                $shop = RepairShop::find($shopId);
+                $shopName = $shop?->name ?? "Shop #{$shopId}";
+
+                $latestPaymentId = FinancialLedger::where('shop_id', $shopId)
+                    ->where('entry_type', 'VENDOR_EARNING')
+                    ->whereNotNull('payment_id')
+                    ->latest('id')
+                    ->value('payment_id');
+
+                $matchingPendingPayout = VendorPayout::where('shop_id', $shopId)
+                    ->where('status', 'PENDING')
+                    ->whereBetween('amount', [$unsettledAmount - 0.02, $unsettledAmount + 0.02])
+                    ->orderBy('id', 'asc')
+                    ->first();
+
+                if ($matchingPendingPayout) {
+                    $matchingPendingPayout->update([
+                        'amount' => $unsettledAmount,
+                        'status' => 'PAID',
+                        'paid_at' => now(),
+                        'notes' => $matchingPendingPayout->notes ?: "Automated batch escrow settlement disbursed to {$shopName}",
+                    ]);
+                    $payout = $matchingPendingPayout;
+                } else {
+                    VendorPayout::where('shop_id', $shopId)
+                        ->where('status', 'PENDING')
+                        ->update([
+                            'status' => 'CANCELLED',
+                            'notes' => 'Superseded by full batch escrow settlement.',
+                        ]);
+
+                    $payout = VendorPayout::create([
+                        'shop_id' => $shopId,
+                        'amount' => $unsettledAmount,
+                        'currency' => 'BDT',
+                        'status' => 'PAID',
+                        'reference_code' => 'PYT-AUTO-' . $shopId . '-' . strtoupper(Str::random(5)),
+                        'notes' => "Automated batch escrow settlement disbursed to {$shopName}",
+                        'paid_at' => now(),
+                    ]);
+                }
+
+                self::logEntry(
+                    'VENDOR_PAYOUT',
+                    'DEBIT',
+                    $unsettledAmount,
+                    "Automated batch escrow settlement disbursed to {$shopName} (Ref {$payout->reference_code})",
+                    [
+                        'shop_id' => $shopId,
+                        'payment_id' => $latestPaymentId,
+                        'vendor_payout_id' => $payout->id,
+                    ]
+                );
+
+                $settledCount++;
+                $totalDisbursed += $unsettledAmount;
             }
-
-            self::logEntry(
-                'VENDOR_PAYOUT',
-                'DEBIT',
-                (float) $earning->amount,
-                "Automated batch escrow settlement disbursed to Shop #{$earning->shop_id} (Ref Ledger #{$earning->id})",
-                [
-                    'shop_id' => $earning->shop_id,
-                    'payment_id' => $earning->payment_id,
-                ]
-            );
-
-            $settledCount++;
-            $totalDisbursed += (float) $earning->amount;
-        }
+        });
 
         if ($settledCount === 0) {
             return redirect()
@@ -248,6 +296,25 @@ class AdminLedgerController extends Controller
                 'success',
                 "Batch auto-settlement completed: Disbursed {$settledCount} vendor payout(s) totaling ৳" . number_format($totalDisbursed, 2) . "."
             );
+    }
+
+    /**
+     * Count how many workshops currently hold a positive unsettled escrow balance.
+     */
+    public static function countUnsettledShops(): int
+    {
+        return FinancialLedger::query()
+            ->select(
+                'shop_id',
+                DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_EARNING' THEN amount ELSE 0 END) as total_earned"),
+                DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_PAYOUT' THEN amount ELSE 0 END) as total_paid")
+            )
+            ->whereNotNull('shop_id')
+            ->whereIn('entry_type', ['VENDOR_EARNING', 'VENDOR_PAYOUT'])
+            ->groupBy('shop_id')
+            ->get()
+            ->filter(fn ($row) => round((float) $row->total_earned - (float) $row->total_paid, 2) > 0.009)
+            ->count();
     }
 
     /* ------------------------------------------------------------------------

@@ -436,6 +436,9 @@ class VendorOnboardingController extends Controller
         }
 
         $primaryShop = $profile->shops->sortBy('id')->first();
+        if ($primaryShop) {
+            $primaryShop->load('services');
+        }
 
         return view('vendor.setup-shop', compact('profile', 'primaryShop', 'user'));
     }
@@ -607,15 +610,32 @@ class VendorOnboardingController extends Controller
                 ]));
             }
 
-            // Sync vendor-configured services into `shop_services`
+            // Sync vendor-configured services into `shop_services` and normalize clean specialty labels
+            $normalizedSpecialtyNames = [];
             foreach ($skillTags as $idx => $rawTag) {
-                $parts = explode('|', $rawTag, 2);
-                $svcName = trim($parts[0]);
-                $svcPrice = isset($parts[1]) && is_numeric(trim($parts[1])) ? (float) trim($parts[1]) : null;
+                $svcName = trim((string) $rawTag);
+                $svcPrice = null;
+
+                if (str_contains($svcName, '|')) {
+                    $parts = explode('|', $svcName, 2);
+                    $svcName = trim($parts[0]);
+                    $rawPrice = preg_replace('/[^\d.]/', '', trim($parts[1] ?? ''));
+                    if ($rawPrice !== '' && is_numeric($rawPrice)) {
+                        $svcPrice = (float) $rawPrice;
+                    }
+                } elseif (preg_match('/^(.*?)\s*\(\s*(?:৳|BDT|Tk\.?)?\s*([\d,]+(?:\.\d+)?)\s*\)\s*$/iu', $svcName, $matches)) {
+                    $svcName = trim($matches[1]);
+                    $rawPrice = str_replace(',', '', $matches[2]);
+                    if (is_numeric($rawPrice)) {
+                        $svcPrice = (float) $rawPrice;
+                    }
+                }
 
                 if ($svcName === '' || in_array(strtolower($svcName), self::NON_SERVICE_TAG_WORDS, true)) {
                     continue;
                 }
+
+                $normalizedSpecialtyNames[] = $svcName;
 
                 $svcSlug = Str::slug($svcName) ?: ('service-' . ($idx + 1));
                 ShopService::updateOrCreate(
@@ -629,6 +649,12 @@ class VendorOnboardingController extends Controller
                         'is_active' => true,
                     ]
                 );
+            }
+
+            if (!empty($normalizedSpecialtyNames)) {
+                $uniqueSpecs = array_values(array_unique($normalizedSpecialtyNames));
+                $profile->update(['specialties' => $uniqueSpecs]);
+                $shop->update(['specialties' => $uniqueSpecs]);
             }
         });
 

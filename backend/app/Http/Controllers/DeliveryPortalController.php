@@ -96,10 +96,12 @@ class DeliveryPortalController extends Controller
         }
 
         $agent = DeliveryAgent::with('user')
-            ->whereRaw('LOWER(company_email) = ?', [$companyEmail])
-            ->orWhereHas('user', function ($q) use ($companyEmail) {
-                $q->whereRaw('LOWER(email) = ?', [$companyEmail])
-                  ->whereIn('role', ['delivery_agent', 'delivery']);
+            ->where(function ($query) use ($companyEmail) {
+                $query->whereRaw('LOWER(company_email) = ?', [$companyEmail])
+                    ->orWhereHas('user', function ($q) use ($companyEmail) {
+                        $q->whereRaw('LOWER(email) = ?', [$companyEmail])
+                          ->whereIn('role', ['delivery_agent', 'delivery']);
+                    });
             })
             ->first();
 
@@ -389,6 +391,10 @@ class DeliveryPortalController extends Controller
             'repairJob.repairRequest.customer',
         ])->findOrFail($id);
 
+        if ($delivery->delivery_agent_id !== null && (int) $delivery->delivery_agent_id !== (int) $agent->id) {
+            abort(403, 'This delivery order is assigned to another courier partner.');
+        }
+
         $flowByDirection = [
             'TO_SHOP' => [
                 ['code' => 'PENDING', 'title' => 'Waiting for rider acceptance'],
@@ -447,6 +453,10 @@ class DeliveryPortalController extends Controller
         }
 
         $delivery = DeliveryJob::findOrFail($id);
+
+        if ($delivery->delivery_agent_id !== null && (int) $delivery->delivery_agent_id !== (int) $agent->id) {
+            abort(403, 'This delivery order is assigned to another courier partner.');
+        }
 
         DB::transaction(function () use ($delivery, $agent) {
             if (!$delivery->delivery_agent_id) {
@@ -516,6 +526,12 @@ class DeliveryPortalController extends Controller
                                 'status' => 'COMPLETED',
                                 'completed_at' => $rJob->completed_at ?? now(),
                             ]);
+
+                            if (!$wasDeclinedQuote2) {
+                                VendorBranchController::settleCompletedJobFinancials(
+                                    $rJob->fresh(['repairRequest', 'shop.vendorProfile'])
+                                );
+                            }
                         }
                     }
                 }
