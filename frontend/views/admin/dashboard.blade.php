@@ -9,7 +9,7 @@
 
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-5">
-        <div>
+        <div class="max-w-2xl">
             <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--accent-dark)]">Operations &amp; Governance</p>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)] mt-1">
                 Meramot Platform Admin Console
@@ -18,11 +18,11 @@
                 Centralized command desk for vendor trade verification, delivery courier onboarding, double-entry financial settlements, and nationwide marketplace oversight.
             </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2.5">
-            <a href="/shops" class="rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-dark)] hover:bg-[var(--mint-100)] hover:shadow-md">
+        <div class="flex flex-col items-end justify-end gap-2 shrink-0 ml-auto text-right">
+            <a href="/shops" class="whitespace-nowrap inline-flex items-center justify-center rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-dark)] hover:bg-[var(--mint-100)] hover:shadow-md">
                 View Live Directory ({{ number_format($kpis['public_shops']) }} Shops)
             </a>
-            <a href="/admin/financial-overview" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-md">
+            <a href="/admin/financial-overview" class="whitespace-nowrap inline-flex items-center justify-center rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-md">
                 Open Financial Ledger &rarr;
             </a>
         </div>
