@@ -26,7 +26,7 @@
             </span>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Apply as a Delivery Agent</h1>
             <p class="text-xs md:text-sm text-[var(--muted-foreground)] mt-1">
-                Submit your personal email, identity details, and verification documents for Admin review. Upon approval, your unique <code class="font-mono font-bold text-[var(--accent-dark)]">@meramotbd.com</code> company login and password will be emailed directly to your personal inbox.
+                Submit your personal email, identity details, and verification documents for Admin review. Upon approval, your unique <code class="font-mono font-bold text-[var(--accent-dark)]">@meramotbd.com</code> company email and password will be emailed directly to your personal inbox.
             </p>
         </div>
 
