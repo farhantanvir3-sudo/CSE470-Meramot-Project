@@ -267,19 +267,19 @@
             <div class="border-t border-[#e7efe2] pt-4">
                 <a
                     href="/delivery-agent/register"
-                    class="group flex items-center justify-between gap-4 rounded-2xl border border-[#c8dac2] bg-gradient-to-br from-[#f8fbf6] via-white to-[#eef5ea] p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#214c34] hover:shadow-[0_14px_28px_-8px_rgba(22,54,37,0.22)]"
+                    class="group flex items-center justify-between gap-4 rounded-2xl border border-[#c8dac2] bg-gradient-to-br from-white via-[#f8fbf6] to-[#eef5ea] p-4 shadow-sm transition-all duration-250 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-[0_12px_24px_-8px_rgba(22,54,37,0.22)]"
                 >
                     <div class="flex items-center gap-3.5">
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#163625] text-[#E4FCD5] shadow-sm transition-transform duration-300 group-hover:scale-105">
-                            <i class="fa-solid fa-id-card-clip text-base"></i>
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#c8dac2] bg-[#eef5ea] text-[#163625] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                            <i class="fa-solid fa-id-card-clip text-sm"></i>
                         </div>
                         <div>
                             <span class="block text-[10px] font-bold uppercase tracking-wider text-[#5e6d64]">Haven't applied yet?</span>
-                            <span class="block text-sm font-extrabold text-[#163625] group-hover:text-[#214c34]">Apply as a delivery agent</span>
+                            <span class="block text-xs md:text-sm font-extrabold text-[#163625]">Apply as a delivery agent</span>
                             <span class="block text-[11px] text-[#5e6d64]">Submit your personal email, NID &amp; license to get verified</span>
                         </div>
                     </div>
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-300 group-hover:translate-x-0.5 group-hover:border-[#163625] group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] transition-all duration-200 group-hover:translate-x-0.5 group-hover:border-[#163625] group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </span>
                 </a>

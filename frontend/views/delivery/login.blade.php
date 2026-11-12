@@ -103,10 +103,10 @@
             <div class="mt-5 space-y-3">
                 <a
                     href="/delivery-agent/status"
-                    class="group flex w-full items-center justify-between gap-3.5 rounded-2xl border-2 border-[#214c34]/80 bg-gradient-to-r from-[#eef5ea] via-[#f4faf1] to-[#e6f2e0] px-4 py-3.5 text-left shadow-sm transition-all duration-250 hover:-translate-y-0.5 hover:border-[#163625] hover:shadow-[0_12px_24px_-8px_rgba(22,54,37,0.25)]"
+                    class="group flex w-full items-center justify-between gap-3.5 rounded-2xl border border-[#c8dac2] bg-gradient-to-br from-white via-[#f8fbf6] to-[#eef5ea] px-4 py-3.5 text-left shadow-sm transition-all duration-250 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-[0_12px_24px_-8px_rgba(22,54,37,0.22)]"
                 >
                     <div class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#214c34] text-[#E4FCD5] shadow-sm transition-transform duration-200 group-hover:scale-105">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#c8dac2] bg-[#eef5ea] text-[#163625] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
                             <i class="fa-solid fa-magnifying-glass-chart text-sm"></i>
                         </div>
                         <div>
@@ -114,7 +114,7 @@
                             <span class="block text-[11px] text-[#5e6d64]">Verify via OTP, view feedback, edit or resend credentials</span>
                         </div>
                     </div>
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#214c34]/30 bg-white text-[#214c34] transition-all duration-200 group-hover:translate-x-0.5 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] transition-all duration-200 group-hover:translate-x-0.5 group-hover:border-[#163625] group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
                         <i class="fa-solid fa-arrow-right text-xs"></i>
                     </span>
                 </a>
