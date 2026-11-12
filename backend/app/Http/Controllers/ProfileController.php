@@ -40,6 +40,10 @@ class ProfileController extends Controller
             ]);
         }
 
+        if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+            return app(DeliveryPortalController::class)->profile($request);
+        }
+
         $rawFirst = trim((string) ($user->name ?: $user->username ?: 'User'));
         $firstName = explode(' ', $rawFirst)[0] ?: 'User';
 
@@ -53,6 +57,12 @@ class ProfileController extends Controller
             return $request->expectsJson()
                 ? response()->json(['message' => 'Unauthorized'], 401)
                 : redirect()->route('login');
+        }
+
+        if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Delivery partner company credentials and profile details cannot be modified by riders.'], 403)
+                : redirect('/delivery/profile')->with('warning', 'Delivery partner credentials and profile details are managed by Meramot Operations.');
         }
 
         $validated = $request->validate([

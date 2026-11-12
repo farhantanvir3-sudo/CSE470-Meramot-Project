@@ -545,11 +545,11 @@
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
                                     @elseif(in_array($navUserRole, ['delivery_agent', 'delivery'], true))
-                                        <a href="/delivery-agent/register" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
-                                            <i class="fa-solid fa-motorcycle mr-1.5"></i> Delivery Partner Status
+                                        <a href="/delivery" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
+                                            <i class="fa-solid fa-motorcycle mr-1.5"></i> Delivery Partner Dashboard
                                         </a>
-                                        <a href="/delivery/jobs-queue" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                            Rider Dispatch Queue
+                                        <a href="/delivery/map" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Live Delivery Map
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
                                     @endif
@@ -774,7 +774,7 @@
                 <a href="/vendor/dashboard" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-[var(--mint-50)]">
                     Vendor Portal &amp; Direct Orders
                 </a>
-                <a href="/delivery-agent/register" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-sky-900 hover:bg-[var(--mint-50)]">
+                <a href="{{ (auth()->check() && in_array(auth()->user()->role, ['delivery_agent', 'delivery'], true)) ? '/delivery' : '/delivery/login' }}" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-sky-900 hover:bg-[var(--mint-50)]">
                     Delivery Partner Portal
                 </a>
                 @if($isDevMode || (auth()->check() && auth()->user()->role === 'admin'))

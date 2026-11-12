@@ -276,10 +276,10 @@ class SprintOneDemoReadinessTest extends TestCase
     {
         $this->seed(DatabaseSeeder::class);
 
-        // Role-aware 1-click demo login redirects
+        // Role-aware 1-click demo login redirects (direct dashboards, zero onboarding stages)
         $this->get('/auth/demo?role=admin')->assertRedirect('/admin');
         $this->get('/auth/demo?role=vendor')->assertRedirect('/vendor/dashboard');
-        $this->get('/auth/demo?role=delivery')->assertRedirect('/delivery-agent/register');
+        $this->get('/auth/demo?role=delivery')->assertRedirect('/delivery');
         $this->get('/auth/demo?role=customer')->assertRedirect('/');
 
         // Later-sprint GET pages & Coming Soon placeholders all return HTTP 200

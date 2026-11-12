@@ -69,6 +69,19 @@ if [ "${AUTO_MIGRATE:-true}" = "true" ]; then
     if [ "${USER_COUNT}" = "0" ] || [ "${FORCE_SEED:-false}" = "true" ]; then
         echo "Seeding Meramot marketplace data into Neon PostgreSQL..."
         DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --force
+    else
+        RIDER_RENEWED_COUNT=$(php -r '
+            require "vendor/autoload.php";
+            $app = require_once "bootstrap/app.php";
+            $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            echo \App\Models\DeliveryAgent::where("company_email", "rahim.uddin@meramotbd.com")->count();
+        ' 2>/dev/null || echo "0")
+
+        if [ "${RIDER_RENEWED_COUNT}" = "0" ]; then
+            echo "Syncing renewed Delivery Partner company credentials & seeded workspace trips..."
+            DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --class=Database\\Seeders\\UserSeeder --force
+            DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --class=Database\\Seeders\\SprintOneDemoSeeder --force
+        fi
     fi
 fi
 

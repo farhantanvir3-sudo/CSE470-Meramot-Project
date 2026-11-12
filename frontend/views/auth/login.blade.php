@@ -75,7 +75,7 @@
                     <input
                         type="text"
                         name="identifier"
-                        value="{{ old('identifier', 'customer@meramot.demo') }}"
+                        value="{{ old('identifier') }}"
                         required
                         class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="Username or email"
@@ -90,7 +90,6 @@
                         <input
                             :type="show ? 'text' : 'password'"
                             name="password"
-                            value="password123"
                             required
                             class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                             placeholder="Enter your password"
@@ -130,7 +129,7 @@
                 </p>
 
                 <p>
-                    <a href="/auth/demo?role=delivery" class="font-semibold text-[#1b365d] hover:underline">
+                    <a href="/delivery/login" class="font-semibold text-[#1b365d] hover:underline">
                         <i class="fa-solid fa-motorcycle mr-1"></i> Delivery partner login &rarr;
                     </a>
                 </p>

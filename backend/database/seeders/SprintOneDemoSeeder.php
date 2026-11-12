@@ -318,7 +318,10 @@ class SprintOneDemoSeeder extends Seeder
         $nusratCustomer = User::where('email', 'nusrat.jahan@meramot.demo')->first() ?? $customer;
 
         $approvedRider = DeliveryAgent::with('user')
-            ->whereHas('user', fn ($q) => $q->where('email', 'rider.demo@meramot.test'))
+            ->where(function ($q) {
+                $q->where('company_email', 'rahim.uddin@meramotbd.com')
+                  ->orWhereHas('user', fn ($u) => $u->whereIn('email', ['rahim.uddin@meramotbd.com', 'rider.demo@meramot.test']));
+            })
             ->first()
             ?? DeliveryAgent::with('user')
                 ->where('registration_status', 'APPROVED')
@@ -910,6 +913,153 @@ class SprintOneDemoSeeder extends Seeder
                     'updated_at' => $now->copy()->subMinutes(10),
                 ],
             ]);
+
+            // 2E. Rich Seeded Delivery Agent Dashboard Trips (`SCHEDULED`, `DISPATCHED`, `PICKED_UP`, `DELIVERED`)
+            //     Important: Uses `MARKETPLACE` source so `ServicePackage.order_count` (`DIRECT_SERVICE`) invariants stay untouched!
+            $extraRiderDeliveries = [
+                [
+                    'title' => 'Microwave Oven — Magnetron Not Heating',
+                    'device_type' => 'Appliance',
+                    'brand' => 'Panasonic',
+                    'model_name' => 'NN-ST34HM',
+                    'issue_category' => 'Power / Heating',
+                    'pickup_address' => 'House 22, Road 5, Dhanmondi, Dhaka',
+                    'direction' => 'TO_SHOP',
+                    'status' => 'SCHEDULED',
+                    'tracking_code' => 'MRM-TO-SHOP-002',
+                    'fee' => 130.00,
+                    'pickup_otp' => '2194',
+                    'dropoff_otp' => '6810',
+                ],
+                [
+                    'title' => 'Sony PlayStation 5 — HDMI Port & Return Delivery',
+                    'device_type' => 'Console',
+                    'brand' => 'Sony',
+                    'model_name' => 'PlayStation 5 Disc Edition',
+                    'issue_category' => 'Port / Display',
+                    'pickup_address' => $dhakaDoctors->public_address,
+                    'dropoff_override' => 'House 15, Road 3, Mohammadpur, Dhaka',
+                    'direction' => 'TO_CUSTOMER',
+                    'status' => 'DISPATCHED',
+                    'tracking_code' => 'MRM-TO-CUST-003',
+                    'fee' => 190.00,
+                    'pickup_otp' => '4402',
+                    'dropoff_otp' => '7751',
+                ],
+                [
+                    'title' => 'Dell XPS 13 Plus — Thunderbolt Charging Failure',
+                    'device_type' => 'Laptop',
+                    'brand' => 'Dell',
+                    'model_name' => 'XPS 13 Plus (9320)',
+                    'issue_category' => 'Charging / Battery',
+                    'pickup_address' => 'House 42, Road 9, Dhanmondi, Dhaka',
+                    'direction' => 'TO_SHOP',
+                    'status' => 'PICKED_UP',
+                    'tracking_code' => 'MRM-TO-SHOP-004',
+                    'fee' => 160.00,
+                    'pickup_otp' => '5591',
+                    'dropoff_otp' => '8320',
+                ],
+                [
+                    'title' => 'iPhone 14 Pro — Inbound Courier Delivered to Repair Bench',
+                    'device_type' => 'Phone',
+                    'brand' => 'Apple',
+                    'model_name' => 'iPhone 14 Pro',
+                    'issue_category' => 'Battery Replacement',
+                    'pickup_address' => 'House 9, Lake Circus, Kalabagan, Dhaka',
+                    'direction' => 'TO_SHOP',
+                    'status' => 'DELIVERED',
+                    'tracking_code' => 'MRM-TO-SHOP-005',
+                    'fee' => 170.00,
+                    'pickup_otp' => '1934',
+                    'dropoff_otp' => '9024',
+                ],
+            ];
+
+            foreach ($extraRiderDeliveries as $idx => $item) {
+                $targetShop = ($idx % 2 === 0 && $protechMain) ? $protechMain : $dhakaDoctors;
+                $dropoffAddr = $item['dropoff_override'] ?? $targetShop->public_address;
+                $isDelivered = $item['status'] === 'DELIVERED';
+
+                $rr = RepairRequest::updateOrCreate(
+                    [
+                        'customer_id' => $nusratCustomer->id,
+                        'title' => $item['title'],
+                    ],
+                    [
+                        'source' => 'MARKETPLACE',
+                        'requested_shop_id' => $targetShop->id,
+                        'device_type' => $item['device_type'],
+                        'brand' => $item['brand'],
+                        'model_name' => $item['model_name'],
+                        'issue_category' => $item['issue_category'],
+                        'description' => 'Doorstep courier workflow order: ' . $item['title'],
+                        'problem' => 'Doorstep courier workflow order: ' . $item['title'],
+                        'mode' => 'CHECKUP_AND_REPAIR',
+                        'status' => $isDelivered ? 'IN_PROGRESS' : 'PICKUP_SCHEDULED',
+                        'preferred_pickup' => true,
+                        'preferred_service_type' => 'pickup_dropoff',
+                        'delivery_type' => 'REGULAR',
+                        'contact_phone' => $nusratCustomer->phone ?? '+8801714100201',
+                        'pickup_address' => $item['pickup_address'],
+                        'dropoff_address' => $dropoffAddr,
+                        'quoted_final_amount' => 3500.00,
+                    ]
+                );
+
+                $rj = RepairJob::updateOrCreate(
+                    ['repair_request_id' => $rr->id],
+                    [
+                        'shop_id' => $targetShop->id,
+                        'status' => $isDelivered ? 'IN_PROGRESS' : 'CREATED',
+                        'final_quoted_amount' => 3500.00,
+                        'completed_at' => null,
+                    ]
+                );
+
+                $dj = DeliveryJob::updateOrCreate(
+                    [
+                        'repair_request_id' => $rr->id,
+                        'direction' => $item['direction'],
+                    ],
+                    [
+                        'repair_job_id' => $rj->id,
+                        'delivery_agent_id' => $approvedRider->id,
+                        'coverage_zone_id' => $dhanmondiZoneId,
+                        'type' => 'REGULAR',
+                        'status' => $item['status'],
+                        'partner_name' => 'Meramot Logistics',
+                        'tracking_code' => $item['tracking_code'],
+                        'rider_name' => $approvedRider->user->name,
+                        'rider_phone' => $approvedRider->user->phone ?? '+8801799998888',
+                        'pickup_address' => $item['pickup_address'],
+                        'dropoff_address' => $dropoffAddr,
+                        'pickup_otp' => $item['pickup_otp'],
+                        'dropoff_otp' => $item['dropoff_otp'],
+                        'distance_km' => 3.60,
+                        'fee' => $item['fee'],
+                        'scheduled_at' => $now->copy()->subHours(2),
+                        'dispatched_at' => in_array($item['status'], ['DISPATCHED', 'PICKED_UP', 'DELIVERED'], true) ? $now->copy()->subMinutes(90) : null,
+                        'picked_up_at' => in_array($item['status'], ['PICKED_UP', 'DELIVERED'], true) ? $now->copy()->subMinutes(50) : null,
+                        'delivered_at' => $isDelivered ? $now->copy()->subHours(12) : null,
+                    ]
+                );
+
+                if ($isDelivered) {
+                    RiderEarnings::updateOrCreate(
+                        [
+                            'delivery_agent_id' => $approvedRider->id,
+                            'delivery_job_id' => $dj->id,
+                        ],
+                        [
+                            'trip_fee' => $item['fee'],
+                            'bonus_amount' => 0.00,
+                            'total_earned' => $item['fee'],
+                            'payout_status' => 'unpaid',
+                        ]
+                    );
+                }
+            }
         }
 
         // Re-sync all DeliveryAgent.total_earnings strictly with RiderEarnings rows

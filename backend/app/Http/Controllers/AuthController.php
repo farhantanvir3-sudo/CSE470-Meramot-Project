@@ -26,7 +26,7 @@ class AuthController extends Controller
         return match ($user->role) {
             'admin' => '/admin',
             'vendor' => $this->resolveVendorRedirect($user),
-            'delivery_agent', 'delivery' => '/delivery-agent/register',
+            'delivery_agent', 'delivery' => '/delivery',
             default => '/',
         };
     }
@@ -89,9 +89,21 @@ class AuthController extends Controller
         ]);
 
         $identifier = trim($credentials['identifier']);
+        if (str_ends_with(strtolower($identifier), '@meramotbd.com')) {
+            return back()->withInput($request->only('identifier'))->withErrors([
+                'identifier' => 'Delivery partner @meramotbd.com accounts must sign in through "Delivery partner login" below.',
+            ]);
+        }
+
         $fieldType = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
         $user = User::where($fieldType, $fieldType === 'email' ? strtolower($identifier) : $identifier)->first();
+
+        if ($user && in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+            return back()->withInput($request->only('identifier'))->withErrors([
+                'identifier' => 'Delivery partner accounts use the dedicated "Delivery partner login" page.',
+            ]);
+        }
 
         if ($user && ($user->status === 'deleted' || $user->status === 'banned' || !$user->is_active)) {
             return back()->withInput($request->only('identifier'))->withErrors([
@@ -579,15 +591,23 @@ class AuthController extends Controller
     public function demoLogin(Request $request)
     {
         $role = $request->get('role', 'customer');
-        $email = match ($role) {
-            'vendor' => 'sakib.tech@gmail.com',
-            'admin' => 'admin@meramot.demo',
-            'delivery' => 'rider.demo@meramot.test',
-            'delivery_admin' => 'delivery.admin@meramot.demo',
-            default => 'customer@meramot.demo',
-        };
 
-        $user = User::where('email', $email)->first();
+        if ($role === 'delivery') {
+            $user = User::whereIn('email', ['rahim.uddin@meramotbd.com', 'rider.demo@meramot.test'])->first()
+                ?? User::whereIn('role', ['delivery_agent', 'delivery'])
+                    ->whereHas('deliveryAgent', fn ($q) => $q->where('registration_status', 'APPROVED')->where('is_active', true))
+                    ->orderBy('id')
+                    ->first();
+        } else {
+            $email = match ($role) {
+                'vendor' => 'sakib.tech@gmail.com',
+                'admin' => 'admin@meramot.demo',
+                'delivery_admin' => 'delivery.admin@meramot.demo',
+                default => 'customer@meramot.demo',
+            };
+            $user = User::where('email', $email)->first();
+        }
+
         if ($user) {
             Auth::login($user);
             $request->session()->regenerate();
