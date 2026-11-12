@@ -72,6 +72,21 @@
         @endif
     </div>
 
+    @if(session('success'))
+        <div class="mb-5 rounded-2xl border border-emerald-400 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-circle-check text-emerald-700"></i>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="mb-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1 shadow-sm">
+            @foreach($errors->all() as $err)
+                <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $err }}</div>
+            @endforeach
+        </div>
+    @endif
+
     <!-- Main Content Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -357,7 +372,7 @@
                                     </div>
                                     <div class="text-right shrink-0">
                                         <p class="text-lg font-black text-[var(--accent-dark)]">
-                                            ৳{{ number_format($bid->proposed_cost, 2) }} ({{ (int) $bid->proposed_cost }})
+                                            ৳{{ number_format($bid->proposed_cost, 2) }}<span class="sr-only">{{ (int) $bid->proposed_cost }}</span>
                                         </p>
                                         <p class="text-xs text-[var(--muted-foreground)]">
                                             {{ $bid->estimated_days }} days

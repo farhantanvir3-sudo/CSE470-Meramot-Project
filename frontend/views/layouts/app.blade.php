@@ -8,6 +8,15 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
     <link rel="apple-touch-icon" href="/favicon.svg?v=2">
+
+    <!-- Zero-Flicker Theme Initializer (Applies Dark Mode at Frame 0) -->
+    <script>
+        try {
+            if (localStorage.getItem('meramot_theme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) {}
+    </script>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -126,6 +135,54 @@
             background-color: var(--mint-100);
             border: 1px solid var(--border);
             color: var(--foreground);
+        }
+
+        /* Dark Mode high-contrast safeguards for primary buttons & light-surface inputs */
+        .dark [class*="bg-[var(--accent-dark)]"].text-white {
+            color: var(--accent-foreground) !important;
+        }
+        .dark input.bg-white,
+        .dark select.bg-white,
+        .dark textarea.bg-white,
+        .dark input[class*="bg-[#f"],
+        .dark select[class*="bg-[#f"],
+        .dark textarea[class*="bg-[#f"] {
+            color: #163625;
+        }
+        .dark input.bg-white::placeholder,
+        .dark textarea.bg-white::placeholder,
+        .dark input[class*="bg-[#f"]::placeholder,
+        .dark textarea[class*="bg-[#f"]::placeholder {
+            color: #64748b;
+        }
+
+        /* Tactile focus ring across all interactive form controls */
+        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            box-shadow: 0 0 0 3px rgba(36, 66, 41, 0.14);
+        }
+        .dark input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus-visible,
+        .dark select:focus-visible,
+        .dark textarea:focus-visible {
+            box-shadow: 0 0 0 3px rgba(181, 228, 168, 0.22);
+        }
+
+        /* Cohesive Meramot styling for Laravel Tailwind pagination */
+        nav[role="navigation"] span[aria-current="page"] > span {
+            background-color: var(--accent-dark) !important;
+            border-color: var(--accent-dark) !important;
+            color: var(--accent-foreground) !important;
+            font-weight: 800;
+        }
+        nav[role="navigation"] a,
+        nav[role="navigation"] span[aria-disabled="true"] > span {
+            background-color: var(--card) !important;
+            border-color: var(--border) !important;
+            color: var(--foreground) !important;
+        }
+        nav[role="navigation"] p {
+            color: var(--muted-foreground) !important;
         }
 
         /* Mobile drawer overlay from mobile.css */
@@ -396,7 +453,7 @@
 
     <!-- Top Academic Defense / Role Switcher Ribbon (Dev Mode Only) -->
     @if($isDevMode)
-    <div class="bg-accent-dark text-white text-[11px] py-1.5 px-4 shadow-sm border-b border-emerald-950">
+    <div class="bg-[#163625] text-white text-[11px] py-1.5 px-4 shadow-sm border-b border-emerald-950">
         <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2">
                 <span class="bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 px-2 py-0.5 rounded font-bold uppercase tracking-wider text-[10px]">CSE 470 Group 6 • Dev Mode</span>
@@ -529,6 +586,20 @@
                         <i class="fa-solid fa-scale-balanced text-sm text-emerald-800"></i>
                     </a>
                     @endif
+
+                    <!-- Mobile Quick Cart Icon (Visible on Mobile Header) -->
+                    <a
+                        href="/cart"
+                        class="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:bg-[var(--mint-300)] md:hidden"
+                        title="Direct-Order Cart"
+                        aria-label="Direct-Order Cart"
+                    >
+                        <i class="fa-solid fa-cart-shopping text-sm"></i>
+                        <span
+                            data-cart-badge
+                            class="{{ $navCartCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[9px] font-bold text-[var(--accent-foreground)] shadow"
+                        >{{ $navCartCount }}</span>
+                    </a>
 
                     <!-- Desktop: Full Action Bar -->
                     <div class="hidden md:flex md:items-center md:gap-3">
@@ -758,7 +829,7 @@
                     >
                         <i class="fa-solid fa-location-dot text-2xl"></i>
                     </button>
-                    <form action="/shops" method="GET" class="flex-1">
+                    <form action="/shops" method="GET" class="relative flex-1">
                         @if(request('category'))
                             <input type="hidden" name="category" value="{{ request('category') }}">
                         @endif
@@ -774,8 +845,16 @@
                             name="q"
                             value="{{ request('q') }}"
                             placeholder="Search shops, parts..."
-                            class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[0.9rem] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)]"
+                            class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] py-2.5 pl-4 pr-16 text-[0.9rem] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)]"
                         />
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                            @if(request('q'))
+                                <a href="/shops" class="flex h-7 w-7 items-center justify-center rounded-lg text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]" title="Clear search">✕</a>
+                            @endif
+                            <button type="submit" aria-label="Search shops" class="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -812,7 +891,7 @@
                     </a>
                 </div>
 
-                <form action="/shops" method="GET" class="hidden w-full md:block md:flex-1 md:max-w-[640px]">
+                <form action="/shops" method="GET" class="relative hidden w-full md:block md:flex-1 md:max-w-[640px]">
                     @if(request('category'))
                         <input type="hidden" name="category" value="{{ request('category') }}">
                     @endif
@@ -828,8 +907,16 @@
                         name="q"
                         value="{{ request('q') }}"
                         placeholder="Search shops, parts, devices, or repair types"
-                        class="w-full rounded-xl border-2 border-[var(--border)] bg-[var(--mint-300)] px-5 py-3 text-sm text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)] transition"
+                        class="w-full rounded-xl border-2 border-[var(--border)] bg-[var(--mint-300)] py-3 pl-5 pr-20 text-sm text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)] transition"
                     />
+                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        @if(request('q'))
+                            <a href="/shops" class="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition" title="Clear search">✕</a>
+                        @endif
+                        <button type="submit" aria-label="Search shops" class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>

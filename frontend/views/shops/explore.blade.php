@@ -336,12 +336,34 @@
                 </div>
             </div>
 
-            <!-- Active Results Counter -->
-            <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)] px-1">
-                <span>Showing <strong>{{ $shops->total() }}</strong> verified repair shops</span>
-                @if(request('q'))
-                    <span>Search: <strong class="text-[var(--foreground)]">"{{ request('q') }}"</strong></span>
-                @endif
+            <!-- Active Results Counter & Filter Summary -->
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--muted-foreground)] px-1">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span>Showing <strong class="text-[var(--foreground)]">{{ $shops->total() }}</strong> verified repair shops</span>
+                    @if(request('category'))
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                            {{ ucwords(strtolower(str_replace('_', ' ', request('category')))) }}
+                        </span>
+                    @endif
+                    @if(request('city') && request('city') !== 'All')
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                            {{ request('city') }}
+                        </span>
+                    @endif
+                    @if(request('area') && request('area') !== 'All')
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                            {{ request('area') }}
+                        </span>
+                    @endif
+                </div>
+                <div class="flex items-center gap-3">
+                    @if(request('q'))
+                        <span>Search: <strong class="text-[var(--foreground)]">"{{ request('q') }}"</strong></span>
+                    @endif
+                    @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm']))
+                        <a href="/shops" class="font-bold text-rose-700 hover:underline">Clear all filters</a>
+                    @endif
+                </div>
             </div>
 
             <!-- ── Shop Result Cards (Exact match to ShopResultCard from commit 8e44218) ── -->

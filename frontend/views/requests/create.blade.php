@@ -44,6 +44,14 @@
             </a>
         </div>
 
+        @if($errors->any())
+            <div class="mb-6 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1 shadow-sm">
+                @foreach($errors->all() as $err)
+                    <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1.5"></i>{{ $err }}</div>
+                @endforeach
+            </div>
+        @endif
+
         <form method="POST" action="/requests" enctype="multipart/form-data" class="space-y-5 text-xs">
             @csrf
 
@@ -214,7 +222,7 @@
                     @dragover.prevent="dragging = true"
                     @dragleave.prevent="dragging = false"
                     @drop.prevent="dragging = false; addFiles($event.dataTransfer.files)"
-                    :class="dragging ? 'border-[#163625] bg-[#e4f3df] scale-[1.005]' : (files.length > 0 ? 'border-emerald-600/60 bg-white' : 'border-[#b9cfb2] bg-[var(--mint-100)]/60 hover:border-[#163625] hover:bg-white/80')"
+                    :class="dragging ? 'border-[var(--accent-dark)] bg-[var(--mint-200)] scale-[1.005]' : (files.length > 0 ? 'border-emerald-600/60 bg-[var(--card)]' : 'border-[var(--border)] bg-[var(--mint-100)]/60 hover:border-[var(--accent-dark)] hover:bg-[var(--card)]')"
                     class="rounded-2xl border-2 border-dashed p-4 transition-all duration-200 shadow-sm space-y-3.5"
                 >
                     <div

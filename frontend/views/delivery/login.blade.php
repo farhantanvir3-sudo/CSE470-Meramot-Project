@@ -177,7 +177,7 @@
 
                 <button
                     type="submit"
-                    class="group w-full inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-dark)] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
+                    class="group w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#163625] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     <span>Sign in as Delivery Partner</span>
                     <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>

@@ -36,15 +36,24 @@
         <!-- 3 KPI Stat Cards -->
         <section class="grid gap-4 md:grid-cols-3">
             <div class="rounded-2xl border border-[#d9e5d5] bg-white p-5 shadow-sm">
-                <p class="text-xs font-semibold text-[#163625]/65">Active deliveries</p>
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-semibold text-[#163625]/65">Active deliveries</p>
+                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef4ea] text-[#163625]"><i class="fa-solid fa-motorcycle text-xs"></i></span>
+                </div>
                 <p class="mt-2 text-3xl font-extrabold text-[#163625]">{{ $activeCount }}</p>
             </div>
             <div class="rounded-2xl border border-[#d9e5d5] bg-white p-5 shadow-sm">
-                <p class="text-xs font-semibold text-[#163625]/65">Completed trips</p>
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-semibold text-[#163625]/65">Completed trips</p>
+                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check text-xs"></i></span>
+                </div>
                 <p class="mt-2 text-3xl font-extrabold text-[#163625]">{{ $completedCount }}</p>
             </div>
             <div class="rounded-2xl border border-[#d9e5d5] bg-white p-5 shadow-sm">
-                <p class="text-xs font-semibold text-[#163625]/65">Completed earnings</p>
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-semibold text-[#163625]/65">Completed earnings</p>
+                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><i class="fa-solid fa-wallet text-xs"></i></span>
+                </div>
                 <p class="mt-2 text-3xl font-extrabold text-[#163625]">BDT {{ number_format($completedEarnings, 2) }}</p>
             </div>
         </section>
