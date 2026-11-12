@@ -69,12 +69,22 @@ class DeliveryPortalController extends Controller
      */
     public function showLogin(Request $request)
     {
+        $user = $request->user();
         $agent = $this->resolveAuthenticatedAgent($request);
-        if ($agent && $agent->registration_status === 'APPROVED' && $agent->is_active) {
+        if (
+            $user
+            && $user->is_active
+            && $agent
+            && strtoupper((string) $agent->registration_status) === 'APPROVED'
+            && $agent->is_active
+        ) {
             return redirect('/delivery');
         }
 
-        return view('delivery.login');
+        return response()
+            ->view('delivery.login')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     /**

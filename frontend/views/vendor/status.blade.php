@@ -6,7 +6,7 @@
 @php
     $statusUpper = strtoupper($profile->verification_status ?? 'pending');
     $statusDisplay = str_replace('_', ' ', $statusUpper);
-    $setupComplete = (bool) optional($primaryShop)->setup_complete;
+    $setupComplete = (bool) (optional($primaryShop)->setup_complete || optional($primaryShop)->inspection_fee !== null);
     $isPublic = (bool) optional($primaryShop)->is_public;
 @endphp
 

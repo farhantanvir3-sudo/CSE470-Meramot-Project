@@ -814,6 +814,10 @@ class VendorBranchController extends Controller
      * Enforce Admin Verification Gate for authenticated vendors whose profile is not yet `approved`
      * or whose primary shop has not completed post-approval setup.
      */
+    /**
+     * Block non-vendor roles, unapproved vendors, or unconfigured shops from accessing
+     * the Vendor Operations Dashboard, redirecting each role to its proper workspace.
+     */
     private function guardUnapprovedAuthenticatedVendor(Request $request)
     {
         if ($request->filled('vendor_profile_id')) {
@@ -821,13 +825,56 @@ class VendorBranchController extends Controller
         }
 
         $user = $request->user();
-        if (!$user || $user->role !== 'vendor') {
+
+        if (!$user) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return null;
+            }
+
+            return redirect()->route('login')
+                ->with('warning', 'Please sign in with your vendor partner account to open the Vendor Dashboard.');
+        }
+
+        if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Delivery partner accounts cannot access the Vendor Dashboard.',
+                ], 403);
+            }
+
+            return redirect('/delivery');
+        }
+
+        if ($user->role === 'customer') {
+            $ownedCustomerVendor = VendorProfile::where('user_id', $user->id)->first();
+            if (!$ownedCustomerVendor) {
+                if ($request->expectsJson() || $request->is('api/*')) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Vendor partner account required.',
+                    ], 403);
+                }
+
+                return redirect()->route('vendor.apply')
+                    ->with('warning', 'Apply as a partner repair shop below (or sign in to your vendor account) to access the Vendor Dashboard.');
+            }
+        }
+
+        if ($user->role !== 'vendor') {
             return null;
         }
 
         $owned = VendorProfile::with('shops')->where('user_id', $user->id)->first();
         if (!$owned) {
-            return null;
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Please submit your vendor partner application first.',
+                ], 403);
+            }
+
+            return redirect()->route('vendor.apply');
         }
 
         if ($owned->verification_status !== 'approved') {

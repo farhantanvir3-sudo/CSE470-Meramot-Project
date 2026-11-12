@@ -12,12 +12,25 @@
 @section('content')
 @php
     $submittedPopup = session('application_submitted_popup');
+    $isSignedInRider = auth()->check() && in_array(auth()->user()->role, ['delivery_agent', 'delivery'], true);
 @endphp
 
 <div
     class="mx-auto max-w-3xl px-4 py-8 md:px-6 space-y-6"
     x-data="{ showSubmittedModal: {{ $submittedPopup ? 'true' : 'false' }} }"
 >
+    @if($isSignedInRider)
+        <div class="rounded-2xl border border-emerald-300 bg-emerald-50/95 px-5 py-3.5 text-xs text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <span class="font-semibold">
+                <i class="fa-solid fa-motorcycle mr-1.5 text-emerald-700"></i>
+                You already have an active Delivery Partner session. Open your Rider Dashboard directly anytime.
+            </span>
+            <a href="/delivery" class="shrink-0 rounded-full bg-[#163625] px-4 py-2 text-xs font-bold text-white shadow hover:opacity-90 transition text-center">
+                Go to Rider Dashboard &rarr;
+            </a>
+        </div>
+    @endif
+
     <!-- Top Header & Quick Links -->
     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
@@ -39,9 +52,9 @@
                 <span>Check Application Status</span>
             </a>
             <a
-                href="/delivery/login"
-                title="Back to Delivery Partner Login"
-                aria-label="Back to Delivery Partner Login"
+                href="{{ $isSignedInRider ? '/delivery' : '/delivery/login' }}"
+                title="{{ $isSignedInRider ? 'Back to Rider Dashboard' : 'Back to Delivery Partner Login' }}"
+                aria-label="{{ $isSignedInRider ? 'Back to Rider Dashboard' : 'Back to Delivery Partner Login' }}"
                 class="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
             >
                 <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>

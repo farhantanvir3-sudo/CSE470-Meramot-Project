@@ -23,7 +23,7 @@ class ReviewController extends Controller
      * Show review writing form (only for verified, publicly active repair shops).
      * Route: GET /reviews/create/{shopId}
      */
-    public function create($shopId)
+    public function create(Request $request, $shopId)
     {
         $shop = RepairShop::with('vendorProfile')->findOrFail($shopId);
         $verificationStatus = $shop->vendorProfile?->verification_status ?? ($shop->is_public ? 'approved' : 'pending');
@@ -32,6 +32,13 @@ class ReviewController extends Controller
             return redirect()
                 ->route('shops.show', $shop->slug)
                 ->with('error', 'Reviews can only be submitted for verified, publicly onboarded repair shops.');
+        }
+
+        $user = $request->user();
+        if ($user && (int) ($shop->vendorProfile?->user_id ?? 0) === (int) $user->id) {
+            return redirect()
+                ->route('shops.show', $shop->slug)
+                ->with('warning', 'Workshop owners cannot submit customer reviews for their own shop.');
         }
 
         return view('reviews.write-review', compact('shop'));
@@ -56,6 +63,12 @@ class ReviewController extends Controller
             return redirect()
                 ->route('shops.show', $shop->slug)
                 ->with('error', 'Cannot post reviews for an unverified or inactive workshop.');
+        }
+
+        if ($request->user() && (int) ($shop->vendorProfile?->user_id ?? 0) === (int) $request->user()->id) {
+            return redirect()
+                ->route('shops.show', $shop->slug)
+                ->with('warning', 'Workshop owners cannot submit customer reviews for their own shop.');
         }
 
         $customerId = $request->user()?->id

@@ -5,6 +5,17 @@
 @section('content')
 @php
     $submittedPopup = session('application_submitted_popup');
+    $currentUser = auth()->user();
+    $backHref = !$currentUser
+        ? '/login'
+        : ($currentUser->role === 'admin'
+            ? '/admin'
+            : ($currentUser->role === 'vendor' ? '/vendor/dashboard' : '/'));
+    $backLabel = !$currentUser
+        ? 'Back to Customer & Vendor Sign In'
+        : ($currentUser->role === 'admin'
+            ? 'Back to Admin Console'
+            : ($currentUser->role === 'vendor' ? 'Back to Vendor Workspace' : 'Back to Marketplace Home'));
 @endphp
 <div
     class="min-h-[80vh] flex items-center justify-center px-4 py-8"
@@ -77,9 +88,9 @@
         <!-- ── Dedicated Delivery Partner Company Login Card ── -->
         <div class="relative rounded-[2rem] border border-white/60 bg-white/95 px-8 py-7 shadow-2xl backdrop-blur">
             <a
-                href="/login"
-                title="Back to Customer & Vendor Sign In"
-                aria-label="Back to Customer & Vendor Sign In"
+                href="{{ $backHref }}"
+                title="{{ $backLabel }}"
+                aria-label="{{ $backLabel }}"
                 class="group absolute left-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-md"
             >
                 <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
@@ -96,6 +107,17 @@
                     Sign in using your approved <code class="font-mono font-semibold text-[#214c34]">@meramotbd.com</code> company email and system-generated password.
                 </p>
             </div>
+
+            @if($currentUser)
+                <div class="mb-4 rounded-2xl border border-[#cbe0c2] bg-[#eef5ea] px-4 py-3 text-xs text-[#163625] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span>
+                        Signed in as <strong>{{ $currentUser->name ?? 'User' }}</strong>. Sign in below with a <code class="font-mono font-bold">@meramotbd.com</code> account to switch to the Delivery Workspace.
+                    </span>
+                    <a href="{{ $backHref }}" class="shrink-0 rounded-full bg-[#214c34] px-3.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90 transition text-center">
+                        Return &rarr;
+                    </a>
+                </div>
+            @endif
 
             @if(session('success'))
                 <div class="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-900 font-semibold">
@@ -204,4 +226,11 @@
 
     </div>
 </div>
+<script>
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+</script>
 @endsection

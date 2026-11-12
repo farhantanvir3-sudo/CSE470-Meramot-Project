@@ -128,19 +128,36 @@
     @meramot-location-changed.window="applyMapLocation($event.detail)"
 >
     <!-- Top Header Row -->
-    <div class="mb-6 flex items-center justify-between gap-3">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
             <a href="/" class="hover:underline">Home</a>
             <span>/</span>
             <span class="font-semibold text-[var(--foreground)]">Account Profile</span>
         </div>
 
-        <a
-            href="/"
-            class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-5 py-2 text-xs md:text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
-        >
-            Back to home
-        </a>
+        <div class="flex flex-wrap items-center gap-2">
+            @if(($user->role ?? '') === 'admin')
+                <a
+                    href="/admin"
+                    class="rounded-full bg-[var(--accent-dark)] px-5 py-2 text-xs md:text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                >
+                    <i class="fa-solid fa-shield-halved mr-1.5"></i>Admin Console
+                </a>
+            @elseif(($user->role ?? '') === 'vendor')
+                <a
+                    href="/vendor/dashboard"
+                    class="rounded-full bg-[var(--accent-dark)] px-5 py-2 text-xs md:text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                >
+                    <i class="fa-solid fa-store mr-1.5"></i>Vendor Dashboard
+                </a>
+            @endif
+            <a
+                href="/"
+                class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-5 py-2 text-xs md:text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+            >
+                Back to home
+            </a>
+        </div>
     </div>
 
     @if(session('success'))
@@ -517,20 +534,38 @@
                 Cancel
             </button>
 
-            <a
-                href="/orders"
-                class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
-            >
-                My orders
-            </a>
+            @if(($user->role ?? '') === 'vendor')
+                <a
+                    href="/vendor/dashboard"
+                    class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                >
+                    Vendor dashboard
+                </a>
+            @elseif(($user->role ?? '') === 'admin')
+                <a
+                    href="/admin"
+                    class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                >
+                    Admin console
+                </a>
+            @else
+                <a
+                    href="/orders"
+                    class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                >
+                    My orders
+                </a>
+            @endif
 
-            <button
-                type="button"
-                @click="showDeleteConfirm = true"
-                class="rounded-full border border-red-500 bg-[var(--card)] px-6 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
-            >
-                Delete profile
-            </button>
+            @if(($user->role ?? '') !== 'admin')
+                <button
+                    type="button"
+                    @click="showDeleteConfirm = true"
+                    class="rounded-full border border-red-500 bg-[var(--card)] px-6 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                >
+                    Delete profile
+                </button>
+            @endif
         </div>
     </form>
 

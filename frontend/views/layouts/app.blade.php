@@ -362,6 +362,38 @@
         </a>
     </div>
 
+    @php
+        $navAuthUser = auth()->user();
+        $navUserRole = $navAuthUser?->role ?? 'guest';
+        $isRiderAuth = $navAuthUser && in_array($navUserRole, ['delivery_agent', 'delivery'], true);
+        $isVendorAuth = $navAuthUser && $navUserRole === 'vendor';
+        $isAdminAuth = $navAuthUser && $navUserRole === 'admin';
+        $isCustomerAuth = $navAuthUser && $navUserRole === 'customer';
+
+        $navVendorProfile = $isVendorAuth
+            ? \App\Models\VendorProfile::with('shops')->where('user_id', $navAuthUser->id)->first()
+            : null;
+        $navPrimaryShop = $navVendorProfile?->shops?->sortBy('id')->first();
+        $navVendorApproved = ($navVendorProfile?->verification_status ?? '') === 'approved';
+        $navVendorReady = $navVendorApproved && (!$navPrimaryShop || $navPrimaryShop->setup_complete || $navPrimaryShop->inspection_fee !== null);
+
+        $vendorWorkspaceUrl = !$isVendorAuth
+            ? '/vendor/apply'
+            : (!$navVendorProfile
+                ? '/vendor/apply'
+                : (!$navVendorApproved
+                    ? '/vendor/onboarding'
+                    : ($navVendorReady ? '/vendor/dashboard' : '/vendor/setup-shop')));
+
+        $vendorWorkspaceLabel = !$isVendorAuth
+            ? 'Apply as Partner Shop'
+            : (!$navVendorProfile
+                ? 'Complete Vendor Form'
+                : (!$navVendorApproved
+                    ? 'Application Status'
+                    : ($navVendorReady ? 'Vendor Dashboard' : 'Complete Shop Setup')));
+    @endphp
+
     <!-- Top Academic Defense / Role Switcher Ribbon (Dev Mode Only) -->
     @if($isDevMode)
     <div class="bg-accent-dark text-white text-[11px] py-1.5 px-4 shadow-sm border-b border-emerald-950">
@@ -376,9 +408,9 @@
                 <span class="opacity-40">|</span>
                 <a href="/requests" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-list-check text-teal-300"></i> Requests</a>
                 <span class="opacity-40">|</span>
-                <a href="/vendor/dashboard" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-gavel text-amber-300"></i> Vendor Portal</a>
+                <a href="{{ $isVendorAuth ? $vendorWorkspaceUrl : '/vendor/dashboard' }}" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-gavel text-amber-300"></i> Vendor Portal</a>
                 <span class="opacity-40">|</span>
-                <a href="/delivery-agent/register" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-motorcycle text-sky-300"></i> Rider R1</a>
+                <a href="{{ $isRiderAuth ? '/delivery' : '/delivery/login' }}" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-motorcycle text-sky-300"></i> {{ $isRiderAuth ? 'Rider Dashboard' : 'Rider R1' }}</a>
                 <span class="opacity-40">|</span>
                 <a href="/admin" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-shield-halved text-rose-300"></i> Admin Console</a>
                 <span class="opacity-40">|</span>
@@ -474,8 +506,19 @@
                             </div>
 
                             <div class="mt-3 pt-2.5 border-t border-[var(--border)] flex items-center justify-between">
-                                <a href="/requests" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">My Requests</a>
-                                <a href="/vendor/alert-settings" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">SMS Alert Settings &rarr;</a>
+                                @if($isVendorAuth)
+                                    <a href="{{ $vendorWorkspaceUrl }}" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">{{ $vendorWorkspaceLabel }}</a>
+                                    <a href="/vendor/alert-settings" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">SMS Alert Settings &rarr;</a>
+                                @elseif($isRiderAuth)
+                                    <a href="/delivery" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">Rider Dashboard</a>
+                                    <a href="/delivery/map" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Live Delivery Map &rarr;</a>
+                                @elseif($isAdminAuth)
+                                    <a href="/admin" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">Admin Console</a>
+                                    <a href="/admin/financial-overview" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Financial Ledger &rarr;</a>
+                                @else
+                                    <a href="/requests" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">My Requests</a>
+                                    <a href="/shops/explore" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Explore Workshops &rarr;</a>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -500,6 +543,33 @@
                             <i :class="darkMode ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon text-[var(--foreground)]'"></i>
                         </button>
 
+                        <!-- Direct 1-Click Workspace Pill for Active Rider / Vendor / Admin Sessions -->
+                        @if($isRiderAuth && !request()->is('delivery*'))
+                            <a
+                                href="/delivery"
+                                class="inline-flex items-center gap-2 rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
+                            >
+                                <i class="fa-solid fa-motorcycle text-[var(--accent-dark)]"></i>
+                                <span>Rider Dashboard</span>
+                            </a>
+                        @elseif($isVendorAuth && !request()->is('vendor/dashboard*'))
+                            <a
+                                href="{{ $vendorWorkspaceUrl }}"
+                                class="inline-flex items-center gap-2 rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
+                            >
+                                <i class="fa-solid fa-store text-[var(--accent-dark)]"></i>
+                                <span>{{ $vendorWorkspaceLabel }}</span>
+                            </a>
+                        @elseif($isAdminAuth && !request()->is('admin*'))
+                            <a
+                                href="/admin"
+                                class="inline-flex items-center gap-2 rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
+                            >
+                                <i class="fa-solid fa-shield-halved text-[var(--accent-dark)]"></i>
+                                <span>Admin Console</span>
+                            </a>
+                        @endif
+
                         <!-- Sign In / Sign Up or User Dropdown -->
                         @auth
                             <div class="relative" x-data="{ userMenuOpen: false }">
@@ -521,11 +591,7 @@
                                     x-cloak
                                     class="absolute right-0 z-30 mt-2 w-64 rounded-3xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-xl text-sm"
                                 >
-                                    @php
-                                        $navUserRole = auth()->user()->role ?? 'customer';
-                                    @endphp
-
-                                    @if($navUserRole === 'admin')
+                                    @if($isAdminAuth)
                                         <a href="/admin" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
                                             <i class="fa-solid fa-shield-halved mr-1.5"></i> Admin Console
                                         </a>
@@ -539,45 +605,76 @@
                                             Financial Ledger
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
-                                    @elseif($navUserRole === 'vendor')
-                                        <a href="/vendor/dashboard" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
-                                            <i class="fa-solid fa-store mr-1.5"></i> Vendor Dashboard
+                                        <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Explore shops
                                         </a>
-                                        <a href="/vendor/onboarding" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                            Onboarding &amp; Verification
+                                        <a href="/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> Account Profile
+                                        </a>
+                                    @elseif($isVendorAuth)
+                                        <a href="{{ $vendorWorkspaceUrl }}" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
+                                            <i class="fa-solid fa-store mr-1.5"></i> {{ $vendorWorkspaceLabel }}
+                                        </a>
+                                        @if($navVendorReady)
+                                            <a href="/vendor/bidding-board" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                                Live Bidding Board
+                                            </a>
+                                        @endif
+                                        @if($navVendorApproved)
+                                            <a href="/vendor/setup-shop" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                                Shop Pricing &amp; Services
+                                            </a>
+                                        @endif
+                                        <a href="/vendor/onboarding" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Verification &amp; Onboarding
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
-                                    @elseif(in_array($navUserRole, ['delivery_agent', 'delivery'], true))
+                                        <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Explore shops
+                                        </a>
+                                        <a href="/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> Account Profile
+                                        </a>
+                                    @elseif($isRiderAuth)
                                         <a href="/delivery" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
-                                            <i class="fa-solid fa-motorcycle mr-1.5"></i> Delivery Partner Dashboard
+                                            <i class="fa-solid fa-motorcycle mr-1.5"></i> Rider Dashboard
                                         </a>
                                         <a href="/delivery/map" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Live Delivery Map
                                         </a>
+                                        <a href="/delivery/earnings" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Rider Earnings
+                                        </a>
+                                        <a href="/delivery/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <i class="fa-regular fa-id-badge mr-1.5 text-[var(--accent-dark)]"></i> Rider Profile
+                                        </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
+                                        <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Explore shops
+                                        </a>
+                                    @else
+                                        <a href="/requests" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            My Repair Requests
+                                        </a>
+                                        <a href="/requests/create" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Make Repair Request
+                                        </a>
+                                        <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Explore shops
+                                        </a>
+                                        <a href="/packages/catalog" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Service Packages
+                                        </a>
+                                        <a href="/cart" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            View cart
+                                        </a>
+                                        <a href="/ai-consultant/chat" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            AI help chat
+                                        </a>
+                                        <a href="/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> Account Profile
+                                        </a>
                                     @endif
-
-                                    <a href="/requests" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                        My Repair Requests
-                                    </a>
-                                    <a href="/requests/create" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                        Make Repair Request
-                                    </a>
-                                    <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                        Explore shops
-                                    </a>
-                                    <a href="/packages/catalog" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                        Service Packages
-                                    </a>
-                                    <a href="/cart" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                        View cart
-                                    </a>
-                                    <a href="/ai-consultant/chat" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                        AI help chat
-                                    </a>
-                                    <a href="/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                        <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> Account Profile
-                                    </a>
                                     <div class="my-1 border-t border-[var(--border)]"></div>
                                     <button
                                         type="button"
@@ -773,40 +870,100 @@
             </div>
 
             <nav class="space-y-1">
-                <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                    Explore all shops
-                </a>
-                <a href="/requests" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                    My Repair Requests
-                </a>
-                <a href="/requests/create" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                    Make Repair Request
-                </a>
-                <a href="/packages/catalog" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                    Service Packages
-                </a>
-                <a href="/cart" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                    Direct-Order Cart
-                </a>
-                <a href="/ai-consultant/chat" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                    AI Diagnostic Help
-                </a>
-                <a href="/vendor/dashboard" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-[var(--mint-50)]">
-                    Vendor Portal &amp; Direct Orders
-                </a>
-                <a href="{{ (auth()->check() && in_array(auth()->user()->role, ['delivery_agent', 'delivery'], true)) ? '/delivery' : '/delivery/login' }}" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-sky-900 hover:bg-[var(--mint-50)]">
-                    Delivery Partner Portal
-                </a>
-                @if($isDevMode || (auth()->check() && auth()->user()->role === 'admin'))
-                <a href="/admin" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-teal-800 hover:bg-[var(--mint-50)]">
-                    <i class="fa-solid fa-shield-halved mr-2"></i> Admin Console
-                </a>
+                @if($isRiderAuth)
+                    <a href="/delivery" @click="mobileMenuOpen = false" class="block rounded-xl bg-[var(--mint-100)] px-4 py-3 text-sm font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)]">
+                        <i class="fa-solid fa-motorcycle mr-2"></i> Rider Dashboard
+                    </a>
+                    <a href="/delivery/map" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Live Delivery Map
+                    </a>
+                    <a href="/delivery/earnings" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Rider Earnings
+                    </a>
+                    <a href="/delivery/profile" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Rider Profile
+                    </a>
+                    <div class="my-2 border-t border-[var(--border)]"></div>
+                    <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Explore all shops
+                    </a>
+                @elseif($isVendorAuth)
+                    <a href="{{ $vendorWorkspaceUrl }}" @click="mobileMenuOpen = false" class="block rounded-xl bg-[var(--mint-100)] px-4 py-3 text-sm font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)]">
+                        <i class="fa-solid fa-store mr-2"></i> {{ $vendorWorkspaceLabel }}
+                    </a>
+                    @if($navVendorReady)
+                        <a href="/vendor/bidding-board" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                            Live Bidding Board
+                        </a>
+                    @endif
+                    @if($navVendorApproved)
+                        <a href="/vendor/setup-shop" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                            Shop Pricing &amp; Services
+                        </a>
+                    @endif
+                    <a href="/vendor/onboarding" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Verification &amp; Onboarding
+                    </a>
+                    <div class="my-2 border-t border-[var(--border)]"></div>
+                    <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Explore all shops
+                    </a>
+                @elseif($isAdminAuth)
+                    <a href="/admin" @click="mobileMenuOpen = false" class="block rounded-xl bg-[var(--mint-100)] px-4 py-3 text-sm font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)]">
+                        <i class="fa-solid fa-shield-halved mr-2"></i> Admin Console
+                    </a>
+                    <a href="/admin/vendors/pending" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Verify Vendors
+                    </a>
+                    <a href="/admin/delivery-agents/pending" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Verify Riders
+                    </a>
+                    <a href="/admin/financial-overview" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Financial Ledger
+                    </a>
+                    <div class="my-2 border-t border-[var(--border)]"></div>
+                    <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Explore all shops
+                    </a>
+                @else
+                    <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Explore all shops
+                    </a>
+                    <a href="/requests" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        My Repair Requests
+                    </a>
+                    <a href="/requests/create" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Make Repair Request
+                    </a>
+                    <a href="/packages/catalog" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Service Packages
+                    </a>
+                    <a href="/cart" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Direct-Order Cart
+                    </a>
+                    <a href="/ai-consultant/chat" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        AI Diagnostic Help
+                    </a>
+                    <div class="my-1.5 border-t border-[var(--border)]"></div>
+                    <a href="/vendor/apply" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-2.5 text-sm font-bold text-emerald-800 hover:bg-[var(--mint-50)]">
+                        {{ $isCustomerAuth ? 'Become a Partner Shop' : 'Apply as Partner Shop' }}
+                    </a>
+                    <a href="{{ $isCustomerAuth ? '/delivery-agent/register' : '/delivery/login' }}" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-2.5 text-sm font-bold text-sky-900 hover:bg-[var(--mint-50)]">
+                        {{ $isCustomerAuth ? 'Become a Delivery Partner' : 'Delivery Partner Login' }}
+                    </a>
+                    @if($isDevMode)
+                        <a href="/admin" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-2.5 text-sm font-bold text-teal-800 hover:bg-[var(--mint-50)]">
+                            <i class="fa-solid fa-shield-halved mr-2"></i> Admin Console
+                        </a>
+                    @endif
                 @endif
                 <div class="my-2 border-t border-[var(--border)]"></div>
                 @auth
-                    <a href="/profile" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                        <i class="fa-regular fa-user mr-2 text-[var(--accent-dark)]"></i> Account Profile
-                    </a>
+                    @if(!$isRiderAuth)
+                        <a href="/profile" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                            <i class="fa-regular fa-user mr-2 text-[var(--accent-dark)]"></i> Account Profile
+                        </a>
+                    @endif
                     <button
                         type="button"
                         @click="mobileMenuOpen = false; showLogoutConfirm = true"
@@ -1081,12 +1238,21 @@
                         <p>Faculty: <strong>Nazmul Islam [NZU]</strong></p>
                         <p class="mt-2 text-[10px] text-emerald-800 font-bold">Strict MVC Architecture • Laravel 10 • FastAPI Microservice • PostgreSQL</p>
                     @else
-                        <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Customer Support</h5>
+                        <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Customer &amp; Partner Hub</h5>
                         <ul class="space-y-1.5">
                             <li><a href="/requests/create" class="hover:underline">Post Repair Request</a></li>
                             <li><a href="/ai-consultant/chat" class="hover:underline">AI Fault Diagnostics</a></li>
                             <li><a href="/packages/catalog" class="hover:underline">Standard Fixed Packages</a></li>
-                            <li><a href="/vendor/onboarding" class="hover:underline">Register as Partner Shop</a></li>
+                            @if($isVendorAuth)
+                                <li><a href="{{ $vendorWorkspaceUrl }}" class="font-semibold text-[var(--accent-dark)] hover:underline">{{ $vendorWorkspaceLabel }}</a></li>
+                            @elseif($isRiderAuth)
+                                <li><a href="/delivery" class="font-semibold text-[var(--accent-dark)] hover:underline">Rider Dashboard</a></li>
+                            @elseif($isAdminAuth)
+                                <li><a href="/admin" class="font-semibold text-[var(--accent-dark)] hover:underline">Admin Console</a></li>
+                            @else
+                                <li><a href="/vendor/apply" class="hover:underline">Register as Partner Shop</a></li>
+                                <li><a href="{{ $isCustomerAuth ? '/delivery-agent/register' : '/delivery/login' }}" class="hover:underline">{{ $isCustomerAuth ? 'Become a Delivery Partner' : 'Delivery Partner Portal' }}</a></li>
+                            @endif
                         </ul>
                     @endif
                 </div>

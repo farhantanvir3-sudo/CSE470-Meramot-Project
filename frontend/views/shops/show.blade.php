@@ -6,6 +6,9 @@
 @php
     $verificationStatus = $shop->vendorProfile?->verification_status ?? ($shop->is_public ? 'approved' : 'pending');
     $isOperational = (bool) $shop->is_active && (bool) $shop->is_public && $verificationStatus === 'approved';
+    $isShopOwner = auth()->check()
+        && auth()->user()->role === 'vendor'
+        && (int) ($shop->vendorProfile?->user_id ?? 0) === (int) auth()->id();
     $reviewsList = ($shop->reviews ?? collect())->where('is_hidden', false)->values();
     $totalReviewsCount = $reviewsList->count() > 0 ? $reviewsList->count() : (int) ($shop->review_count ?? 0);
     $avgRating = $reviewsList->count() > 0
@@ -168,18 +171,29 @@
                 </div>
 
                 <div class="space-y-2">
-                    @if($isOperational)
-                        <a href="/requests/create?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
-                            Post Repair Request
+                    @if($isShopOwner)
+                        <a href="{{ $isOperational ? '/vendor/dashboard' : ($verificationStatus === 'approved' ? '/vendor/setup-shop' : '/vendor/onboarding') }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                            <i class="fa-solid fa-gauge-high mr-1.5"></i> {{ $isOperational ? 'Manage in Vendor Dashboard' : ($verificationStatus === 'approved' ? 'Complete Shop Setup' : 'View Application Status') }}
                         </a>
+                        @if($verificationStatus === 'approved')
+                            <a href="/vendor/setup-shop" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                                <i class="fa-solid fa-sliders mr-1.5"></i> Edit Pricing &amp; Services
+                            </a>
+                        @endif
                     @else
-                        <span class="inline-flex w-full items-center justify-center rounded-full border border-amber-400 bg-amber-100/80 px-4 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
-                            <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Booking Locked Until Approved
-                        </span>
+                        @if($isOperational)
+                            <a href="/requests/create?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                                Post Repair Request
+                            </a>
+                        @else
+                            <span class="inline-flex w-full items-center justify-center rounded-full border border-amber-400 bg-amber-100/80 px-4 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
+                                <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Booking Locked Until Approved
+                            </span>
+                        @endif
+                        <a href="/ai-consultant/chat" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-amber-600"></i> AI Diagnose Device
+                        </a>
                     @endif
-                    <a href="/ai-consultant/chat" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
-                        <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-amber-600"></i> AI Diagnose Device
-                    </a>
                 </div>
             </div>
 
@@ -380,7 +394,11 @@
                             <span class="rounded-full bg-[var(--mint-100)] px-3 py-0.5 text-xs font-semibold text-[var(--accent-dark)]">
                                 {{ $shop->area ? $shop->area . ', ' . $shop->city : ($shop->city ?: 'Bangladesh') }}
                             </span>
-                            @if($isOperational)
+                            @if($isShopOwner)
+                                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--accent-dark)]">
+                                    <i class="fa-solid fa-store mr-1 text-[10px]"></i> Your Workshop
+                                </span>
+                            @elseif($isOperational)
                                 <a href="/reviews/create/{{ $shop->id }}" class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-xs font-semibold text-white hover:opacity-90 transition">
                                     <i class="fa-solid fa-pen-to-square mr-1 text-[10px]"></i> Write Review
                                 </a>
@@ -472,7 +490,11 @@
                 </div>
 
                 <div class="mt-5 pt-4 border-t border-[var(--border)]">
-                    @if($isOperational)
+                    @if($isShopOwner)
+                        <a href="/vendor/dashboard" class="block w-full text-center rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
+                            Open Vendor Dashboard &rarr;
+                        </a>
+                    @elseif($isOperational)
                         <a href="/requests/create?shop_id={{ $shop->id }}" class="block w-full text-center rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
                             Select This Shop &rarr;
                         </a>

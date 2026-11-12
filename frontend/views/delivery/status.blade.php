@@ -3,6 +3,9 @@
 @section('title', 'Check Delivery Application Status | Meramot')
 
 @section('content')
+@php
+    $isSignedInRider = auth()->check() && in_array(auth()->user()->role, ['delivery_agent', 'delivery'], true);
+@endphp
 <div class="mx-auto max-w-2xl px-4 py-8 md:px-6 space-y-6">
 
     <div class="flex items-start justify-between gap-4">
@@ -16,9 +19,9 @@
             </p>
         </div>
         <a
-            href="/delivery/login"
-            title="Back to Delivery Partner Login"
-            aria-label="Back to Delivery Partner Login"
+            href="{{ $isSignedInRider ? '/delivery' : '/delivery/login' }}"
+            title="{{ $isSignedInRider ? 'Back to Rider Dashboard' : 'Back to Delivery Partner Login' }}"
+            aria-label="{{ $isSignedInRider ? 'Back to Rider Dashboard' : 'Back to Delivery Partner Login' }}"
             class="group mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
         >
             <i class="fa-solid fa-arrow-left text-sm transition-transform duration-200 group-hover:-translate-x-0.5"></i>
@@ -139,11 +142,11 @@
                     </a>
                 @else
                     <a
-                        href="/delivery/login"
+                        href="{{ $isSignedInRider ? '/delivery' : '/delivery/login' }}"
                         class="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-[var(--accent-dark)] px-6 py-3.5 text-xs md:text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                     >
-                        <i class="fa-solid fa-right-to-bracket transition-transform duration-200 group-hover:translate-x-0.5"></i>
-                        <span>Go to Delivery Partner Login</span>
+                        <i class="fa-solid {{ $isSignedInRider ? 'fa-motorcycle' : 'fa-right-to-bracket' }} transition-transform duration-200 group-hover:translate-x-0.5"></i>
+                        <span>{{ $isSignedInRider ? 'Go to Rider Dashboard' : 'Go to Delivery Partner Login' }}</span>
                     </a>
                 @endif
 

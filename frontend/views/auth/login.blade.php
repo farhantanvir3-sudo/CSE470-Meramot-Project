@@ -175,4 +175,11 @@
         </div>
     </div>
 </div>
+<script>
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+</script>
 @endsection

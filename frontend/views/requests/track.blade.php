@@ -43,15 +43,32 @@
             if ($currentStatus === 'BIDDING_OPEN') {
                 $currentStatus = 'BIDDING';
             }
+            $viewer = auth()->user();
+            $viewerRole = $viewer?->role ?? 'guest';
+            $canActAsCustomer = !$viewer
+                || (int) $viewer->id === (int) $repairRequest->customer_id
+                || $viewerRole === 'admin';
+            $ownsRequestedShop = $viewer
+                && $viewerRole === 'vendor'
+                && $repairRequest->requestedShop
+                && (int) ($repairRequest->requestedShop->vendorProfile?->user_id ?? 0) === (int) $viewer->id;
         @endphp
 
-        @if(in_array($currentStatus, ['PENDING', 'BIDDING', 'ASSIGNED', 'PICKUP_SCHEDULED'], true))
+        @if($canActAsCustomer && in_array($currentStatus, ['PENDING', 'BIDDING', 'ASSIGNED', 'PICKUP_SCHEDULED'], true))
             <form method="POST" action="{{ route('requests.cancel', $repairRequest->id) }}">
                 @csrf
                 <button type="submit" class="rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-800 hover:bg-rose-100 transition">
                     Cancel Request
                 </button>
             </form>
+        @elseif($viewer && $viewerRole === 'vendor')
+            <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
+                <i class="fa-solid fa-store mr-1.5"></i>Back to Vendor Dashboard
+            </a>
+        @elseif($viewer && in_array($viewerRole, ['delivery_agent', 'delivery'], true))
+            <a href="/delivery" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
+                <i class="fa-solid fa-motorcycle mr-1.5"></i>Back to Rider Dashboard
+            </a>
         @endif
     </div>
 
@@ -84,9 +101,15 @@
                             </p>
                         </div>
                     </div>
-                    <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
-                        Open Vendor Portal &rarr;
-                    </a>
+                    @if($ownsRequestedShop || $viewerRole === 'admin')
+                        <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
+                            Open Vendor Dashboard &rarr;
+                        </a>
+                    @else
+                        <a href="{{ route('shops.show', $repairRequest->requestedShop->slug) }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
+                            View Workshop &rarr;
+                        </a>
+                    @endif
                 </div>
             @endif
 
@@ -111,22 +134,24 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-3 pt-2">
-                        <form method="POST" action="{{ route('requests.respond-final-quote', $repairRequest->id) }}">
-                            @csrf
-                            <input type="hidden" name="decision" value="approve">
-                            <button type="submit" class="rounded-full bg-[#244229] px-5 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
-                                Approve Quote & Start Repair
-                            </button>
-                        </form>
-                        <form method="POST" action="{{ route('requests.respond-final-quote', $repairRequest->id) }}">
-                            @csrf
-                            <input type="hidden" name="decision" value="decline">
-                            <button type="submit" class="rounded-full border border-rose-300 bg-white px-5 py-2.5 text-xs font-bold text-rose-800 hover:bg-rose-50 transition">
-                                Decline Quote & Schedule Device Return
-                            </button>
-                        </form>
-                    </div>
+                    @if($canActAsCustomer)
+                        <div class="flex flex-wrap items-center gap-3 pt-2">
+                            <form method="POST" action="{{ route('requests.respond-final-quote', $repairRequest->id) }}">
+                                @csrf
+                                <input type="hidden" name="decision" value="approve">
+                                <button type="submit" class="rounded-full bg-[#244229] px-5 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
+                                    Approve Quote & Start Repair
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ route('requests.respond-final-quote', $repairRequest->id) }}">
+                                @csrf
+                                <input type="hidden" name="decision" value="decline">
+                                <button type="submit" class="rounded-full border border-rose-300 bg-white px-5 py-2.5 text-xs font-bold text-rose-800 hover:bg-rose-50 transition">
+                                    Decline Quote & Schedule Device Return
+                                </button>
+                            </form>
+                        </div>
+                    @endif
                 </div>
             @endif
 
@@ -363,7 +388,7 @@
                                         <i class="fa-solid fa-circle-check"></i>
                                         <span class="text-xs font-bold">Accepted Bid (Quote 1)</span>
                                     </div>
-                                @elseif($currentStatus === 'BIDDING')
+                                @elseif($currentStatus === 'BIDDING' && $canActAsCustomer)
                                     <form method="POST" action="{{ route('requests.accept-bid', $repairRequest->id) }}" class="mt-3">
                                         @csrf
                                         <input type="hidden" name="bid_id" value="{{ $bid->id }}">
@@ -402,7 +427,7 @@
                 </h3>
 
                 <div class="space-y-2.5">
-                    @if(in_array($currentStatus, ['ASSIGNED', 'REPAIRING', 'WAITING_APPROVAL', 'COMPLETED'], true))
+                    @if($canActAsCustomer && in_array($currentStatus, ['ASSIGNED', 'REPAIRING', 'WAITING_APPROVAL', 'COMPLETED'], true))
                         <a href="/checkout/payment/{{ $repairRequest->id }}" class="block w-full py-2.5 rounded-full bg-emerald-700 text-center text-xs font-bold text-white hover:opacity-90 transition">
                             <i class="fa-solid fa-credit-card mr-2"></i>Online Escrow Checkout
                         </a>
@@ -414,7 +439,7 @@
                         </a>
                     @endif
 
-                    @if($currentStatus === 'COMPLETED' && ($repairRequest->requested_shop_id || $repairRequest->repairJob?->shop_id))
+                    @if($canActAsCustomer && $currentStatus === 'COMPLETED' && ($repairRequest->requested_shop_id || $repairRequest->repairJob?->shop_id))
                         <a href="/reviews/create/{{ $repairRequest->requested_shop_id ?? $repairRequest->repairJob->shop_id }}" class="block w-full py-2.5 rounded-full bg-amber-500 text-center text-xs font-bold text-white hover:opacity-90 transition">
                             <i class="fa-solid fa-star mr-2"></i>Leave Verified Review
                         </a>
