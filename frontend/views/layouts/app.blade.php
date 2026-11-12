@@ -503,10 +503,13 @@
                                 <button
                                     @click="userMenuOpen = !userMenuOpen"
                                     type="button"
-                                    class="inline-flex items-center justify-center text-center rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
+                                    class="inline-flex items-center justify-center gap-2 text-center rounded-full bg-[var(--accent-dark)] px-5 py-2 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
                                 >
+                                    @if(!empty(auth()->user()->avatar_url))
+                                        <img src="{{ auth()->user()->avatar_url }}" alt="" class="h-6 w-6 rounded-full object-cover border border-white/40">
+                                    @endif
                                     <span>{{ auth()->user()->name ?? 'User' }}</span>
-                                    <span class="ml-1 text-xs">▼</span>
+                                    <span class="ml-0.5 text-xs">▼</span>
                                 </button>
 
                                 <div
@@ -569,8 +572,8 @@
                                     <a href="/ai-consultant/chat" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                         AI help chat
                                     </a>
-                                    <a href="/profile" class="block rounded-2xl px-4 py-2.5 text-[var(--muted-foreground)] transition hover:bg-[var(--mint-50)] hover:text-[var(--foreground)]">
-                                        Account Profile
+                                    <a href="/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> Account Profile
                                     </a>
                                     <div class="my-1 border-t border-[var(--border)]"></div>
                                     <button
@@ -781,6 +784,9 @@
                 @endif
                 <div class="my-2 border-t border-[var(--border)]"></div>
                 @auth
+                    <a href="/profile" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        <i class="fa-regular fa-user mr-2 text-[var(--accent-dark)]"></i> Account Profile
+                    </a>
                     <button
                         type="button"
                         @click="mobileMenuOpen = false; showLogoutConfirm = true"

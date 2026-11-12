@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\RepairShop;
+use App\Models\ShopService;
 use App\Models\User;
 use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
+use App\Services\GmailApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,24 +18,629 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * ============================================================================
- * FEATURE R11: Vendor Onboarding & Business Profile Verification Engine
+ * FEATURE R11: Vendor Sign-Up, Onboarding, OTP Verification & Shop Setup Engine
  * ============================================================================
  * Assigned Developer: Farhan Tanvir [Student ID: 22299179] (Team Lead) | Sprint 1
  * MVC Layer: Controller
  * Supports:
- *   - Dual Shop Addresses during onboarding:
- *       1. GPS Approximate Location (`shop_latitude`, `shop_longitude`, `gps_address`)
- *       2. Vendor-Provided Storefront Location (`shop_address`, `city`, `area`)
- *       3. Optional sync (`same_as_gps_location = true` makes 1 & 2 identical)
- *   - Multi-Branch opt-in (`is_branched`, `branch_name`) from day one or later.
- *   - Admin Vendor Verification Desk (`adminIndex`, `approve`, `reject`, `toggleFeatured`)
- *     with `rejection_reason` workflow and public storefront gating.
+ *   - Dedicated Vendor Sign-Up Application (`/vendor/apply` -> `/vendor/apply/success`)
+ *     with live email availability check (`/api/vendors/check-email`), logo upload,
+ *     mandatory map pin, Dual Shop Addresses, and Multi-Branch opt-in.
+ *   - Vendor Onboarding Hub (`/vendor/onboarding`) & Status Tracker (`/vendor/status`)
+ *     with Email + Phone OTP verification gating.
+ *   - Post-Approval Shop Setup (`/vendor/setup-shop`) for vendor-defined pricing,
+ *     service options, and available repair services before going public.
+ *   - Admin Vendor Verification Desk (`adminIndex`, `approve`, `reject`, `toggleFeatured`).
  * ============================================================================
  */
 class VendorOnboardingController extends Controller
 {
+    private const NON_SERVICE_TAG_WORDS = [
+        'laptop', 'phone', 'tablet', 'console', 'printer', 'smartwatch', 'student discount', 'pickup service',
+    ];
+
     /**
-     * Display vendor onboarding status or application view.
+     * Live Email Availability Check (`GET /api/vendors/check-email?email=...`)
+     */
+    public function checkEmail(Request $request)
+    {
+        $email = strtolower(trim((string) $request->query('email', '')));
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return response()->json(['available' => false, 'message' => 'Please enter a valid email address.'], 400);
+        }
+
+        $currentUserId = $request->user()?->id;
+
+        $userExists = User::where('email', $email)
+            ->when($currentUserId, fn ($q) => $q->where('id', '!=', $currentUserId))
+            ->exists();
+
+        if ($userExists) {
+            return response()->json([
+                'available' => false,
+                'message' => 'An account with this email already exists.',
+            ]);
+        }
+
+        $appExists = VendorProfile::where('business_email', $email)
+            ->when($currentUserId, fn ($q) => $q->where('user_id', '!=', $currentUserId))
+            ->exists();
+
+        if ($appExists) {
+            return response()->json([
+                'available' => false,
+                'message' => 'A vendor application with this business email already exists.',
+            ]);
+        }
+
+        return response()->json(['available' => true]);
+    }
+
+    /**
+     * Dedicated Vendor Application Form (`GET /vendor/apply`)
+     */
+    public function showApply(Request $request)
+    {
+        $user = $request->user();
+        $profile = null;
+        $isEditMode = false;
+
+        if ($user && $user->role === 'vendor') {
+            $profile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
+            if ($profile) {
+                if ($profile->verification_status === 'approved') {
+                    $primaryShop = $profile->shops->sortBy('id')->first();
+                    return redirect($primaryShop && $primaryShop->setup_complete ? '/vendor/dashboard' : '/vendor/setup-shop');
+                }
+                $isEditMode = in_array($profile->verification_status, ['pending', 'rejected'], true);
+            }
+        }
+
+        return view('vendor.apply', compact('profile', 'isEditMode'));
+    }
+
+    /**
+     * Submit or Update Dedicated Vendor Application (`POST /vendor/apply`)
+     */
+    public function storeApply(Request $request)
+    {
+        $authUser = $request->user();
+        $existingProfile = ($authUser && $authUser->role === 'vendor')
+            ? VendorProfile::with('shops')->where('user_id', $authUser->id)->first()
+            : null;
+        $isEditMode = $existingProfile && in_array($existingProfile->verification_status, ['pending', 'rejected'], true);
+
+        $rules = [
+            'owner_name' => 'required|string|max:150',
+            'business_email' => 'required|email|max:180',
+            'phone' => 'required|string|max:30',
+            'shop_name' => 'required|string|max:255',
+            'business_license_no' => 'nullable|string|max:100',
+            'nid_number' => 'nullable|string|max:30',
+            'shop_latitude' => 'required|numeric|between:20.5,26.7',
+            'shop_longitude' => 'required|numeric|between:88.0,92.7',
+            'gps_address' => 'nullable|string|max:500',
+            'same_as_gps_location' => 'nullable|boolean',
+            'shop_address' => 'nullable|string|max:500',
+            'city' => 'nullable|string|max:100',
+            'area' => 'nullable|string|max:120',
+            'is_branched' => 'nullable|boolean',
+            'branch_name' => 'nullable|string|max:120',
+            'specialties' => 'nullable',
+            'courier_pickup' => 'nullable|boolean',
+            'in_shop_repair' => 'nullable|boolean',
+            'spare_parts' => 'nullable|boolean',
+            'notes' => 'nullable|string|max:2000',
+            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
+            'logo_url' => 'nullable|string',
+        ];
+
+        if (!$isEditMode) {
+            $rules['password'] = 'required|string|min:8|confirmed';
+        }
+
+        $validated = $request->validate($rules, [
+            'shop_latitude.required' => 'Please pick your shop location on the OpenStreetMap picker.',
+            'shop_longitude.required' => 'Please pick your shop location on the OpenStreetMap picker.',
+        ]);
+
+        $cleanPhone = str_replace([' ', '-'], '', trim($validated['phone']));
+        if (!preg_match('/^(?:\+?8801|01)[3-9]\d{8}$/', $cleanPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+
+        $email = strtolower(trim($validated['business_email']));
+
+        $emailTakenByUser = User::where('email', $email)
+            ->when($isEditMode && $authUser, fn ($q) => $q->where('id', '!=', $authUser->id))
+            ->exists();
+        $emailTakenByVendor = VendorProfile::where('business_email', $email)
+            ->when($isEditMode && $existingProfile, fn ($q) => $q->where('id', '!=', $existingProfile->id))
+            ->exists();
+
+        if ($emailTakenByUser || $emailTakenByVendor) {
+            throw ValidationException::withMessages([
+                'business_email' => 'An account or vendor application with this email already exists. Please sign in instead.',
+            ]);
+        }
+
+        $lat = (float) $validated['shop_latitude'];
+        $lng = (float) $validated['shop_longitude'];
+        $resolvedGeo = BangladeshLocationResolver::resolve($lat, $lng);
+
+        $city = !empty($validated['city'])
+            ? BangladeshLocationResolver::normalizeCity($validated['city'])
+            : $resolvedGeo['city'];
+        $area = !empty($validated['area'])
+            ? trim($validated['area'])
+            : $resolvedGeo['area'];
+
+        $gpsAddress = trim((string) ($validated['gps_address'] ?? ''));
+        if ($gpsAddress === '') {
+            $gpsAddress = "{$area}, {$city}";
+        }
+
+        $sameAsGps = $request->boolean('same_as_gps_location');
+        $vendorAddress = trim((string) ($validated['shop_address'] ?? ''));
+        if ($sameAsGps) {
+            $vendorAddress = $gpsAddress;
+        }
+
+        $isBranched = $request->boolean('is_branched');
+        $branchName = $isBranched
+            ? (trim((string) ($validated['branch_name'] ?? '')) ?: "{$area} Main Branch")
+            : null;
+
+        $rawSpecialties = $validated['specialties'] ?? [];
+        if (is_string($rawSpecialties)) {
+            $specialties = array_values(array_filter(array_map('trim', explode(',', $rawSpecialties))));
+        } elseif (is_array($rawSpecialties)) {
+            $specialties = array_values(array_filter(array_map('trim', $rawSpecialties)));
+        } else {
+            $specialties = [];
+        }
+        if (empty($specialties)) {
+            $specialties = ['Smartphone Repair', 'Laptop Repair'];
+        }
+
+        $courierPickup = $request->boolean('courier_pickup');
+        $inShopRepair = $request->has('in_shop_repair') ? $request->boolean('in_shop_repair') : true;
+        $spareParts = $request->boolean('spare_parts');
+        if (!$courierPickup && !$inShopRepair && !$spareParts) {
+            $inShopRepair = true;
+        }
+
+        $serviceCategories = array_values(array_filter([
+            $courierPickup ? 'COURIER_PICKUP' : null,
+            $inShopRepair ? 'IN_SHOP_REPAIR' : null,
+            $spareParts ? 'SPARE_PARTS' : null,
+        ]));
+
+        $logoUrl = $existingProfile?->logo_url;
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $mime = $file->getMimeType() ?: 'image/jpeg';
+            $logoUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($file->getRealPath()));
+        } elseif (array_key_exists('logo_url', $validated) && $validated['logo_url'] !== null) {
+            $logoUrl = trim((string) $validated['logo_url']) ?: null;
+        }
+
+        $profile = DB::transaction(function () use (
+            $isEditMode, $authUser, $existingProfile, $validated, $email, $cleanPhone,
+            $lat, $lng, $city, $area, $gpsAddress, $vendorAddress, $sameAsGps,
+            $isBranched, $branchName, $specialties, $courierPickup, $inShopRepair, $spareParts,
+            $serviceCategories, $logoUrl
+        ) {
+            if ($isEditMode && $authUser && $existingProfile) {
+                $authUser->update([
+                    'name' => trim($validated['owner_name']),
+                    'email' => $email,
+                    'phone' => $cleanPhone,
+                ]);
+                $vendorUser = $authUser;
+            } else {
+                // If someone was signed in as a customer when applying with a brand-new vendor email, log out first
+                if (Auth::check()) {
+                    Auth::logout();
+                }
+
+                $baseUser = Str::slug(explode('@', $email)[0] ?: $validated['shop_name'], '_') ?: 'vendor';
+                $username = $baseUser;
+                $counter = 1;
+                while (User::where('username', $username)->exists()) {
+                    $username = $baseUser . '_' . $counter++;
+                }
+
+                $vendorUser = User::create([
+                    'username' => $username,
+                    'name' => trim($validated['owner_name']),
+                    'email' => $email,
+                    'auth_provider' => 'local',
+                    'password' => Hash::make($validated['password']),
+                    'phone' => $cleanPhone,
+                    'role' => 'vendor',
+                    'is_email_verified' => false,
+                    'is_phone_verified' => false,
+                    'status' => 'active',
+                    'is_active' => true,
+                ]);
+            }
+
+            $profileData = [
+                'owner_name' => trim($validated['owner_name']),
+                'business_email' => $email,
+                'phone' => $cleanPhone,
+                'shop_name' => trim($validated['shop_name']),
+                'brand_name' => trim($validated['shop_name']),
+                'is_branched' => $isBranched,
+                'business_license_no' => !empty($validated['business_license_no']) ? trim($validated['business_license_no']) : null,
+                'nid_number' => !empty($validated['nid_number']) ? trim($validated['nid_number']) : null,
+                'shop_address' => $vendorAddress !== '' ? $vendorAddress : null,
+                'gps_address' => $gpsAddress,
+                'same_as_gps_location' => ($vendorAddress !== '' && $vendorAddress === $gpsAddress) && $sameAsGps,
+                'city' => $city,
+                'area' => $area,
+                'shop_latitude' => $lat,
+                'shop_longitude' => $lng,
+                'categories' => $specialties,
+                'specialties' => $specialties,
+                'courier_pickup' => $courierPickup,
+                'in_shop_repair' => $inShopRepair,
+                'spare_parts' => $spareParts,
+                'notes' => !empty($validated['notes']) ? trim($validated['notes']) : null,
+                'logo_url' => $logoUrl,
+                'verification_status' => 'pending',
+                'rejection_reason' => null,
+                'rejected_at' => null,
+                'rejection_visible_until' => null,
+                'reviewed_by_admin_id' => null,
+                'reviewed_at' => null,
+                'commission_rate' => 10.00,
+                'rating' => 0.00,
+            ];
+
+            $savedProfile = VendorProfile::updateOrCreate(
+                ['user_id' => $vendorUser->id],
+                $profileData
+            );
+
+            $primaryShop = RepairShop::where('vendor_profile_id', $savedProfile->id)->orderBy('id')->first();
+            $baseSlug = Str::slug($validated['shop_name'] . ($branchName ? '-' . $branchName : '')) ?: ('vendor-shop-' . $savedProfile->id);
+
+            $shopPayload = [
+                'name' => trim($validated['shop_name']),
+                'is_branch' => $isBranched,
+                'branch_name' => $branchName,
+                'description' => !empty($validated['notes']) ? trim($validated['notes']) : null,
+                'logo_url' => $logoUrl,
+                'address' => $vendorAddress !== '' ? $vendorAddress : null,
+                'gps_address' => $gpsAddress,
+                'same_as_gps_location' => ($vendorAddress !== '' && $vendorAddress === $gpsAddress) && $sameAsGps,
+                'city' => $city,
+                'area' => $area,
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'phone' => $cleanPhone,
+                'email' => $email,
+                'categories' => $serviceCategories,
+                'specialties' => $specialties,
+                'supports_pickup' => $courierPickup,
+                'inspection_fee' => null,
+                'base_labor_fee' => null,
+                'is_active' => false,
+                'is_public' => false,
+                'setup_complete' => false,
+                'accepts_direct_orders' => false,
+            ];
+
+            if ($primaryShop) {
+                $primaryShop->update($shopPayload);
+            } else {
+                $slug = $baseSlug;
+                if (RepairShop::where('slug', $slug)->exists()) {
+                    $slug .= '-' . strtolower(Str::random(5));
+                }
+                $primaryShop = RepairShop::create(array_merge($shopPayload, [
+                    'vendor_profile_id' => $savedProfile->id,
+                    'slug' => $slug,
+                    'rating' => 0.00,
+                    'review_count' => 0,
+                ]));
+            }
+
+            DB::table('shop_staff')->updateOrInsert(
+                ['shop_id' => $primaryShop->id, 'user_id' => $vendorUser->id],
+                [
+                    'role' => 'OWNER',
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]
+            );
+
+            return $savedProfile;
+        });
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'message' => $isEditMode
+                    ? 'Vendor application updated and resubmitted for review'
+                    : 'Vendor application submitted successfully',
+                'application' => $profile->fresh('shops'),
+            ], $isEditMode ? 200 : 201);
+        }
+
+        if ($isEditMode) {
+            return redirect()
+                ->route('vendor.status')
+                ->with('success', 'Your vendor application has been updated and resubmitted for admin review.');
+        }
+
+        return redirect()->route('vendor.apply.success', ['id' => $profile->id]);
+    }
+
+    /**
+     * Application Submitted Confirmation Screen (`GET /vendor/apply/success`)
+     */
+    public function showApplySuccess(Request $request)
+    {
+        $applicationId = $request->query('id');
+        return view('vendor.apply-success', compact('applicationId'));
+    }
+
+    /**
+     * Vendor Application Status Page (`GET /vendor/status`)
+     */
+    public function showStatus(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $profile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
+        if (!$profile) {
+            return redirect()->route('vendor.apply');
+        }
+
+        $primaryShop = $profile->shops->sortBy('id')->first();
+
+        return view('vendor.status', compact('profile', 'primaryShop', 'user'));
+    }
+
+    /**
+     * Post-Approval Shop Setup Screen (`GET /vendor/setup-shop`)
+     */
+    public function showSetupShop(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+        if ($user->role !== 'vendor') {
+            return redirect('/');
+        }
+
+        $profile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
+        if (!$profile) {
+            return redirect()->route('vendor.apply');
+        }
+        if ($profile->verification_status !== 'approved') {
+            return redirect()->route('vendor.onboarding')
+                ->withErrors(['setup' => 'Your vendor application must be approved by an admin before completing shop setup.']);
+        }
+
+        $primaryShop = $profile->shops->sortBy('id')->first();
+
+        return view('vendor.setup-shop', compact('profile', 'primaryShop', 'user'));
+    }
+
+    /**
+     * Save Post-Approval Shop Setup (`POST /vendor/setup-shop`)
+     */
+    public function completeSetupShop(Request $request)
+    {
+        $user = $request->user();
+        if (!$user || $user->role !== 'vendor') {
+            return redirect()->route('login');
+        }
+
+        $profile = VendorProfile::with('shops')->where('user_id', $user->id)->firstOrFail();
+        if ($profile->verification_status !== 'approved') {
+            return redirect()->route('vendor.onboarding')
+                ->withErrors(['setup' => 'Only approved vendors can complete shop setup.']);
+        }
+
+        $validated = $request->validate([
+            'shop_name' => 'required|string|max:255',
+            'phone' => 'required|string|max:30',
+            'description' => 'nullable|string|max:2000',
+            'address' => 'required|string|max:500',
+            'gps_address' => 'nullable|string|max:500',
+            'same_as_gps_location' => 'nullable|boolean',
+            'city' => 'nullable|string|max:100',
+            'area' => 'nullable|string|max:120',
+            'latitude' => 'nullable|numeric|between:20.5,26.7',
+            'longitude' => 'nullable|numeric|between:88.0,92.7',
+            'courier_pickup' => 'nullable|boolean',
+            'in_shop_repair' => 'nullable|boolean',
+            'spare_parts' => 'nullable|boolean',
+            'inspection_fee' => 'required|numeric|min:0',
+            'base_labor_fee' => 'required|numeric|min:0',
+            'pickup_fee' => 'nullable|numeric|min:0',
+            'express_fee' => 'nullable|numeric|min:0',
+            'skill_tags' => 'required|array|min:1',
+            'skill_tags.*' => 'string|max:180',
+            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
+        ], [
+            'skill_tags.required' => 'Please add at least one available service / skill tag.',
+            'skill_tags.min' => 'Please add at least one available service / skill tag.',
+        ]);
+
+        $cleanPhone = str_replace([' ', '-'], '', trim($validated['phone']));
+        if (!preg_match('/^(?:\+?8801|01)[3-9]\d{8}$/', $cleanPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+
+        $courierPickup = $request->boolean('courier_pickup');
+        $inShopRepair = $request->boolean('in_shop_repair');
+        $spareParts = $request->boolean('spare_parts');
+
+        if (!$courierPickup && !$inShopRepair && !$spareParts) {
+            throw ValidationException::withMessages([
+                'services' => 'Please select at least one service option (Courier pickup, In-shop repair, or Spare parts).',
+            ]);
+        }
+
+        $serviceCategories = array_values(array_filter([
+            $courierPickup ? 'COURIER_PICKUP' : null,
+            $inShopRepair ? 'IN_SHOP_REPAIR' : null,
+            $spareParts ? 'SPARE_PARTS' : null,
+        ]));
+
+        $primaryShop = $profile->shops->sortBy('id')->first();
+
+        $lat = isset($validated['latitude']) && $validated['latitude'] !== ''
+            ? (float) $validated['latitude']
+            : (float) ($primaryShop?->latitude ?? $profile->shop_latitude ?? 23.7937);
+        $lng = isset($validated['longitude']) && $validated['longitude'] !== ''
+            ? (float) $validated['longitude']
+            : (float) ($primaryShop?->longitude ?? $profile->shop_longitude ?? 90.4066);
+        $resolvedGeo = BangladeshLocationResolver::resolve($lat, $lng);
+
+        $city = !empty($validated['city'])
+            ? BangladeshLocationResolver::normalizeCity($validated['city'])
+            : $resolvedGeo['city'];
+        $area = !empty($validated['area'])
+            ? trim($validated['area'])
+            : $resolvedGeo['area'];
+
+        $address = trim($validated['address']);
+        $sameAsGps = $request->boolean('same_as_gps_location');
+        $gpsAddress = !empty($validated['gps_address'])
+            ? trim($validated['gps_address'])
+            : ($sameAsGps ? $address : ($primaryShop?->gps_address ?: $address));
+        if ($sameAsGps) {
+            $gpsAddress = $address;
+        }
+
+        $logoUrl = $primaryShop?->logo_url ?: $profile->logo_url;
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $mime = $file->getMimeType() ?: 'image/jpeg';
+            $logoUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($file->getRealPath()));
+        }
+
+        $skillTags = array_values(array_filter(array_map('trim', $validated['skill_tags'])));
+
+        DB::transaction(function () use (
+            $user, $profile, $primaryShop, $validated, $cleanPhone, $address, $gpsAddress, $sameAsGps,
+            $city, $area, $lat, $lng, $courierPickup, $inShopRepair, $spareParts, $serviceCategories,
+            $skillTags, $logoUrl
+        ) {
+            $user->update([
+                'phone' => $cleanPhone,
+                'status' => 'active',
+                'is_active' => true,
+            ]);
+
+            $profile->update([
+                'shop_name' => trim($validated['shop_name']),
+                'brand_name' => trim($validated['shop_name']),
+                'phone' => $cleanPhone,
+                'shop_address' => $address,
+                'gps_address' => $gpsAddress,
+                'same_as_gps_location' => ($address === $gpsAddress) && $sameAsGps,
+                'city' => $city,
+                'area' => $area,
+                'shop_latitude' => $lat,
+                'shop_longitude' => $lng,
+                'specialties' => $skillTags,
+                'courier_pickup' => $courierPickup,
+                'in_shop_repair' => $inShopRepair,
+                'spare_parts' => $spareParts,
+                'notes' => !empty($validated['description']) ? trim($validated['description']) : $profile->notes,
+                'logo_url' => $logoUrl,
+            ]);
+
+            $shopData = [
+                'name' => trim($validated['shop_name']),
+                'description' => !empty($validated['description']) ? trim($validated['description']) : "Verified electronic repair workshop in {$area}, {$city}.",
+                'logo_url' => $logoUrl,
+                'phone' => $cleanPhone,
+                'email' => $profile->business_email ?: $user->email,
+                'address' => $address,
+                'gps_address' => $gpsAddress,
+                'same_as_gps_location' => ($address === $gpsAddress) && $sameAsGps,
+                'city' => $city,
+                'area' => $area,
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'categories' => $serviceCategories,
+                'specialties' => $skillTags,
+                'supports_pickup' => $courierPickup,
+                'inspection_fee' => (float) $validated['inspection_fee'],
+                'base_labor_fee' => (float) $validated['base_labor_fee'],
+                'pickup_fee' => isset($validated['pickup_fee']) && $validated['pickup_fee'] !== '' ? (float) $validated['pickup_fee'] : null,
+                'express_fee' => isset($validated['express_fee']) && $validated['express_fee'] !== '' ? (float) $validated['express_fee'] : null,
+                'is_active' => true,
+                'is_public' => true,
+                'setup_complete' => true,
+                'accepts_direct_orders' => true,
+            ];
+
+            if ($primaryShop) {
+                $primaryShop->update($shopData);
+                $shop = $primaryShop;
+            } else {
+                $slug = Str::slug($validated['shop_name']) ?: ('shop-' . $profile->id);
+                if (RepairShop::where('slug', $slug)->exists()) {
+                    $slug .= '-' . $profile->id;
+                }
+                $shop = RepairShop::create(array_merge($shopData, [
+                    'vendor_profile_id' => $profile->id,
+                    'slug' => $slug,
+                    'rating' => 0.00,
+                    'review_count' => 0,
+                ]));
+            }
+
+            // Sync vendor-configured services into `shop_services`
+            foreach ($skillTags as $idx => $rawTag) {
+                $parts = explode('|', $rawTag, 2);
+                $svcName = trim($parts[0]);
+                $svcPrice = isset($parts[1]) && is_numeric(trim($parts[1])) ? (float) trim($parts[1]) : null;
+
+                if ($svcName === '' || in_array(strtolower($svcName), self::NON_SERVICE_TAG_WORDS, true)) {
+                    continue;
+                }
+
+                $svcSlug = Str::slug($svcName) ?: ('service-' . ($idx + 1));
+                ShopService::updateOrCreate(
+                    ['shop_id' => $shop->id, 'name' => $svcName],
+                    [
+                        'slug' => $svcSlug,
+                        'pricing_type' => $svcPrice !== null ? 'STARTING_FROM' : 'INSPECTION_REQUIRED',
+                        'base_price' => $svcPrice,
+                        'includes_pickup' => $courierPickup,
+                        'sort_order' => $idx,
+                        'is_active' => true,
+                    ]
+                );
+            }
+        });
+
+        return redirect()
+            ->route('vendor.dashboard')
+            ->with('success', "Shop setup completed! '{$validated['shop_name']}' is now live and publicly listed on Meramot.");
+    }
+
+    /**
+     * Display vendor onboarding status or application view (`GET /vendor/onboarding`).
      * Guest-safe: never exposes User #1's profile when unauthenticated.
      */
     public function show(Request $request)
@@ -53,7 +660,7 @@ class VendorOnboardingController extends Controller
     }
 
     /**
-     * Store new or updated vendor profile application with coherent Dual Addresses & optional Branching.
+     * Store new or updated vendor profile application with coherent Dual Addresses & optional Branching (`POST /vendor/onboarding`).
      */
     public function store(Request $request)
     {
@@ -117,7 +724,6 @@ class VendorOnboardingController extends Controller
             ? (trim((string) ($validated['branch_name'] ?? '')) ?: "{$area} Main Branch")
             : null;
 
-        // Resolve or register vendor applicant User safely (never clobber System Admin User #1)
         $user = $request->user();
         if (!$user) {
             $applicantEmail = !empty($validated['owner_email'])
@@ -146,6 +752,9 @@ class VendorOnboardingController extends Controller
         $profile = VendorProfile::updateOrCreate(
             ['user_id' => $user->id],
             [
+                'owner_name' => $user->name,
+                'business_email' => $user->email,
+                'phone' => $user->phone,
                 'shop_name' => $validated['shop_name'],
                 'brand_name' => $validated['shop_name'],
                 'is_branched' => $isBranched,
@@ -159,9 +768,11 @@ class VendorOnboardingController extends Controller
                 'shop_latitude' => $lat,
                 'shop_longitude' => $lng,
                 'categories' => $validated['categories'],
+                'specialties' => $validated['categories'],
                 'verification_status' => 'pending',
                 'rejection_reason' => null,
                 'rejected_at' => null,
+                'rejection_visible_until' => null,
                 'reviewed_by_admin_id' => null,
                 'reviewed_at' => null,
                 'commission_rate' => 10.00,
@@ -169,7 +780,6 @@ class VendorOnboardingController extends Controller
             ]
         );
 
-        // Synchronize primary RepairShop record coherently; keep hidden & non-bookable until Admin approves
         $primaryShop = RepairShop::where('vendor_profile_id', $profile->id)->orderBy('id')->first();
         $baseSlug = Str::slug($validated['shop_name'] . ($branchName ? '-' . $branchName : ''));
         if ($baseSlug === '') {
@@ -305,18 +915,19 @@ class VendorOnboardingController extends Controller
     }
 
     /**
-     * Admin Web Action: Approve vendor onboarding application & publish shop(s).
+     * Admin Web Action: Approve vendor onboarding application.
      * Route: POST /admin/vendors/{id}/approve
      */
     public function approve($id)
     {
-        $profile = VendorProfile::with('user')->findOrFail($id);
+        $profile = VendorProfile::with(['user', 'shops'])->findOrFail($id);
         $previousStatus = $profile->verification_status;
 
         $profile->update([
             'verification_status' => 'approved',
             'rejection_reason' => null,
             'rejected_at' => null,
+            'rejection_visible_until' => null,
             'reviewed_by_admin_id' => auth()->id(),
             'reviewed_at' => now(),
         ]);
@@ -326,14 +937,39 @@ class VendorOnboardingController extends Controller
                 'role' => 'vendor',
                 'is_active' => true,
             ]);
+
+            if (!empty($profile->user->email)) {
+                app(GmailApiService::class)->sendVendorApprovalEmail(
+                    $profile->user->email,
+                    $profile->user->name ?? 'Vendor Partner',
+                    $profile->shop_name
+                );
+            }
         }
 
-        RepairShop::where('vendor_profile_id', $profile->id)->update([
-            'is_active' => true,
-            'is_public' => true,
-            'setup_complete' => true,
-            'accepts_direct_orders' => true,
-        ]);
+        $requiresPostApprovalSetup = false;
+        foreach ($profile->shops as $shop) {
+            $alreadyConfigured = $shop->inspection_fee !== null
+                && $shop->base_labor_fee !== null
+                && !empty($shop->address);
+
+            if ($alreadyConfigured) {
+                $shop->update([
+                    'is_active' => true,
+                    'is_public' => true,
+                    'setup_complete' => true,
+                    'accepts_direct_orders' => true,
+                ]);
+            } else {
+                $requiresPostApprovalSetup = true;
+                $shop->update([
+                    'is_active' => false,
+                    'is_public' => false,
+                    'setup_complete' => false,
+                    'accepts_direct_orders' => false,
+                ]);
+            }
+        }
 
         AuditLog::create([
             'actor_id' => auth()->id(),
@@ -344,10 +980,11 @@ class VendorOnboardingController extends Controller
             'ip_address' => request()->ip() ?? '127.0.0.1',
         ]);
 
-        return redirect()->back()->with(
-            'success',
-            "Approved '{$profile->shop_name}'! Its repair storefront is now verified and publicly searchable across Meramot."
-        );
+        $msg = $requiresPostApprovalSetup
+            ? "Approved '{$profile->shop_name}'! The vendor can now complete shop pricing & services setup to go live."
+            : "Approved '{$profile->shop_name}'! Its repair storefront is now verified and publicly searchable across Meramot.";
+
+        return redirect()->back()->with('success', $msg);
     }
 
     /**
@@ -367,6 +1004,7 @@ class VendorOnboardingController extends Controller
             'verification_status' => 'rejected',
             'rejection_reason' => $validated['rejection_reason'],
             'rejected_at' => now(),
+            'rejection_visible_until' => now()->addDays(7),
             'reviewed_by_admin_id' => $request->user()?->id,
             'reviewed_at' => now(),
         ]);
@@ -425,6 +1063,7 @@ class VendorOnboardingController extends Controller
             'verification_status' => $status,
             'rejection_reason' => $isApproved ? null : $request->input('reason'),
             'rejected_at' => $isApproved ? null : now(),
+            'rejection_visible_until' => $isApproved ? null : now()->addDays(7),
             'reviewed_by_admin_id' => $request->user()?->id,
             'reviewed_at' => now(),
         ]);

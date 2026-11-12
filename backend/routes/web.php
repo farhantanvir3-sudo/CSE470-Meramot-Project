@@ -33,6 +33,7 @@ use App\Http\Controllers\AuditLogController;           // R20 - Nawshad
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ComingSoonController;
 use App\Http\Controllers\FrontendAssetController;
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -61,6 +62,13 @@ Route::get('/register', [AuthController::class, 'showRegister'])->name('register
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/auth/demo', [AuthController::class, 'demoLogin'])->name('auth.demo');
+Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+Route::get('/verify-email-otp', [AuthController::class, 'showVerifyOtp'])->name('auth.verify-otp.form');
+Route::post('/verify-email-otp', [AuthController::class, 'verifyOtp'])->name('auth.verify-otp.submit');
+Route::post('/verify-email-otp/send', [AuthController::class, 'sendVerificationOtp'])->name('auth.verify-otp.send');
+Route::post('/api/verification/send-otp', [AuthController::class, 'sendVerificationOtp']);
+Route::post('/api/verification/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::get('/forgot-password', fn (Request $r) => app(ComingSoonController::class)->show($r, 'password-recovery'))->name('password.request');
 
 // -------------------------------------------------------------
@@ -121,7 +129,14 @@ Route::get('/ai-consultant/chat', [AIChatController::class, 'index'])->name('ai-
 // -------------------------------------------------------------
 // MODULE: Vendor Onboarding, Bidding & Analytics (Assigned: Farhan Tanvir - Lead)
 // -------------------------------------------------------------
+Route::get('/api/vendors/check-email', [VendorOnboardingController::class, 'checkEmail'])->name('vendor.check-email');
 Route::prefix('vendor')->group(function () {
+    Route::get('/apply', [VendorOnboardingController::class, 'showApply'])->name('vendor.apply');                   // R11 Dedicated Vendor Sign-Up
+    Route::post('/apply', [VendorOnboardingController::class, 'storeApply'])->name('vendor.apply.store');           // R11
+    Route::get('/apply/success', [VendorOnboardingController::class, 'showApplySuccess'])->name('vendor.apply.success'); // R11
+    Route::get('/status', [VendorOnboardingController::class, 'showStatus'])->name('vendor.status');                // R11
+    Route::get('/setup-shop', [VendorOnboardingController::class, 'showSetupShop'])->name('vendor.setup-shop');     // R11 Post-Approval Shop Setup
+    Route::post('/setup-shop', [VendorOnboardingController::class, 'completeSetupShop'])->name('vendor.setup-shop.store'); // R11
     Route::get('/onboarding', [VendorOnboardingController::class, 'show'])->name('vendor.onboarding');             // R11
     Route::post('/onboarding', [VendorOnboardingController::class, 'store'])->name('vendor.onboarding.store');     // R11
     Route::get('/bidding-board', [BiddingEngineController::class, 'index'])->name('vendor.bidding-board');         // R12
@@ -168,8 +183,14 @@ Route::post('/payment/initiate', [PaymentGatewayController::class, 'initiatePaym
 Route::match(['get', 'post'], '/payment/success', [PaymentGatewayController::class, 'handleSuccess'])->name('payment.success'); // R17
 
 Route::match(['get', 'post'], '/coming-soon/{feature?}', [ComingSoonController::class, 'show'])->name('coming-soon');
-Route::get('/profile', fn (Request $r) => app(ComingSoonController::class)->show($r, 'user-profile'));
-Route::get('/settings', fn (Request $r) => app(ComingSoonController::class)->show($r, 'user-profile'));
+Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
+Route::patch('/profile', [ProfileController::class, 'update']);
+Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+Route::get('/settings', [ProfileController::class, 'show'])->name('settings.show');
+Route::get('/api/profile', [ProfileController::class, 'show']);
+Route::put('/api/profile', [ProfileController::class, 'update']);
+Route::delete('/api/profile', [ProfileController::class, 'destroy']);
 Route::get('/notifications', fn (Request $r) => app(ComingSoonController::class)->show($r, 'multi-channel-alerts'));
 Route::get('/support', fn (Request $r) => app(ComingSoonController::class)->show($r, 'support-desk'));
 Route::get('/help', fn (Request $r) => app(ComingSoonController::class)->show($r, 'support-desk'));

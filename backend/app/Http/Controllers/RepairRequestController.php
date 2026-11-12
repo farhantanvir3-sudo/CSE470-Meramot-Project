@@ -86,6 +86,7 @@ class RepairRequestController extends Controller
             'issue_title' => 'required|string|max:255',
             'issue_description' => 'required|string',
             'preferred_service_type' => 'required|in:pickup_dropoff,walk_in,technician_home_visit',
+            'contact_phone' => 'nullable|string|max:30',
             'pickup_address' => 'nullable|string|max:500',
             'area' => 'nullable|string|max:120',
             'city' => 'nullable|string|max:100',
@@ -138,6 +139,32 @@ class RepairRequestController extends Controller
             $enrichedDescription .= "\n\n[" . implode(' • ', $extraMeta) . ']';
         }
 
+        $authUser = $request->user();
+        $contactPhone = trim((string) ($validated['contact_phone'] ?? $authUser?->phone ?? ''));
+
+        if ($authUser && $contactPhone === '') {
+            return back()
+                ->withInput()
+                ->withErrors(['contact_phone' => 'Please enter your contact phone number (or save it in your Profile Dashboard) so workshops and riders can reach you.']);
+        }
+
+        if ($authUser) {
+            $profileUpdates = [];
+            if (empty($authUser->phone) && $contactPhone !== '') {
+                $profileUpdates['phone'] = $contactPhone;
+            }
+            if (empty($authUser->address) && $fullAddress !== '') {
+                $profileUpdates['address'] = $fullAddress;
+                $profileUpdates['city'] = $cityName;
+                if ($areaName !== '') {
+                    $profileUpdates['area'] = $areaName;
+                }
+            }
+            if (!empty($profileUpdates)) {
+                $authUser->update($profileUpdates);
+            }
+        }
+
         $repairRequest = RepairRequest::create([
             'customer_id' => $customerId,
             'source' => $requestedShopId ? 'DIRECT_CUSTOM_SHOP' : 'MARKETPLACE',
@@ -155,6 +182,7 @@ class RepairRequestController extends Controller
             'status' => RepairRequest::STATUS_BIDDING,
             'preferred_pickup' => $validated['preferred_service_type'] === 'pickup_dropoff',
             'preferred_service_type' => $validated['preferred_service_type'],
+            'contact_phone' => $contactPhone ?: null,
             'pickup_address' => $fullAddress ?: null,
         ]);
 

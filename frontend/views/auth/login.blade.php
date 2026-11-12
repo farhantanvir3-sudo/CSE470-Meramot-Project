@@ -17,7 +17,7 @@
             </a>
         </div>
 
-        <!-- ── Authentic AuthCard (Exact match to AuthCard.tsx from commit 8e44218) ── -->
+        <!-- ── Meramot Sign-In Card ── -->
         <div class="rounded-[2rem] border border-white/60 bg-white/90 px-8 py-6 shadow-2xl backdrop-blur">
             
             <div class="mb-4 text-center">
@@ -29,16 +29,34 @@
                 </p>
             </div>
 
-            <!-- ── Signature Google Button with Green Gradient Shimmer (Commit 8e44218a3c09) ── -->
-            <button
-                type="button"
-                onclick="window.location.href='/auth/demo?role=customer'"
+            @if(session('success'))
+                <div class="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-medium text-emerald-800">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-700 space-y-1">
+                    @foreach($errors->all() as $err)
+                        <div>{{ $err }}</div>
+                    @endforeach
+                </div>
+            @endif
+
+            <!-- ── Distinct "Sign in with Google" Button (Requires prior Google Sign-Up) ── -->
+            <a
+                href="/auth/google?intent=login"
                 class="group relative mb-4 flex w-full items-center justify-center gap-3 overflow-hidden rounded-full border border-[var(--border)] bg-white px-4 py-3 text-sm font-semibold text-[#203126] transition-all duration-300 hover:border-[#214c34]/40 hover:shadow-[0_0_20px_-5px_rgba(33,76,52,0.3)]"
             >
                 <span class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-[#214c34]/[0.07] to-transparent transition-transform duration-500 group-hover:translate-x-full"></span>
-                <span class="relative font-bold text-base text-[#4285F4]">G</span>
-                <span class="relative">Continue with Google</span>
-            </button>
+                <svg class="relative h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.19-2.27H12v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v2.98h3.86c2.26-2.09 3.56-5.17 3.56-8.8z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-2.98c-1.08.72-2.45 1.16-4.07 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.09C3.26 21.3 7.31 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.28 14.31c-.24-.72-.38-1.49-.38-2.31s.14-1.59.38-2.31V6.6H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.4l3.99-3.09z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.6l3.99 3.09c.95-2.85 3.6-4.94 6.72-4.94z"/>
+                </svg>
+                <span class="relative">Sign in with Google</span>
+            </a>
 
             <div class="mb-4 flex items-center gap-3">
                 <div class="h-px flex-1 bg-[var(--border)] opacity-40"></div>
@@ -47,12 +65,6 @@
                 </span>
                 <div class="h-px flex-1 bg-[var(--border)] opacity-40"></div>
             </div>
-
-            @if($errors->any())
-                <div class="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-600">
-                    {{ $errors->first() }}
-                </div>
-            @endif
 
             <form method="POST" action="/login" class="space-y-4">
                 @csrf
@@ -117,7 +129,6 @@
                     </a>
                 </p>
 
-                <!-- Delivery partner link as navy text on sign-in (Commit d9490a9 by Farhan) -->
                 <p>
                     <a href="/auth/demo?role=delivery" class="font-semibold text-[#1b365d] hover:underline">
                         <i class="fa-solid fa-motorcycle mr-1"></i> Delivery partner login &rarr;
@@ -125,8 +136,8 @@
                 </p>
 
                 <p>
-                    <a href="/auth/demo?role=vendor" class="text-xs text-emerald-800 hover:underline">
-                        <i class="fa-solid fa-store mr-1"></i> Partner repair shop login &rarr;
+                    <a href="/vendor/apply" class="text-xs text-emerald-800 hover:underline">
+                        <i class="fa-solid fa-store mr-1"></i> Apply as a partner repair shop &rarr;
                     </a>
                 </p>
             </div>

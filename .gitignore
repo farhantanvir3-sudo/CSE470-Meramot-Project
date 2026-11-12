@@ -3,6 +3,8 @@ node_modules/
 frontend/node_modules/
 frontend/package-lock.json
 vendor/
+!frontend/views/vendor/
+!frontend/views/vendor/**
 backend/vendor/
 backend/database/*.sqlite
 /.pnp

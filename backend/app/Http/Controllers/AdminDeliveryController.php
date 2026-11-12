@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\DeliveryAgent;
 use App\Models\DeliveryJob;
 use App\Models\User;
+use App\Services\GmailApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -185,6 +186,14 @@ class AdminDeliveryController extends Controller
             );
         });
 
+        $agent->loadMissing('user');
+        if ($agent->user && !empty($agent->user->email)) {
+            app(GmailApiService::class)->sendDeliveryRegistrationAcknowledgement(
+                $agent->user->email,
+                $agent->user->name ?? 'Delivery Partner Applicant'
+            );
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'status' => 'success',
@@ -195,7 +204,7 @@ class AdminDeliveryController extends Controller
 
         return redirect()
             ->back()
-            ->with('success', 'Delivery partner application submitted! Wait for admin approval — credentials will be activated once verified.');
+            ->with('success', 'Delivery partner application submitted! Confirmation sent from meramotbd.official@gmail.com.');
     }
 
     /* ------------------------------------------------------------------------
@@ -210,9 +219,23 @@ class AdminDeliveryController extends Controller
         $agent = DeliveryAgent::with('user')->findOrFail($id);
 
         $generatedUsername = $agent->user?->username;
-        if (!$generatedUsername || str_starts_with($generatedUsername, 'pending_')) {
+        $isNewPendingGuest = !$generatedUsername || str_starts_with($generatedUsername, 'pending_');
+        if ($isNewPendingGuest) {
             $generatedUsername = 'rider_' . $agent->id . '_' . strtolower(Str::random(4));
         }
+
+        // Keep `password123` for seeded demo accounts; generate a secure rider password for guest applicants
+        $seededEmails = [
+            'rider.demo@meramot.test',
+            'ctg.rider@meramot.test',
+            'kamal.rider@meramot.test',
+            'tarek.scooter@meramot.test',
+            'sohag.van@meramot.test',
+        ];
+        $isSeededRider = $agent->user && in_array($agent->user->email, $seededEmails, true);
+        $plainPassword = $isSeededRider
+            ? 'password123'
+            : ('Meramot@' . strtoupper(Str::random(4)) . random_int(10, 99));
 
         $previousStatus = $agent->registration_status;
 
@@ -224,12 +247,25 @@ class AdminDeliveryController extends Controller
         ]);
 
         if ($agent->user) {
-            $agent->user->update([
+            $updateData = [
                 'username' => $generatedUsername,
                 'role' => 'delivery_agent',
                 'status' => 'active',
                 'is_active' => true,
-            ]);
+            ];
+            if (!$isSeededRider) {
+                $updateData['password'] = Hash::make($plainPassword);
+            }
+            $agent->user->update($updateData);
+
+            if (!empty($agent->user->email)) {
+                app(GmailApiService::class)->sendDeliveryApprovalCredentials(
+                    $agent->user->email,
+                    $agent->user->name ?? $generatedUsername,
+                    $generatedUsername,
+                    $plainPassword
+                );
+            }
         }
 
         AuditLog::create([
@@ -248,7 +284,7 @@ class AdminDeliveryController extends Controller
 
         return redirect()->back()->with(
             'success',
-            "Delivery agent #{$agent->id} (" . ($agent->user->name ?? $generatedUsername) . ") approved and activated!"
+            "Delivery agent #{$agent->id} (" . ($agent->user->name ?? $generatedUsername) . ") approved! Login credentials emailed from meramotbd.official@gmail.com."
         );
     }
 
@@ -279,6 +315,14 @@ class AdminDeliveryController extends Controller
                 'status' => 'suspended',
                 'is_active' => false,
             ]);
+
+            if (!empty($agent->user->email)) {
+                app(GmailApiService::class)->sendDeliveryRejectionNotice(
+                    $agent->user->email,
+                    $agent->user->name ?? 'Delivery Applicant',
+                    $validated['rejection_reason']
+                );
+            }
         }
 
         AuditLog::create([

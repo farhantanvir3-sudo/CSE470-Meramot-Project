@@ -242,7 +242,7 @@
 
                     <button
                         type="button"
-                        @click="addressMode = 'PROFILE'; pickupAddress = @js(auth()->user()->address ?? 'House 12, Road 11, Banani, Dhaka')"
+                        @click="addressMode = 'PROFILE'; pickupAddress = @js(auth()->user()->address ?? ''); selectedArea = @js(auth()->user()->area ?? 'Banani'); selectedCity = @js(auth()->user()->city ?? 'Dhaka')"
                         class="rounded-2xl border p-3 text-left transition"
                         :class="addressMode === 'PROFILE' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/50 hover:border-[var(--accent-dark)]/50'"
                     >
@@ -250,7 +250,9 @@
                             <i class="fa-solid fa-user-check text-[var(--accent-dark)]"></i>
                             <span>Profile address</span>
                         </div>
-                        <div class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Saved account info</div>
+                        <div class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">
+                            {{ !empty(auth()->user()?->address) ? Str::limit(auth()->user()->address, 26) : 'Saved account delivery address' }}
+                        </div>
                     </button>
                 </div>
 
@@ -313,10 +315,34 @@
                     </div>
                 </div>
 
-                <!-- 6. Pickup Address & Expected Budget -->
+                <!-- 6. Contact Phone, Pickup Address & Expected Budget -->
+                @if($errors->has('contact_phone'))
+                    <div class="rounded-2xl border border-rose-300 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700">
+                        {{ $errors->first('contact_phone') }}
+                    </div>
+                @endif
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-2">
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Full Pickup Address</label>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block font-bold text-[var(--foreground)]">Contact Phone *</label>
+                            @auth
+                                @if(empty(auth()->user()->phone))
+                                    <a href="/profile?edit=1" class="text-[10px] font-bold text-[var(--accent-dark)] hover:underline">Save in Profile</a>
+                                @endif
+                            @endauth
+                        </div>
+                        <input
+                            type="tel"
+                            name="contact_phone"
+                            value="{{ old('contact_phone', auth()->user()->phone ?? '') }}"
+                            placeholder="01XXXXXXXXX"
+                            @auth required @endauth
+                            class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none"
+                        >
+                    </div>
+                    <div>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Full Pickup / Delivery Address</label>
                         <input type="text" name="pickup_address" x-model="pickupAddress" placeholder="House #, Road #, Block/Sector, Landmarks" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                     </div>
                     <div>

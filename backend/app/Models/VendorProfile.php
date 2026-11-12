@@ -34,6 +34,7 @@ class VendorProfile extends Model
         'verification_status', // 'pending', 'under_review', 'approved', 'rejected'
         'rejection_reason',
         'rejected_at',
+        'rejection_visible_until',
         'shop_address',
         'gps_address',
         'same_as_gps_location',
@@ -68,6 +69,7 @@ class VendorProfile extends Model
         'commission_rate' => 'decimal:2',
         'rating' => 'decimal:2',
         'rejected_at' => 'datetime',
+        'rejection_visible_until' => 'datetime',
         'reviewed_at' => 'datetime',
     ];
 
