@@ -190,7 +190,7 @@
                 </div>
                 <div>
                     <h2 class="text-sm font-black text-[var(--foreground)]">Verification Documents</h2>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">Click or drag &amp; drop clear photos or PDFs (max 4MB each) with live thumbnail preview so the Admin Verification Desk can inspect your credentials.</p>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Click or drag &amp; drop clear photos or PDFs (up to 15MB each) with live thumbnail preview so the Admin Verification Desk can inspect your credentials.</p>
                 </div>
             </div>
 
@@ -201,7 +201,7 @@
                         'label' => 'Profile Picture',
                         'icon' => 'fa-camera',
                         'accept' => 'image/jpeg,image/jpg,image/png,image/webp',
-                        'hint' => 'JPG, PNG, WebP • Max 4MB',
+                        'hint' => 'JPG, PNG, WebP • Max 15MB',
                         'span' => '',
                     ],
                     [
@@ -209,7 +209,7 @@
                         'label' => 'NID Document Scan',
                         'icon' => 'fa-id-card',
                         'accept' => 'image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf',
-                        'hint' => 'Image or PDF Scan • Max 4MB',
+                        'hint' => 'Image or PDF Scan • Max 15MB',
                         'span' => '',
                     ],
                     [
@@ -217,7 +217,7 @@
                         'label' => 'Driving License Scan',
                         'icon' => 'fa-id-badge',
                         'accept' => 'image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf',
-                        'hint' => 'BRTA License Image or PDF • Max 4MB',
+                        'hint' => 'BRTA License Image or PDF • Max 15MB',
                         'span' => '',
                     ],
                     [
@@ -225,7 +225,7 @@
                         'label' => 'Education Certificate',
                         'icon' => 'fa-graduation-cap',
                         'accept' => 'image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf',
-                        'hint' => 'SSC/HSC Certificate Image or PDF • Max 4MB',
+                        'hint' => 'SSC/HSC Certificate Image or PDF • Max 15MB',
                         'span' => '',
                     ],
                     [
@@ -233,7 +233,7 @@
                         'label' => 'CV / Resume Document',
                         'icon' => 'fa-file-lines',
                         'accept' => 'image/jpeg,image/jpg,image/png,image/webp,application/pdf,.pdf',
-                        'hint' => 'PDF or Image • Max 4MB',
+                        'hint' => 'PDF or Image • Max 15MB',
                         'span' => 'sm:col-span-2',
                     ],
                 ];

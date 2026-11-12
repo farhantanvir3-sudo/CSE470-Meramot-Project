@@ -7,6 +7,7 @@ use App\Models\DeliveryAgent;
 use App\Models\DeliveryJob;
 use App\Models\User;
 use App\Services\GmailApiService;
+use App\Services\MediaUploadService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -43,19 +44,7 @@ class AdminDeliveryController extends Controller
      */
     private function encodeUploadedDocument(Request $request, string $inputKey, ?string $fallback = null): ?string
     {
-        if (!$request->hasFile($inputKey)) {
-            return $fallback;
-        }
-
-        $file = $request->file($inputKey);
-        if (!$file || !$file->isValid()) {
-            return $fallback;
-        }
-
-        $mime = $file->getMimeType() ?: 'application/octet-stream';
-        $bytes = (string) file_get_contents($file->getRealPath());
-
-        return 'data:' . $mime . ';base64,' . base64_encode($bytes);
+        return MediaUploadService::fromRequest($request, $inputKey, $fallback);
     }
 
     /**
@@ -178,11 +167,11 @@ class AdminDeliveryController extends Controller
             'phone' => $isJsonApi ? 'nullable|string|max:30' : 'required|string|max:30',
             'personal_email' => $isJsonApi ? 'nullable|email|max:150' : 'required_without:email|nullable|email|max:150',
             'email' => 'nullable|email|max:150',
-            'profile_picture' => 'nullable|file|mimes:jpeg,jpg,png,webp|max:4096',
-            'nid_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
-            'license_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
-            'education_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
-            'cv_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
+            'profile_picture' => 'nullable|file|mimes:jpeg,jpg,png,webp|max:15360',
+            'nid_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'license_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'education_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'cv_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
             'profile_picture_url' => 'nullable|string',
             'nid_document_url' => 'nullable|string',
             'license_document_url' => 'nullable|string',
@@ -528,11 +517,11 @@ class AdminDeliveryController extends Controller
             'nid_number' => 'required|string|max:30',
             'vehicle_type' => 'required|in:motorcycle,bicycle,scooter,van,car',
             'license_number' => 'required|string|max:50',
-            'profile_picture' => 'nullable|file|mimes:jpeg,jpg,png,webp|max:4096',
-            'nid_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
-            'license_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
-            'education_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
-            'cv_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
+            'profile_picture' => 'nullable|file|mimes:jpeg,jpg,png,webp|max:15360',
+            'nid_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'license_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'education_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
+            'cv_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
         ]);
 
         $previousStatus = $agent->registration_status;
