@@ -39,17 +39,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex bg-[#E4FCD5] text-[#163625] antialiased" x-data="{ sidebarOpen: false }">
-
-    <!-- Mobile Menu Toggle -->
-    <button
-        type="button"
-        @click="sidebarOpen = !sidebarOpen"
-        aria-label="Toggle Delivery Workspace Menu"
-        class="fixed left-4 top-4 z-50 rounded-xl border border-[#d9e5d5] bg-white px-3 py-2 text-[#163625] shadow-sm md:hidden"
-    >
-        <i class="fa-solid" :class="sidebarOpen ? 'fa-xmark' : 'fa-bars'"></i>
-    </button>
+<body class="min-h-screen flex flex-col md:flex-row bg-[#E4FCD5] text-[#163625] antialiased" x-data="{ sidebarOpen: false }">
 
     <!-- Delivery Workspace Sidebar -->
     @php
@@ -64,6 +54,30 @@
             ['name' => 'Profile', 'icon' => 'fa-user-shield', 'path' => '/delivery/profile', 'active' => $currentPath === '/delivery/profile'],
         ];
     @endphp
+
+    <!-- Sticky Mobile Header Bar -->
+    <header class="sticky top-0 z-30 flex items-center justify-between border-b border-[#d9e5d5] bg-white/95 px-4 py-3 shadow-sm backdrop-blur md:hidden">
+        <div class="flex items-center gap-3">
+            <button
+                type="button"
+                @click="sidebarOpen = !sidebarOpen"
+                aria-label="Toggle Delivery Workspace Menu"
+                class="flex h-10 w-10 items-center justify-center rounded-xl border border-[#d9e5d5] bg-[#f8fbf6] text-[#163625] shadow-sm transition hover:bg-[#eef4ea]"
+            >
+                <i class="fa-solid" :class="sidebarOpen ? 'fa-xmark' : 'fa-bars'"></i>
+            </button>
+            <a href="/delivery" class="flex items-center gap-2">
+                <img src="/images/meramot.svg" alt="Meramot" class="h-8 w-auto object-contain">
+                <span class="text-xs font-extrabold text-[#163625]">Delivery Workspace</span>
+            </a>
+        </div>
+        @auth
+            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
+                {{ $authRider?->status ?? 'AVAILABLE' }}
+            </span>
+        @endauth
+    </header>
 
     <aside
         class="fixed left-0 top-0 z-40 flex h-screen w-[85vw] max-w-[290px] flex-col border-r border-[#d9e5d5] bg-white transition-transform duration-300 md:sticky md:top-0 md:w-[275px] md:max-w-none md:translate-x-0"
@@ -132,7 +146,7 @@
 
     <!-- Main Workspace Content -->
     <main class="min-h-screen flex-1 min-w-0">
-        <div class="mx-auto w-full max-w-6xl px-4 pb-10 pt-16 md:px-8 md:py-8 space-y-5">
+        <div class="mx-auto w-full max-w-6xl px-4 py-6 pb-10 md:px-8 md:py-8 space-y-5">
             @if(session('success'))
                 <div class="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
                     <i class="fa-solid fa-circle-check text-emerald-700"></i>

@@ -22,7 +22,7 @@
             <a href="/shops" class="whitespace-nowrap inline-flex items-center justify-center rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-dark)] hover:bg-[var(--mint-100)] hover:shadow-md">
                 View Live Directory ({{ number_format($kpis['public_shops']) }} Shops)
             </a>
-            <a href="/admin/financial-overview" class="whitespace-nowrap inline-flex items-center justify-center rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-md">
+            <a href="/admin/financial-overview" class="whitespace-nowrap inline-flex items-center justify-center rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90 hover:shadow-md">
                 Open Financial Ledger &rarr;
             </a>
         </div>

@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\VendorPayout;
 use App\Models\VendorProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -475,5 +476,86 @@ class SprintOneEndToEndAuditTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
         $this->actingAs($admin)->delete('/profile')->assertRedirect(route('profile.show'));
         $this->assertDatabaseHas('users', ['id' => $admin->id, 'is_active' => true]);
+    }
+
+    /** @test */
+    public function vendor_setup_shop_supports_cover_banner_and_sprint_one_ui_polish_invariants_hold()
+    {
+        $vendorUser = User::factory()->create([
+            'role' => 'vendor',
+            'phone' => '01712345678',
+            'is_active' => true,
+        ]);
+        $profile = VendorProfile::create([
+            'user_id' => $vendorUser->id,
+            'owner_name' => 'Nadia Karim',
+            'business_email' => $vendorUser->email,
+            'phone' => '01712345678',
+            'shop_name' => 'Dhaka Micro Lab',
+            'brand_name' => 'Dhaka Micro Lab',
+            'business_license_no' => 'TL-DML-2026',
+            'nid_number' => '1993123456789',
+            'verification_status' => 'approved',
+            'city' => 'Dhaka',
+            'area' => 'Dhanmondi',
+        ]);
+        $shop = RepairShop::factory()->create([
+            'vendor_profile_id' => $profile->id,
+            'name' => 'Dhaka Micro Lab',
+            'slug' => 'dhaka-micro-lab',
+            'setup_complete' => false,
+            'is_active' => false,
+            'is_public' => false,
+        ]);
+
+        $tinyPng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
+        $bannerFile = UploadedFile::fake()->createWithContent('cover-banner.png', $tinyPng);
+        $logoFile = UploadedFile::fake()->createWithContent('shop-logo.png', $tinyPng);
+
+        $this->actingAs($vendorUser)->post('/vendor/setup-shop', [
+            'shop_name' => 'Dhaka Micro Lab',
+            'phone' => '01712345678',
+            'description' => 'Precision Apple & Android micro-soldering workshop.',
+            'address' => 'Road 27, Dhanmondi, Dhaka',
+            'city' => 'Dhaka',
+            'area' => 'Dhanmondi',
+            'courier_pickup' => '1',
+            'in_shop_repair' => '1',
+            'inspection_fee' => 250,
+            'base_labor_fee' => 550,
+            'skill_tags' => ['Logic board repair|2500', 'Screen replacement|1800'],
+            'logo' => $logoFile,
+            'banner' => $bannerFile,
+        ])->assertRedirect(route('vendor.dashboard'));
+
+        $shop->refresh();
+        $this->assertTrue((bool) $shop->setup_complete);
+        $this->assertNotEmpty($shop->logo_url);
+        $this->assertNotEmpty($shop->banner_url);
+
+        // Public storefront renders the uploaded cover banner and zero-flicker dark mode theme initializer
+        $storefront = $this->get('/shops/' . $shop->slug);
+        $storefront->assertStatus(200);
+        $storefront->assertSee('Dhaka Micro Lab Cover Banner');
+        $storefront->assertSee("localStorage.getItem('meramot_theme') === 'dark'", false);
+
+        // Bid tracking renders clean formatted currency without duplicate parenthetical integer clutter
+        $customer = User::factory()->create(['role' => 'customer']);
+        $req = RepairRequest::factory()->create([
+            'customer_id' => $customer->id,
+            'status' => 'BIDDING',
+        ]);
+        Bid::factory()->create([
+            'repair_request_id' => $req->id,
+            'shop_id' => $shop->id,
+            'proposed_cost' => 3400,
+            'estimated_days' => 2,
+            'status' => 'ACTIVE',
+        ]);
+
+        $trackResp = $this->actingAs($customer)->get(route('requests.track', $req->id));
+        $trackResp->assertStatus(200);
+        $trackResp->assertSee('৳3,400.00');
+        $trackResp->assertDontSee('(3400)');
     }
 }

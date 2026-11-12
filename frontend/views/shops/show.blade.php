@@ -63,10 +63,18 @@
 
     <!-- Shop Profile Hero Header -->
     <div
-        class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-8 shadow-sm mb-6 min-w-0 max-w-full"
+        class="overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm mb-6 min-w-0 max-w-full"
         data-shop-lat="{{ $shop->latitude }}"
         data-shop-lng="{{ $shop->longitude }}"
     >
+        @if($shop->banner_url)
+            <div class="relative h-36 sm:h-48 md:h-56 w-full overflow-hidden border-b border-[var(--border)] bg-[var(--mint-200)]">
+                <img src="{{ $shop->banner_url }}" alt="{{ $shop->name }} Cover Banner" class="h-full w-full object-cover">
+                <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent"></div>
+            </div>
+        @endif
+
+        <div class="p-5 md:p-8">
         <div class="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[130px_minmax(0,1fr)_260px] lg:items-start">
 
             <!-- Left: Shop Logo / Avatar -->
@@ -197,6 +205,7 @@
                 </div>
             </div>
 
+        </div>
         </div>
     </div>
 

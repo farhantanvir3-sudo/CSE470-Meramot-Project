@@ -97,6 +97,9 @@
                 <i class="fa-solid fa-code-branch"></i>
                 <span>Spread Business / Branches</span>
             </button>
+            <a href="/vendor/setup-shop" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                <i class="fa-solid fa-sliders mr-1"></i> Pricing &amp; Services
+            </a>
             @if($publicPreviewShop)
                 <a href="/shops/{{ $publicPreviewShop->slug }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition">
                     View Public Shop &rarr;
@@ -157,11 +160,11 @@
     </div>
 
     <!-- ── Dashboard Navigation Tabs ── -->
-    <div class="flex overflow-x-auto whitespace-nowrap gap-2 border-b border-[var(--border)] pb-2 mb-6 text-sm">
+    <div class="flex overflow-x-auto whitespace-nowrap gap-2 border-b border-[var(--border)] pb-2 mb-6 text-sm no-scrollbar">
         <button
             type="button"
             @click="activeTab = 'overview'"
-            :class="activeTab === 'overview' ? 'bg-white text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
+            :class="activeTab === 'overview' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
             class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
         >
             <i class="fa-solid fa-chart-pie text-xs"></i>
@@ -171,45 +174,45 @@
         <button
             type="button"
             @click="activeTab = 'branches'"
-            :class="activeTab === 'branches' ? 'bg-white text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
+            :class="activeTab === 'branches' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
             class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
         >
-            <i class="fa-solid fa-code-branch text-xs text-emerald-700"></i>
+            <i class="fa-solid fa-code-branch text-xs text-[var(--accent-dark)]"></i>
             <span>Branches &amp; Dual Locations</span>
-            <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-white">{{ count($branches) }}</span>
+            <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-[var(--accent-foreground)] font-bold">{{ count($branches) }}</span>
         </button>
 
         <button
             type="button"
             @click="activeTab = 'marketplace'"
-            :class="activeTab === 'marketplace' ? 'bg-white text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
+            :class="activeTab === 'marketplace' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
             class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
         >
             <i class="fa-solid fa-gavel text-xs text-amber-600"></i>
             <span>Marketplace Bids</span>
-            <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-white">{{ ($marketplaceRequests ?? collect())->count() }} Live</span>
+            <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-[var(--accent-foreground)] font-bold">{{ ($marketplaceRequests ?? collect())->count() }} Live</span>
         </button>
 
         <button
             type="button"
             @click="activeTab = 'direct_orders'"
-            :class="activeTab === 'direct_orders' ? 'bg-white text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
+            :class="activeTab === 'direct_orders' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
             class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
         >
             <i class="fa-solid fa-box text-xs text-emerald-700"></i>
             <span>Direct Orders</span>
-            <span class="rounded-full bg-emerald-800 px-2 py-0.5 text-[10px] text-white">{{ ($directOrders ?? collect())->count() }}</span>
+            <span class="rounded-full bg-emerald-800 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($directOrders ?? collect())->count() }}</span>
         </button>
 
         <button
             type="button"
             @click="activeTab = 'assigned_jobs'"
-            :class="activeTab === 'assigned_jobs' ? 'bg-white text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
+            :class="activeTab === 'assigned_jobs' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
             class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
         >
-            <i class="fa-solid fa-screwdriver-wrench text-xs text-indigo-700"></i>
+            <i class="fa-solid fa-screwdriver-wrench text-xs text-[var(--accent-dark)]"></i>
             <span>My Repair Jobs</span>
-            <span class="rounded-full bg-indigo-900 px-2 py-0.5 text-[10px] text-white">{{ ($activeJobs ?? collect())->count() }} Active</span>
+            <span class="rounded-full bg-indigo-800 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($activeJobs ?? collect())->count() }} Active</span>
         </button>
     </div>
 
@@ -218,23 +221,35 @@
         <!-- 4 Summary KPI Cards -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="meramot-card p-5 shadow-sm">
-                <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold block mb-1">Gross Inflow</span>
-                <span class="text-2xl font-black text-emerald-800">৳{{ number_format($branchMetrics['gross_inflow'] ?? 48500) }}</span>
-                <span class="text-[10px] text-emerald-700 block mt-1"><i class="fa-solid fa-arrow-trend-up"></i> {{ $activeBranch ? ($activeBranch->display_branch_tag ?: $activeBranch->area) : 'Across ' . count($branches) . ' branches' }}</span>
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Gross Inflow</span>
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-sack-dollar text-xs"></i></span>
+                </div>
+                <span class="text-2xl font-black text-[var(--accent-dark)]">৳{{ number_format($branchMetrics['gross_inflow'] ?? 48500) }}</span>
+                <span class="text-[10px] text-[var(--muted-foreground)] block mt-1"><i class="fa-solid fa-arrow-trend-up text-[var(--accent-dark)]"></i> {{ $activeBranch ? ($activeBranch->display_branch_tag ?: $activeBranch->area) : 'Across ' . count($branches) . ' branches' }}</span>
             </div>
             <div class="meramot-card p-5 shadow-sm">
-                <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold block mb-1">Active Repair Jobs</span>
-                <span class="text-2xl font-black text-indigo-900">{{ $branchMetrics['active_jobs_count'] ?? 8 }}</span>
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Active Repair Jobs</span>
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-screwdriver-wrench text-xs"></i></span>
+                </div>
+                <span class="text-2xl font-black text-[var(--foreground)]">{{ $branchMetrics['active_jobs_count'] ?? 8 }}</span>
                 <span class="text-[10px] text-[var(--muted-foreground)] block mt-1">Bench &amp; rider queue</span>
             </div>
             <div class="meramot-card p-5 shadow-sm">
-                <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold block mb-1">Active Shop Branches</span>
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Active Shop Branches</span>
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-code-branch text-xs"></i></span>
+                </div>
                 <span class="text-2xl font-black text-[var(--foreground)]">{{ count($branches) }}</span>
-                <span class="text-[10px] text-emerald-800 block mt-1">{{ $vendorProfile->is_branched ? 'Branch Tags Active on Tiles' : 'Single Storefront Mode' }}</span>
+                <span class="text-[10px] text-[var(--accent-dark)] font-semibold block mt-1">{{ $vendorProfile->is_branched ? 'Branch Tags Active on Tiles' : 'Single Storefront Mode' }}</span>
             </div>
             <div class="meramot-card p-5 shadow-sm">
-                <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold block mb-1">Customer Rating</span>
-                <span class="text-2xl font-black text-amber-600">★ {{ number_format($branchMetrics['avg_rating'] ?? 4.9, 1) }}</span>
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Customer Rating</span>
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-star text-xs"></i></span>
+                </div>
+                <span class="text-2xl font-black text-amber-500">★ {{ number_format($branchMetrics['avg_rating'] ?? 4.9, 1) }}</span>
                 <span class="text-[10px] text-[var(--muted-foreground)] block mt-1">Based on {{ number_format($branchMetrics['total_reviews'] ?? 84) }} reviews</span>
             </div>
         </div>

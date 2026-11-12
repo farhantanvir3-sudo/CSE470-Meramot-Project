@@ -57,6 +57,7 @@
     class="mx-auto max-w-5xl px-4 py-8 md:px-6"
     x-data="{
         logoPreview: @js($primaryShop->logo_url ?? $profile->logo_url ?? ''),
+        bannerPreview: @js($primaryShop->banner_url ?? ''),
         shopName: @js(old('shop_name', $primaryShop->name ?? $profile->shop_name ?? '')),
         phone: @js(old('phone', $primaryShop->phone ?? $profile->phone ?? $user->phone ?? '')),
         description: @js(old('description', $primaryShop->description ?? $profile->notes ?? '')),
@@ -76,6 +77,11 @@
             const file = event.target.files?.[0];
             if (!file) return;
             this.logoPreview = URL.createObjectURL(file);
+        },
+        handleBannerFile(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            this.bannerPreview = URL.createObjectURL(file);
         },
         applyMapLocation(loc) {
             if (!loc) return;
@@ -139,25 +145,44 @@
             <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
                 <h2 class="text-lg font-semibold text-[#244229]">Shop identity</h2>
 
-                <div class="mt-4 flex flex-col sm:flex-row items-center gap-4">
-                    <div class="relative h-24 w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[var(--border)] bg-[var(--mint-50)]">
-                        <template x-if="logoPreview">
+                <div class="mt-4 grid gap-4 md:grid-cols-[auto_1fr] items-center">
+                    <div class="flex flex-col sm:flex-row items-center gap-4">
+                        <div class="relative h-24 w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[var(--border)] bg-[var(--mint-50)]">
+                            <template x-if="logoPreview">
+                                <div class="h-full w-full relative">
+                                    <img :src="logoPreview" alt="Shop Logo" class="h-full w-full object-cover">
+                                    <button type="button" @click="logoPreview = ''; if ($refs.setupLogo) $refs.setupLogo.value = ''" class="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-red-600">✕</button>
+                                </div>
+                            </template>
+                            <template x-if="!logoPreview">
+                                <label class="flex h-full w-full cursor-pointer flex-col items-center justify-center text-slate-500 hover:text-[#244229]">
+                                    <i class="fa-solid fa-image text-xl mb-1"></i>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider">Logo</span>
+                                    <input x-ref="setupLogo" type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="hidden" @change="handleLogoFile($event)">
+                                </label>
+                            </template>
+                        </div>
+                        <div class="text-center sm:text-left">
+                            <p class="text-sm font-semibold text-slate-800">Shop Logo (Optional)</p>
+                            <p class="mt-0.5 max-w-[200px] text-xs text-slate-500">Square workshop badge shown on search tiles.</p>
+                        </div>
+                    </div>
+
+                    <div class="relative h-24 md:h-28 w-full overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[var(--border)] bg-white/80">
+                        <template x-if="bannerPreview">
                             <div class="h-full w-full relative">
-                                <img :src="logoPreview" alt="Shop Logo" class="h-full w-full object-cover">
-                                <button type="button" @click="logoPreview = ''; $refs.setupLogo.value = ''" class="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-red-600">✕</button>
+                                <img :src="bannerPreview" alt="Storefront Cover Banner" class="h-full w-full object-cover">
+                                <button type="button" @click="bannerPreview = ''; if ($refs.setupBanner) $refs.setupBanner.value = ''" class="absolute right-2 top-2 rounded-full bg-black/65 px-2.5 py-0.5 text-xs font-bold text-white hover:bg-red-600">✕ Remove Cover</button>
                             </div>
                         </template>
-                        <template x-if="!logoPreview">
-                            <label class="flex h-full w-full cursor-pointer flex-col items-center justify-center text-slate-500 hover:text-[#244229]">
-                                <i class="fa-solid fa-image text-xl mb-1"></i>
-                                <span class="text-[10px] font-bold uppercase tracking-wider">Logo</span>
-                                <input x-ref="setupLogo" type="file" name="logo" accept="image/png,image/jpeg,image/webp" class="hidden" @change="handleLogoFile($event)">
+                        <template x-if="!bannerPreview">
+                            <label class="flex h-full w-full cursor-pointer flex-col items-center justify-center px-4 text-center text-slate-500 hover:text-[#244229]">
+                                <i class="fa-solid fa-panorama text-lg mb-1"></i>
+                                <span class="text-xs font-semibold text-slate-700">Storefront Cover Banner (Optional)</span>
+                                <span class="text-[11px] text-slate-500">Wide workshop photo displayed at the top of your public shop page</span>
+                                <input x-ref="setupBanner" type="file" name="banner" accept="image/png,image/jpeg,image/webp" class="hidden" @change="handleBannerFile($event)">
                             </label>
                         </template>
-                    </div>
-                    <div class="text-center sm:text-left">
-                        <p class="text-sm md:text-base font-semibold text-slate-800">Shop Logo (Optional)</p>
-                        <p class="mt-1 max-w-sm text-xs text-slate-500">Upload a square shop logo or workshop badge.</p>
                     </div>
                 </div>
 

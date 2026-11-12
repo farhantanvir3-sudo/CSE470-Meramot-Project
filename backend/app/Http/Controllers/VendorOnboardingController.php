@@ -502,6 +502,7 @@ class VendorOnboardingController extends Controller
             'skill_tags' => 'required|array|min:1',
             'skill_tags.*' => 'string|max:180',
             'logo' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
+            'banner' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
         ], [
             'skill_tags.required' => 'Please add at least one available service / skill tag.',
             'skill_tags.min' => 'Please add at least one available service / skill tag.',
@@ -557,13 +558,14 @@ class VendorOnboardingController extends Controller
         }
 
         $logoUrl = MediaUploadService::fromRequest($request, 'logo', $primaryShop?->logo_url ?: $profile->logo_url, 1000, 84);
+        $bannerUrl = MediaUploadService::fromRequest($request, 'banner', $primaryShop?->banner_url, 1400, 82);
 
         $skillTags = array_values(array_filter(array_map('trim', $validated['skill_tags'])));
 
         DB::transaction(function () use (
             $user, $profile, $primaryShop, $validated, $cleanPhone, $address, $gpsAddress, $sameAsGps,
             $city, $area, $lat, $lng, $courierPickup, $inShopRepair, $spareParts, $serviceCategories,
-            $skillTags, $logoUrl
+            $skillTags, $logoUrl, $bannerUrl
         ) {
             $user->update([
                 'phone' => $cleanPhone,
@@ -594,6 +596,7 @@ class VendorOnboardingController extends Controller
                 'name' => trim($validated['shop_name']),
                 'description' => !empty($validated['description']) ? trim($validated['description']) : "Verified electronic repair workshop in {$area}, {$city}.",
                 'logo_url' => $logoUrl,
+                'banner_url' => $bannerUrl,
                 'phone' => $cleanPhone,
                 'email' => $profile->business_email ?: $user->email,
                 'address' => $address,
