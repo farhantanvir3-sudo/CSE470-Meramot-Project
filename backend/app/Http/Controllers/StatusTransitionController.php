@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DeliveryAgent;
+use App\Models\DeliveryJob;
 use App\Models\RepairJob;
 use App\Models\RepairRequest;
+use App\Models\RepairShop;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * ============================================================================
@@ -41,6 +45,17 @@ class StatusTransitionController extends Controller
                 'WAITING_APPROVAL', 'REPAIRING', 'RETURNING', 'COMPLETED', 'CANCELLED'
             ], true)) {
                 $repairRequest->repairJob->update(['status' => $validated['status']]);
+            } elseif ($repairRequest->repairJob && in_array($validated['status'], ['RETURN_SCHEDULED', 'RETURNED_TO_CUSTOMER'], true)) {
+                $repairRequest->repairJob->update([
+                    'status' => $validated['status'] === 'RETURN_SCHEDULED' ? 'READY_TO_RETURN' : 'COMPLETED',
+                ]);
+            }
+
+            if ($validated['status'] === 'CANCELLED') {
+                $repairRequest->bids()->where('status', 'ACTIVE')->update(['status' => 'EXPIRED']);
+                DeliveryJob::where('repair_request_id', $repairRequest->id)
+                    ->whereNotIn('status', ['DELIVERED', 'CANCELLED'])
+                    ->update(['status' => 'CANCELLED', 'cancellation_reason' => $validated['notes'] ?? 'Cancelled by customer']);
             }
 
             Log::info('Repair request status updated', [
@@ -79,7 +94,7 @@ class StatusTransitionController extends Controller
     }
 
     /**
-     * Accept Quote 1 (Marketplace Bid) -> transition to ASSIGNED + create RepairJob.
+     * Accept Quote 1 (Marketplace Bid) -> transition to ASSIGNED + create RepairJob + DeliveryJob (if pickup_dropoff).
      * Route: POST /requests/{id}/accept-bid
      */
     public function acceptBid(Request $request, $id)
@@ -89,13 +104,16 @@ class StatusTransitionController extends Controller
         ]);
 
         $repairRequest = RepairRequest::findOrFail($id);
-        $bid = $repairRequest->bids()->findOrFail($validated['bid_id']);
+        $bid = $repairRequest->bids()->with('shop')->findOrFail($validated['bid_id']);
 
         DB::transaction(function () use ($repairRequest, $bid) {
+            $shopAddress = $bid->shop?->address ?: (($bid->shop?->area ?: 'Banani') . ', ' . ($bid->shop?->city ?: 'Dhaka'));
+
             $repairRequest->update([
                 'selected_bid_id' => $bid->id,
                 'requested_shop_id' => $repairRequest->requested_shop_id ?? $bid->shop_id,
                 'quoted_final_amount' => $bid->proposed_cost,
+                'dropoff_address' => $repairRequest->dropoff_address ?: $shopAddress,
                 'approved_at' => now(),
             ]);
 
@@ -108,7 +126,7 @@ class StatusTransitionController extends Controller
                 ->where('status', 'ACTIVE')
                 ->update(['status' => 'DECLINED']);
 
-            RepairJob::updateOrCreate(
+            $job = RepairJob::updateOrCreate(
                 ['repair_request_id' => $repairRequest->id],
                 [
                     'shop_id' => $bid->shop_id,
@@ -117,6 +135,8 @@ class StatusTransitionController extends Controller
                     'final_quoted_amount' => $bid->proposed_cost,
                 ]
             );
+
+            $this->ensureCourierDeliveryJob($repairRequest->fresh(), $job, 'TO_SHOP');
         });
 
         return redirect()
@@ -135,7 +155,7 @@ class StatusTransitionController extends Controller
             'reason' => 'nullable|string|max:500',
         ]);
 
-        $repairRequest = RepairRequest::with(['repairJob', 'payments'])->findOrFail($id);
+        $repairRequest = RepairRequest::with(['repairJob', 'payments', 'requestedShop'])->findOrFail($id);
 
         if ($validated['decision'] === 'accept') {
             $repairRequest->transitionTo(RepairRequest::STATUS_ASSIGNED);
@@ -145,14 +165,21 @@ class StatusTransitionController extends Controller
                     'status' => 'CREATED',
                     'started_at' => now(),
                 ]);
+                $job = $repairRequest->repairJob;
             } elseif ($repairRequest->requested_shop_id) {
-                RepairJob::create([
+                $job = RepairJob::create([
                     'repair_request_id' => $repairRequest->id,
                     'shop_id' => $repairRequest->requested_shop_id,
                     'status' => 'CREATED',
                     'final_quoted_amount' => $repairRequest->quoted_final_amount,
                     'started_at' => now(),
                 ]);
+            } else {
+                $job = null;
+            }
+
+            if ($job) {
+                $this->ensureCourierDeliveryJob($repairRequest->fresh(), $job, 'TO_SHOP');
             }
 
             return back()->with('success', "Direct Order #{$repairRequest->id} accepted! Status moved to ASSIGNED for courier pickup.");
@@ -167,6 +194,9 @@ class StatusTransitionController extends Controller
         $repairRequest->payments()
             ->whereIn('status', ['PENDING', 'AUTHORIZED', 'PAID'])
             ->update(['status' => 'REFUNDED']);
+        DeliveryJob::where('repair_request_id', $repairRequest->id)
+            ->whereNotIn('status', ['DELIVERED', 'CANCELLED'])
+            ->update(['status' => 'CANCELLED', 'cancellation_reason' => 'Declined by workshop']);
 
         return back()->with('success', "Direct Order #{$repairRequest->id} declined and marked REJECTED (payment refunded if applicable).");
     }
@@ -186,6 +216,10 @@ class StatusTransitionController extends Controller
 
         if ($validated['decision'] === 'approve') {
             if ($repairRequest->transitionTo(RepairRequest::STATUS_REPAIRING)) {
+                $finalAmount = $repairRequest->repairJob?->final_quoted_amount ?? $repairRequest->quoted_final_amount;
+                if ($finalAmount !== null) {
+                    $repairRequest->update(['quoted_final_amount' => $finalAmount]);
+                }
                 if ($repairRequest->repairJob) {
                     $repairRequest->repairJob->update([
                         'customer_approved' => true,
@@ -204,6 +238,7 @@ class StatusTransitionController extends Controller
                         'customer_approved' => false,
                         'status' => 'READY_TO_RETURN',
                     ]);
+                    $this->ensureCourierDeliveryJob($repairRequest->fresh(), $repairRequest->repairJob, 'TO_CUSTOMER');
                 }
                 return redirect()
                     ->route('requests.track', $repairRequest->id)
@@ -222,16 +257,35 @@ class StatusTransitionController extends Controller
      */
     public function cancel(Request $request, $id)
     {
-        $request->validate([
+        $validated = $request->validate([
             'reason' => 'nullable|string|max:500',
         ]);
 
-        $repairRequest = RepairRequest::findOrFail($id);
+        $repairRequest = RepairRequest::with(['repairJob', 'payments'])->findOrFail($id);
 
         if ($repairRequest->transitionTo(RepairRequest::STATUS_CANCELLED)) {
             $repairRequest->update([
                 'rejected_at' => now(),
             ]);
+
+            if ($repairRequest->repairJob) {
+                $repairRequest->repairJob->update(['status' => 'CANCELLED']);
+            }
+
+            $repairRequest->bids()
+                ->whereIn('status', ['ACTIVE', 'ACCEPTED'])
+                ->update(['status' => 'WITHDRAWN']);
+
+            $repairRequest->payments()
+                ->whereIn('status', ['PENDING', 'AUTHORIZED'])
+                ->update(['status' => 'REFUNDED']);
+
+            DeliveryJob::where('repair_request_id', $repairRequest->id)
+                ->whereNotIn('status', ['DELIVERED', 'CANCELLED'])
+                ->update([
+                    'status' => 'CANCELLED',
+                    'cancellation_reason' => $validated['reason'] ?? 'Cancelled by customer',
+                ]);
 
             return redirect()
                 ->route('requests.track', $repairRequest->id)
@@ -241,5 +295,47 @@ class StatusTransitionController extends Controller
         return redirect()
             ->route('requests.track', $repairRequest->id)
             ->with('error', 'Cannot cancel request at this stage.');
+    }
+
+    /**
+     * Ensure a DeliveryJob (`TO_SHOP` or `TO_CUSTOMER`) is created and linked whenever courier pickup/return is active.
+     */
+    private function ensureCourierDeliveryJob(RepairRequest $repairRequest, RepairJob $job, string $direction): void
+    {
+        $shop = RepairShop::find($job->shop_id);
+        $shopAddress = $shop?->address ?: (($shop?->area ?: 'Banani') . ', ' . ($shop?->city ?: 'Dhaka'));
+        $customerAddress = $repairRequest->pickup_address ?: 'Banani, Dhaka';
+
+        $activeAgent = DeliveryAgent::with('user')
+            ->where('registration_status', 'APPROVED')
+            ->where('is_active', true)
+            ->orderBy('id')
+            ->first();
+
+        $isToShop = $direction === 'TO_SHOP';
+
+        DeliveryJob::firstOrCreate(
+            [
+                'repair_request_id' => $repairRequest->id,
+                'direction' => $direction,
+            ],
+            [
+                'repair_job_id' => $job->id,
+                'delivery_agent_id' => $activeAgent?->id,
+                'type' => $repairRequest->delivery_type ?? 'REGULAR',
+                'status' => $activeAgent ? 'SCHEDULED' : 'PENDING',
+                'partner_name' => 'Meramot Logistics',
+                'tracking_code' => 'MRM-' . ($isToShop ? 'PKP' : 'RTN') . '-' . $repairRequest->id . '-' . strtoupper(Str::random(4)),
+                'rider_name' => $activeAgent?->user?->name ?? 'Assigned Meramot Rider',
+                'rider_phone' => $activeAgent?->user?->phone ?? '+8801711000099',
+                'pickup_address' => $isToShop ? $customerAddress : $shopAddress,
+                'dropoff_address' => $isToShop ? $shopAddress : $customerAddress,
+                'pickup_otp' => (string) random_int(1000, 9999),
+                'dropoff_otp' => (string) random_int(1000, 9999),
+                'distance_km' => 4.2,
+                'fee' => ($repairRequest->delivery_type ?? 'REGULAR') === 'EXPRESS' ? 240.00 : 120.00,
+                'scheduled_at' => now(),
+            ]
+        );
     }
 }

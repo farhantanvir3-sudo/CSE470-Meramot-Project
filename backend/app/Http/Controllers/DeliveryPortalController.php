@@ -479,6 +479,48 @@ class DeliveryPortalController extends Controller
 
             $delivery->update($updates);
 
+            // Synchronize parent RepairRequest & RepairJob lifecycle states with rider milestones
+            $req = $delivery->repairRequest ?? $delivery->repairJob?->repairRequest;
+            $rJob = $delivery->repairJob ?? $req?->repairJob;
+            $isToCustomer = strtoupper((string) $delivery->direction) === 'TO_CUSTOMER';
+
+            if ($req) {
+                if (!$isToCustomer) {
+                    if (in_array($next, ['SCHEDULED', 'DISPATCHED'], true) && $req->status === 'ASSIGNED') {
+                        $req->update(['status' => 'PICKUP_SCHEDULED']);
+                        if ($rJob && $rJob->status === 'CREATED') {
+                            $rJob->update(['status' => 'PICKUP_SCHEDULED']);
+                        }
+                    } elseif (in_array($next, ['PICKED_UP', 'IN_TRANSIT'], true)) {
+                        $req->update(['status' => 'PICKED_UP']);
+                        if ($rJob) {
+                            $rJob->update(['status' => 'PICKED_UP']);
+                        }
+                    } elseif ($next === 'DELIVERED') {
+                        $req->update(['status' => 'AT_SHOP']);
+                        if ($rJob) {
+                            $rJob->update(['status' => 'AT_SHOP']);
+                        }
+                    }
+                } else {
+                    if (in_array($next, ['DISPATCHED', 'PICKED_UP', 'IN_TRANSIT'], true)) {
+                        $req->update(['status' => 'RETURNING']);
+                        if ($rJob) {
+                            $rJob->update(['status' => 'RETURNING']);
+                        }
+                    } elseif ($next === 'DELIVERED') {
+                        $wasDeclinedQuote2 = $rJob && $rJob->customer_approved === false;
+                        $req->update(['status' => $wasDeclinedQuote2 ? 'RETURNED_TO_CUSTOMER' : 'COMPLETED']);
+                        if ($rJob) {
+                            $rJob->update([
+                                'status' => 'COMPLETED',
+                                'completed_at' => $rJob->completed_at ?? now(),
+                            ]);
+                        }
+                    }
+                }
+            }
+
             if ($next === 'DELIVERED') {
                 $fee = (float) ($delivery->fee ?? 150.00);
                 RiderEarnings::updateOrCreate(

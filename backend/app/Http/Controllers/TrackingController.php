@@ -28,10 +28,20 @@ class TrackingController extends Controller
     /**
      * Render live GPS map tracking view.
      * Route: GET /tracking/{jobId}
+     * Resolves either a DeliveryJob ID directly or a RepairRequest ID / RepairJob ID.
      */
     public function showMap(Request $request, $jobId)
     {
-        $job = DeliveryJob::with(['deliveryAgent', 'repairRequest'])->find($jobId);
+        $job = DeliveryJob::with(['deliveryAgent.user', 'repairRequest', 'repairJob.shop'])->find($jobId);
+
+        if (!$job) {
+            $job = DeliveryJob::with(['deliveryAgent.user', 'repairRequest', 'repairJob.shop'])
+                ->where('repair_request_id', $jobId)
+                ->orWhere('repair_job_id', $jobId)
+                ->latest('id')
+                ->first();
+        }
+
         if (!$job) {
             return app(ComingSoonController::class)->show(
                 $request->merge(['request_id' => $jobId]),
@@ -39,7 +49,7 @@ class TrackingController extends Controller
             );
         }
 
-        $latestLocation = LocationLog::where('delivery_job_id', $jobId)->latest()->first();
+        $latestLocation = LocationLog::where('delivery_job_id', $job->id)->latest()->first();
 
         return view('tracking.live-map', compact('job', 'latestLocation'));
     }
