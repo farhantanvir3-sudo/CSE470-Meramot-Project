@@ -89,15 +89,15 @@ class RepairRequest extends Model
         // Direct Orders enter at PENDING -> Vendor Accepts (ASSIGNED) or Declines (REJECTED)
         self::STATUS_PENDING => [self::STATUS_BIDDING, self::STATUS_ASSIGNED, self::STATUS_REJECTED, self::STATUS_CANCELLED],
         self::STATUS_BIDDING => [self::STATUS_ASSIGNED, self::STATUS_CANCELLED],
-        self::STATUS_ASSIGNED => [self::STATUS_PICKUP_SCHEDULED, self::STATUS_AT_SHOP, self::STATUS_CANCELLED],
-        self::STATUS_PICKUP_SCHEDULED => [self::STATUS_PICKED_UP, self::STATUS_CANCELLED],
-        self::STATUS_PICKED_UP => [self::STATUS_AT_SHOP],
-        self::STATUS_AT_SHOP => [self::STATUS_DIAGNOSING, self::STATUS_REPAIRING],
-        self::STATUS_DIAGNOSING => [self::STATUS_WAITING_APPROVAL, self::STATUS_REPAIRING],
+        self::STATUS_ASSIGNED => [self::STATUS_PICKUP_SCHEDULED, self::STATUS_PICKED_UP, self::STATUS_AT_SHOP, self::STATUS_DIAGNOSING, self::STATUS_WAITING_APPROVAL, self::STATUS_REPAIRING, self::STATUS_CANCELLED],
+        self::STATUS_PICKUP_SCHEDULED => [self::STATUS_PICKED_UP, self::STATUS_AT_SHOP, self::STATUS_CANCELLED],
+        self::STATUS_PICKED_UP => [self::STATUS_AT_SHOP, self::STATUS_DIAGNOSING],
+        self::STATUS_AT_SHOP => [self::STATUS_DIAGNOSING, self::STATUS_WAITING_APPROVAL, self::STATUS_REPAIRING, self::STATUS_COMPLETED],
+        self::STATUS_DIAGNOSING => [self::STATUS_WAITING_APPROVAL, self::STATUS_REPAIRING, self::STATUS_RETURN_SCHEDULED, self::STATUS_COMPLETED],
         // Quote 2 (Final Bench Diagnosis): Approve -> REPAIRING, Decline -> RETURN_SCHEDULED
         self::STATUS_WAITING_APPROVAL => [self::STATUS_REPAIRING, self::STATUS_RETURN_SCHEDULED, self::STATUS_CANCELLED],
         self::STATUS_REPAIRING => [self::STATUS_RETURN_SCHEDULED, self::STATUS_RETURNING, self::STATUS_COMPLETED],
-        self::STATUS_RETURN_SCHEDULED => [self::STATUS_RETURNING],
+        self::STATUS_RETURN_SCHEDULED => [self::STATUS_RETURNING, self::STATUS_RETURNED_TO_CUSTOMER, self::STATUS_COMPLETED],
         self::STATUS_RETURNING => [self::STATUS_COMPLETED, self::STATUS_RETURNED_TO_CUSTOMER],
         self::STATUS_RETURNED_TO_CUSTOMER => [],
         self::STATUS_COMPLETED => [],
@@ -209,6 +209,11 @@ class RepairRequest extends Model
     public function repairJob()
     {
         return $this->hasOne(RepairJob::class);
+    }
+
+    public function deliveryJobs()
+    {
+        return $this->hasMany(DeliveryJob::class);
     }
 
     public function payments()

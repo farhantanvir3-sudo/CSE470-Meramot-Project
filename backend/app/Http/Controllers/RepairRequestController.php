@@ -43,11 +43,15 @@ class RepairRequestController extends Controller
         if ($statusFilter === 'BIDDING') {
             $query->where('status', 'BIDDING');
         } elseif ($statusFilter === 'DIRECT') {
-            $query->where('source', 'DIRECT_SERVICE');
+            $query->whereIn('source', ['DIRECT_SERVICE', 'DIRECT_CUSTOM_SHOP']);
         } elseif ($statusFilter === 'ACTIVE') {
-            $query->whereIn('status', ['PENDING', 'ASSIGNED', 'PICKUP_SCHEDULED', 'PICKED_UP', 'AT_SHOP', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING']);
+            $query->whereIn('status', [
+                'PENDING', 'ASSIGNED', 'PICKUP_SCHEDULED', 'PICKED_UP',
+                'AT_SHOP', 'DIAGNOSING', 'WAITING_APPROVAL', 'REPAIRING',
+                'RETURN_SCHEDULED', 'RETURNING',
+            ]);
         } elseif ($statusFilter === 'COMPLETED') {
-            $query->where('status', 'COMPLETED');
+            $query->whereIn('status', ['COMPLETED', 'RETURNED_TO_CUSTOMER']);
         }
 
         $requests = $query->paginate(12)->withQueryString();
@@ -106,6 +110,7 @@ class RepairRequestController extends Controller
 
         $customerId = $request->user()?->id ?? User::where('role', 'customer')->value('id') ?? User::value('id') ?? 1;
         $requestedShopId = $validated['preferred_shop_id'] ?? null;
+        $targetShop = $requestedShopId ? RepairShop::find($requestedShopId) : null;
 
         $cityName = trim((string) ($validated['city'] ?? 'Dhaka')) ?: 'Dhaka';
         $areaName = trim((string) ($validated['area'] ?? ''));
@@ -165,6 +170,10 @@ class RepairRequestController extends Controller
             }
         }
 
+        $dropoffAddress = $targetShop
+            ? ($targetShop->address ?: ($targetShop->area . ', ' . $targetShop->city))
+            : null;
+
         $repairRequest = RepairRequest::create([
             'customer_id' => $customerId,
             'source' => $requestedShopId ? 'DIRECT_CUSTOM_SHOP' : 'MARKETPLACE',
@@ -184,6 +193,7 @@ class RepairRequestController extends Controller
             'preferred_service_type' => $validated['preferred_service_type'],
             'contact_phone' => $contactPhone ?: null,
             'pickup_address' => $fullAddress ?: null,
+            'dropoff_address' => $dropoffAddress,
         ]);
 
         return redirect()
@@ -206,6 +216,8 @@ class RepairRequestController extends Controller
             'customer',
             'requestedShop',
             'repairJob.shop',
+            'deliveryJobs.deliveryAgent.user',
+            'payments',
         ])->findOrFail($id);
 
         return view('requests.track', compact('repairRequest'));

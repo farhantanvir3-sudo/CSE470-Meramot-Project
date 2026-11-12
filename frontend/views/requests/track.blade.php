@@ -9,7 +9,7 @@
      ========================================================================== --}}
 
 @section('content')
-<div class="mx-auto max-w-5xl px-4 py-6 md:px-6">
+<div class="mx-auto max-w-5xl px-4 py-6 md:px-6" x-data="{ lightboxPhoto: null }">
 
     <!-- Breadcrumb -->
     <div class="mb-4 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
@@ -162,7 +162,19 @@
                         : ['PENDING', 'BIDDING', 'ASSIGNED', 'AT_SHOP', 'REPAIRING', 'COMPLETED'];
                     $currentIndex = array_search($currentStatus, $progressSteps, true);
                     if ($currentIndex === false) {
-                        $currentIndex = in_array($currentStatus, ['PICKUP_SCHEDULED', 'PICKED_UP'], true) ? 2 : (in_array($currentStatus, ['WAITING_APPROVAL'], true) ? 3 : -1);
+                        if (in_array($currentStatus, ['PICKUP_SCHEDULED', 'PICKED_UP'], true)) {
+                            $currentIndex = array_search('ASSIGNED', $progressSteps, true);
+                        } elseif (in_array($currentStatus, ['DIAGNOSING', 'WAITING_APPROVAL'], true)) {
+                            $currentIndex = array_search('DIAGNOSING', $progressSteps, true) !== false
+                                ? array_search('DIAGNOSING', $progressSteps, true)
+                                : array_search('AT_SHOP', $progressSteps, true);
+                        } elseif (in_array($currentStatus, ['RETURN_SCHEDULED', 'RETURNING'], true)) {
+                            $currentIndex = array_search('REPAIRING', $progressSteps, true);
+                        } elseif ($currentStatus === 'RETURNED_TO_CUSTOMER') {
+                            $currentIndex = count($progressSteps) - 1;
+                        } else {
+                            $currentIndex = -1;
+                        }
                     }
                 @endphp
 
@@ -258,9 +270,21 @@
                     <p class="text-xs text-[var(--muted-foreground)] uppercase tracking-wider font-bold mb-3">Attached Photos</p>
                     <div class="grid grid-cols-3 gap-2">
                         @foreach($repairRequest->photos as $photo)
-                            <a href="{{ asset('storage/' . $photo) }}" target="_blank" class="block">
-                                <img src="{{ asset('storage/' . $photo) }}" alt="Device photo" class="w-full h-24 object-cover rounded-xl border border-[var(--border)] hover:opacity-80 transition">
-                            </a>
+                            @php
+                                $photoUrl = (str_starts_with($photo, 'http') || str_starts_with($photo, 'data:') || str_starts_with($photo, '/'))
+                                    ? $photo
+                                    : asset('storage/' . $photo);
+                            @endphp
+                            <button
+                                type="button"
+                                @click="lightboxPhoto = @js($photoUrl)"
+                                class="group relative block overflow-hidden rounded-xl border border-[var(--border)] focus:outline-none"
+                            >
+                                <img src="{{ $photoUrl }}" alt="Device photo" class="w-full h-24 object-cover transition group-hover:scale-105 group-hover:opacity-90">
+                                <span class="absolute bottom-1.5 right-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white">
+                                    <i class="fa-solid fa-magnifying-glass-plus mr-0.5"></i>Zoom
+                                </span>
+                            </button>
                         @endforeach
                     </div>
                 </div>
@@ -280,7 +304,7 @@
             </div>
 
             <!-- Vendor Bids Section (Path A: Marketplace Quote 1) -->
-            @if(in_array($currentStatus, ['BIDDING', 'ASSIGNED'], true) && ($repairRequest->source ?? 'MARKETPLACE') !== 'DIRECT_SERVICE')
+            @if(($repairRequest->source ?? 'MARKETPLACE') !== 'DIRECT_SERVICE' && ($currentStatus === 'BIDDING' || $repairRequest->bids->count() > 0))
             <div class="meramot-card p-6 shadow-sm">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
@@ -368,6 +392,10 @@
         <div class="space-y-6">
 
             <!-- Quick Actions Card -->
+            @php
+                $activeDeliveryJob = $repairRequest->deliveryJobs?->sortByDesc('id')->first();
+                $trackingTargetId = $activeDeliveryJob?->id ?? $repairRequest->id;
+            @endphp
             <div class="meramot-card p-5 shadow-sm">
                 <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-4">
                     Quick Actions
@@ -380,8 +408,8 @@
                         </a>
                     @endif
 
-                    @if(in_array($currentStatus, ['PICKED_UP', 'AT_SHOP', 'RETURNING'], true))
-                        <a href="/tracking/{{ $repairRequest->id }}" class="block w-full py-2.5 rounded-full bg-[var(--accent-dark)] text-center text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                    @if($activeDeliveryJob || in_array($currentStatus, ['PICKUP_SCHEDULED', 'PICKED_UP', 'AT_SHOP', 'RETURN_SCHEDULED', 'RETURNING'], true))
+                        <a href="/tracking/{{ $trackingTargetId }}" class="block w-full py-2.5 rounded-full bg-[var(--accent-dark)] text-center text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                             <i class="fa-solid fa-location-dot mr-2"></i>Track Live Rider GPS
                         </a>
                     @endif
@@ -474,6 +502,30 @@
 
         </div>
 
+    </div>
+
+    <!-- Attached Photo Click-to-Zoom Lightbox Modal -->
+    <div
+        x-show="lightboxPhoto"
+        x-cloak
+        @keydown.escape.window="lightboxPhoto = null"
+        class="fixed inset-0 z-[150] flex items-center justify-center p-4"
+    >
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" @click="lightboxPhoto = null"></div>
+        <div class="relative z-[151] w-full max-w-3xl rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 shadow-2xl space-y-3">
+            <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+                <span class="text-xs font-black uppercase tracking-wider text-[var(--accent-dark)]">Attached Device Photo Preview</span>
+                <div class="flex items-center gap-2">
+                    <a :href="lightboxPhoto" target="_blank" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-bold text-[var(--foreground)]">
+                        Open Original &nearr;
+                    </a>
+                    <button type="button" @click="lightboxPhoto = null" class="h-8 w-8 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold">✕</button>
+                </div>
+            </div>
+            <div class="flex max-h-[75vh] items-center justify-center overflow-auto rounded-2xl bg-black/90 p-2">
+                <img :src="lightboxPhoto" alt="Zoomed device photo" class="max-h-[70vh] max-w-full rounded-xl object-contain">
+            </div>
+        </div>
     </div>
 
 </div>

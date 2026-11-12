@@ -59,28 +59,22 @@ class BiddingEngineController extends Controller
     }
 
     /**
-     * Customer accepts a specific vendor bid.
+     * Customer accepts a specific vendor bid (API endpoint synchronized with Web acceptBid).
      */
     public function acceptBid($bidId)
     {
-        $bid = Bid::findOrFail($bidId);
-        $bid->update(['status' => 'ACCEPTED']);
-
+        $bid = Bid::with('shop')->findOrFail($bidId);
         $repairRequest = RepairRequest::findOrFail($bid->repair_request_id);
-        $repairRequest->update([
-            'status' => 'ASSIGNED',
-            'selected_bid_id' => $bid->id,
-            'quoted_final_amount' => $bid->proposed_cost,
-        ]);
 
-        Bid::where('repair_request_id', $bid->repair_request_id)
-            ->where('id', '!=', $bid->id)
-            ->update(['status' => 'DECLINED']);
+        app(StatusTransitionController::class)->acceptBid(
+            new Request(['bid_id' => $bid->id]),
+            $repairRequest->id
+        );
 
         return response()->json([
             'status' => 'success',
             'message' => 'Bid accepted! Repair request assigned to vendor.',
-            'data' => $bid,
+            'data' => $bid->fresh('shop'),
         ]);
     }
 }

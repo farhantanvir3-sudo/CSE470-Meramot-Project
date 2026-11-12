@@ -82,13 +82,13 @@
                             ];
                         @endphp
                         @foreach($deviceTypes as $dtype)
-                            <option value="{{ $dtype }}">{{ $dtype }}</option>
+                            <option value="{{ $dtype }}" {{ old('device_type') === $dtype ? 'selected' : '' }}>{{ $dtype }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Brand Name *</label>
-                    <input type="text" name="brand" placeholder="e.g. Apple, Dell, Lenovo, Asus, Samsung, HP..." class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                    <input type="text" name="brand" value="{{ old('brand') }}" placeholder="e.g. Apple, Dell, Lenovo, Asus, Samsung, HP..." class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
                 </div>
             </div>
 
@@ -96,15 +96,15 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="sm:col-span-1">
                     <label class="block font-bold text-[var(--foreground)] mb-1">Model Name / Number *</label>
-                    <input type="text" name="model_name" placeholder="e.g. MacBook Pro, ThinkPad T14, Galaxy S23" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
+                    <input type="text" name="model_name" value="{{ old('model_name') }}" placeholder="e.g. MacBook Pro, ThinkPad T14, Galaxy S23" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
                 </div>
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Release / Purchase Year</label>
-                    <input type="text" name="year" placeholder="e.g. 2021, 2023" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                    <input type="text" name="year" value="{{ old('year') }}" placeholder="e.g. 2021, 2023" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                 </div>
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Screen Size / Chipset</label>
-                    <input type="text" name="specs" placeholder="e.g. 14-inch OLED, M1 Pro, Core i7" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                    <input type="text" name="specs" value="{{ old('specs') }}" placeholder="e.g. 14-inch OLED, M1 Pro, Core i7" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                 </div>
             </div>
 
@@ -122,7 +122,7 @@
                             ];
                         @endphp
                         @foreach($issueCategories as $icat)
-                            <option value="{{ $icat }}">{{ $icat }}</option>
+                            <option value="{{ $icat }}" {{ old('issue_category') === $icat ? 'selected' : '' }}>{{ $icat }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -135,7 +135,7 @@
             <!-- 4. Detailed Description -->
             <div>
                 <label class="block font-bold text-[var(--foreground)] mb-1">Detailed Symptoms & Device History *</label>
-                <textarea name="issue_description" rows="4" placeholder="Describe symptoms: Was there any liquid spill? Does the fan spin? Did it drop? Any smoke or burning odor?" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 leading-relaxed outline-none" required></textarea>
+                <textarea name="issue_description" rows="4" placeholder="Describe symptoms: Was there any liquid spill? Does the fan spin? Did it drop? Any smoke or burning odor?" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 leading-relaxed outline-none" required>{{ old('issue_description') }}</textarea>
             </div>
 
             <!-- 4.5. Interactive Dashed Dropzone Photo Upload -->
@@ -452,7 +452,7 @@
                     </div>
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Estimated Budget (৳)</label>
-                        <input type="number" name="estimated_budget" placeholder="e.g. 2500" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                        <input type="number" name="estimated_budget" value="{{ old('estimated_budget') }}" placeholder="e.g. 2500" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                     </div>
                 </div>
             </div>

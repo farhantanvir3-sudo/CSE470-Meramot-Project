@@ -215,6 +215,13 @@ class RepairRequestTest extends TestCase
             'shop_id' => $shop->id,
             'accepted_bid_id' => $bid->id,
         ]);
+        $this->assertDatabaseHas('delivery_jobs', [
+            'repair_request_id' => $repairRequest->id,
+            'direction' => 'TO_SHOP',
+        ]);
+
+        // Live GPS tracking route works when accessed by repair_request_id
+        $this->get("/tracking/{$repairRequest->id}")->assertStatus(200);
 
         $bid->refresh();
         $this->assertEquals('ACCEPTED', $bid->status);
@@ -244,6 +251,10 @@ class RepairRequestTest extends TestCase
 
         $response->assertRedirect(route('requests.track', $repairRequest->id));
         $this->assertEquals('RETURN_SCHEDULED', $repairRequest->fresh()->status);
+        $this->assertDatabaseHas('delivery_jobs', [
+            'repair_request_id' => $repairRequest->id,
+            'direction' => 'TO_CUSTOMER',
+        ]);
     }
 
     /** @test */
