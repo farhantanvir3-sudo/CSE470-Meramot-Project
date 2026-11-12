@@ -1,6 +1,6 @@
 {{--
 =============================================================================
-FEATURE R11: Vendor Onboarding, Dual Shop Locations & Multi-Branch Opt-In
+FEATURE R11: Vendor Onboarding Hub, OTP Verification & Dual Shop Locations
 =============================================================================
 Assigned Member: Farhan Tanvir [Student ID: 22299179] (Team Lead)
 Sprint: Sprint 1 (Nov 1 – Nov 12, 2026)
@@ -14,6 +14,17 @@ Models Touched: User, VendorProfile, RepairShop
 @section('title', 'Vendor Onboarding & Verification | Meramot')
 
 @section('content')
+@php
+    $authUser = auth()->user();
+    $vStatus = strtolower($profile->verification_status ?? 'pending');
+    $primaryShop = optional($profile?->shops)->sortBy('id')->first();
+    $setupComplete = (bool) ($primaryShop->setup_complete ?? false);
+    $isPublicShop = (bool) ($primaryShop->is_public ?? false);
+    $emailVerified = (bool) ($authUser->is_email_verified ?? false);
+    $phoneVerified = (bool) ($authUser->is_phone_verified ?? false);
+    $displayPhone = $authUser->phone ?? $profile->phone ?? '';
+@endphp
+
 <div
     class="mx-auto max-w-3xl px-4 py-6 md:px-6 space-y-6"
     x-data="{
@@ -25,7 +36,15 @@ Models Touched: User, VendorProfile, RepairShop
         city: @js(old('city', $profile->city ?? 'Dhaka')),
         area: @js(old('area', $profile->area ?? 'Banani')),
         isBranched: {{ old('is_branched', $profile->is_branched ?? false) ? 'true' : 'false' }},
-        branchName: @js(old('branch_name', optional(optional($profile)->shops)->first()->branch_name ?? '')),
+        branchName: @js(old('branch_name', $primaryShop->branch_name ?? '')),
+        otpModalOpen: false,
+        otpChannel: 'email',
+        otpCode: '',
+        otpSending: false,
+        otpVerifying: false,
+        otpStepSent: false,
+        otpFeedback: '',
+        otpError: '',
         applyMapLocation(loc) {
             if (!loc) return;
             this.gpsAddress = loc.address || '';
@@ -41,100 +60,321 @@ Models Touched: User, VendorProfile, RepairShop
             if (this.sameAsGps && this.gpsAddress) {
                 this.shopAddress = this.gpsAddress;
             }
+        },
+        openOtpModal(channel) {
+            this.otpChannel = channel;
+            this.otpCode = '';
+            this.otpStepSent = false;
+            this.otpFeedback = '';
+            this.otpError = '';
+            this.otpModalOpen = true;
+        },
+        async sendOtpNow() {
+            this.otpSending = true;
+            this.otpError = '';
+            this.otpFeedback = '';
+            try {
+                const resp = await fetch('/api/verification/send-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify({ channel: this.otpChannel })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || 'Could not send verification code.');
+                this.otpFeedback = data.message || 'Verification code sent!';
+                this.otpStepSent = true;
+            } catch (err) {
+                this.otpError = err.message || 'Failed to send verification code.';
+            } finally {
+                this.otpSending = false;
+            }
+        },
+        async verifyOtpNow() {
+            if (!this.otpCode || this.otpCode.trim().length < 4) {
+                this.otpError = 'Please enter the 6-digit verification code.';
+                return;
+            }
+            this.otpVerifying = true;
+            this.otpError = '';
+            try {
+                const resp = await fetch('/api/verification/verify-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify({ channel: this.otpChannel, otp: this.otpCode.trim() })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.message || 'Invalid or expired verification code.');
+                window.location.reload();
+            } catch (err) {
+                this.otpError = err.message || 'Verification failed.';
+            } finally {
+                this.otpVerifying = false;
+            }
         }
     }"
     @meramot-location-changed.window="applyMapLocation($event.detail)"
 >
+    @if(session('success'))
+        <div class="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 shadow-sm">
+            <i class="fa-solid fa-circle-check mr-1.5"></i>{{ session('success') }}
+        </div>
+    @endif
 
-    {{-- Application Status Banner for Existing Vendor Applicants --}}
+    @if($errors->any())
+        <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1 shadow-sm">
+            @foreach($errors->all() as $error)
+                <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $error }}</div>
+            @endforeach
+        </div>
+    @endif
+
+    {{-- ===================================================================== --}}
+    {{-- AUTHENTICATED VENDOR ONBOARDING HUB (Status + OTP + Next Steps)       --}}
+    {{-- ===================================================================== --}}
     @if($profile)
-        @php
-            $vStatus = strtolower($profile->verification_status ?? 'pending');
-            $primaryShop = optional($profile->shops)->first();
-        @endphp
+        <div class="space-y-2">
+            <h1 class="text-2xl font-black text-[var(--foreground)]">Vendor onboarding</h1>
+            <p class="text-xs text-[var(--muted-foreground)]">
+                We verify every shop before listing it publicly on Meramot.
+            </p>
+        </div>
 
-        @if($vStatus === 'approved')
-            <div class="rounded-[2rem] border-2 border-emerald-500 bg-emerald-50/90 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {{-- Card 1: Application & Storefront Status --}}
+        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
                 <div>
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-700 px-3 py-0.5 text-[10px] font-extrabold uppercase text-white">
-                        <i class="fa-solid fa-circle-check"></i> Verified &amp; Live Partner
+                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Status</span>
+                    <h2 class="text-base font-black text-[var(--foreground)]">{{ $profile->shop_name }}</h2>
+                </div>
+                @if($vStatus === 'approved')
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-700 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                        <i class="fa-solid fa-circle-check"></i> APPROVED
                     </span>
-                    <h2 class="mt-1.5 text-lg font-black text-[#203126]">{{ $profile->shop_name }} is Verified on Meramot</h2>
-                    <p class="mt-0.5 text-xs text-emerald-950/80">
-                        Your storefront is publicly listed. Manage multi-branch expansion, dual addresses, bids, and direct orders from your dashboard.
+                @elseif($vStatus === 'rejected')
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                        <i class="fa-solid fa-triangle-exclamation"></i> REJECTED
+                    </span>
+                @else
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                        <i class="fa-solid fa-clock"></i> PENDING
+                    </span>
+                @endif
+            </div>
+
+            <div class="space-y-2.5 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-[var(--muted-foreground)]">Application status</span>
+                    <span class="font-bold uppercase text-[var(--foreground)]">{{ strtoupper($vStatus) }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[var(--muted-foreground)]">Shop setup</span>
+                    <span class="font-bold {{ $setupComplete ? 'text-emerald-700' : 'text-amber-700' }}">
+                        {{ $setupComplete ? 'Completed' : 'Not completed' }}
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-[var(--muted-foreground)]">Shop visibility</span>
+                    <span class="font-bold {{ $isPublicShop ? 'text-emerald-700' : 'text-[var(--muted-foreground)]' }}">
+                        {{ $isPublicShop ? 'Public' : 'Hidden' }}
+                    </span>
+                </div>
+            </div>
+
+            @if($vStatus === 'rejected')
+                <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-900 space-y-1">
+                    <div class="font-extrabold">Action Required — Application Rejected</div>
+                    @if($profile->rejection_reason)
+                        <div><strong>Admin Audit Note:</strong> {{ $profile->rejection_reason }}</div>
+                    @endif
+                    <div class="text-[11px] text-rose-800/90 pt-0.5">
+                        Click <strong>Edit application</strong> below to update your trade credentials and resubmit for review.
+                    </div>
+                </div>
+            @elseif($vStatus === 'pending')
+                <div class="rounded-2xl border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs text-amber-950">
+                    Your application is under administrative review. Shop visibility stays hidden until an administrator verifies your Trade License
+                    @if($profile->business_license_no)
+                        (<span class="font-mono font-bold">{{ $profile->business_license_no }}</span>)
+                    @endif
+                    and business details.
+                </div>
+            @elseif($vStatus === 'approved' && !$setupComplete)
+                <div class="rounded-2xl border border-emerald-300 bg-emerald-50/80 px-4 py-3 text-xs text-emerald-950">
+                    <strong>Congratulations!</strong> Your vendor application is approved. Complete your shop pricing and service setup below to list <strong>{{ $profile->shop_name }}</strong> publicly.
+                </div>
+            @elseif($vStatus === 'approved' && $setupComplete)
+                <div class="rounded-2xl border border-emerald-300 bg-emerald-50/80 px-4 py-3 text-xs text-emerald-950">
+                    <strong>{{ $profile->shop_name }}</strong> is verified and publicly listed on Meramot. Manage bids, branches, and direct orders from your Vendor Dashboard.
+                </div>
+            @endif
+        </div>
+
+        {{-- Card 2: Account Verification (Email + Phone OTP) --}}
+        @if($authUser)
+            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+                <div>
+                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Security</span>
+                    <h2 class="text-base font-black text-[var(--foreground)]">Account Verification</h2>
+                    <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
+                        Verify your business email and mobile number to secure payout and order notifications.
                     </p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2 shrink-0">
+
+                <div class="space-y-3 text-xs">
+                    {{-- Email Verification Row --}}
+                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 px-4 py-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--card)] text-[var(--accent-dark)] border border-[var(--border)]">
+                                <i class="fa-solid fa-envelope"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="font-bold text-[var(--foreground)]">Email</div>
+                                <div class="truncate text-[var(--muted-foreground)]">{{ $authUser->email }}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($emailVerified)
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
+                                    <i class="fa-solid fa-circle-check"></i> Verified
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-800">
+                                    <i class="fa-solid fa-circle-exclamation"></i> Not Verified
+                                </span>
+                                <button
+                                    type="button"
+                                    @click="openOtpModal('email')"
+                                    class="rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
+                                >
+                                    Verify
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- Phone Verification Row --}}
+                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 px-4 py-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--card)] text-[var(--accent-dark)] border border-[var(--border)]">
+                                <i class="fa-solid fa-phone"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="font-bold text-[var(--foreground)]">Phone Number</div>
+                                <div class="truncate text-[var(--muted-foreground)]">{{ $displayPhone ?: 'No phone number added yet' }}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            @if($phoneVerified)
+                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
+                                    <i class="fa-solid fa-circle-check"></i> Verified
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-800">
+                                    <i class="fa-solid fa-circle-exclamation"></i> Not Verified
+                                </span>
+                                @if($displayPhone)
+                                    <button
+                                        type="button"
+                                        @click="openOtpModal('phone')"
+                                        class="rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
+                                    >
+                                        Verify
+                                    </button>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Card 3: Next Step Actions --}}
+        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+            <div>
+                <h2 class="text-base font-black text-[var(--foreground)]">Next step</h2>
+                <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
+                    @if($vStatus === 'approved' && !$setupComplete)
+                        Set your inspection &amp; labor fees, service options, and repair catalog to publish your shop.
+                    @elseif($vStatus === 'approved' && $setupComplete)
+                        Your shop is live! Head to your Vendor Dashboard or refine your shop setup anytime.
+                    @else
+                        Track your approval status or update your vendor application details if needed.
+                    @endif
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+                <a href="/vendor/status" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                    View application status
+                </a>
+
+                @if($vStatus === 'approved' && !$setupComplete)
+                    <a href="/vendor/setup-shop" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                        Complete shop setup &rarr;
+                    </a>
+                @elseif($vStatus === 'approved' && $setupComplete)
+                    <a href="/vendor/dashboard" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                        Open vendor dashboard &rarr;
+                    </a>
+                    <a href="/vendor/setup-shop" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+                        Edit shop setup
+                    </a>
                     @if($primaryShop)
-                        <a href="{{ route('shops.show', $primaryShop->slug) }}" class="rounded-full border border-emerald-700 bg-white px-4 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition">
+                        <a href="{{ route('shops.show', $primaryShop->slug) }}" class="rounded-full border border-emerald-700 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition">
                             View Shop Profile
                         </a>
                     @endif
-                    <a href="/vendor/dashboard" class="rounded-full bg-[#244229] px-5 py-2 text-xs font-bold text-white shadow hover:opacity-90 transition">
-                        Open Vendor Dashboard &rarr;
+                @else
+                    <a href="/vendor/apply" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                        Edit application
                     </a>
-                </div>
-            </div>
-        @elseif($vStatus === 'rejected')
-            <div class="rounded-[2rem] border-2 border-rose-400 bg-rose-50 p-5 shadow-sm space-y-2">
-                <div class="flex items-center justify-between">
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-3 py-0.5 text-[10px] font-extrabold uppercase text-white">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Action Required — Application Rejected
-                    </span>
-                    <span class="text-[11px] font-bold text-rose-800">Shop Visibility: Hidden</span>
-                </div>
-                <h2 class="text-base font-black text-rose-950">Please update your trade credentials below and resubmit</h2>
-                @if($profile->rejection_reason)
-                    <div class="rounded-xl border border-rose-300 bg-white px-3.5 py-2.5 text-xs text-rose-900">
-                        <strong>Admin Audit Note:</strong> {{ $profile->rejection_reason }}
-                    </div>
-                @endif
-            </div>
-        @else
-            <div class="rounded-[2rem] border-2 border-amber-400 bg-amber-50/90 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3 py-0.5 text-[10px] font-extrabold uppercase text-white">
-                        <i class="fa-solid fa-clock"></i> Verification Pending
-                    </span>
-                    <h2 class="mt-1.5 text-base font-black text-[#203126]">Application Under Administrative Audit ({{ $profile->shop_name }})</h2>
-                    <p class="mt-0.5 text-xs text-amber-950/80">
-                        Shop visibility stays private until an administrator verifies your Trade License (<span class="font-mono">{{ $profile->business_license_no }}</span>) and NID. You can update details below anytime.
-                    </p>
-                </div>
-                @if($primaryShop)
-                    <a href="{{ route('shops.show', $primaryShop->slug) }}" class="rounded-full border border-amber-700 bg-white px-4 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100 transition shrink-0">
-                        Preview Storefront &rarr;
+                    <a href="/" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+                        Go to home
                     </a>
                 @endif
             </div>
-        @endif
+        </div>
     @endif
 
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
-        <div class="mb-6 border-b border-[var(--border)] pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    {{-- ===================================================================== --}}
+    {{-- DIRECT DUAL-LOCATION ONBOARDING FORM (Open for Guests, Collapsible)   --}}
+    {{-- ===================================================================== --}}
+    <details {{ !$profile ? 'open' : '' }} class="group rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
+        <summary class="cursor-pointer list-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
                 <span class="dev-only-badge text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-2">
                     Feature R11 • Farhan Tanvir [22299179]
                 </span>
-                <h1 class="text-2xl font-black text-[var(--foreground)]">Vendor Onboarding &amp; Dual-Location Setup</h1>
+                <h2 class="text-xl font-black text-[var(--foreground)]">
+                    {{ $profile ? 'Quick Update Trade Credentials & Dual Shop Locations' : 'Vendor Onboarding & Dual-Location Setup' }}
+                </h2>
                 <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                    Register your electronic repair brand on Meramot with verified trade credentials, a private GPS map pin for distance calculation, and your public storefront address.
+                    Register or update your electronic repair brand on Meramot with verified trade credentials, GPS map pin, and public storefront address.
                 </p>
             </div>
-            <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition self-start shrink-0">
-                Vendor Dashboard &rarr;
-            </a>
-        </div>
-
-        @if($errors->any())
-            <div class="mb-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1">
-                @foreach($errors->all() as $error)
-                    <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $error }}</div>
-                @endforeach
+            <div class="flex items-center gap-2 shrink-0">
+                @if(!$profile)
+                    <a href="/vendor/apply" class="rounded-full bg-[#D4AF37] px-4 py-2 text-xs font-bold text-[#1f2c21] shadow-sm hover:opacity-90 transition">
+                        Full Vendor Application &rarr;
+                    </a>
+                @else
+                    <span class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-dark)]">
+                        <span class="group-open:hidden">Expand Form &darr;</span>
+                        <span class="hidden group-open:inline">Hide Form &uarr;</span>
+                    </span>
+                @endif
             </div>
-        @endif
+        </summary>
 
-        <form method="POST" action="/vendor/onboarding" class="space-y-5 text-xs">
+        <form method="POST" action="/vendor/onboarding" class="space-y-5 text-xs mt-6 pt-5 border-t border-[var(--border)]">
             @csrf
 
             @guest
@@ -369,6 +609,85 @@ Models Touched: User, VendorProfile, RepairShop
                 {{ $profile ? 'Save & Resubmit Application for Verification' : 'Submit Application for Verification' }}
             </button>
         </form>
+    </details>
+
+    {{-- ===================================================================== --}}
+    {{-- OTP VERIFICATION MODAL (Email & SMS)                                  --}}
+    {{-- ===================================================================== --}}
+    <div
+        x-show="otpModalOpen"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4"
+        @keydown.escape.window="otpModalOpen = false"
+    >
+        <div
+            @click.away="otpModalOpen = false"
+            class="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl space-y-4"
+        >
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-black text-[var(--foreground)]" x-text="otpChannel === 'phone' ? 'Verify Phone Number' : 'Verify Business Email'"></h3>
+                <button type="button" @click="otpModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-[var(--muted-foreground)]">
+                <span x-show="otpChannel === 'email'">We will send a 6-digit verification code to <strong>{{ $authUser->email ?? '' }}</strong>.</span>
+                <span x-show="otpChannel === 'phone'">We will send a 6-digit SMS code to <strong>{{ $displayPhone }}</strong>.</span>
+            </p>
+
+            <template x-if="otpFeedback">
+                <div class="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900" x-text="otpFeedback"></div>
+            </template>
+
+            <template x-if="otpError">
+                <div class="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-800" x-text="otpError"></div>
+            </template>
+
+            <div x-show="!otpStepSent" class="pt-1">
+                <button
+                    type="button"
+                    @click="sendOtpNow()"
+                    :disabled="otpSending"
+                    class="w-full rounded-full bg-[var(--accent-dark)] py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50 transition"
+                >
+                    <span x-show="!otpSending">Send 6-digit OTP Code</span>
+                    <span x-show="otpSending">Sending code...</span>
+                </button>
+            </div>
+
+            <div x-show="otpStepSent" class="space-y-3 pt-1">
+                <div>
+                    <label class="block text-xs font-bold text-[var(--foreground)] mb-1">Enter 6-digit code</label>
+                    <input
+                        type="text"
+                        maxlength="6"
+                        x-model="otpCode"
+                        placeholder="000000"
+                        class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-center font-mono text-base tracking-[0.35em] font-black outline-none"
+                    >
+                </div>
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        @click="verifyOtpNow()"
+                        :disabled="otpVerifying"
+                        class="flex-1 rounded-full bg-[var(--accent-dark)] py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50 transition"
+                    >
+                        <span x-show="!otpVerifying">Verify Code</span>
+                        <span x-show="otpVerifying">Verifying...</span>
+                    </button>
+                    <button
+                        type="button"
+                        @click="sendOtpNow()"
+                        :disabled="otpSending"
+                        class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition"
+                    >
+                        Resend
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 @endsection

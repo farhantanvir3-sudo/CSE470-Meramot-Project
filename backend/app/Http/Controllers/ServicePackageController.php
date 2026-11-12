@@ -424,6 +424,21 @@ class ServicePackageController extends Controller
         }
 
         $user = $request->user() ?? User::where('role', 'customer')->first() ?? User::first();
+        if ($request->user()) {
+            $syncProfile = [];
+            if (empty($request->user()->phone) && !empty($validated['phone'])) {
+                $syncProfile['phone'] = trim($validated['phone']);
+            }
+            if (empty($request->user()->address) && !empty($validated['address'])) {
+                $syncProfile['address'] = trim($validated['address']);
+                if (!empty($validated['area'])) {
+                    $syncProfile['area'] = trim($validated['area']);
+                }
+            }
+            if (!empty($syncProfile)) {
+                $request->user()->update($syncProfile);
+            }
+        }
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0);
         $serviceCharge = self::calculateServiceCharge($subtotal);
         $deliveryFee = $validated['delivery_type'] === 'EXPRESS' ? self::EXPRESS_DELIVERY_FEE : self::REGULAR_DELIVERY_FEE;

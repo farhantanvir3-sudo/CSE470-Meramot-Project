@@ -12,11 +12,17 @@
 <div class="mx-auto max-w-5xl px-4 py-6 md:px-6" x-data="{
     deliveryType: 'REGULAR',
     paymentMethod: 'SSLCOMMERZ',
+    checkoutAddress: @js(old('address', auth()->user()->address ?? '')),
     subtotal: {{ (float) ($total ?? 0) }},
     serviceCharge: {{ (float) ($serviceCharge ?? 30) }},
     get deliveryFee() { return this.deliveryType === 'EXPRESS' ? 150 : 80; },
-    get grandTotal() { return this.subtotal + this.serviceCharge + this.deliveryFee; }
-}">
+    get grandTotal() { return this.subtotal + this.serviceCharge + this.deliveryFee; },
+    applyMapLocation(loc) {
+        if (loc && loc.address) {
+            this.checkoutAddress = loc.address;
+        }
+    }
+}" @meramot-location-changed.window="applyMapLocation($event.detail)">
     <div class="mb-6">
         <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
             <a href="{{ route('cart.view') }}" class="hover:underline">&larr; Back to Cart</a>
@@ -48,8 +54,22 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Contact Phone *</label>
-                        <input type="tel" name="phone" required value="{{ auth()->user()->phone ?? '01712345678' }}" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block font-bold text-[var(--foreground)]">Contact Phone *</label>
+                            @auth
+                                @if(empty(auth()->user()->phone))
+                                    <a href="/profile?edit=1" class="text-[10px] font-bold text-[var(--accent-dark)] hover:underline">Manage in Profile</a>
+                                @endif
+                            @endauth
+                        </div>
+                        <input
+                            type="tel"
+                            name="phone"
+                            required
+                            placeholder="01XXXXXXXXX"
+                            value="{{ old('phone', auth()->check() ? (auth()->user()->phone ?? '') : '01712345678') }}"
+                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"
+                        >
                     </div>
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Courier Tier *</label>
@@ -61,8 +81,30 @@
                 </div>
 
                 <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Pickup Street Address *</label>
-                    <textarea name="address" rows="3" required placeholder="House #, Road #, Area, Dhaka" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none">{{ auth()->user()->address ?? '' }}</textarea>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                        <label class="block font-bold text-[var(--foreground)]">Pickup &amp; Delivery Street Address *</label>
+                        <div class="flex items-center gap-2">
+                            @auth
+                                @if(!empty(auth()->user()->address))
+                                    <button
+                                        type="button"
+                                        @click="checkoutAddress = @js(auth()->user()->address)"
+                                        class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)]"
+                                    >
+                                        Use Profile Address
+                                    </button>
+                                @endif
+                            @endauth
+                            <button
+                                type="button"
+                                @click="$dispatch('meramot-open-location-modal')"
+                                class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-[10px] font-bold text-white hover:opacity-90"
+                            >
+                                <i class="fa-solid fa-location-dot mr-1"></i>Pick on Map
+                            </button>
+                        </div>
+                    </div>
+                    <textarea name="address" x-model="checkoutAddress" rows="3" required placeholder="House #, Road #, Area, Dhaka" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"></textarea>
                 </div>
             </div>
         </div>
