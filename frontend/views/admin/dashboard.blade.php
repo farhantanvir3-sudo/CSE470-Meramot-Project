@@ -66,7 +66,7 @@
         <a href="/requests" class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm hover:border-[var(--accent-dark)] transition block">
             <div class="flex items-center justify-between">
                 <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Active Repair Tickets</span>
-                <span class="h-9 w-9 rounded-2xl bg-[var(--mint-100)] text-[var(--accent-dark)] flex items-center justify-center"><i class="fa-solid fa-screwdriver-wrench"></i></span>
+                <span class="h-9 w-9 rounded-2xl bg-[#e4f3df] text-[#244229] flex items-center justify-center"><i class="fa-solid fa-screwdriver-wrench"></i></span>
             </div>
             <div class="mt-3 text-3xl font-black text-[var(--foreground)]">{{ $kpis['open_requests'] }}</div>
             <p class="mt-1 text-xs text-[var(--muted-foreground)] font-semibold">
