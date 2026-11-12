@@ -112,14 +112,14 @@
     <form method="POST" action="/delivery-agent/register" enctype="multipart/form-data" class="space-y-6 text-xs">
         @csrf
 
-        <!-- Step 1: Personal & Real Email Details -->
+        <!-- Step 1: Personal & Email Details -->
         <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
             <div class="flex items-center gap-3 border-b border-[var(--border)] pb-3">
                 <div class="w-8 h-8 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] flex items-center justify-center font-black">
                     1
                 </div>
                 <div>
-                    <h2 class="text-sm font-black text-[var(--foreground)]">Personal Contact &amp; Real Email (Required)</h2>
+                    <h2 class="text-sm font-black text-[var(--foreground)]">Personal Contact &amp; Email (Required)</h2>
                     <p class="text-[11px] text-[var(--muted-foreground)]">Crucial: Your approved <code class="font-mono">@meramotbd.com</code> login credentials, OTPs, or rejection notices are delivered to this personal email.</p>
                 </div>
             </div>
@@ -136,12 +136,9 @@
                            class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-[var(--foreground)] outline-none">
                 </div>
                 <div class="sm:col-span-2">
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Personal Real Email Address *</label>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Personal Email Address *</label>
                     <input type="email" name="personal_email" value="{{ old('personal_email') }}" placeholder="e.g. kamal.hossain@gmail.com" required
                            class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-[var(--foreground)] outline-none">
-                    <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">
-                        Use your real personal inbox (Gmail, Outlook, Yahoo, etc.). Do not enter a <code class="font-mono">@meramotbd.com</code> address here.
-                    </p>
                 </div>
             </div>
         </section>
