@@ -18,11 +18,11 @@
                 Centralized command desk for vendor trade verification, delivery courier onboarding, double-entry financial settlements, and nationwide marketplace oversight.
             </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            <a href="/shops" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+        <div class="flex flex-wrap items-center gap-2.5">
+            <a href="/shops" class="rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-dark)] hover:bg-[var(--mint-100)] hover:shadow-md">
                 View Live Directory ({{ number_format($kpis['public_shops']) }} Shops)
             </a>
-            <a href="/admin/financial-overview" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+            <a href="/admin/financial-overview" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-md">
                 Open Financial Ledger &rarr;
             </a>
         </div>

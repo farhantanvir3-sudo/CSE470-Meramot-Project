@@ -18,7 +18,7 @@ Models Touched: VendorProfile, RepairShop, User
     @include('admin.partials.nav')
 
     <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex items-start justify-between gap-4">
         <div>
             <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Partner Governance</p>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Vendor Business Verification &amp; Storefront Audit</h1>
@@ -29,14 +29,14 @@ Models Touched: VendorProfile, RepairShop, User
                 Feature R11 • Assigned to: Farhan Tanvir [22299179] (Team Lead)
             </span>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-            <a href="/vendor/onboarding" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
-                + Open Vendor Onboarding Form
-            </a>
-            <a href="/admin/vendors/pending" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
-                Refresh Queue
-            </a>
-        </div>
+        <a
+            href="/admin/vendors/pending"
+            title="Refresh Queue"
+            aria-label="Refresh Queue"
+            class="group mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
+        >
+            <i class="fa-solid fa-rotate-right text-sm transition-transform duration-300 group-hover:rotate-180"></i>
+        </a>
     </div>
 
     <!-- KPI Cards -->
