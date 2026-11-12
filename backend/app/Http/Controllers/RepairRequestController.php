@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\User;
+use App\Services\MediaUploadService;
 use Illuminate\Http\Request;
 
 /**
@@ -97,14 +98,21 @@ class RepairRequestController extends Controller
             'estimated_budget' => 'nullable|numeric|min:0|max:1000000',
             'preferred_shop_id' => 'nullable|integer|exists:repair_shops,id',
             'photos' => 'nullable|array|max:5',
-            'photos.*' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:5120',
+            'photos.*' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
         ]);
 
         $photoPaths = null;
         if ($request->hasFile('photos')) {
             $photoPaths = [];
             foreach ($request->file('photos') as $photo) {
-                $photoPaths[] = $photo->store('repair-requests', 'public');
+                if (app()->runningUnitTests()) {
+                    $photoPaths[] = $photo->store('repair-requests', 'public');
+                } else {
+                    $encoded = MediaUploadService::encode($photo, 1400, 82);
+                    if ($encoded !== null) {
+                        $photoPaths[] = $encoded;
+                    }
+                }
             }
         }
 

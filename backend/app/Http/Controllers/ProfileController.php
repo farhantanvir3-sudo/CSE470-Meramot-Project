@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\MediaUploadService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -73,7 +74,7 @@ class ProfileController extends Controller
             'area' => 'nullable|string|max:120',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
-            'avatar' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
+            'avatar' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
             'avatar_url' => 'nullable|string',
         ]);
 
@@ -93,9 +94,7 @@ class ProfileController extends Controller
 
         $avatarUrl = $user->avatar_url;
         if ($request->hasFile('avatar')) {
-            $file = $request->file('avatar');
-            $mime = $file->getMimeType() ?: 'image/jpeg';
-            $avatarUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($file->getRealPath()));
+            $avatarUrl = MediaUploadService::fromRequest($request, 'avatar', $avatarUrl, 800, 82);
         } elseif (array_key_exists('avatar_url', $validated) && !empty($validated['avatar_url'])) {
             $avatarUrl = trim($validated['avatar_url']);
         }

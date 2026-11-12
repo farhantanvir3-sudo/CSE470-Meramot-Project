@@ -1115,6 +1115,125 @@
                 window.location.href = targetUrl.toString();
             }
         });
+
+        // Automatic client-side image compression for multipart uploads (> 800 KB -> crisp <= 1600px JPEG)
+        (function () {
+            const MAX_DIMENSION = 1600;
+            const JPEG_QUALITY = 0.84;
+            const COMPRESS_THRESHOLD_BYTES = 800 * 1024;
+            const IMAGE_MIME_RE = /^image\/(jpeg|jpg|png|webp)$/i;
+
+            function shouldCompress(file) {
+                return file && !file._meramotOptimized && IMAGE_MIME_RE.test(file.type) && file.size > COMPRESS_THRESHOLD_BYTES;
+            }
+
+            function compressImageFile(file) {
+                return new Promise(function (resolve) {
+                    const objectUrl = URL.createObjectURL(file);
+                    const img = new Image();
+                    img.onload = function () {
+                        URL.revokeObjectURL(objectUrl);
+                        let targetW = img.naturalWidth || img.width;
+                        let targetH = img.naturalHeight || img.height;
+                        if (!targetW || !targetH) {
+                            file._meramotOptimized = true;
+                            return resolve(file);
+                        }
+                        if (targetW > MAX_DIMENSION || targetH > MAX_DIMENSION) {
+                            const ratio = Math.min(MAX_DIMENSION / targetW, MAX_DIMENSION / targetH);
+                            targetW = Math.max(1, Math.round(targetW * ratio));
+                            targetH = Math.max(1, Math.round(targetH * ratio));
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = targetW;
+                        canvas.height = targetH;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            file._meramotOptimized = true;
+                            return resolve(file);
+                        }
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, targetW, targetH);
+                        ctx.drawImage(img, 0, 0, targetW, targetH);
+                        canvas.toBlob(function (blob) {
+                            if (!blob || blob.size >= file.size) {
+                                file._meramotOptimized = true;
+                                return resolve(file);
+                            }
+                            const baseName = file.name.replace(/\.[^.]+$/, '') || 'photo';
+                            const optimized = new File([blob], baseName + '.jpg', {
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            });
+                            optimized._meramotOptimized = true;
+                            resolve(optimized);
+                        }, 'image/jpeg', JPEG_QUALITY);
+                    };
+                    img.onerror = function () {
+                        URL.revokeObjectURL(objectUrl);
+                        file._meramotOptimized = true;
+                        resolve(file);
+                    };
+                    img.src = objectUrl;
+                });
+            }
+
+            async function optimizeInputFiles(input) {
+                if (!input || !input.files || !input.files.length || typeof DataTransfer === 'undefined') {
+                    return;
+                }
+                const files = Array.from(input.files);
+                if (!files.some(shouldCompress)) {
+                    return;
+                }
+                const dt = new DataTransfer();
+                for (const f of files) {
+                    const nextFile = shouldCompress(f) ? await compressImageFile(f) : f;
+                    dt.items.add(nextFile);
+                }
+                input.files = dt.files;
+            }
+
+            document.addEventListener('change', function (e) {
+                if (e.target && e.target.matches && e.target.matches('input[type="file"]')) {
+                    optimizeInputFiles(e.target);
+                }
+            });
+
+            document.addEventListener('submit', function (e) {
+                const form = e.target;
+                if (!form || form._meramotSubmitting || String(form.enctype || '').toLowerCase() !== 'multipart/form-data') {
+                    return;
+                }
+                const fileInputs = Array.from(form.querySelectorAll('input[type="file"]'));
+                const needsOptimization = fileInputs.some(function (inp) {
+                    return inp.files && Array.from(inp.files).some(shouldCompress);
+                });
+                if (!needsOptimization) {
+                    return;
+                }
+                e.preventDefault();
+                const submitBtn = e.submitter || form.querySelector('button[type="submit"], input[type="submit"]');
+                const originalHtml = submitBtn && submitBtn.tagName === 'BUTTON' ? submitBtn.innerHTML : null;
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    if (originalHtml !== null) {
+                        submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1.5"></i> Optimizing & Uploading...';
+                    }
+                }
+                Promise.all(fileInputs.map(optimizeInputFiles)).finally(function () {
+                    form._meramotSubmitting = true;
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                    if (typeof form.requestSubmit === 'function') {
+                        form.requestSubmit(submitBtn || undefined);
+                    } else {
+                        HTMLFormElement.prototype.submit.call(form);
+                    }
+                });
+            });
+        })();
     </script>
 </body>
 </html>

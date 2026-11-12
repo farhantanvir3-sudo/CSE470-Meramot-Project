@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
 use App\Services\GmailApiService;
+use App\Services\MediaUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -131,9 +132,9 @@ class VendorOnboardingController extends Controller
             'in_shop_repair' => 'nullable|boolean',
             'spare_parts' => 'nullable|boolean',
             'notes' => 'nullable|string|max:2000',
-            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
             'logo_url' => 'nullable|string',
-            'verification_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
+            'verification_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
         ];
 
         if (!$isEditMode) {
@@ -221,19 +222,12 @@ class VendorOnboardingController extends Controller
 
         $logoUrl = $existingProfile?->logo_url;
         if ($request->hasFile('logo')) {
-            $file = $request->file('logo');
-            $mime = $file->getMimeType() ?: 'image/jpeg';
-            $logoUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($file->getRealPath()));
+            $logoUrl = MediaUploadService::fromRequest($request, 'logo', $logoUrl, 1000, 84);
         } elseif (array_key_exists('logo_url', $validated) && $validated['logo_url'] !== null) {
             $logoUrl = trim((string) $validated['logo_url']) ?: null;
         }
 
-        $documentsPath = $existingProfile?->documents_path;
-        if ($request->hasFile('verification_document')) {
-            $docFile = $request->file('verification_document');
-            $docMime = $docFile->getMimeType() ?: 'application/octet-stream';
-            $documentsPath = 'data:' . $docMime . ';base64,' . base64_encode((string) file_get_contents($docFile->getRealPath()));
-        }
+        $documentsPath = MediaUploadService::fromRequest($request, 'verification_document', $existingProfile?->documents_path);
 
         $profile = DB::transaction(function () use (
             $isEditMode, $authUser, $existingProfile, $validated, $email, $cleanPhone,
@@ -482,7 +476,7 @@ class VendorOnboardingController extends Controller
             'express_fee' => 'nullable|numeric|min:0',
             'skill_tags' => 'required|array|min:1',
             'skill_tags.*' => 'string|max:180',
-            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
         ], [
             'skill_tags.required' => 'Please add at least one available service / skill tag.',
             'skill_tags.min' => 'Please add at least one available service / skill tag.',
@@ -537,12 +531,7 @@ class VendorOnboardingController extends Controller
             $gpsAddress = $address;
         }
 
-        $logoUrl = $primaryShop?->logo_url ?: $profile->logo_url;
-        if ($request->hasFile('logo')) {
-            $file = $request->file('logo');
-            $mime = $file->getMimeType() ?: 'image/jpeg';
-            $logoUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($file->getRealPath()));
-        }
+        $logoUrl = MediaUploadService::fromRequest($request, 'logo', $primaryShop?->logo_url ?: $profile->logo_url, 1000, 84);
 
         $skillTags = array_values(array_filter(array_map('trim', $validated['skill_tags'])));
 
@@ -691,8 +680,8 @@ class VendorOnboardingController extends Controller
             'is_branched' => 'nullable|boolean',
             'branch_name' => 'nullable|string|max:120',
             'categories' => 'required|array|min:1',
-            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:4096',
-            'verification_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:4096',
+            'logo' => 'nullable|image|mimes:jpeg,jpg,png,webp|max:15360',
+            'verification_document' => 'nullable|file|mimes:jpeg,jpg,png,webp,pdf|max:15360',
         ]);
 
         $sameAsGps = $request->boolean('same_as_gps_location');
@@ -761,19 +750,8 @@ class VendorOnboardingController extends Controller
         }
 
         $existingVendorProfile = VendorProfile::where('user_id', $user->id)->first();
-        $logoUrl = $existingVendorProfile?->logo_url;
-        if ($request->hasFile('logo')) {
-            $file = $request->file('logo');
-            $mime = $file->getMimeType() ?: 'image/jpeg';
-            $logoUrl = 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($file->getRealPath()));
-        }
-
-        $documentsPath = $existingVendorProfile?->documents_path;
-        if ($request->hasFile('verification_document')) {
-            $docFile = $request->file('verification_document');
-            $docMime = $docFile->getMimeType() ?: 'application/octet-stream';
-            $documentsPath = 'data:' . $docMime . ';base64,' . base64_encode((string) file_get_contents($docFile->getRealPath()));
-        }
+        $logoUrl = MediaUploadService::fromRequest($request, 'logo', $existingVendorProfile?->logo_url, 1000, 84);
+        $documentsPath = MediaUploadService::fromRequest($request, 'verification_document', $existingVendorProfile?->documents_path);
 
         $profile = VendorProfile::updateOrCreate(
             ['user_id' => $user->id],

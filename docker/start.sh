@@ -9,7 +9,8 @@ sed -ri "s/Listen [0-9]+/Listen ${PORT}/g" /etc/apache2/ports.conf
 sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/g" /etc/apache2/sites-available/000-default.conf
 
 # Ensure runtime cache and storage directories exist
-mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/logs bootstrap/cache
+mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/logs storage/app/public bootstrap/cache
+php artisan storage:link --force >/dev/null 2>&1 || true
 
 # Generate APP_KEY fallback if not set in environment
 if [ -z "${APP_KEY}" ]; then
