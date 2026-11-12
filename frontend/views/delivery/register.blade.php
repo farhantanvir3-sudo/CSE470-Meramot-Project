@@ -30,12 +30,21 @@
             </p>
         </div>
 
-        <div class="flex flex-wrap gap-2 shrink-0">
-            <a href="/delivery-agent/status" class="rounded-full border border-[var(--accent-dark)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
-                Check Application Status
+        <div class="flex items-center gap-2.5 shrink-0">
+            <a
+                href="/delivery-agent/status"
+                class="group inline-flex items-center gap-2 rounded-full border border-[#c8dac2] bg-white px-4 py-2.5 text-xs font-bold text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#eef5ea] hover:shadow-md"
+            >
+                <i class="fa-solid fa-magnifying-glass-chart text-emerald-800 transition-transform duration-200 group-hover:scale-110"></i>
+                <span>Check Application Status</span>
             </a>
-            <a href="/delivery/login" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
-                Delivery Partner Login &rarr;
+            <a
+                href="/delivery/login"
+                title="Back to Delivery Partner Login"
+                aria-label="Back to Delivery Partner Login"
+                class="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
+            >
+                <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
             </a>
         </div>
     </div>
@@ -226,16 +235,22 @@
             </div>
         </section>
 
-        <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/70 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <i class="fa-solid fa-shield-halved text-lg text-emerald-700"></i>
-                <p class="text-[11px] text-[var(--muted-foreground)]">
-                    Already applied? Use <a href="/delivery-agent/status" class="font-bold text-[var(--accent-dark)] underline">Check Application Status</a> to verify via OTP, check Admin feedback, or edit your application.
-                </p>
-            </div>
+        <div class="rounded-2xl border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <a
+                href="/delivery-agent/status"
+                class="group flex items-center gap-3 rounded-xl border border-[#d9e5d5] bg-white/90 px-3.5 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-sm"
+            >
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#eef5ea] text-emerald-800 group-hover:bg-[#163625] group-hover:text-[#E4FCD5] transition-colors">
+                    <i class="fa-solid fa-shield-halved text-sm"></i>
+                </span>
+                <span class="text-[11px] text-[var(--muted-foreground)]">
+                    Already applied? <strong class="text-[var(--accent-dark)] group-hover:underline">Check Application Status &rarr;</strong>
+                </span>
+            </a>
             <button type="submit"
-                    class="shrink-0 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-7 py-3 text-xs font-bold shadow hover:opacity-90 transition">
-                Submit Application &rarr;
+                    class="group shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-8 py-3.5 text-xs md:text-sm font-bold shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]">
+                <span>Submit Application</span>
+                <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
             </button>
         </div>
     </form>

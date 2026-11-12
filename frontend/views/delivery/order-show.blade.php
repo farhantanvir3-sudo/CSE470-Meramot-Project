@@ -21,10 +21,11 @@
         <div class="flex justify-between items-center gap-3">
             <a
                 href="/delivery"
-                class="w-10 h-10 rounded-full bg-[#eef4ea] flex items-center justify-center text-[#163625] border border-[#d9e5d5] hover:bg-[#dcead6] transition"
+                class="group w-11 h-11 rounded-full bg-white flex items-center justify-center text-[#163625] border border-[#c8dac2] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-md"
                 title="Back to Delivery Dashboard"
+                aria-label="Back to Delivery Dashboard"
             >
-                <i class="fa-solid fa-arrow-left"></i>
+                <i class="fa-solid fa-arrow-left text-sm transition-transform duration-200 group-hover:-translate-x-0.5"></i>
             </a>
             <div class="bg-[#163625] text-[#E4FCD5] px-3.5 py-1.5 rounded-full text-xs font-bold font-mono">
                 Delivery #{{ $delivery->tracking_code ?: $delivery->id }}

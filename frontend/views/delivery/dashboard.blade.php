@@ -17,8 +17,8 @@
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <a href="/delivery/map" class="inline-flex items-center gap-2 rounded-full bg-[#163625] px-4 py-2.5 text-xs font-bold text-[#E4FCD5] hover:opacity-95 transition">
-                    <i class="fa-solid fa-map-location-dot"></i>
+                <a href="/delivery/map" class="group inline-flex items-center gap-2 rounded-full bg-[#163625] px-4 py-2.5 text-xs font-bold text-[#E4FCD5] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-md">
+                    <i class="fa-solid fa-map-location-dot transition-transform duration-200 group-hover:scale-110"></i>
                     <span>Open Live Map</span>
                 </a>
             </div>
@@ -102,7 +102,7 @@
                         @endphp
                         <a
                             href="/delivery/order/{{ $d->id }}"
-                            class="block rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-4 transition hover:bg-[#eef4ea] hover:border-[#b8d0b1]"
+                            class="group block rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#eef4ea] hover:border-[#214c34] hover:shadow-md"
                         >
                             <div class="flex items-start justify-between gap-3">
                                 <div>

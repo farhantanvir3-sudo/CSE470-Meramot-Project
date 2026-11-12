@@ -15,8 +15,13 @@
             <h1 class="text-2xl md:text-3xl font-bold text-[#244229]">
                 Vendor application status
             </h1>
-            <a href="{{ route('vendor.onboarding') }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-1.5 text-xs font-bold text-[#244229] hover:bg-[var(--mint-200)]">
-                Onboarding Hub
+            <a
+                href="{{ route('vendor.onboarding') }}"
+                title="Back to Onboarding Hub"
+                aria-label="Back to Onboarding Hub"
+                class="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#244229] hover:bg-[#244229] hover:text-[#E4FCD5] hover:shadow-md"
+            >
+                <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
             </a>
         </div>
 
@@ -71,7 +76,7 @@
             @if(in_array($statusUpper, ['PENDING', 'REJECTED'], true))
                 <a
                     href="{{ route('vendor.apply') }}"
-                    class="rounded-2xl border border-[var(--border)] bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-[var(--mint-100)]"
+                    class="rounded-2xl border border-[#c8dac2] bg-white px-5 py-3 text-center text-sm font-semibold text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#244229] hover:bg-[var(--mint-100)] hover:shadow-md"
                 >
                     Edit submitted information
                 </a>
@@ -80,7 +85,7 @@
             @if($statusUpper === 'APPROVED' && !$setupComplete)
                 <a
                     href="{{ route('vendor.setup-shop') }}"
-                    class="rounded-2xl bg-[#244229] px-5 py-3 text-center text-sm font-semibold text-white shadow hover:opacity-95"
+                    class="rounded-2xl bg-[#244229] px-5 py-3 text-center text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     Complete shop setup
                 </a>
@@ -89,7 +94,7 @@
             @if($statusUpper === 'APPROVED' && $setupComplete)
                 <a
                     href="{{ route('vendor.dashboard') }}"
-                    class="rounded-2xl bg-[#244229] px-5 py-3 text-center text-sm font-semibold text-white shadow hover:opacity-95"
+                    class="rounded-2xl bg-[#244229] px-5 py-3 text-center text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     Open vendor dashboard
                 </a>
@@ -97,7 +102,7 @@
 
             <a
                 href="{{ route('vendor.onboarding') }}"
-                class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-5 py-3 text-center text-sm font-semibold text-[#244229] hover:bg-[var(--mint-200)]"
+                class="rounded-2xl border border-[#c8dac2] bg-[var(--mint-100)] px-5 py-3 text-center text-sm font-semibold text-[#244229] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#244229] hover:bg-[var(--mint-200)] hover:shadow-md"
             >
                 Back to onboarding
             </a>

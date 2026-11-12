@@ -114,41 +114,61 @@
 
                 <button
                     type="submit"
-                    class="w-full rounded-full bg-[var(--accent-dark)] py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
+                    class="w-full rounded-full bg-[var(--accent-dark)] py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     Sign In
                 </button>
             </form>
 
-            <div class="mt-5 text-center text-xs text-[#5e6d64] space-y-2 border-t border-[var(--border)]/40 pt-4">
-                <p>
+            <div class="mt-5 text-center text-xs text-[#5e6d64] space-y-2.5 border-t border-[var(--border)]/40 pt-4">
+                <p class="pb-1">
                     Don't have an account?
-                    <a href="/register" class="font-semibold text-[#214c34] hover:underline">
+                    <a href="/register" class="font-bold text-[#214c34] hover:underline">
                         Sign up
                     </a>
                 </p>
 
-                <p>
-                    <a href="/delivery/login" class="font-semibold text-[#1b365d] hover:underline">
-                        <i class="fa-solid fa-motorcycle mr-1"></i> Delivery partner login &rarr;
+                <div class="grid grid-cols-1 gap-2 text-left">
+                    <a
+                        href="/delivery/login"
+                        class="group flex items-center justify-between gap-3 rounded-2xl border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] px-4 py-2.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-md"
+                    >
+                        <span class="flex items-center gap-2.5 font-bold text-[#1b365d]">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eef5ea] text-[#163625] transition-colors group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                                <i class="fa-solid fa-motorcycle text-xs"></i>
+                            </span>
+                            <span>Delivery partner login</span>
+                        </span>
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] transition-all duration-200 group-hover:translate-x-0.5 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </span>
                     </a>
-                </p>
 
-                <p>
-                    <a href="/vendor/apply" class="text-xs text-emerald-800 hover:underline">
-                        <i class="fa-solid fa-store mr-1"></i> Apply as a partner repair shop &rarr;
+                    <a
+                        href="/vendor/apply"
+                        class="group flex items-center justify-between gap-3 rounded-2xl border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] px-4 py-2.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-md"
+                    >
+                        <span class="flex items-center gap-2.5 font-bold text-emerald-900">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eef5ea] text-emerald-800 transition-colors group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                                <i class="fa-solid fa-store text-xs"></i>
+                            </span>
+                            <span>Apply as a partner repair shop</span>
+                        </span>
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] transition-all duration-200 group-hover:translate-x-0.5 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </span>
                     </a>
-                </p>
+                </div>
             </div>
 
             <!-- Quick Dev Helper Chips -->
             <div class="mt-4 pt-3 border-t border-[var(--border)]/30 text-center">
                 <span class="text-[10px] uppercase font-bold text-[#5e6d64] block mb-2">1-Click Demo Login</span>
                 <div class="flex justify-center gap-1.5 text-[10px]">
-                    <a href="/auth/demo?role=customer" class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-900 font-semibold hover:bg-emerald-200">Customer</a>
-                    <a href="/auth/demo?role=vendor" class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 font-semibold hover:bg-amber-200">Vendor</a>
-                    <a href="/auth/demo?role=delivery" class="px-2.5 py-1 rounded-full bg-sky-100 text-sky-900 font-semibold hover:bg-sky-200">Rider</a>
-                    <a href="/auth/demo?role=admin" class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-900 font-semibold hover:bg-rose-200">Admin</a>
+                    <a href="/auth/demo?role=customer" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-200 hover:shadow">Customer</a>
+                    <a href="/auth/demo?role=vendor" class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-200 hover:shadow">Vendor</a>
+                    <a href="/auth/demo?role=delivery" class="px-3 py-1 rounded-full bg-sky-100 text-sky-900 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-200 hover:shadow">Rider</a>
+                    <a href="/auth/demo?role=admin" class="px-3 py-1 rounded-full bg-rose-100 text-rose-900 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-200 hover:shadow">Admin</a>
                 </div>
             </div>
 

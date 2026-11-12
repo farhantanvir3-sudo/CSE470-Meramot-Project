@@ -5,9 +5,9 @@
 @section('content')
 <div class="mx-auto max-w-2xl px-4 py-8 md:px-6 space-y-6">
 
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex items-start justify-between gap-4">
         <div>
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-[11px] font-bold text-[var(--accent-dark)] mb-2">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-[11px] font-bold text-[var(--accent-dark)] mb-2 shadow-sm">
                 <i class="fa-solid fa-shield-check"></i> OTP-Verified Applicant Portal
             </span>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Check Application Status</h1>
@@ -15,8 +15,13 @@
                 Verify your personal email via OTP to inspect your application status, view Admin feedback, edit your application, or re-send your <code class="font-mono">@meramotbd.com</code> company credentials.
             </p>
         </div>
-        <a href="/delivery/login" class="self-start rounded-full border border-[var(--border)] bg-white px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
-            &larr; Delivery Partner Login
+        <a
+            href="/delivery/login"
+            title="Back to Delivery Partner Login"
+            aria-label="Back to Delivery Partner Login"
+            class="group mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
+        >
+            <i class="fa-solid fa-arrow-left text-sm transition-transform duration-200 group-hover:-translate-x-0.5"></i>
         </a>
     </div>
 
@@ -127,17 +132,17 @@
                 @if($status !== 'APPROVED')
                     <a
                         href="/delivery-agent/edit"
-                        class="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-3 text-xs md:text-sm font-bold text-white shadow hover:opacity-95 transition"
+                        class="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-[var(--accent-dark)] px-6 py-3.5 text-xs md:text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                     >
-                        <i class="fa-solid fa-pen-to-square"></i>
+                        <i class="fa-solid fa-pen-to-square transition-transform duration-200 group-hover:scale-110"></i>
                         <span>Edit Application</span>
                     </a>
                 @else
                     <a
                         href="/delivery/login"
-                        class="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-3 text-xs md:text-sm font-bold text-white shadow hover:opacity-95 transition"
+                        class="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-[var(--accent-dark)] px-6 py-3.5 text-xs md:text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                     >
-                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <i class="fa-solid fa-right-to-bracket transition-transform duration-200 group-hover:translate-x-0.5"></i>
                         <span>Go to Delivery Partner Login</span>
                     </a>
                 @endif
@@ -147,9 +152,9 @@
                         @csrf
                         <button
                             type="submit"
-                            class="w-full inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#214c34] bg-[#eef5ea] px-5 py-2.5 text-xs font-bold text-[#214c34] hover:bg-[#dcebd5] transition"
+                            class="group w-full inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-[#214c34] bg-[#eef5ea] px-5 py-3 text-xs font-bold text-[#214c34] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#dcebd5] hover:shadow-md"
                         >
-                            <i class="fa-solid fa-key"></i>
+                            <i class="fa-solid fa-key transition-transform duration-200 group-hover:rotate-12"></i>
                             <span>Forgot Company Credentials? Email Again</span>
                         </button>
                     </form>
@@ -157,8 +162,9 @@
 
                 <form method="POST" action="/delivery-agent/status/reset" class="inline-flex sm:ml-auto">
                     @csrf
-                    <button type="submit" class="text-xs font-semibold text-[#5e6d64] hover:text-[#163625] underline py-2">
-                        Check another email
+                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-full border border-[#d9e5d5] bg-[#f8fbf6] px-4 py-2 text-xs font-bold text-[#5e6d64] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:bg-white hover:text-[#163625] hover:shadow-sm">
+                        <i class="fa-solid fa-rotate-left text-[11px]"></i>
+                        <span>Check another email</span>
                     </button>
                 </form>
             </div>
@@ -189,31 +195,34 @@
                         required
                         autofocus
                         placeholder="000000"
-                        class="w-full rounded-2xl border-2 border-[#c8dac2] bg-[#f8fbf6] px-4 py-3.5 text-center font-mono text-2xl font-black tracking-[0.4em] text-[#163625] outline-none focus:border-[#214c34] focus:bg-white"
+                        class="w-full rounded-2xl border-2 border-[#c8dac2] bg-[#f8fbf6] px-4 py-3.5 text-center font-mono text-2xl font-black tracking-[0.4em] text-[#163625] outline-none transition focus:border-[#214c34] focus:bg-white focus:ring-4 focus:ring-[#214c34]/10"
                     />
                 </div>
 
                 <button
                     type="submit"
-                    class="w-full rounded-full bg-[var(--accent-dark)] py-3 text-sm font-bold text-white shadow hover:opacity-95 transition"
+                    class="group w-full inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-dark)] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
-                    Verify OTP &amp; View Application Status &rarr;
+                    <span>Verify OTP &amp; View Application Status</span>
+                    <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
                 </button>
             </form>
 
-            <div class="flex items-center justify-between pt-2 border-t border-[#e7efe2] text-xs">
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-[#e7efe2] text-xs">
                 <form method="POST" action="/delivery-agent/status/send-otp">
                     @csrf
                     <input type="hidden" name="personal_email" value="{{ $pendingEmail }}">
-                    <button type="submit" class="font-bold text-[#214c34] hover:underline">
-                        Resend OTP
+                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-full border border-[#c8dac2] bg-[#f3faf0] px-4 py-2 font-bold text-[#214c34] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:bg-[#e4f5dc] hover:shadow">
+                        <i class="fa-solid fa-paper-plane text-[11px]"></i>
+                        <span>Resend OTP</span>
                     </button>
                 </form>
 
                 <form method="POST" action="/delivery-agent/status/reset">
                     @csrf
-                    <button type="submit" class="text-[#5e6d64] hover:underline">
-                        Use a different personal email
+                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-full border border-[#d9e5d5] bg-white px-4 py-2 font-semibold text-[#5e6d64] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:text-[#163625] hover:shadow-sm">
+                        <i class="fa-solid fa-envelope text-[11px]"></i>
+                        <span>Use a different personal email</span>
                     </button>
                 </form>
             </div>
@@ -242,22 +251,37 @@
                         value="{{ old('personal_email') }}"
                         required
                         placeholder="e.g. kamal.hossain@gmail.com"
-                        class="w-full rounded-2xl border-2 border-[#c8dac2] bg-[#f8fbf6] px-4 py-3 text-sm text-[#163625] outline-none focus:border-[#214c34] focus:bg-white"
+                        class="w-full rounded-2xl border-2 border-[#c8dac2] bg-[#f8fbf6] px-4 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:bg-white focus:ring-4 focus:ring-[#214c34]/10"
                     />
                 </div>
 
                 <button
                     type="submit"
-                    class="w-full rounded-full bg-[var(--accent-dark)] py-3 text-sm font-bold text-white shadow hover:opacity-95 transition"
+                    class="group w-full inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-dark)] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
-                    Send Verification OTP &rarr;
+                    <span>Send Verification OTP</span>
+                    <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
                 </button>
             </form>
 
-            <div class="border-t border-[#e7efe2] pt-4 flex items-center justify-between text-xs text-[#5e6d64]">
-                <span>Haven't applied yet?</span>
-                <a href="/delivery-agent/register" class="font-bold text-[#214c34] hover:underline">
-                    Apply as a delivery agent &rarr;
+            <div class="border-t border-[#e7efe2] pt-4">
+                <a
+                    href="/delivery-agent/register"
+                    class="group flex items-center justify-between gap-4 rounded-2xl border border-[#c8dac2] bg-gradient-to-br from-[#f8fbf6] via-white to-[#eef5ea] p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-[#214c34] hover:shadow-[0_14px_28px_-8px_rgba(22,54,37,0.22)]"
+                >
+                    <div class="flex items-center gap-3.5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#163625] text-[#E4FCD5] shadow-sm transition-transform duration-300 group-hover:scale-105">
+                            <i class="fa-solid fa-id-card-clip text-base"></i>
+                        </div>
+                        <div>
+                            <span class="block text-[10px] font-bold uppercase tracking-wider text-[#5e6d64]">Haven't applied yet?</span>
+                            <span class="block text-sm font-extrabold text-[#163625] group-hover:text-[#214c34]">Apply as a delivery agent</span>
+                            <span class="block text-[11px] text-[#5e6d64]">Submit your personal email, NID &amp; license to get verified</span>
+                        </div>
+                    </div>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-300 group-hover:translate-x-0.5 group-hover:border-[#163625] group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </span>
                 </a>
             </div>
         </div>
