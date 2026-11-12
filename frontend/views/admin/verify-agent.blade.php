@@ -20,7 +20,7 @@
     @include('admin.partials.nav')
 
     <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div class="flex items-start justify-between gap-4">
         <div>
             <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Delivery Operations</p>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Delivery Partner Management &amp; Verification</h1>
@@ -31,14 +31,14 @@
                 Feature R1 &bull; Assigned to: Md. Nafiul Islam [22299035]
             </span>
         </div>
-        <div class="flex items-center gap-2">
-            <a href="/delivery-agent/register" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
-                + Open Rider Application Form
-            </a>
-            <a href="/admin/delivery-agents/pending" class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-4 py-2 text-xs font-bold hover:opacity-90 transition">
-                Refresh Desk
-            </a>
-        </div>
+        <a
+            href="/admin/delivery-agents/pending"
+            title="Refresh Desk"
+            aria-label="Refresh Desk"
+            class="group mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
+        >
+            <i class="fa-solid fa-rotate-right text-sm transition-transform duration-300 group-hover:rotate-180"></i>
+        </a>
     </div>
 
     @error('rejection_reason')
@@ -144,7 +144,7 @@
                                 <button
                                     type="button"
                                     @click='inspectAgent = @json($inspectorPayload)'
-                                    class="inline-flex items-center gap-1.5 rounded-full bg-white border border-[var(--accent-dark)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-white border border-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-dark)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--mint-100)] hover:shadow"
                                 >
                                     <i class="fa-solid fa-magnifying-glass-plus"></i>
                                     <span>Inspect Info &amp; Docs</span>
@@ -172,7 +172,7 @@
                                 <div class="flex flex-wrap items-center justify-end gap-2">
                                     <form method="POST" action="/admin/delivery-agents/{{ $agent->id }}/approve" class="inline">
                                         @csrf
-                                        <button type="submit" class="px-3.5 py-1.5 bg-[var(--accent-dark)] text-[var(--accent-foreground)] rounded-full text-xs font-bold hover:opacity-90 transition shadow-sm">
+                                        <button type="submit" class="px-3.5 py-1.5 bg-[var(--accent-dark)] text-[var(--accent-foreground)] rounded-full text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-md">
                                             <i class="fa-solid fa-check mr-1"></i>Approve
                                         </button>
                                     </form>
@@ -180,7 +180,7 @@
                                     <form method="POST" action="/admin/delivery-agents/{{ $agent->id }}" onsubmit="return confirm('Permanently delete this application? Once deleted, the applicant can no longer edit it.');" class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="px-3 py-1.5 rounded-full border border-rose-300 bg-white text-rose-700 text-xs font-bold hover:bg-rose-50 transition">
+                                        <button type="submit" class="px-3 py-1.5 rounded-full border border-rose-300 bg-white text-rose-700 text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-50 hover:shadow">
                                             <i class="fa-solid fa-trash-can"></i> Delete
                                         </button>
                                     </form>
@@ -190,7 +190,7 @@
                                     @csrf
                                     <input type="text" name="rejection_reason" placeholder="Required textual reason for rejection..." required
                                            class="rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] w-60 outline-none focus:border-rose-600">
-                                    <button type="submit" class="px-3.5 py-1.5 bg-rose-700 text-white rounded-full text-xs font-bold hover:bg-rose-800 transition shadow-sm">
+                                    <button type="submit" class="px-3.5 py-1.5 bg-rose-700 text-white rounded-full text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-800 hover:shadow-md">
                                         Reject
                                     </button>
                                 </form>
