@@ -31,7 +31,7 @@ class AuthController extends Controller
         };
     }
 
-    private function resolveVendorRedirect(User $user): string
+    public function resolveVendorRedirect(User $user): string
     {
         $profile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
         if (!$profile) {
@@ -42,8 +42,8 @@ class AuthController extends Controller
         }
 
         $primaryShop = $profile->shops->sortBy('id')->first();
-        if ($primaryShop && !$primaryShop->setup_complete) {
-            return '/vendor/onboarding';
+        if ($primaryShop && !$primaryShop->setup_complete && $primaryShop->inspection_fee === null) {
+            return '/vendor/setup-shop';
         }
 
         return '/vendor/dashboard';
@@ -75,7 +75,11 @@ class AuthController extends Controller
         if (Auth::check()) {
             return redirect($this->redirectPathForUser(Auth::user()));
         }
-        return view('auth.login');
+
+        return response()
+            ->view('auth.login')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     /**
@@ -120,8 +124,23 @@ class AuthController extends Controller
         if ($user && !empty($user->password) && Hash::check($credentials['password'], $user->password)) {
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
-            return redirect()
-                ->intended($this->redirectPathForUser($user))
+
+            $defaultTarget = $this->redirectPathForUser($user);
+            $intendedUrl = (string) $request->session()->pull('url.intended', '');
+            $intendedPath = $intendedUrl !== '' ? (parse_url($intendedUrl, PHP_URL_PATH) ?: '') : '';
+
+            $target = $defaultTarget;
+            if ($intendedPath !== '' && !in_array($intendedPath, ['/', '/login', '/register', '/delivery/login'], true)) {
+                if ($user->role === 'admin' && str_starts_with($intendedPath, '/admin')) {
+                    $target = $intendedUrl;
+                } elseif ($user->role === 'vendor' && str_starts_with($intendedPath, '/vendor') && $defaultTarget === '/vendor/dashboard') {
+                    $target = $intendedUrl;
+                } elseif ($user->role === 'customer' && !str_starts_with($intendedPath, '/admin') && !str_starts_with($intendedPath, '/vendor') && !str_starts_with($intendedPath, '/delivery')) {
+                    $target = $intendedUrl;
+                }
+            }
+
+            return redirect($target)
                 ->with('success', 'Welcome back, ' . ($user->name ?: $user->username) . '!');
         }
 
@@ -138,7 +157,11 @@ class AuthController extends Controller
         if (Auth::check()) {
             return redirect($this->redirectPathForUser(Auth::user()));
         }
-        return view('auth.register');
+
+        return response()
+            ->view('auth.register')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     /**
@@ -370,6 +393,10 @@ class AuthController extends Controller
      */
     public function redirectToGoogle(Request $request)
     {
+        if (Auth::check()) {
+            return redirect($this->redirectPathForUser(Auth::user()));
+        }
+
         $intent = $request->query('intent') === 'signup' ? 'signup' : 'login';
 
         $clientId = (string) config('services.google.client_id', env('GOOGLE_CLIENT_ID', env('GMAIL_CLIENT_ID', '')));

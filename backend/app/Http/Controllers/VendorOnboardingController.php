@@ -86,12 +86,22 @@ class VendorOnboardingController extends Controller
         $profile = null;
         $isEditMode = false;
 
+        if ($user) {
+            if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+                return redirect('/delivery');
+            }
+            if ($user->role === 'admin') {
+                return redirect('/admin/vendors/pending');
+            }
+        }
+
         if ($user && $user->role === 'vendor') {
             $profile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
             if ($profile) {
                 if ($profile->verification_status === 'approved') {
                     $primaryShop = $profile->shops->sortBy('id')->first();
-                    return redirect($primaryShop && $primaryShop->setup_complete ? '/vendor/dashboard' : '/vendor/setup-shop');
+                    $needsInitialSetup = $primaryShop && !$primaryShop->setup_complete && $primaryShop->inspection_fee === null;
+                    return redirect($needsInitialSetup ? '/vendor/setup-shop' : '/vendor/dashboard');
                 }
                 $isEditMode = in_array($profile->verification_status, ['pending', 'under_review', 'rejected'], true);
             }
@@ -402,6 +412,12 @@ class VendorOnboardingController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+        if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+            return redirect('/delivery');
+        }
+        if ($user->role === 'admin') {
+            return redirect('/admin/vendors/pending');
+        }
 
         $profile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
         if (!$profile) {
@@ -422,8 +438,14 @@ class VendorOnboardingController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+        if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+            return redirect('/delivery');
+        }
+        if ($user->role === 'admin') {
+            return redirect('/admin/vendors/pending');
+        }
         if ($user->role !== 'vendor') {
-            return redirect('/');
+            return redirect()->route('vendor.apply');
         }
 
         $profile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
@@ -669,8 +691,18 @@ class VendorOnboardingController extends Controller
      */
     public function show(Request $request)
     {
-        $profile = $request->user()
-            ? VendorProfile::with('shops')->where('user_id', $request->user()->id)->first()
+        $user = $request->user();
+        if (
+            $user
+            && in_array($user->role, ['delivery_agent', 'delivery'], true)
+            && !$request->expectsJson()
+            && !$request->is('api/*')
+        ) {
+            return redirect('/delivery');
+        }
+
+        $profile = $user
+            ? VendorProfile::with('shops')->where('user_id', $user->id)->first()
             : null;
 
         if ($request->expectsJson() || $request->is('api/*')) {

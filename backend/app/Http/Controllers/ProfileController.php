@@ -147,6 +147,18 @@ class ProfileController extends Controller
                 : redirect()->route('login');
         }
 
+        if ($user->role === 'admin') {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Platform administrator accounts cannot be self-deleted.'], 403)
+                : redirect()->route('profile.show')->with('error', 'Platform administrator accounts cannot be self-deleted.');
+        }
+
+        if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Delivery partner company accounts are managed by Meramot Operations.'], 403)
+                : redirect('/delivery/profile')->with('warning', 'Delivery partner company accounts are managed by Meramot Operations.');
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

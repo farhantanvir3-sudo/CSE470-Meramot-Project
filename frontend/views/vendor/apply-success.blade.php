@@ -28,12 +28,21 @@
         @endif
 
         <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <a
-                href="/login"
-                class="rounded-2xl bg-[#244229] px-6 py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
-            >
-                Go to Login
-            </a>
+            @auth
+                <a
+                    href="{{ auth()->user()->role === 'vendor' ? '/vendor/onboarding' : '/' }}"
+                    class="rounded-2xl bg-[#244229] px-6 py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
+                >
+                    {{ auth()->user()->role === 'vendor' ? 'Check Application Status' : 'Go to Workspace' }}
+                </a>
+            @else
+                <a
+                    href="/login"
+                    class="rounded-2xl bg-[#244229] px-6 py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
+                >
+                    Go to Login
+                </a>
+            @endauth
 
             <a
                 href="/"

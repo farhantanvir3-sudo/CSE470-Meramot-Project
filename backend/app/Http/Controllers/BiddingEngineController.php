@@ -21,12 +21,41 @@ class BiddingEngineController extends Controller
     public function index(Request $request, $requestId = null)
     {
         if (!$requestId && !$request->is('api/*')) {
-            if ($request->user() && $request->user()->role === 'vendor') {
-                $ownedProfile = VendorProfile::with('shops')->where('user_id', $request->user()->id)->first();
-                if ($ownedProfile && $ownedProfile->verification_status !== 'approved') {
+            $user = $request->user();
+            if (!$user) {
+                return redirect()->route('login')->with(
+                    'warning',
+                    'Please sign in with your verified vendor account to access the Live Bidding Board.'
+                );
+            }
+
+            if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+                return redirect('/delivery');
+            }
+
+            if ($user->role === 'customer') {
+                return redirect()->route('vendor.apply')->with(
+                    'warning',
+                    'Only verified partner workshops can access the Live Bidding Board.'
+                );
+            }
+
+            if ($user->role === 'vendor') {
+                $ownedProfile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
+                if (!$ownedProfile) {
+                    return redirect()->route('vendor.apply');
+                }
+                if ($ownedProfile->verification_status !== 'approved') {
                     return redirect()->route('vendor.onboarding')->with(
                         'warning',
                         "Your vendor application for '{$ownedProfile->shop_name}' must be approved by an admin before placing marketplace bids."
+                    );
+                }
+                $primaryShop = $ownedProfile->shops->sortBy('id')->first();
+                if ($primaryShop && !$primaryShop->setup_complete && $primaryShop->inspection_fee === null) {
+                    return redirect()->route('vendor.setup-shop')->with(
+                        'warning',
+                        'Please complete your shop setup before placing marketplace bids.'
                     );
                 }
             }

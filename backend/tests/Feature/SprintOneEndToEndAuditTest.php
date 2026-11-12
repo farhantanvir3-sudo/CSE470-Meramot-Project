@@ -373,4 +373,107 @@ class SprintOneEndToEndAuditTest extends TestCase
             FinancialLedger::where('entry_type', 'VENDOR_PAYOUT')->whereNull('vendor_payout_id')->count()
         );
     }
+
+    /** @test */
+    public function authenticated_rider_vendor_customer_and_admin_sessions_route_directly_to_proper_workspaces()
+    {
+        // 1. Approved Active Delivery Partner session
+        $riderUser = User::factory()->create([
+            'name' => 'Kamal Rider',
+            'email' => 'kamal.rider@meramotbd.com',
+            'role' => 'delivery_agent',
+            'is_active' => true,
+        ]);
+        DeliveryAgent::create([
+            'user_id' => $riderUser->id,
+            'applicant_name' => 'Kamal Rider',
+            'personal_email' => 'kamal.personal@gmail.com',
+            'company_email' => 'kamal.rider@meramotbd.com',
+            'nid_number' => '1994000999888',
+            'license_number' => 'DL-KAMAL-77',
+            'vehicle_type' => 'motorcycle',
+            'registration_status' => 'APPROVED',
+            'is_active' => true,
+        ]);
+
+        // Staying logged in as Rider: /delivery/login, /login, /register, /auth/google, /vendor/apply, /vendor/dashboard ALL go straight to /delivery!
+        $this->actingAs($riderUser)->get('/delivery/login')->assertRedirect('/delivery');
+        $this->actingAs($riderUser)->get('/login')->assertRedirect('/delivery');
+        $this->actingAs($riderUser)->get('/register')->assertRedirect('/delivery');
+        $this->actingAs($riderUser)->get('/auth/google')->assertRedirect('/delivery');
+        $this->actingAs($riderUser)->get('/vendor/apply')->assertRedirect('/delivery');
+        $this->actingAs($riderUser)->get('/vendor/dashboard')->assertRedirect('/delivery');
+        $this->actingAs($riderUser)->get('/vendor/bidding-board')->assertRedirect('/delivery');
+
+        // Rider browsing Marketplace Home sees direct Rider Dashboard pill and NO Vendor Portal / Delivery Partner Login confusion
+        $riderHome = $this->actingAs($riderUser)->get('/');
+        $riderHome->assertStatus(200);
+        $riderHome->assertSee('Rider Dashboard');
+        $riderHome->assertDontSee('Delivery Partner Login');
+        $riderHome->assertDontSee('Vendor Portal &amp; Direct Orders', false);
+
+        // 2. Approved Configured Vendor session
+        $vendorUser = User::factory()->create([
+            'name' => 'Tariq Workshop',
+            'email' => 'tariq@workshop.bd',
+            'role' => 'vendor',
+            'is_active' => true,
+        ]);
+        $vendorProfile = VendorProfile::create([
+            'user_id' => $vendorUser->id,
+            'shop_name' => 'Tariq Logic Lab',
+            'business_license_no' => 'TRAD/DNCC/551122',
+            'nid_number' => '1989000111222',
+            'verification_status' => 'approved',
+            'shop_address' => 'Road 11, Banani, Dhaka',
+            'city' => 'Dhaka',
+            'area' => 'Banani',
+        ]);
+        $vendorShop = RepairShop::factory()->create([
+            'vendor_profile_id' => $vendorProfile->id,
+            'name' => 'Tariq Logic Lab',
+            'slug' => 'tariq-logic-lab',
+            'setup_complete' => true,
+            'inspection_fee' => 300,
+            'base_labor_fee' => 600,
+            'is_active' => true,
+            'is_public' => true,
+        ]);
+
+        // Staying logged in as Approved Vendor: /login, /register, /auth/google, /vendor/apply ALL go straight to /vendor/dashboard!
+        $this->actingAs($vendorUser)->get('/login')->assertRedirect('/vendor/dashboard');
+        $this->actingAs($vendorUser)->get('/register')->assertRedirect('/vendor/dashboard');
+        $this->actingAs($vendorUser)->get('/auth/google')->assertRedirect('/vendor/dashboard');
+        $this->actingAs($vendorUser)->get('/vendor/apply')->assertRedirect('/vendor/dashboard');
+
+        // Vendor browsing Marketplace Home sees direct Vendor Dashboard pill
+        $vendorHome = $this->actingAs($vendorUser)->get('/');
+        $vendorHome->assertStatus(200);
+        $vendorHome->assertSee('Vendor Dashboard');
+        $vendorHome->assertDontSee('Delivery Partner Login');
+
+        // Vendor viewing their own shop storefront sees owner management controls and cannot self-review
+        $this->actingAs($vendorUser)->get('/shops/' . $vendorShop->slug)
+            ->assertStatus(200)
+            ->assertSee('Manage in Vendor Dashboard')
+            ->assertDontSee('Write Review');
+        $this->actingAs($vendorUser)->get('/reviews/create/' . $vendorShop->id)
+            ->assertRedirect(route('shops.show', $vendorShop->slug));
+
+        // 3. Logged-in Customer & Guest isolation from Vendor Dashboard
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        $this->post('/logout');
+
+        // Guest hitting /vendor/dashboard redirects to /login instead of exposing another shop's dashboard
+        $this->get('/vendor/dashboard')->assertRedirect(route('login'));
+
+        // Logged-in Customer hitting /vendor/dashboard redirects to /vendor/apply (never leaks ProTech Solutions)
+        $this->actingAs($customer)->get('/vendor/dashboard')->assertRedirect(route('vendor.apply'));
+        $this->actingAs($customer)->get('/vendor/bidding-board')->assertRedirect(route('vendor.apply'));
+
+        // 4. Admin account cannot self-delete via /profile
+        $admin = User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $this->actingAs($admin)->delete('/profile')->assertRedirect(route('profile.show'));
+        $this->assertDatabaseHas('users', ['id' => $admin->id, 'is_active' => true]);
+    }
 }
