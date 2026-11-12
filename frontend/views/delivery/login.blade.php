@@ -18,8 +18,17 @@
         </div>
 
         <!-- ── Dedicated Delivery Partner Company Login Card ── -->
-        <div class="rounded-[2rem] border border-white/60 bg-white/95 px-8 py-7 shadow-2xl backdrop-blur">
-            <div class="mb-5 text-center">
+        <div class="relative rounded-[2rem] border border-white/60 bg-white/95 px-8 py-7 shadow-2xl backdrop-blur">
+            <a
+                href="/login"
+                title="Back to Customer & Vendor Sign In"
+                aria-label="Back to Customer & Vendor Sign In"
+                class="group absolute left-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-md"
+            >
+                <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
+            </a>
+
+            <div class="mb-5 text-center px-8">
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-[#eef5ea] border border-[#cbe0c2] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#214c34] mb-2">
                     <i class="fa-solid fa-motorcycle"></i> Meramot Logistics
                 </span>
@@ -56,9 +65,6 @@
                         placeholder="yourname@meramotbd.com"
                         class="w-full rounded-2xl border border-[#c8dac2] bg-white px-4 py-3 text-sm font-mono text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                     />
-                    <p class="mt-1 text-[11px] text-[#5e6d64]">
-                        Format: <span class="font-mono font-semibold text-[#214c34]">_____@meramotbd.com</span> (emailed to your personal email after approval)
-                    </p>
                 </div>
 
                 <div x-data="{ show: false }">
@@ -82,41 +88,53 @@
                             <span x-text="show ? 'Hide' : 'Show'">Show</span>
                         </button>
                     </div>
-                    <p class="mt-1 text-[11px] text-[#5e6d64]">
-                        System-generated once upon approval &bull; Unchangeable by rider. Forgot it? Use <strong>Check Application Status</strong> below.
-                    </p>
                 </div>
 
                 <button
                     type="submit"
-                    class="w-full rounded-full bg-[var(--accent-dark)] py-3 text-sm font-bold text-white shadow transition hover:opacity-95"
+                    class="group w-full inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-dark)] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
-                    Sign In as Delivery Partner &rarr;
+                    <span>Sign In as Delivery Partner</span>
+                    <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
                 </button>
             </form>
 
-            <!-- ── 2 Required Onboarding & Verification Buttons Below Form Box ── -->
-            <div class="mt-5 space-y-2.5">
+            <!-- ── 2 Required Onboarding & Verification Tiles Below Form Box ── -->
+            <div class="mt-5 space-y-3">
                 <a
                     href="/delivery-agent/status"
-                    class="flex w-full items-center justify-center gap-2 rounded-full border-2 border-[#214c34] bg-[#eef5ea] px-5 py-3 text-xs md:text-sm font-bold text-[#214c34] transition hover:bg-[#dcebd5]"
+                    class="group flex w-full items-center justify-between gap-3.5 rounded-2xl border-2 border-[#214c34]/80 bg-gradient-to-r from-[#eef5ea] via-[#f4faf1] to-[#e6f2e0] px-4 py-3.5 text-left shadow-sm transition-all duration-250 hover:-translate-y-0.5 hover:border-[#163625] hover:shadow-[0_12px_24px_-8px_rgba(22,54,37,0.25)]"
                 >
-                    <i class="fa-solid fa-magnifying-glass-chart"></i>
-                    <span>Check Application Status</span>
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#214c34] text-[#E4FCD5] shadow-sm transition-transform duration-200 group-hover:scale-105">
+                            <i class="fa-solid fa-magnifying-glass-chart text-sm"></i>
+                        </div>
+                        <div>
+                            <span class="block text-xs md:text-sm font-extrabold text-[#163625]">Check Application Status</span>
+                            <span class="block text-[11px] text-[#5e6d64]">Verify via OTP, view feedback, edit or resend credentials</span>
+                        </div>
+                    </div>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#214c34]/30 bg-white text-[#214c34] transition-all duration-200 group-hover:translate-x-0.5 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </span>
                 </a>
 
                 <a
                     href="/delivery-agent/register"
-                    class="flex w-full items-center justify-center gap-2 rounded-full border border-[#c8dac2] bg-white px-5 py-3 text-xs md:text-sm font-bold text-[#163625] shadow-sm transition hover:border-[#214c34] hover:bg-[#f8fbf6]"
+                    class="group flex w-full items-center justify-between gap-3.5 rounded-2xl border border-[#c8dac2] bg-gradient-to-br from-white via-[#f8fbf6] to-[#eef5ea] px-4 py-3.5 text-left shadow-sm transition-all duration-250 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-[0_12px_24px_-8px_rgba(22,54,37,0.22)]"
                 >
-                    <i class="fa-solid fa-id-card-clip"></i>
-                    <span>Apply as a delivery agent</span>
-                </a>
-            </div>
-
-            <div class="mt-5 border-t border-[var(--border)]/40 pt-4 text-center text-xs text-[#5e6d64]">
-                <a href="/login" class="font-semibold text-[#214c34] hover:underline">
-                    &larr; Back to Customer &amp; Vendor Sign In
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#c8dac2] bg-[#eef5ea] text-[#163625] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                            <i class="fa-solid fa-id-card-clip text-sm"></i>
+                        </div>
+                        <div>
+                            <span class="block text-xs md:text-sm font-extrabold text-[#163625]">Apply as a delivery agent</span>
+                            <span class="block text-[11px] text-[#5e6d64]">New courier partner? Submit your NID &amp; license</span>
+                        </div>
+                    </div>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] transition-all duration-200 group-hover:translate-x-0.5 group-hover:border-[#163625] group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </span>
                 </a>
             </div>
         </div>

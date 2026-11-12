@@ -171,35 +171,48 @@
 
                 <button
                     type="submit"
-                    class="w-full rounded-full bg-[var(--accent-dark)] py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
+                    class="w-full rounded-full bg-[var(--accent-dark)] py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     Create Account
                 </button>
             </form>
 
-            <div class="mt-5 text-center text-xs text-[#5e6d64] space-y-2 border-t border-[var(--border)]/40 pt-4">
+            <div class="mt-5 text-center text-xs text-[#5e6d64] space-y-3 border-t border-[var(--border)]/40 pt-4">
                 <p>
                     Already have an account?
-                    <a href="/login" class="font-semibold text-[#214c34] hover:underline">
+                    <a href="/login" class="font-bold text-[#214c34] hover:underline">
                         Sign in
                     </a>
                 </p>
 
-                <div class="pt-1 text-[11px]">
-                    <a href="/delivery-agent/register" class="text-[#1b365d] font-medium hover:underline">
-                        <i class="fa-solid fa-motorcycle mr-1"></i> Apply as a doorstep delivery courier &rarr;
-                    </a>
-                </div>
+                <a
+                    href="/delivery-agent/register"
+                    class="group flex items-center justify-between gap-3 rounded-2xl border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] px-4 py-2.5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-md"
+                >
+                    <span class="flex items-center gap-2.5 font-bold text-[#1b365d]">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eef5ea] text-[#163625] transition-colors group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                            <i class="fa-solid fa-motorcycle text-xs"></i>
+                        </span>
+                        <span>Apply as a doorstep delivery courier</span>
+                    </span>
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] transition-all duration-200 group-hover:translate-x-0.5 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
+                        <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </span>
+                </a>
             </div>
         </div>
 
-        <!-- ── Golden "Register as a vendor" CTA Button Below Sign-Up Card ── -->
+        <!-- ── Golden "Register as a vendor" CTA Tile Below Sign-Up Card ── -->
         <div>
             <a
                 href="/vendor/apply"
-                class="block w-full rounded-[1.25rem] bg-[#D4AF37] px-5 py-3.5 text-center text-sm font-semibold text-white shadow-md transition hover:brightness-95"
+                class="group flex w-full items-center justify-between gap-3 rounded-[1.25rem] bg-gradient-to-r from-[#D4AF37] via-[#dfb93f] to-[#c9a32c] px-5 py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 hover:shadow-[0_12px_26px_-6px_rgba(212,175,55,0.55)]"
             >
-                Register as a vendor
+                <span class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-store"></i>
+                    <span>Register as a vendor</span>
+                </span>
+                <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
             </a>
         </div>
     </div>
