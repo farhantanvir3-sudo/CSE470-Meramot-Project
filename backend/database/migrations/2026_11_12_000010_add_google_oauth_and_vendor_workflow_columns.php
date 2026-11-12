@@ -24,11 +24,12 @@ return new class extends Migration
             }
         });
 
-        // Allow Google-registered users to have null password and support long avatar/logo URLs or data URIs
+        // Allow Google-registered users to have null password and support long avatar/logo/document URLs or data URIs
         if (DB::getDriverName() === 'pgsql') {
             DB::statement('ALTER TABLE users ALTER COLUMN password DROP NOT NULL');
             DB::statement('ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT');
             DB::statement('ALTER TABLE vendor_profiles ALTER COLUMN logo_url TYPE TEXT');
+            DB::statement('ALTER TABLE vendor_profiles ALTER COLUMN documents_path TYPE TEXT');
             DB::statement('ALTER TABLE repair_shops ALTER COLUMN logo_url TYPE TEXT');
         }
     }

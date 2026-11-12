@@ -182,6 +182,8 @@ Route::prefix('admin')->group(function () {
     Route::get('/vendors/pending', [VendorOnboardingController::class, 'adminIndex'])->name('admin.vendors.pending');
     Route::post('/vendors/{id}/approve', [VendorOnboardingController::class, 'approve'])->name('admin.vendors.approve');
     Route::post('/vendors/{id}/reject', [VendorOnboardingController::class, 'reject'])->name('admin.vendors.reject');
+    Route::post('/vendors/{id}/status', [VendorOnboardingController::class, 'updateStatus'])->name('admin.vendors.status');
+    Route::delete('/vendors/{id}', [VendorOnboardingController::class, 'destroy'])->name('admin.vendors.destroy');
     Route::post('/vendors/shops/{shopId}/toggle-featured', [VendorOnboardingController::class, 'toggleFeatured'])->name('admin.vendors.toggle-featured');
     Route::get('/vendors/{id}/document/{type}', [VendorOnboardingController::class, 'viewDocument'])->name('admin.vendors.document');
 

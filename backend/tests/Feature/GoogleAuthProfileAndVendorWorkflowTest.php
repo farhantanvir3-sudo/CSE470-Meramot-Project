@@ -351,8 +351,10 @@ class GoogleAuthProfileAndVendorWorkflowTest extends TestCase
             ->assertStatus(200)
             ->assertSee('Quantum Micro Lab');
 
-        // Unapproved vendor cannot access /vendor/setup-shop yet
+        // Unapproved vendor cannot access /vendor/setup-shop or /vendor/dashboard yet
         $this->actingAs($vendorUser)->get('/vendor/setup-shop')
+            ->assertRedirect('/vendor/onboarding');
+        $this->actingAs($vendorUser)->get('/vendor/dashboard')
             ->assertRedirect('/vendor/onboarding');
 
         // Step 5: Vendor verifies Email & Phone OTP
@@ -384,6 +386,10 @@ class GoogleAuthProfileAndVendorWorkflowTest extends TestCase
         $this->assertEquals('approved', $profile->verification_status);
         $this->assertFalse((bool) $shop->setup_complete);
         $this->assertFalse((bool) $shop->is_public);
+
+        // Approved vendor whose shop setup is not yet complete is redirected from /vendor/dashboard to /vendor/setup-shop
+        $this->actingAs($vendorUser)->get('/vendor/dashboard')
+            ->assertRedirect('/vendor/setup-shop');
 
         // Step 7: Approved vendor completes `/vendor/setup-shop` with pricing & services -> goes LIVE!
         $this->actingAs($vendorUser)->get('/vendor/setup-shop')
@@ -424,5 +430,50 @@ class GoogleAuthProfileAndVendorWorkflowTest extends TestCase
 
         // Shop is now publicly discoverable on /shops!
         $this->get('/shops')->assertStatus(200)->assertSee('Quantum Micro Lab');
+
+        // Step 8: Admin status control transitions (`under_review`, `rejected`/revoke, `pending`, `approved`, and `destroy`)
+        $this->actingAs($admin)->post('/admin/vendors/' . $profile->id . '/status', [
+            'status' => 'rejected',
+            'rejection_reason' => 'Periodic trade license renewal required.',
+        ])->assertRedirect();
+
+        $profile->refresh();
+        $shop->refresh();
+        $this->assertEquals('rejected', $profile->verification_status);
+        $this->assertEquals('Periodic trade license renewal required.', $profile->rejection_reason);
+        $this->assertFalse((bool) $shop->is_public);
+        $this->assertFalse((bool) $shop->is_active);
+
+        // Revoked vendor is blocked from /vendor/dashboard and redirected to /vendor/onboarding
+        $this->actingAs($vendorUser)->get('/vendor/dashboard')
+            ->assertRedirect('/vendor/onboarding');
+
+        // Admin transitions status to `under_review`
+        $this->actingAs($admin)->post('/admin/vendors/' . $profile->id . '/status', [
+            'status' => 'under_review',
+        ])->assertRedirect();
+
+        $profile->refresh();
+        $this->assertEquals('under_review', $profile->verification_status);
+        $this->assertNull($profile->rejection_reason);
+
+        // Vendor in `under_review` can view `/vendor/status` and edit `/vendor/apply`
+        $this->actingAs($vendorUser)->get('/vendor/status')
+            ->assertStatus(200)
+            ->assertSee('UNDER REVIEW');
+        $this->actingAs($vendorUser)->get('/vendor/apply')
+            ->assertStatus(200)
+            ->assertSee('Update submitted information');
+
+        // Admin re-approves via `/admin/vendors/{id}/status` -> since fees were already configured, shop goes live immediately!
+        $this->actingAs($admin)->post('/admin/vendors/' . $profile->id . '/status', [
+            'status' => 'approved',
+        ])->assertRedirect();
+
+        $profile->refresh();
+        $shop->refresh();
+        $this->assertEquals('approved', $profile->verification_status);
+        $this->assertTrue((bool) $shop->is_public);
+        $this->assertTrue((bool) $shop->is_active);
     }
 }

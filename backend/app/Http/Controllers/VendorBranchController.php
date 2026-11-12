@@ -45,6 +45,10 @@ class VendorBranchController extends Controller
      */
     public function dashboard(Request $request)
     {
+        if ($redirect = $this->guardUnapprovedAuthenticatedVendor($request)) {
+            return $redirect;
+        }
+
         $vendorProfile = $this->resolveVendorProfile($request);
         $branches = $vendorProfile->shops()->orderBy('id')->get();
 
@@ -155,6 +159,10 @@ class VendorBranchController extends Controller
      */
     public function enableBranching(Request $request)
     {
+        if ($redirect = $this->guardUnapprovedAuthenticatedVendor($request)) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'primary_branch_name' => 'required|string|max:120',
             'vendor_profile_id' => 'nullable|integer|exists:vendor_profiles,id',
@@ -195,6 +203,10 @@ class VendorBranchController extends Controller
      */
     public function storeBranch(Request $request)
     {
+        if ($redirect = $this->guardUnapprovedAuthenticatedVendor($request)) {
+            return $redirect;
+        }
+
         $validated = $request->validate([
             'vendor_profile_id' => 'nullable|integer|exists:vendor_profiles,id',
             'branch_name' => 'required|string|max:120',
@@ -473,6 +485,10 @@ class VendorBranchController extends Controller
      */
     public function submitBid(Request $request, $requestId)
     {
+        if ($redirect = $this->guardUnapprovedAuthenticatedVendor($request)) {
+            return $redirect;
+        }
+
         $repairRequest = RepairRequest::findOrFail($requestId);
 
         $validated = $request->validate([
@@ -743,6 +759,57 @@ class VendorBranchController extends Controller
                 . ($newStatus === 'WAITING_APPROVAL' ? ' — Quote 2 sent to customer for approval!' : '')
                 . ($newStatus === 'COMPLETED' ? ' — Invoice, Warranty & 10%/90% double-entry ledger recorded!' : '.')
             );
+    }
+
+    /**
+     * Enforce Admin Verification Gate for authenticated vendors whose profile is not yet `approved`
+     * or whose primary shop has not completed post-approval setup.
+     */
+    private function guardUnapprovedAuthenticatedVendor(Request $request)
+    {
+        if ($request->filled('vendor_profile_id')) {
+            return null;
+        }
+
+        $user = $request->user();
+        if (!$user || $user->role !== 'vendor') {
+            return null;
+        }
+
+        $owned = VendorProfile::with('shops')->where('user_id', $user->id)->first();
+        if (!$owned) {
+            return null;
+        }
+
+        if ($owned->verification_status !== 'approved') {
+            $statusUpper = strtoupper(str_replace('_', ' ', (string) $owned->verification_status));
+            $msg = "Your vendor application for '{$owned->shop_name}' is currently {$statusUpper}. Admin verification is required before accessing the Vendor Operations Dashboard.";
+
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => $msg,
+                    'verification_status' => $owned->verification_status,
+                ], 403);
+            }
+
+            return redirect()->route('vendor.onboarding')->with('warning', $msg);
+        }
+
+        $primaryShop = $owned->shops->sortBy('id')->first();
+        if ($primaryShop && !$primaryShop->setup_complete && $primaryShop->inspection_fee === null) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Please complete your post-approval shop setup before accessing the Vendor Dashboard.',
+                ], 403);
+            }
+
+            return redirect()->route('vendor.setup-shop')
+                ->with('warning', 'Your vendor application is approved! Please complete your shop pricing and services setup below to unlock your Vendor Dashboard.');
+        }
+
+        return null;
     }
 
     /**

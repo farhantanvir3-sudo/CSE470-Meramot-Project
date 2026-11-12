@@ -92,7 +92,7 @@ class VendorOnboardingController extends Controller
                     $primaryShop = $profile->shops->sortBy('id')->first();
                     return redirect($primaryShop && $primaryShop->setup_complete ? '/vendor/dashboard' : '/vendor/setup-shop');
                 }
-                $isEditMode = in_array($profile->verification_status, ['pending', 'rejected'], true);
+                $isEditMode = in_array($profile->verification_status, ['pending', 'under_review', 'rejected'], true);
             }
         }
 
@@ -108,7 +108,7 @@ class VendorOnboardingController extends Controller
         $existingProfile = ($authUser && $authUser->role === 'vendor')
             ? VendorProfile::with('shops')->where('user_id', $authUser->id)->first()
             : null;
-        $isEditMode = $existingProfile && in_array($existingProfile->verification_status, ['pending', 'rejected'], true);
+        $isEditMode = $existingProfile && in_array($existingProfile->verification_status, ['pending', 'under_review', 'rejected'], true);
 
         $rules = [
             'owner_name' => 'required|string|max:150',
@@ -828,6 +828,8 @@ class VendorOnboardingController extends Controller
                 'latitude' => $lat,
                 'longitude' => $lng,
                 'specialties' => $validated['categories'],
+                'inspection_fee' => $primaryShop->inspection_fee ?? 250,
+                'base_labor_fee' => $primaryShop->base_labor_fee ?? 500,
                 'is_active' => true,
                 'is_public' => false,
                 'setup_complete' => false,
@@ -891,20 +893,20 @@ class VendorOnboardingController extends Controller
     }
 
     /**
-     * Admin Web Desk: Review Pending, Rejected & Approved Vendor Profiles (Feature R11).
+     * Admin Web Desk: Review Pending, Under Review, Rejected & Approved Vendor Profiles (Feature R11).
      * Route: GET /admin/vendors/pending
      */
     public function adminIndex(Request $request)
     {
         $pendingVendors = VendorProfile::with(['user', 'shops'])
-            ->where('verification_status', 'pending')
+            ->whereIn('verification_status', ['pending', 'under_review'])
             ->orderByDesc('updated_at')
             ->get();
 
         $rejectedVendors = VendorProfile::with(['user', 'shops'])
             ->where('verification_status', 'rejected')
             ->orderByDesc('updated_at')
-            ->take(10)
+            ->take(20)
             ->get();
 
         $search = trim((string) $request->query('q', ''));
@@ -928,7 +930,8 @@ class VendorOnboardingController extends Controller
             ->withQueryString();
 
         $stats = [
-            'pendingCount' => $pendingVendors->count(),
+            'pendingCount' => VendorProfile::whereIn('verification_status', ['pending', 'under_review'])->count(),
+            'underReviewCount' => VendorProfile::where('verification_status', 'under_review')->count(),
             'approvedCount' => VendorProfile::where('verification_status', 'approved')->count(),
             'rejectedCount' => VendorProfile::where('verification_status', 'rejected')->count(),
             'branchedBrandsCount' => VendorProfile::where('is_branched', true)->count(),
@@ -1027,7 +1030,7 @@ class VendorOnboardingController extends Controller
             'rejection_reason' => 'required|string|max:500',
         ]);
 
-        $profile = VendorProfile::findOrFail($id);
+        $profile = VendorProfile::with(['user', 'shops'])->findOrFail($id);
         $previousStatus = $profile->verification_status;
 
         $profile->update([
@@ -1040,23 +1043,132 @@ class VendorOnboardingController extends Controller
         ]);
 
         RepairShop::where('vendor_profile_id', $profile->id)->update([
+            'is_active' => false,
             'is_public' => false,
             'setup_complete' => false,
             'accepts_direct_orders' => false,
         ]);
 
+        $notifyEmail = $profile->business_email ?: $profile->user?->email;
+        if (!empty($notifyEmail)) {
+            app(GmailApiService::class)->sendVendorRejectionEmail(
+                $notifyEmail,
+                $profile->owner_name ?: ($profile->user?->name ?? 'Vendor Applicant'),
+                $profile->shop_name,
+                $validated['rejection_reason']
+            );
+        }
+
         AuditLog::create([
             'actor_id' => $request->user()?->id,
-            'action' => 'vendor_rejected',
+            'action' => $previousStatus === 'approved' ? 'vendor_revoked' : 'vendor_rejected',
             'target_resource' => "vendor_profiles:{$profile->id}",
             'payload_before' => ['verification_status' => $previousStatus],
             'payload_after' => ['verification_status' => 'rejected', 'rejection_reason' => $validated['rejection_reason']],
             'ip_address' => $request->ip() ?? '127.0.0.1',
         ]);
 
+        $actionLabel = $previousStatus === 'approved'
+            ? "Revoked approval for '{$profile->shop_name}', unpublished its storefronts, and sent remediation notice."
+            : "Rejected vendor application '{$profile->shop_name}' and sent remediation notes to applicant.";
+
+        return redirect()->back()->with('warning', $actionLabel);
+    }
+
+    /**
+     * Admin Web Action: Change vendor application status to any lifecycle state
+     * (`pending`, `under_review`, `approved`, `rejected`).
+     * Route: POST /admin/vendors/{id}/status
+     */
+    public function updateStatus(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:pending,under_review,approved,rejected',
+            'rejection_reason' => 'required_if:status,rejected|nullable|string|max:500',
+        ]);
+
+        $newStatus = $validated['status'];
+
+        if ($newStatus === 'approved') {
+            return $this->approve($id);
+        }
+
+        if ($newStatus === 'rejected') {
+            return $this->reject($request, $id);
+        }
+
+        $profile = VendorProfile::with(['user', 'shops'])->findOrFail($id);
+        $previousStatus = $profile->verification_status;
+
+        $profile->update([
+            'verification_status' => $newStatus,
+            'rejection_reason' => null,
+            'rejected_at' => null,
+            'rejection_visible_until' => null,
+            'reviewed_by_admin_id' => $request->user()?->id,
+            'reviewed_at' => now(),
+        ]);
+
+        RepairShop::where('vendor_profile_id', $profile->id)->update([
+            'is_active' => false,
+            'is_public' => false,
+            'accepts_direct_orders' => false,
+        ]);
+
+        AuditLog::create([
+            'actor_id' => $request->user()?->id,
+            'action' => 'vendor_status_' . $newStatus,
+            'target_resource' => "vendor_profiles:{$profile->id}",
+            'payload_before' => ['verification_status' => $previousStatus],
+            'payload_after' => ['verification_status' => $newStatus, 'shop_name' => $profile->shop_name],
+            'ip_address' => $request->ip() ?? '127.0.0.1',
+        ]);
+
+        $statusLabel = strtoupper(str_replace('_', ' ', $newStatus));
+
+        return redirect()->back()->with(
+            'success',
+            "Updated '{$profile->shop_name}' application status to {$statusLabel}."
+        );
+    }
+
+    /**
+     * Admin Web Action: Permanently delete a vendor application (Pending/Rejected/Test).
+     * Route: DELETE /admin/vendors/{id}
+     */
+    public function destroy(Request $request, $id)
+    {
+        $profile = VendorProfile::with(['user', 'shops'])->findOrFail($id);
+        $shopName = $profile->shop_name;
+        $previousStatus = $profile->verification_status;
+
+        DB::transaction(function () use ($profile, $request, $shopName, $previousStatus) {
+            foreach ($profile->shops as $shop) {
+                DB::table('shop_staff')->where('shop_id', $shop->id)->delete();
+                ShopService::where('shop_id', $shop->id)->delete();
+                $shop->delete();
+            }
+
+            if ($profile->user && $profile->user->role === 'vendor') {
+                $profile->user->update(['role' => 'customer']);
+            }
+
+            $profileId = $profile->id;
+            $profile->delete();
+
+            AuditLog::create([
+                'actor_id' => $request->user()?->id,
+                'action' => 'vendor_application_deleted',
+                'target_resource' => "vendor_profiles:{$profileId}",
+                'payload_before' => ['verification_status' => $previousStatus, 'shop_name' => $shopName],
+                'payload_after' => ['deleted' => true],
+                'ip_address' => $request->ip() ?? '127.0.0.1',
+            ]);
+        });
+
         return redirect()->back()->with(
             'warning',
-            "Rejected vendor application '{$profile->shop_name}' and sent remediation notes to applicant."
+            "Deleted vendor application '{$shopName}' and removed its draft storefront records."
         );
     }
 
@@ -1080,35 +1192,69 @@ class VendorOnboardingController extends Controller
     }
 
     /**
-     * API action to verify/approve or reject vendor profile.
+     * API action to verify/approve, mark under_review, or reject vendor profile.
      * Route: POST /api/vendors/{id}/verify
      */
     public function verify(Request $request, $id)
     {
-        $profile = VendorProfile::findOrFail($id);
-        $status = $request->input('action') === 'approve' ? 'approved' : 'rejected';
+        $profile = VendorProfile::with(['user', 'shops'])->findOrFail($id);
+        $previousStatus = $profile->verification_status;
+        $action = strtolower((string) $request->input('action', 'approve'));
+
+        $status = match ($action) {
+            'approve', 'approved' => 'approved',
+            'under_review', 'review' => 'under_review',
+            'pending' => 'pending',
+            default => 'rejected',
+        };
         $isApproved = $status === 'approved';
+        $isRejected = $status === 'rejected';
+        $reason = $isRejected ? ($request->input('reason') ?: $request->input('rejection_reason') ?: 'Trade credentials require verification.') : null;
 
         $profile->update([
             'verification_status' => $status,
-            'rejection_reason' => $isApproved ? null : $request->input('reason'),
-            'rejected_at' => $isApproved ? null : now(),
-            'rejection_visible_until' => $isApproved ? null : now()->addDays(7),
+            'rejection_reason' => $reason,
+            'rejected_at' => $isRejected ? now() : null,
+            'rejection_visible_until' => $isRejected ? now()->addDays(7) : null,
             'reviewed_by_admin_id' => $request->user()?->id,
             'reviewed_at' => now(),
         ]);
 
-        RepairShop::where('vendor_profile_id', $profile->id)->update([
-            'is_active' => $isApproved,
-            'is_public' => $isApproved,
-            'setup_complete' => $isApproved,
-            'accepts_direct_orders' => $isApproved,
+        if ($isApproved) {
+            foreach ($profile->shops as $shop) {
+                $alreadyConfigured = $shop->inspection_fee !== null
+                    && $shop->base_labor_fee !== null
+                    && !empty($shop->address);
+
+                $shop->update([
+                    'is_active' => $alreadyConfigured,
+                    'is_public' => $alreadyConfigured,
+                    'setup_complete' => $alreadyConfigured,
+                    'accepts_direct_orders' => $alreadyConfigured,
+                ]);
+            }
+        } else {
+            RepairShop::where('vendor_profile_id', $profile->id)->update([
+                'is_active' => false,
+                'is_public' => false,
+                'setup_complete' => false,
+                'accepts_direct_orders' => false,
+            ]);
+        }
+
+        AuditLog::create([
+            'actor_id' => $request->user()?->id,
+            'action' => 'vendor_' . $status,
+            'target_resource' => "vendor_profiles:{$profile->id}",
+            'payload_before' => ['verification_status' => $previousStatus],
+            'payload_after' => ['verification_status' => $status, 'rejection_reason' => $reason],
+            'ip_address' => $request->ip() ?? '127.0.0.1',
         ]);
 
         return response()->json([
             'status' => 'success',
             'message' => "Vendor profile has been {$status}.",
-            'data' => $profile,
+            'data' => $profile->fresh('shops'),
         ]);
     }
 

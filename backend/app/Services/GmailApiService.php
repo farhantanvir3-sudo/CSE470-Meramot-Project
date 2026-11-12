@@ -356,4 +356,30 @@ class GmailApiService
 
         return $this->sendEmail($toEmail, $subject, $html);
     }
+
+    /**
+     * Feature R11: Send Vendor Application Rejection / Remediation Notice Email.
+     */
+    public function sendVendorRejectionEmail(string $toEmail, string $vendorName, string $shopName, string $reason): array
+    {
+        $onboardingUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/vendor/onboarding';
+        $subject = "Action Required: Update on Your Meramot Vendor Application ({$shopName})";
+        $html = "
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #f3d4d4; border-radius: 16px;\">
+                <h2 style=\"color: #991b1b; margin-top: 0;\">Action Required: Vendor Application Review</h2>
+                <p>Hello <strong>" . e($vendorName) . "</strong>,</p>
+                <p>Our verification team reviewed your vendor onboarding application for <strong>" . e($shopName) . "</strong> and requires the following correction before approval:</p>
+                <div style=\"background-color: #fef2f2; padding: 14px 18px; border-radius: 10px; margin: 18px 0; color: #7f1d1d; border: 1px solid #fecaca;\">
+                    <strong>Reason / Remediation Note:</strong> " . e($reason) . "
+                </div>
+                <p>Sign in to your Meramot Vendor Onboarding page to update your trade credentials or location details and resubmit for fresh admin review:</p>
+                <div style=\"margin: 22px 0; text-align: center;\">
+                    <a href=\"{$onboardingUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Edit &amp; Resubmit Application</a>
+                </div>
+                <p style=\"margin-top: 20px;\">Regards,<br/><strong>Meramot Official Team</strong></p>
+            </div>
+        ";
+
+        return $this->sendEmail($toEmail, $subject, $html);
+    }
 }
