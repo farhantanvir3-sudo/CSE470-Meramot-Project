@@ -103,6 +103,12 @@ class AdminLedgerTest extends TestCase
             'amount' => 1800.00,
         ]);
 
+        // Filtering by Manual Audit Adjustment (`entry_type=ADJUSTMENT`) surfaces manual settlements
+        $this->get('/admin/financial-overview?entry_type=ADJUSTMENT')
+            ->assertStatus(200)
+            ->assertSee('Gadget Den')
+            ->assertSee('Bench repair #101');
+
         // Run batch auto-settlement to disburse VENDOR_EARNING into VENDOR_PAYOUT
         $batchResp = $this->post('/admin/financial-overview/auto-settle', [
             'limit' => 10,
