@@ -592,7 +592,7 @@
                         class="group inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
                     >
                         <i class="fa-solid fa-location-dot shrink-0 text-[var(--accent-dark)] text-base"></i>
-                        <span class="max-w-[260px] truncate" x-text="locationLabel">Choose your location</span>
+                        <span class="max-w-[160px] xl:max-w-[220px] truncate" x-text="locationLabel">Choose your location</span>
                     </button>
                 </div>
 
@@ -790,10 +790,10 @@
                                     class="inline-flex items-center justify-center gap-2 text-center rounded-full bg-[var(--accent-dark)] px-5 py-2 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
                                 >
                                     @if(!empty(auth()->user()->avatar_url))
-                                        <img src="{{ auth()->user()->avatar_url }}" alt="" class="h-6 w-6 rounded-full object-cover border border-white/40">
+                                        <img src="{{ auth()->user()->avatar_url }}" alt="" class="h-6 w-6 rounded-full object-cover border border-white/40 shrink-0">
                                     @endif
-                                    <span>{{ auth()->user()->name ?? 'User' }}</span>
-                                    <span class="ml-0.5 text-xs">▼</span>
+                                    <span class="max-w-[150px] lg:max-w-[210px] truncate">{{ auth()->user()->name ?? 'User' }}</span>
+                                    <span class="ml-0.5 text-xs shrink-0">▼</span>
                                 </button>
 
                                 <div
@@ -1005,7 +1005,7 @@
                 @php
                     $activeCategory = request('category', '');
                 @endphp
-                <div class="flex items-end gap-3 overflow-x-auto whitespace-nowrap text-xs font-semibold text-[var(--foreground)] md:gap-6 md:text-base">
+                <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs font-semibold text-[var(--foreground)] md:flex-nowrap md:items-end md:gap-6 md:text-base">
                     <a
                         href="/shops?category=COURIER_PICKUP"
                         class="inline-flex border-b-[3px] pb-1 transition {{ $activeCategory === 'COURIER_PICKUP' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-bold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"

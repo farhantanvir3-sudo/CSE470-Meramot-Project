@@ -11,6 +11,7 @@ use App\Models\UserNotification;
 use App\Services\GmailApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -43,7 +44,7 @@ class AdminModerationController extends Controller
             ->values();
 
         $bannedUsers = User::where('status', 'banned')
-            ->orderByDesc('banned_at')
+            ->when(Schema::hasColumn('users', 'banned_at'), fn ($q) => $q->orderByDesc('banned_at'))
             ->orderByDesc('updated_at')
             ->get();
 

@@ -18,7 +18,7 @@
                 Centralized command desk for vendor trade verification, delivery courier onboarding, double-entry financial settlements, and nationwide marketplace oversight.
             </p>
         </div>
-        <div class="flex flex-col items-end justify-end gap-2 shrink-0 ml-auto text-right">
+        <div class="flex flex-wrap sm:flex-nowrap md:flex-col items-start md:items-end justify-start md:justify-end gap-2 shrink-0 md:ml-auto md:text-right">
             <a href="/shops" class="whitespace-nowrap inline-flex items-center justify-center rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-dark)] hover:bg-[var(--mint-100)] hover:shadow-md">
                 View Live Directory ({{ number_format($kpis['public_shops']) }} Shops)
             </a>
@@ -94,13 +94,13 @@
                 <div class="space-y-3 text-xs">
                     @forelse($recentPendingVendors as $vp)
                         <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3.5 flex items-center justify-between gap-3">
-                            <div>
-                                <div class="font-bold text-[var(--foreground)]">{{ $vp->shop_name }}</div>
-                                <div class="text-[11px] text-[var(--muted-foreground)]">
+                            <div class="min-w-0 flex-1">
+                                <div class="break-words font-bold text-[var(--foreground)]">{{ $vp->shop_name }}</div>
+                                <div class="break-words text-[11px] text-[var(--muted-foreground)]">
                                     License: <span class="font-mono">{{ $vp->business_license_no }}</span> • {{ $vp->area }}, {{ $vp->city }}
                                 </div>
                             </div>
-                            <a href="/admin/vendors/pending" class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)]">
+                            <a href="/admin/vendors/pending" class="shrink-0 rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)]">
                                 Audit
                             </a>
                         </div>
@@ -129,13 +129,13 @@
                 <div class="space-y-3 text-xs">
                     @forelse($recentPendingRiders as $agent)
                         <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3.5 flex items-center justify-between gap-3">
-                            <div>
-                                <div class="font-bold text-[var(--foreground)]">{{ $agent->applicant_name ?: ($agent->user->name ?? 'Rider Applicant #' . $agent->id) }}</div>
-                                <div class="text-[11px] text-[var(--muted-foreground)]">
+                            <div class="min-w-0 flex-1">
+                                <div class="break-words font-bold text-[var(--foreground)]">{{ $agent->applicant_name ?: ($agent->user->name ?? 'Rider Applicant #' . $agent->id) }}</div>
+                                <div class="break-words text-[11px] text-[var(--muted-foreground)]">
                                     NID: <span class="font-mono">{{ $agent->nid_number }}</span> • License: <span class="font-mono">{{ $agent->license_number }}</span> ({{ ucfirst($agent->vehicle_type) }})
                                 </div>
                             </div>
-                            <a href="/admin/delivery-agents/pending" class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)]">
+                            <a href="/admin/delivery-agents/pending" class="shrink-0 rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)]">
                                 Verify
                             </a>
                         </div>
@@ -214,15 +214,15 @@
                 <tbody class="divide-y divide-[var(--border)]/60">
                     @forelse($recentRequests as $ticket)
                         <tr class="hover:bg-[var(--mint-100)]/40 transition">
-                            <td class="py-3 pr-4">
+                            <td class="py-3 pr-4 min-w-[200px]">
                                 <div class="font-bold text-[var(--foreground)]">#{{ $ticket->id }} — {{ \Illuminate\Support\Str::limit($ticket->title ?? $ticket->device_model ?? 'Repair Ticket', 52) }}</div>
                                 <div class="text-[11px] text-[var(--muted-foreground)]">{{ $ticket->device_type ?? 'Device' }}</div>
                             </td>
-                            <td class="py-3 pr-4 font-semibold text-[var(--foreground)]">
+                            <td class="py-3 pr-4 font-semibold text-[var(--foreground)] whitespace-nowrap">
                                 {{ $ticket->customer->name ?? 'Customer' }}
                                 <div class="text-[10px] font-normal text-[var(--muted-foreground)]">{{ $ticket->customer->email ?? '' }}</div>
                             </td>
-                            <td class="py-3 pr-4">
+                            <td class="py-3 pr-4 whitespace-nowrap">
                                 @if($ticket->requestedShop)
                                     <a href="{{ route('shops.show', $ticket->requestedShop->slug) }}" class="font-bold text-[var(--accent-dark)] hover:underline">
                                         {{ $ticket->requestedShop->name }}
@@ -231,12 +231,12 @@
                                     <span class="text-[var(--muted-foreground)]">Marketplace Bidding</span>
                                 @endif
                             </td>
-                            <td class="py-3 pr-4">
+                            <td class="py-3 pr-4 whitespace-nowrap">
                                 <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-[var(--accent-dark)]">
                                     {{ str_replace('_', ' ', $ticket->status) }}
                                 </span>
                             </td>
-                            <td class="py-3 text-[var(--muted-foreground)]">
+                            <td class="py-3 text-[var(--muted-foreground)] whitespace-nowrap">
                                 {{ $ticket->updated_at?->diffForHumans() ?? 'Recently' }}
                             </td>
                         </tr>

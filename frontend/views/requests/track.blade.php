@@ -130,8 +130,8 @@
 
             <!-- Quote 2: Final Physical Diagnosis Approval Card (WAITING_APPROVAL) -->
             @if($currentStatus === 'WAITING_APPROVAL')
-                <div class="rounded-[2rem] border-2 border-amber-400 bg-amber-50/90 p-6 shadow-sm space-y-4">
-                    <div class="flex items-start justify-between gap-4">
+                <div class="rounded-[2rem] border-2 border-amber-400 bg-amber-50/90 p-5 sm:p-6 shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div>
                             <span class="rounded-full bg-amber-200 px-3 py-0.5 text-[10px] font-extrabold uppercase text-amber-900">
                                 Final Estimate • Action Required
@@ -238,11 +238,11 @@
                         $isOrderOwner = auth()->check() && (int) auth()->id() === (int) $repairRequest->customer_id;
                     @endphp
                     @if($isOrderOwner && in_array($currentStatus, ['COMPLETED', 'RETURNED_TO_CUSTOMER'], true) && $completedShop)
-                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                        <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 shrink-0 w-full sm:w-auto">
                             @if($repairRequest->review)
                                 <a
                                     href="{{ route('shops.show', $completedShop->slug) }}?edit_review={{ $repairRequest->review->id }}#review-{{ $repairRequest->review->id }}"
-                                    class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
                                 >
                                     <i class="fa-solid fa-pen-to-square text-emerald-700"></i>
                                     <span>Edit Review ({{ $repairRequest->review->rating }}★)</span>
@@ -255,14 +255,14 @@
                                     data-confirm-item="Order #{{ $repairRequest->id }}"
                                     data-confirm-message="Your verified review will be deleted and you can write a new one anytime."
                                     data-confirm-cta="Delete Review"
-                                    class="inline"
+                                    class="w-full sm:w-auto inline-flex"
                                 >
                                     @csrf
                                     @method('DELETE')
                                     <input type="hidden" name="redirect_back" value="1">
                                     <button
                                         type="submit"
-                                        class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                        class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
                                     >
                                         <i class="fa-solid fa-trash-can text-[11px]"></i>
                                         <span>Delete Review</span>
@@ -271,7 +271,7 @@
                             @else
                                 <a
                                     href="{{ route('reviews.create', ['shopId' => $completedShop->id, 'order_id' => $repairRequest->id]) }}"
-                                    class="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
                                 >
                                     <i class="fa-solid fa-certificate"></i>
                                     <span>Write Verified Repair Review</span>

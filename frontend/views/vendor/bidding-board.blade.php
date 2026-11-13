@@ -30,7 +30,7 @@
 
     <div class="space-y-6">
         @forelse($openRequests ?? [] as $req)
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
                 <!-- Left: Active Request Card -->
                 <div class="flex flex-col justify-between">
                     <div>
@@ -63,7 +63,7 @@
                 </div>
 
                 <!-- Right: Submit Diagnostic Estimate Form -->
-                <div class="lg:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-5">
+                <div class="lg:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 sm:p-5">
                     <h4 class="font-bold text-sm text-[var(--foreground)] mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-file-invoice-dollar text-[var(--accent-dark)]"></i>
                         Submit Verified Estimate on Ticket #{{ $req->id }}

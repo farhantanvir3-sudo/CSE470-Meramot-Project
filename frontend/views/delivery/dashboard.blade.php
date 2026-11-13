@@ -54,12 +54,12 @@
                     <p class="text-xs font-semibold text-[#163625]/65">Completed earnings</p>
                     <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><i class="fa-solid fa-wallet text-xs"></i></span>
                 </div>
-                <p class="mt-2 text-3xl font-extrabold text-[#163625]">BDT {{ number_format($completedEarnings, 2) }}</p>
+                <p class="mt-2 text-2xl sm:text-3xl font-extrabold text-[#163625]">BDT {{ number_format($completedEarnings, 2) }}</p>
             </div>
         </section>
 
         <!-- Delivery Queue -->
-        <section class="rounded-3xl border border-[#d9e5d5] bg-white p-6 shadow-sm">
+        <section class="rounded-3xl border border-[#d9e5d5] bg-white p-4 sm:p-6 shadow-sm">
             <div class="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-bold text-[#163625]">Delivery Queue</h2>
@@ -114,20 +114,20 @@
                             class="group block rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#eef4ea] hover:border-[#214c34] hover:shadow-md"
                         >
                             <div class="flex items-start justify-between gap-3">
-                                <div>
+                                <div class="min-w-0 flex-1">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <p class="text-sm font-bold text-[#163625]">{{ $title }}</p>
+                                        <p class="break-words text-sm font-bold text-[#163625]">{{ $title }}</p>
                                         @if($d->tracking_code)
                                             <span class="font-mono text-[11px] text-[#163625]/60">({{ $d->tracking_code }})</span>
                                         @endif
                                     </div>
-                                    <p class="mt-1 text-xs font-medium text-[#163625]/75">
+                                    <p class="mt-1 text-xs font-medium text-[#163625]/75 break-words">
                                         {{ strtoupper((string) $d->direction) === 'TO_SHOP' ? 'Customer to shop' : 'Shop to customer' }}
                                         @if($shop?->name)
                                             &bull; <span class="font-semibold">{{ $shop->name }}</span>
                                         @endif
                                     </p>
-                                    <p class="mt-1.5 text-xs text-[#163625]/65">
+                                    <p class="mt-1.5 text-xs text-[#163625]/65 break-words">
                                         <span class="font-semibold">Pickup:</span> {{ $d->pickup_address }}
                                         <span class="mx-1.5">&rarr;</span>
                                         <span class="font-semibold">Dropoff:</span> {{ $d->dropoff_address }}

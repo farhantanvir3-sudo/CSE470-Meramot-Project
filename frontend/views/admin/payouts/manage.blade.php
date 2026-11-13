@@ -41,48 +41,50 @@ Controller: VendorPayoutController@index, disbursePayout
     </div>
 
     <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
-        <table class="min-w-full divide-y divide-[var(--border)] text-xs">
-            <thead class="bg-[var(--mint-100)] text-[var(--muted-foreground)] uppercase font-bold">
-                <tr>
-                    <th class="px-6 py-3.5 text-left">Vendor Shop</th>
-                    <th class="px-6 py-3.5 text-right">Net Payout (৳)</th>
-                    <th class="px-6 py-3.5 text-left">Reference</th>
-                    <th class="px-6 py-3.5 text-center">Status</th>
-                    <th class="px-6 py-3.5 text-right">Action</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--border)]">
-                @forelse($payouts ?? [] as $p)
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-[var(--border)] text-xs">
+                <thead class="bg-[var(--mint-100)] text-[var(--muted-foreground)] uppercase font-bold">
                     <tr>
-                        <td class="px-6 py-4 font-bold text-[var(--foreground)]">{{ $p->shop->name ?? 'Verified Partner Workshop' }}</td>
-                        <td class="px-6 py-4 text-right font-mono font-bold text-[var(--accent-dark)]">৳{{ number_format($p->amount ?? 0, 2) }}</td>
-                        <td class="px-6 py-4 font-mono text-[var(--muted-foreground)]">{{ $p->reference_code ?? 'PENDING-REF' }}</td>
-                        <td class="px-6 py-4 text-center">
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase {{ strtoupper($p->status ?? '') === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
-                                {{ $p->status ?? 'PENDING' }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-right">
-                            <form method="POST" action="/admin/payouts/{{ $p->id }}/disburse" class="inline">
-                                @csrf
-                                <button type="submit" class="bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] px-3.5 py-1.5 rounded-full text-xs font-bold">
-                                    Disburse
-                                </button>
-                            </form>
-                        </td>
+                        <th class="px-6 py-3.5 text-left whitespace-nowrap">Vendor Shop</th>
+                        <th class="px-6 py-3.5 text-right whitespace-nowrap">Net Payout (৳)</th>
+                        <th class="px-6 py-3.5 text-left whitespace-nowrap">Reference</th>
+                        <th class="px-6 py-3.5 text-center whitespace-nowrap">Status</th>
+                        <th class="px-6 py-3.5 text-right whitespace-nowrap">Action</th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-6 py-10 text-center text-[var(--muted-foreground)] space-y-3">
-                            <p>No payout withdrawal requests queued yet. Automated vendor disbursement will launch in an upcoming release.</p>
-                            <a href="/coming-soon/vendor-payouts" class="inline-block rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] px-4 py-2 text-xs font-bold text-[var(--foreground)] transition">
-                                View Payout Roadmap &rarr;
-                            </a>
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)]">
+                    @forelse($payouts ?? [] as $p)
+                        <tr>
+                            <td class="px-6 py-4 font-bold text-[var(--foreground)]">{{ $p->shop->name ?? 'Verified Partner Workshop' }}</td>
+                            <td class="px-6 py-4 text-right font-mono font-bold text-[var(--accent-dark)] whitespace-nowrap">৳{{ number_format($p->amount ?? 0, 2) }}</td>
+                            <td class="px-6 py-4 font-mono text-[var(--muted-foreground)] whitespace-nowrap">{{ $p->reference_code ?? 'PENDING-REF' }}</td>
+                            <td class="px-6 py-4 text-center whitespace-nowrap">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase {{ strtoupper($p->status ?? '') === 'PAID' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                                    {{ $p->status ?? 'PENDING' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap">
+                                <form method="POST" action="/admin/payouts/{{ $p->id }}/disburse" class="inline">
+                                    @csrf
+                                    <button type="submit" class="bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] px-3.5 py-1.5 rounded-full text-xs font-bold">
+                                        Disburse
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-[var(--muted-foreground)] space-y-3">
+                                <p>No payout withdrawal requests queued yet. Automated vendor disbursement will launch in an upcoming release.</p>
+                                <a href="/coming-soon/vendor-payouts" class="inline-block rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] px-4 py-2 text-xs font-bold text-[var(--foreground)] transition">
+                                    View Payout Roadmap &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 @endsection

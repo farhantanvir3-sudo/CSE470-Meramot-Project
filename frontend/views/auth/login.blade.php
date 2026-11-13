@@ -142,7 +142,7 @@
                             :type="show ? 'text' : 'password'"
                             name="password"
                             required
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                            class="w-full rounded-2xl border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                             placeholder="Enter your password"
                         />
                         <button 

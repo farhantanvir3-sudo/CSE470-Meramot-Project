@@ -33,13 +33,13 @@
         <div class="space-y-3 rounded-2xl border border-[#d9e5d5] bg-[#f3faf0] p-5 text-sm text-[#163625]">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#d9e5d5]/70 pb-2.5">
                 <span class="font-semibold text-[#163625]/75">Company Login Email:</span>
-                <span class="font-mono font-bold">{{ $companyEmail }}</span>
+                <span class="font-mono font-bold break-all">{{ $companyEmail }}</span>
             </div>
 
             @if($agent->personal_email)
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#d9e5d5]/70 pb-2.5">
                     <span class="font-semibold text-[#163625]/75">Verified Personal Email:</span>
-                    <span>{{ $agent->personal_email }}</span>
+                    <span class="break-all">{{ $agent->personal_email }}</span>
                 </div>
             @endif
 

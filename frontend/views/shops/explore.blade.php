@@ -194,7 +194,7 @@
             <!-- City / Area Selector Pills & Quick Filters Bar -->
             <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm space-y-3 min-w-0 max-w-full">
                 <!-- Row 1: Nationwide Bangladesh City / District Pills -->
-                <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs whitespace-nowrap no-scrollbar">
+                <div class="flex flex-wrap items-center gap-1.5 text-xs">
                     <span class="font-bold text-[var(--foreground)] text-[11px] uppercase tracking-wider mr-1 shrink-0">
                         <i class="fa-solid fa-map text-[var(--accent-dark)] mr-1"></i> District:
                     </span>
@@ -220,7 +220,7 @@
                 </div>
 
                 <!-- Row 2: Area / Hub Pills -->
-                <div class="border-t border-[var(--border)]/60 pt-2.5 flex items-center gap-2 overflow-x-auto pb-1 text-xs whitespace-nowrap no-scrollbar">
+                <div class="border-t border-[var(--border)]/60 pt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
                     <span class="font-bold text-[var(--foreground)] text-[11px] uppercase tracking-wider mr-1 shrink-0">
                         <i class="fa-solid fa-location-dot text-[var(--accent-dark)] mr-1"></i> Area:
                     </span>
@@ -246,7 +246,7 @@
                 <!-- Row 3: Sort Tabs & Promo / Branch Filters -->
                 <div class="border-t border-[var(--border)] pt-3 flex flex-wrap items-center justify-between gap-3 text-xs min-w-0">
                     <!-- Quick Sort Tabs -->
-                    <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar max-w-full">
+                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 max-w-full">
                         <span class="font-bold text-[var(--foreground)] text-[11px] uppercase mr-1 shrink-0">Sort:</span>
                         @php
                             $sortTabs = [
@@ -389,7 +389,7 @@
                                 <div class="flex items-start justify-between gap-2">
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-1.5">
-                                            <h3 class="truncate text-[0.95rem] font-bold leading-tight text-[var(--foreground)] md:text-[1.1rem] group-hover:text-[var(--accent-dark)] transition">
+                                            <h3 class="break-words text-[0.95rem] font-bold leading-tight text-[var(--foreground)] md:text-[1.1rem] group-hover:text-[var(--accent-dark)] transition">
                                                 {{ $shop->name }}
                                             </h3>
                                             @if($shop->display_branch_tag)

@@ -66,14 +66,14 @@
                 >
             </div>
 
-            <select name="category" class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
+            <select name="category" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
                 <option value="">All Device Categories</option>
                 @foreach($categories ?? [] as $cat)
                     <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                 @endforeach
             </select>
 
-            <select name="max_price" class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
+            <select name="max_price" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
                 <option value="">Any Budget</option>
                 <option value="2000" {{ request('max_price') == '2000' ? 'selected' : '' }}>Under ৳2,000</option>
                 <option value="3500" {{ request('max_price') == '3500' ? 'selected' : '' }}>Under ৳3,500</option>
@@ -81,7 +81,7 @@
                 <option value="10000" {{ request('max_price') == '10000' ? 'selected' : '' }}>Under ৳10,000</option>
             </select>
 
-            <select name="sort" class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
+            <select name="sort" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
                 <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>Most Popular</option>
                 <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>Price: Low to High</option>
                 <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Price: High to Low</option>
@@ -103,7 +103,7 @@
     <!-- Package Cards Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($packages ?? [] as $pkg)
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 sm:p-6 min-w-0 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
                 <div>
                     <!-- Category & Popularity Pill -->
                     <div class="flex items-center justify-between gap-2">
@@ -172,12 +172,12 @@
                         </label>
                         <select
                             id="shop-select-{{ $pkg->id }}"
-                            class="w-full max-w-full truncate rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] outline-none"
+                            class="w-full min-w-0 max-w-full truncate rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] outline-none"
                         >
                             <option value="">Auto-Match Nearest Top-Rated Local Shop</option>
                             @foreach($verifiedShops ?? [] as $vShop)
                                 <option value="{{ $vShop->id }}" {{ session('cart_shop_id') == $vShop->id ? 'selected' : '' }}>
-                                    {{ $vShop->name }}{{ $vShop->display_branch_tag ? ' [' . $vShop->display_branch_tag . ']' : ' (' . $vShop->area . ')' }} • ★{{ number_format($vShop->rating, 1) }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
+                                    {{ \Illuminate\Support\Str::limit($vShop->name, 26) }}{{ $vShop->display_branch_tag ? ' [' . \Illuminate\Support\Str::limit($vShop->display_branch_tag, 18) . ']' : ' (' . \Illuminate\Support\Str::limit($vShop->area ?: $vShop->city, 18) . ')' }} • ★{{ number_format($vShop->rating, 1) }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
                                 </option>
                             @endforeach
                         </select>

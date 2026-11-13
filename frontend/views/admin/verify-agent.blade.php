@@ -81,7 +81,7 @@
          BLOCK 1: Pending Registration Approvals Table
          ====================================================================== --}}
     <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--mint-100)]/60">
+        <div class="px-4 sm:px-6 py-4 border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2 bg-[var(--mint-100)]/60">
             <h2 class="text-sm font-black text-[var(--foreground)] flex items-center gap-2">
                 <i class="fa-solid fa-id-card-clip text-[var(--accent-dark)]"></i>
                 Pending Registration Approvals ({{ ($pendingAgents ?? collect())->count() }})
@@ -290,7 +290,7 @@
          ====================================================================== --}}
     @if(isset($allPartners) && $allPartners->count() > 0)
         <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--mint-100)]/40">
+            <div class="px-4 sm:px-6 py-4 border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2 bg-[var(--mint-100)]/40">
                 <h2 class="text-sm font-black text-[var(--foreground)] flex items-center gap-2">
                     <i class="fa-solid fa-motorcycle text-[var(--accent-dark)]"></i>
                     All Delivery Partners Directory ({{ $allPartners->count() }})

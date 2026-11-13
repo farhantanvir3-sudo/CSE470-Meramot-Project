@@ -79,9 +79,9 @@ Controller: RepairRequestController@index
                 $activeBidsCount = $req->bids->where('status', '!=', 'WITHDRAWN')->count();
                 $lowestBid = $req->bids->where('status', '!=', 'WITHDRAWN')->min('proposed_cost');
             @endphp
-            <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm hover:border-[var(--accent-dark)]/50 transition">
+            <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 md:p-6 shadow-sm hover:border-[var(--accent-dark)]/50 transition">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div class="space-y-1.5 flex-1">
+                    <div class="space-y-1.5 flex-1 min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="font-mono text-xs font-black text-[var(--muted-foreground)]">#{{ $req->id }}</span>
                             <span class="rounded-full px-3 py-0.5 text-[10px] font-extrabold uppercase {{ $st === 'COMPLETED' ? 'bg-emerald-100 text-emerald-900' : ($st === 'WAITING_APPROVAL' ? 'bg-amber-200 text-amber-950' : ($st === 'BIDDING' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)]' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]')) }}">
@@ -91,30 +91,30 @@ Controller: RepairRequestController@index
                                 {{ ($req->source ?? 'MARKETPLACE') === 'DIRECT_SERVICE' ? 'Direct-Order Cart' : 'Marketplace Bidding' }}
                             </span>
                             @if($assignedShop)
-                                <span class="text-xs font-bold text-[var(--accent-dark)]">
+                                <span class="text-xs font-bold text-[var(--accent-dark)] break-words">
                                     <i class="fa-solid fa-store mr-1"></i>{{ $assignedShop->name }}{{ $assignedShop->display_branch_tag ? ' [' . $assignedShop->display_branch_tag . ']' : '' }}
                                 </span>
                             @endif
                         </div>
 
-                        <h2 class="text-base md:text-lg font-black text-[var(--foreground)]">
+                        <h2 class="break-words text-base md:text-lg font-black text-[var(--foreground)]">
                             {{ $req->brand }} {{ $req->model_name }} — {{ $req->title }}
                         </h2>
 
-                        <p class="text-xs text-[var(--muted-foreground)] line-clamp-2">
+                        <p class="text-xs text-[var(--muted-foreground)] line-clamp-2 break-words">
                             {{ $req->description }}
                         </p>
 
-                        <div class="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-[var(--muted-foreground)]">
+                        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-[11px] text-[var(--muted-foreground)]">
                             <span><i class="fa-solid fa-laptop-medical mr-1 text-[var(--accent-dark)]"></i>{{ $req->device_type }}</span>
                             @if($req->pickup_address)
-                                <span><i class="fa-solid fa-location-dot mr-1 text-[var(--accent-dark)]"></i>{{ $req->pickup_address }}</span>
+                                <span class="break-words"><i class="fa-solid fa-location-dot mr-1 text-[var(--accent-dark)]"></i>{{ $req->pickup_address }}</span>
                             @endif
                             <span><i class="fa-regular fa-clock mr-1"></i>{{ $req->created_at?->diffForHumans() }}</span>
                         </div>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row md:flex-col items-start sm:items-center md:items-end justify-between gap-3 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-[var(--border)]">
+                    <div class="flex flex-col sm:flex-row md:flex-col items-stretch sm:items-center md:items-end justify-between gap-3 shrink-0 w-full md:w-auto border-t md:border-t-0 pt-3 md:pt-0 border-[var(--border)]">
                         <div class="text-left md:text-right">
                             @if($req->quoted_final_amount)
                                 <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] block">Quoted / Agreed</span>
@@ -127,12 +127,12 @@ Controller: RepairRequestController@index
                             @endif
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-2">
+                        <div class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
                             @if(in_array($st, ['COMPLETED', 'RETURNED_TO_CUSTOMER'], true) && $assignedShop)
                                 @if($req->review)
                                     <a
                                         href="{{ route('shops.show', $assignedShop->slug) }}?edit_review={{ $req->review->id }}#review-{{ $req->review->id }}"
-                                        class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
+                                        class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
                                     >
                                         <i class="fa-solid fa-pen-to-square text-emerald-700 text-[11px]"></i>
                                         <span>Edit Review ({{ $req->review->rating }}★)</span>
@@ -145,14 +145,14 @@ Controller: RepairRequestController@index
                                         data-confirm-item="Order #{{ $req->id }}"
                                         data-confirm-message="Your verified review will be deleted and you can write a new one anytime."
                                         data-confirm-cta="Delete Review"
-                                        class="inline"
+                                        class="w-full sm:w-auto inline-flex"
                                     >
                                         @csrf
                                         @method('DELETE')
                                         <input type="hidden" name="redirect_back" value="1">
                                         <button
                                             type="submit"
-                                            class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                            class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
                                         >
                                             <i class="fa-solid fa-trash-can text-[11px]"></i>
                                             <span>Delete Review</span>
@@ -160,14 +160,14 @@ Controller: RepairRequestController@index
                                     </form>
                                 @else
                                     @if($isBannedViewer)
-                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700">
+                                        <span class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700">
                                             <i class="fa-solid fa-ban text-[11px]"></i>
                                             <span>Reviews Restricted (Banned)</span>
                                         </span>
                                     @else
                                         <a
                                             href="{{ route('reviews.create', ['shopId' => $assignedShop->id, 'order_id' => $req->id]) }}"
-                                            class="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                                            class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full border border-emerald-600/40 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
                                         >
                                             <i class="fa-solid fa-certificate text-[11px]"></i>
                                             <span>Write Verified Repair Review</span>
@@ -178,7 +178,7 @@ Controller: RepairRequestController@index
 
                             <a
                                 href="{{ route('requests.track', $req->id) }}"
-                                class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
+                                class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
                             >
                                 <span>{{ $st === 'WAITING_APPROVAL' ? 'Review Quote 2' : ($st === 'BIDDING' && $activeBidsCount > 0 ? 'Compare Bids' : 'Track Lifecycle') }}</span>
                                 <i class="fa-solid fa-arrow-right text-[10px]"></i>

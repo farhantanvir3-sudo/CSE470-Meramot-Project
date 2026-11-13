@@ -117,7 +117,7 @@
     }"
     @meramot-location-changed.window="applyMapLocation($event.detail)"
 >
-    <div class="rounded-[2rem] border border-white/60 bg-white/90 p-6 md:p-8 shadow-2xl backdrop-blur">
+    <div class="rounded-[2rem] border border-white/60 bg-white/90 p-4 sm:p-6 md:p-8 shadow-2xl backdrop-blur">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#58725f]">
             Vendor
         </p>
@@ -244,7 +244,7 @@
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
                     <div class="md:col-span-2">
-                        <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                             <span class="text-sm font-medium text-slate-700">Public Shop Address *</span>
                             <label class="inline-flex items-center gap-2 text-xs font-medium text-[#244229] cursor-pointer">
                                 <input type="checkbox" name="same_as_gps_location" value="1" x-model="sameAsGps" @change="if(sameAsGps && gpsAddress) address = gpsAddress" class="accent-[#244229]">
@@ -422,10 +422,10 @@
 
                 <div x-show="services.length > 0" class="mt-4 space-y-2">
                     <template x-for="svc in services" :key="svc.name">
-                        <div class="flex items-center justify-between rounded-xl border border-[var(--border)] bg-white px-4 py-3 shadow-sm">
+                        <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-3 shadow-sm">
                             <input type="hidden" name="skill_tags[]" :value="svc.price ? (svc.name + '|' + svc.price) : svc.name">
-                            <span class="text-sm font-medium text-slate-800" x-text="svc.name"></span>
-                            <div class="flex items-center gap-4">
+                            <span class="min-w-0 break-words text-sm font-medium text-slate-800" x-text="svc.name"></span>
+                            <div class="flex items-center gap-3 sm:gap-4 shrink-0">
                                 <span x-show="svc.price" class="text-sm font-bold text-[#244229]" x-text="'৳' + Number(svc.price).toLocaleString()"></span>
                                 <span x-show="!svc.price" class="text-xs italic text-slate-400">Inspection quote</span>
                                 <button type="button" @click="removeService(svc.name)" class="text-slate-400 hover:text-red-600 font-bold">✕</button>

@@ -17,7 +17,7 @@
 <div class="flex flex-col bg-white rounded-3xl overflow-hidden shadow-sm border border-[#d9e5d5] relative" x-data="{ chatOpen: false }">
 
     <!-- Top Action Bar -->
-    <div class="p-6 border-b border-[#e7efe2]">
+    <div class="p-4 sm:p-6 border-b border-[#e7efe2]">
         <div class="flex justify-between items-center gap-3">
             <a
                 href="/delivery"
@@ -53,7 +53,7 @@
     </div>
 
     <!-- Main Body -->
-    <div class="p-6">
+    <div class="p-4 sm:p-6">
         <div class="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
             <div>
                 <h1 class="text-xl md:text-2xl font-extrabold text-[#163625] mb-1">{{ $title }}</h1>
@@ -75,7 +75,7 @@
                 <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center shrink-0 border border-[#d9e5d5] text-[#163625]">
                     <i class="fa-solid fa-box-open text-lg"></i>
                 </div>
-                <div class="space-y-0.5">
+                <div class="min-w-0 space-y-0.5 break-words">
                     <h4 class="font-bold text-[#163625]">{{ $deviceType }}</h4>
                     <p class="text-xs text-[#163625]/75"><strong>Shop:</strong> {{ $shopName }}</p>
                     <p class="text-xs text-[#163625]/75"><strong>Customer:</strong> {{ $customerName }}</p>
@@ -86,24 +86,24 @@
 
         <!-- Pickup & Dropoff Cards -->
         <div class="grid gap-4 sm:grid-cols-2 mb-8">
-            <div class="rounded-2xl border border-[#d9e5d5] p-4 bg-white">
-                <div class="flex items-center justify-between mb-1">
+            <div class="rounded-2xl border border-[#d9e5d5] p-4 bg-white min-w-0">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                     <p class="text-[10px] font-bold text-[#163625]/60 uppercase tracking-wider">Pickup</p>
                     @if($delivery->pickup_otp)
                         <span class="font-mono text-[11px] font-bold bg-[#eef4ea] text-[#163625] px-2 py-0.5 rounded border border-[#d9e5d5]">OTP: {{ $delivery->pickup_otp }}</span>
                     @endif
                 </div>
-                <p class="text-sm font-semibold text-[#163625]">{{ $delivery->pickup_address }}</p>
+                <p class="break-words text-sm font-semibold text-[#163625]">{{ $delivery->pickup_address }}</p>
             </div>
 
-            <div class="rounded-2xl border border-[#d9e5d5] p-4 bg-white">
-                <div class="flex items-center justify-between mb-1">
+            <div class="rounded-2xl border border-[#d9e5d5] p-4 bg-white min-w-0">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                     <p class="text-[10px] font-bold text-[#163625]/60 uppercase tracking-wider">Dropoff</p>
                     @if($delivery->dropoff_otp)
                         <span class="font-mono text-[11px] font-bold bg-[#eef4ea] text-[#163625] px-2 py-0.5 rounded border border-[#d9e5d5]">OTP: {{ $delivery->dropoff_otp }}</span>
                     @endif
                 </div>
-                <p class="text-sm font-semibold text-[#163625]">{{ $delivery->dropoff_address }}</p>
+                <p class="break-words text-sm font-semibold text-[#163625]">{{ $delivery->dropoff_address }}</p>
             </div>
         </div>
 

@@ -36,7 +36,7 @@
                 <p class="text-xs text-[var(--muted-foreground)]">Flagged reviews containing potentially offensive words appear first so admins can delete them or ban repeat offenders.</p>
             </div>
             <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
-                {{ $reviews->where(fn ($r) => \App\Models\ShopReview::containsOffensiveLanguage($r->comment))->count() }} Flagged
+                {{ $reviews->where(fn ($r) => \App\Models\ShopReview::containsOffensiveLanguage($r->review_comment))->count() }} Flagged
             </span>
         </div>
 
@@ -54,7 +54,7 @@
                                 <span class="font-extrabold text-sm text-[var(--foreground)]">
                                     {{ $rev->customer->name ?? 'Meramot Customer' }}
                                 </span>
-                                <span class="text-xs text-[var(--muted-foreground)]">({{ $rev->customer->email ?? 'N/A' }})</span>
+                                <span class="text-xs text-[var(--muted-foreground)] break-all">({{ $rev->customer->email ?? 'N/A' }})</span>
 
                                 @if($authorIsBanned)
                                     <span class="rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
@@ -96,7 +96,7 @@
                             </p>
                         </div>
 
-                        <div class="flex flex-wrap lg:flex-col items-stretch lg:items-end gap-2 shrink-0">
+                        <div class="flex flex-col sm:flex-row lg:flex-col items-stretch lg:items-end gap-2 shrink-0 w-full lg:w-auto">
                             <form
                                 method="POST"
                                 action="{{ route('admin.reviews.moderate', $rev->id) }}"
@@ -105,6 +105,7 @@
                                 data-confirm-item="Review #{{ $rev->id }} by {{ $rev->customer->name ?? 'Customer' }}"
                                 data-confirm-message="This removes the review, recalculates the workshop rating, and sends email and in-app notifications."
                                 data-confirm-cta="Delete Review"
+                                class="flex-1 sm:flex-none lg:w-full"
                             >
                                 @csrf
                                 <input type="hidden" name="action_type" value="delete_only">
@@ -151,7 +152,7 @@
                                     class="w-full rounded-xl border border-rose-300 bg-white dark:bg-[var(--card)] px-3 py-2 text-xs text-[var(--foreground)] outline-none"
                                 >
                             </div>
-                            <div class="flex items-center justify-end gap-2">
+                            <div class="flex flex-wrap items-center justify-end gap-2">
                                 <button type="button" @click="banFormOpen = false" class="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-bold text-[var(--foreground)]">
                                     Cancel
                                 </button>
@@ -198,20 +199,20 @@
                         <tr>
                             <td class="py-3 pr-4">
                                 <div class="font-bold text-[var(--foreground)]">{{ $u->name }}</div>
-                                <div class="text-[11px] text-[var(--muted-foreground)]">{{ $u->email }}</div>
+                                <div class="text-[11px] text-[var(--muted-foreground)] break-all">{{ $u->email }}</div>
                             </td>
-                            <td class="py-3 pr-4">
+                            <td class="py-3 pr-4 whitespace-nowrap">
                                 <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold uppercase text-[var(--accent-dark)]">
                                     {{ $u->role }}
                                 </span>
                             </td>
-                            <td class="py-3 pr-4 text-[var(--foreground)] max-w-md">
+                            <td class="py-3 pr-4 text-[var(--foreground)] max-w-md min-w-[180px]">
                                 {{ $u->ban_reason ?: 'Policy violation / abusive content.' }}
                             </td>
-                            <td class="py-3 pr-4 text-[var(--muted-foreground)]">
+                            <td class="py-3 pr-4 text-[var(--muted-foreground)] whitespace-nowrap">
                                 {{ $u->banned_at?->format('M d, Y h:i A') ?? 'Recently' }}
                             </td>
-                            <td class="py-3 text-right">
+                            <td class="py-3 text-right whitespace-nowrap">
                                 <form method="POST" action="{{ route('admin.users.unban', $u->id) }}" class="inline">
                                     @csrf
                                     <button type="submit" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-emerald-700 transition">
@@ -257,18 +258,18 @@
                 <tbody class="divide-y divide-[var(--border)]/60">
                     @forelse($logs as $log)
                         <tr>
-                            <td class="py-3 pr-4 font-mono font-bold text-[var(--foreground)]">
+                            <td class="py-3 pr-4 font-mono font-bold text-[var(--foreground)] whitespace-nowrap">
                                 {{ ucfirst($log->target_type) }} #{{ $log->target_id }}
                             </td>
-                            <td class="py-3 pr-4 text-[var(--muted-foreground)]">{{ $log->violation_type }}</td>
-                            <td class="py-3 pr-4">
+                            <td class="py-3 pr-4 text-[var(--muted-foreground)] whitespace-nowrap">{{ $log->violation_type }}</td>
+                            <td class="py-3 pr-4 whitespace-nowrap">
                                 <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $log->action_taken === 'unban' ? 'bg-emerald-100 text-emerald-800' : (str_contains($log->action_taken, 'ban') ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">
                                     {{ str_replace('_', ' ', $log->action_taken) }}
                                 </span>
                             </td>
-                            <td class="py-3 pr-4 text-[var(--foreground)] max-w-md">{{ $log->reason }}</td>
-                            <td class="py-3 pr-4 font-semibold text-[var(--foreground)]">{{ $log->admin->name ?? 'Admin #' . $log->admin_id }}</td>
-                            <td class="py-3 text-[var(--muted-foreground)]">{{ $log->created_at?->format('M d, Y h:i A') }}</td>
+                            <td class="py-3 pr-4 text-[var(--foreground)] max-w-md min-w-[200px]">{{ $log->reason }}</td>
+                            <td class="py-3 pr-4 font-semibold text-[var(--foreground)] whitespace-nowrap">{{ $log->admin->name ?? 'Admin #' . $log->admin_id }}</td>
+                            <td class="py-3 text-[var(--muted-foreground)] whitespace-nowrap">{{ $log->created_at?->format('M d, Y h:i A') }}</td>
                         </tr>
                     @empty
                         <tr>
