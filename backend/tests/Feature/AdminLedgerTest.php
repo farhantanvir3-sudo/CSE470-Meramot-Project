@@ -122,4 +122,40 @@ class AdminLedgerTest extends TestCase
             'amount' => 1800.00,
         ]);
     }
+
+    /** @test */
+    public function it_supports_bulk_deleting_audits_records_only_or_undoing_ledger_effects()
+    {
+        $shop = RepairShop::factory()->create(['name' => 'Alpha Audit Lab']);
+        $res1 = AdminLedgerController::settleOrderWithCommission(1000.00, $shop->id, null, null, 0.10, '[Manual Settlement] First batch');
+        $res2 = AdminLedgerController::settleOrderWithCommission(2000.00, $shop->id, null, null, 0.10, '[Manual Settlement] Second batch');
+
+        // 1. Delete Records Only on first commission entry: hidden from journal, but ৳300.00 total commission preserved
+        $this->post('/admin/financial-overview/bulk-delete', [
+            'entry_ids' => [$res1['commission_entry']->id],
+            'delete_mode' => 'records_only',
+        ])->assertRedirect('/admin/financial-overview');
+
+        $this->assertNotNull($res1['commission_entry']->fresh()->hidden_at);
+        $this->get('/admin/financial-overview')
+            ->assertStatus(200)
+            ->assertSee('300.00')
+            ->assertDontSee('[Manual Settlement] First batch — Note')
+            ->assertSee('Second batch');
+
+        // 2. Delete & Undo Ledger Effects on second batch: entries removed AND commission total drops back to ৳100.00
+        $this->post('/admin/financial-overview/bulk-delete', [
+            'entry_ids' => [
+                $res2['payment_entry']->id,
+                $res2['commission_entry']->id,
+                $res2['vendor_entry']->id,
+            ],
+            'delete_mode' => 'undo_effects',
+        ])->assertRedirect('/admin/financial-overview');
+
+        $this->assertDatabaseMissing('financial_ledgers', ['id' => $res2['commission_entry']->id]);
+        $this->get('/admin/financial-overview')
+            ->assertStatus(200)
+            ->assertSee('100.00');
+    }
 }
