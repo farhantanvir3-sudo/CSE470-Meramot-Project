@@ -275,4 +275,217 @@ class ReviewTest extends TestCase
         $respA->assertSee('Secret Customer A Past Order Title');
         $respA->assertSee('Write Verified Repair Review');
     }
+
+    /** @test */
+    public function admin_is_strictly_isolated_from_customer_orders_cart_and_review_submission()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $customer = User::factory()->create(['role' => 'customer']);
+        $shop = RepairShop::factory()->create();
+
+        \App\Models\RepairRequest::create([
+            'customer_id' => $customer->id,
+            'requested_shop_id' => $shop->id,
+            'title' => 'Customer Private Order',
+            'device_type' => 'Phone',
+            'brand' => 'Apple',
+            'model_name' => 'iPhone 14',
+            'issue_category' => 'Battery',
+            'problem' => 'Fast drain',
+            'preferred_service_type' => 'walk_in',
+            'status' => 'COMPLETED',
+        ]);
+
+        ShopReview::create([
+            'repair_shop_id' => $shop->id,
+            'customer_id' => $customer->id,
+            'rating' => 4,
+            'review_comment' => 'Clean work by technicians.',
+            'is_verified_purchase' => true,
+            'service_provided' => 'Battery Replacement',
+        ]);
+
+        // Admin must never view customer orders, cart, or booking/review creation routes
+        $this->actingAs($admin)->get('/requests')->assertRedirect('/admin');
+        $this->actingAs($admin)->get('/orders')->assertRedirect('/admin');
+        $this->actingAs($admin)->get('/requests/create')->assertRedirect('/admin');
+        $this->actingAs($admin)->post('/requests', [])->assertRedirect('/admin');
+        $this->actingAs($admin)->get('/cart')->assertRedirect('/admin');
+        $this->actingAs($admin)->post('/cart/checkout/place', [])->assertRedirect('/admin');
+        $this->actingAs($admin)->postJson('/cart/add', ['package_id' => 1])->assertStatus(403);
+        $this->actingAs($admin)->get("/reviews/create/{$shop->id}")->assertRedirect('/admin');
+        $this->actingAs($admin)->post('/reviews', [])->assertRedirect('/admin');
+
+        // Shop profile hides customer booking/review CTAs for Admin and shows Admin governance tools
+        $shopResponse = $this->actingAs($admin)->get("/shops/{$shop->slug}");
+        $shopResponse->assertStatus(200);
+        $shopResponse->assertDontSee('Review Past Order');
+        $shopResponse->assertDontSee('Write Review');
+        $shopResponse->assertDontSee('Post Repair Request');
+        $shopResponse->assertSee('Admin Review Governance');
+    }
+
+    /** @test */
+    public function admin_can_delete_offensive_review_and_ban_user_sending_email_and_bell_popup_while_allowing_login_and_past_order_viewing()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $offender = User::factory()->create([
+            'role' => 'customer',
+            'status' => 'active',
+            'password' => \Illuminate\Support\Facades\Hash::make('SecretPass123!'),
+        ]);
+        $shop = RepairShop::factory()->create([
+            'rating' => 1.0,
+            'review_count' => 1,
+        ]);
+
+        $pastOrder = \App\Models\RepairRequest::create([
+            'customer_id' => $offender->id,
+            'requested_shop_id' => $shop->id,
+            'title' => 'Past Order Secret Repair',
+            'device_type' => 'Laptop',
+            'brand' => 'Lenovo',
+            'model_name' => 'ThinkPad T14',
+            'issue_category' => 'Display',
+            'problem' => 'Flickering display cable',
+            'preferred_service_type' => 'walk_in',
+            'status' => 'COMPLETED',
+        ]);
+
+        \App\Models\RepairRequest::create([
+            'customer_id' => $offender->id,
+            'title' => 'Ongoing Bid Request',
+            'device_type' => 'Phone',
+            'brand' => 'Samsung',
+            'model_name' => 'Galaxy S23',
+            'issue_category' => 'Charging Port',
+            'problem' => 'Loose USB-C connector',
+            'preferred_service_type' => 'courier',
+            'status' => 'BIDDING',
+        ]);
+
+        $review = ShopReview::create([
+            'repair_shop_id' => $shop->id,
+            'customer_id' => $offender->id,
+            'repair_request_id' => $pastOrder->id,
+            'rating' => 1,
+            'review_comment' => 'Total scam and fraud workshop! Idiot technicians!',
+            'is_verified_purchase' => true,
+            'service_provided' => 'Display Repair',
+        ]);
+
+        // 1. Admin sees flagged offensive review in Moderation Console
+        $modPage = $this->actingAs($admin)->get('/admin/moderation');
+        $modPage->assertStatus(200);
+        $modPage->assertSee('Total scam and fraud workshop!');
+        $modPage->assertSee('Offensive Words:');
+
+        // 2. Admin deletes review and bans user with reason
+        $banReason = 'Use of offensive and abusive words in workshop review.';
+        $banResp = $this->actingAs($admin)->post(route('admin.reviews.moderate', $review->id), [
+            'action_type' => 'delete_and_ban',
+            'reason' => $banReason,
+        ]);
+        $banResp->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('shop_reviews', ['id' => $review->id]);
+
+        $offender->refresh();
+        $this->assertSame('banned', $offender->status);
+        $this->assertSame($banReason, $offender->ban_reason);
+        $this->assertNotNull($offender->banned_at);
+
+        $this->assertDatabaseHas('moderation_logs', [
+            'target_type' => 'user',
+            'target_id' => $offender->id,
+            'action_taken' => 'banned_and_review_deleted',
+        ]);
+
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $offender->id,
+            'type' => 'ACCOUNT_BANNED',
+            'is_read' => false,
+        ]);
+
+        $this->assertDatabaseHas('notification_logs', [
+            'recipient' => $offender->email,
+            'channel' => 'EMAIL',
+            'status' => 'SENT',
+        ]);
+        $this->assertDatabaseHas('notification_logs', [
+            'recipient' => $offender->email,
+            'channel' => 'IN_APP',
+            'status' => 'SENT',
+        ]);
+
+        // 3. Log out admin and verify the banned user CAN log in and goes to /requests
+        $this->actingAs($admin)->post('/logout');
+
+        $loginResp = $this->post('/login', [
+            'identifier' => $offender->email,
+            'password' => 'SecretPass123!',
+        ]);
+        $loginResp->assertRedirect('/requests');
+        $this->assertAuthenticatedAs($offender);
+
+        // 4. Banned user can view ongoing & past orders + track lifecycle + sees bell pop-up & restriction banner
+        $ongoingPage = $this->actingAs($offender)->get('/requests');
+        $ongoingPage->assertStatus(200);
+        $ongoingPage->assertSee('Ongoing Bid Request');
+        $ongoingPage->assertSee('Account Restricted');
+        $ongoingPage->assertSee('New Requests Restricted');
+        $ongoingPage->assertDontSee('+ Post New Repair Request');
+        $ongoingPage->assertSee('meramot-open-notif-modal');
+
+        $pastPage = $this->actingAs($offender)->get('/requests?filter=COMPLETED');
+        $pastPage->assertStatus(200);
+        $pastPage->assertSee('Past Order Secret Repair');
+        $pastPage->assertSee('Reviews Restricted (Banned)');
+        $pastPage->assertDontSee('Write Verified Repair Review');
+
+        $this->actingAs($offender)->get("/requests/{$pastOrder->id}/track")->assertStatus(200);
+
+        // 5. Banned user cannot create requests, order services, use cart, or post reviews
+        $this->actingAs($offender)->get('/requests/create')->assertRedirect('/requests');
+        $this->actingAs($offender)->post('/requests', [
+            'title' => 'Blocked Request',
+            'device_type' => 'Phone',
+            'problem' => 'Blocked while banned',
+            'preferred_service_type' => 'walk_in',
+        ])->assertRedirect('/requests');
+        $this->assertDatabaseMissing('repair_requests', ['title' => 'Blocked Request']);
+
+        $this->actingAs($offender)->get('/cart')->assertRedirect('/requests');
+        $this->actingAs($offender)->post('/cart/checkout/place', [])->assertRedirect('/requests');
+        $this->actingAs($offender)->postJson('/cart/add', ['package_id' => 1])->assertStatus(403);
+        $this->actingAs($offender)->get("/reviews/create/{$shop->id}")->assertRedirect(route('shops.show', $shop->slug));
+        $this->actingAs($offender)->post('/reviews', [
+            'repair_shop_id' => $shop->id,
+            'rating' => 5,
+            'review_comment' => 'Blocked review',
+        ])->assertRedirect('/requests');
+        $this->assertDatabaseMissing('shop_reviews', ['customer_id' => $offender->id]);
+
+        // 6. Marking notifications read / popup_only works via endpoint
+        $this->actingAs($offender)
+            ->postJson(route('notifications.mark-read'), ['popup_only' => true])
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        // 7. Admin can unban the user and restore full customer permissions
+        $this->actingAs($admin)->post(route('admin.users.unban', $offender->id))
+            ->assertSessionHas('success');
+
+        $offender->refresh();
+        $this->assertSame('active', $offender->status);
+        $this->assertNull($offender->ban_reason);
+
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $offender->id,
+            'type' => 'ACCOUNT_UNBANNED',
+        ]);
+
+        $this->actingAs($offender)->get('/requests/create')->assertStatus(200);
+        $this->actingAs($offender)->get("/reviews/create/{$shop->id}")->assertStatus(200);
+    }
 }

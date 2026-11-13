@@ -176,7 +176,7 @@
     @endif
 
     {{-- Prompt Banner if Phone or Delivery Address Not Yet Set (e.g., Fresh Google Sign-Up) --}}
-    @if(empty($user->phone) || empty($user->address))
+    @if($user->role === 'customer' && !$user->isBanned() && (empty($user->phone) || empty($user->address)))
         <div class="mb-6 rounded-3xl border border-amber-300 bg-amber-50/95 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="space-y-1">
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3 py-0.5 text-[10px] font-extrabold uppercase text-white">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UserNotification;
 use App\Services\MediaUploadService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -188,6 +189,48 @@ class ProfileController extends Controller
         }
 
         return redirect('/')->with('success', 'Your profile has been deleted.');
+    }
+
+    /**
+     * Mark in-app bell notifications as seen or read.
+     * Route: POST /notifications/mark-read
+     */
+    public function markNotificationsRead(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Unauthorized'], 401)
+                : redirect()->route('login');
+        }
+
+        if ($request->boolean('popup_only')) {
+            UserNotification::where('user_id', $user->id)
+                ->where('is_read', false)
+                ->whereNull('popup_shown_at')
+                ->update(['popup_shown_at' => now()]);
+        } else {
+            $query = UserNotification::where('user_id', $user->id)->where('is_read', false);
+            if ($request->filled('notification_id')) {
+                $query->where('id', (int) $request->input('notification_id'));
+            }
+            $query->update([
+                'is_read' => true,
+                'read_at' => now(),
+                'popup_shown_at' => now(),
+            ]);
+        }
+
+        $unreadCount = UserNotification::where('user_id', $user->id)->where('is_read', false)->count();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'unread_count' => $unreadCount,
+            ]);
+        }
+
+        return back()->with('success', 'Notifications marked as read.');
     }
 
     private function serializeProfile($user): array

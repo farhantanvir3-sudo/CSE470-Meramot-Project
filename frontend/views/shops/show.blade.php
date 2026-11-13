@@ -9,6 +9,10 @@
     $isShopOwner = auth()->check()
         && auth()->user()->role === 'vendor'
         && (int) ($shop->vendorProfile?->user_id ?? 0) === (int) auth()->id();
+    $isAdminViewer = auth()->check() && auth()->user()->role === 'admin';
+    $isNonCustomerViewer = auth()->check() && auth()->user()->role !== 'customer';
+    $isBannedCustomerViewer = auth()->check() && auth()->user()->role === 'customer' && auth()->user()->isBanned();
+    $canCustomerBookOrReview = !auth()->check() || (auth()->user()->role === 'customer' && !auth()->user()->isBanned());
     $currentUserId = auth()->check() ? (int) auth()->id() : null;
     $reviewsList = ($shop->reviews ?? collect())
         ->where('is_hidden', false)
@@ -217,6 +221,24 @@
                                 <i class="fa-solid fa-sliders mr-1.5"></i> Edit Pricing &amp; Services
                             </a>
                         @endif
+                    @elseif($isAdminViewer)
+                        <a href="/admin" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                            <i class="fa-solid fa-shield-halved mr-1.5"></i> Admin Console
+                        </a>
+                        <a href="/admin/moderation" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <i class="fa-solid fa-gavel mr-1.5"></i> Review Moderation Desk
+                        </a>
+                    @elseif($isNonCustomerViewer)
+                        <a href="{{ auth()->user()->role === 'vendor' ? '/vendor/dashboard' : '/delivery' }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                            <i class="fa-solid fa-gauge-high mr-1.5"></i> {{ auth()->user()->role === 'vendor' ? 'Vendor Dashboard' : 'Rider Dashboard' }}
+                        </a>
+                    @elseif($isBannedCustomerViewer)
+                        <span class="inline-flex w-full items-center justify-center rounded-full border border-rose-300 bg-rose-100 px-4 py-2.5 text-xs font-bold text-rose-900 cursor-not-allowed">
+                            <i class="fa-solid fa-ban mr-1.5 text-[10px]"></i> Ordering &amp; Requests Restricted
+                        </span>
+                        <a href="/requests" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <i class="fa-solid fa-list-check mr-1.5"></i> View Ongoing &amp; Past Orders
+                        </a>
                     @else
                         @if($isOperational)
                             <a href="/requests/create?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
@@ -257,12 +279,22 @@
                             @endif
                         </p>
                     </div>
-                    @if($isOperational)
+                    @if($isOperational && $canCustomerBookOrReview)
                         <a href="/cart" class="inline-flex items-center gap-2 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                             <i class="fa-solid fa-cart-shopping"></i>
                             <span>Open Direct Cart</span>
                         </a>
-                    @else
+                    @elseif($isAdminViewer)
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-dark)]">
+                            <i class="fa-solid fa-shield-halved text-[10px]"></i>
+                            <span>Admin Catalog Audit</span>
+                        </span>
+                    @elseif($isBannedCustomerViewer)
+                        <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-3.5 py-1.5 text-xs font-bold text-rose-900">
+                            <i class="fa-solid fa-ban text-[10px]"></i>
+                            <span>Restricted from Ordering</span>
+                        </span>
+                    @elseif(!$isOperational)
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3.5 py-1.5 text-xs font-bold text-amber-900">
                             <i class="fa-solid fa-eye text-[10px]"></i>
                             <span>Catalog Preview</span>
@@ -334,27 +366,31 @@
                             </div>
 
                             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto md:pl-4">
-                                @if($isOperational && $shop->accepts_direct_orders)
-                                    <button
-                                        type="button"
-                                        onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"
-                                        class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
-                                    >
-                                        <i class="fa-solid fa-cart-plus text-xs"></i>
-                                        <span>Add to Cart</span>
-                                    </button>
-                                @endif
+                                @if($isOperational && $canCustomerBookOrReview)
+                                    @if($shop->accepts_direct_orders)
+                                        <button
+                                            type="button"
+                                            onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"
+                                            class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
+                                        >
+                                            <i class="fa-solid fa-cart-plus text-xs"></i>
+                                            <span>Add to Cart</span>
+                                        </button>
+                                    @endif
 
-                                @if($isOperational)
                                     <a
                                         href="/requests/create?shop_id={{ $shop->id }}&issue={{ urlencode($svcItem['name']) }}"
                                         class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap"
                                     >
                                         Custom Quote
                                     </a>
-                                @else
+                                @elseif(!$isOperational)
                                     <span class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed whitespace-nowrap">
                                         <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Available After Approval
+                                    </span>
+                                @elseif($isBannedCustomerViewer)
+                                    <span class="inline-flex h-10 items-center justify-center rounded-full border border-rose-300 bg-rose-50 px-4 text-xs font-semibold text-rose-800 cursor-not-allowed whitespace-nowrap">
+                                        <i class="fa-solid fa-ban mr-1.5 text-[10px]"></i> Ordering Restricted
                                     </span>
                                 @endif
                             </div>
@@ -470,6 +506,18 @@
                                 <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--accent-dark)]">
                                     <i class="fa-solid fa-store mr-1 text-[10px]"></i> Your Workshop
                                 </span>
+                            @elseif($isAdminViewer)
+                                <span class="rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-bold text-rose-900">
+                                    <i class="fa-solid fa-gavel mr-1 text-[10px]"></i> Admin Review Moderation
+                                </span>
+                            @elseif($isNonCustomerViewer)
+                                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--muted-foreground)]">
+                                    <i class="fa-solid fa-comments mr-1 text-[10px]"></i> Verified Client Feedback
+                                </span>
+                            @elseif($isBannedCustomerViewer)
+                                <span class="rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-bold text-rose-900">
+                                    <i class="fa-solid fa-ban mr-1 text-[10px]"></i> Review Posting Restricted
+                                </span>
                             @elseif($isOperational)
                                 @auth
                                     <a href="/requests?filter=COMPLETED" class="rounded-full border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition" title="Write a Verified Repair Review from your completed Past Orders">
@@ -575,6 +623,8 @@
                                 $isOwnReview = $currentUserId !== null && (int) $rev->customer_id === $currentUserId;
                                 $isVerifiedRepair = (bool) ($rev->is_verified_purchase ?? false);
                                 $serviceProvidedLabel = trim((string) ($rev->service_provided ?: ($isVerifiedRepair && $rev->repairRequest ? (($rev->repairRequest->issue_category ?: $rev->repairRequest->device_type) . ' — ' . $rev->repairRequest->title) : '')));
+                                $offensiveWords = $isAdminViewer ? \App\Models\ShopReview::detectOffensiveWords($rev->review_comment) : [];
+                                $authorBanned = ($rev->customer?->status ?? '') === 'banned';
                             @endphp
                             <article
                                 id="review-{{ $rev->id }}"
@@ -606,6 +656,16 @@
                                                 @else
                                                     <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-600 border border-slate-300">
                                                         Public review
+                                                    </span>
+                                                @endif
+                                                @if($authorBanned)
+                                                    <span class="rounded-full bg-rose-600 px-2 py-0.5 text-[9px] font-extrabold uppercase text-white">
+                                                        Banned User
+                                                    </span>
+                                                @endif
+                                                @if($isAdminViewer && !empty($offensiveWords))
+                                                    <span class="rounded-full bg-amber-100 border border-amber-400 px-2 py-0.5 text-[9px] font-bold text-amber-900">
+                                                        <i class="fa-solid fa-triangle-exclamation mr-0.5"></i>Offensive Words: {{ implode(', ', $offensiveWords) }}
                                                     </span>
                                                 @endif
                                             </div>
@@ -640,6 +700,77 @@
                                 <p x-show="editingReviewId !== {{ (int) $rev->id }}" class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
                                     "{{ $rev->review_comment }}"
                                 </p>
+
+                                @if($isAdminViewer)
+                                    <div x-data="{ banOpen: false }" class="mt-3 pt-3 border-t border-rose-300/70 space-y-2.5">
+                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                            <span class="text-[11px] font-bold text-rose-800 dark:text-rose-300">
+                                                <i class="fa-solid fa-shield-halved mr-1"></i>Admin Review Governance
+                                            </span>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <form
+                                                    method="POST"
+                                                    action="{{ route('admin.reviews.moderate', $rev->id) }}"
+                                                    data-confirm-delete
+                                                    data-confirm-title="Delete Review?"
+                                                    data-confirm-item="Review #{{ $rev->id }} by {{ $rev->customer->name ?? 'Customer' }}"
+                                                    data-confirm-message="This deletes the review, recalculates the workshop rating, and notifies the author via email and bell alert."
+                                                    data-confirm-cta="Delete Review"
+                                                    class="inline"
+                                                >
+                                                    @csrf
+                                                    <input type="hidden" name="action_type" value="delete_only">
+                                                    <input type="hidden" name="reason" value="Removed by Admin for inappropriate or offensive review language">
+                                                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3.5 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-amber-700 transition">
+                                                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                                        <span>Delete Review</span>
+                                                    </button>
+                                                </form>
+
+                                                @if($rev->customer && $rev->customer->role !== 'admin')
+                                                    <button
+                                                        type="button"
+                                                        @click="banOpen = !banOpen"
+                                                        class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3.5 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                                    >
+                                                        <i class="fa-solid fa-ban text-[10px]"></i>
+                                                        <span>Delete &amp; Ban User</span>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+
+                                        @if($rev->customer && $rev->customer->role !== 'admin')
+                                            <form
+                                                x-show="banOpen"
+                                                x-cloak
+                                                method="POST"
+                                                action="{{ route('admin.reviews.moderate', $rev->id) }}"
+                                                class="rounded-2xl border border-rose-300 bg-rose-50 dark:bg-rose-950/30 p-3 space-y-2"
+                                            >
+                                                @csrf
+                                                <input type="hidden" name="action_type" value="delete_and_ban">
+                                                <label class="block text-[10px] font-extrabold uppercase tracking-wider text-rose-900 dark:text-rose-200">
+                                                    Ban Reason (Sent via Email &amp; Notification Bell Pop-Up to {{ $rev->customer->email }})
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    name="reason"
+                                                    required
+                                                    maxlength="500"
+                                                    value="Use of offensive words in review on {{ $shop->name }}"
+                                                    class="w-full rounded-xl border border-rose-300 bg-white dark:bg-[var(--card)] px-3 py-1.5 text-xs text-[var(--foreground)] outline-none"
+                                                >
+                                                <div class="flex items-center justify-end gap-2">
+                                                    <button type="button" @click="banOpen = false" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--foreground)]">Cancel</button>
+                                                    <button type="submit" class="rounded-full bg-rose-700 px-4 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-rose-800 transition">
+                                                        Confirm Delete Review &amp; Ban User
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        @endif
+                                    </div>
+                                @endif
 
                                 @if($isOwnReview)
                                     <div

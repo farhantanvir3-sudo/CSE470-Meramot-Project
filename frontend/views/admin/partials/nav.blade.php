@@ -59,7 +59,6 @@
                 class="inline-flex items-center gap-1 rounded-full px-3 py-1.5 font-semibold transition {{ str_starts_with($currentAdminPath, '/admin/moderation') ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)]' : 'bg-[var(--card)]/80 text-[var(--muted-foreground)] border border-[var(--border)] hover:text-[var(--foreground)]' }}"
             >
                 <span>Moderation</span>
-                <span class="text-[9px] uppercase opacity-75">Soon</span>
             </a>
             <a
                 href="/admin/audit-logs"

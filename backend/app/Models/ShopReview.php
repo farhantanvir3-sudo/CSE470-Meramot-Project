@@ -60,4 +60,33 @@ class ShopReview extends Model
     {
         return $this->belongsTo(User::class, 'moderated_by_id');
     }
+
+    public const OFFENSIVE_WORDS = [
+        'idiot', 'idiots', 'stupid', 'moron', 'morons', 'garbage', 'trash',
+        'pathetic', 'useless', 'fool', 'fools', 'bastard', 'bastards', 'scumbag',
+        'scammers', 'frauds', 'cheaters', 'rubbish', 'crap', 'bullshit',
+        'shit', 'fuck', 'fucking', 'asshole', 'bitch', 'wtf', 'dumb', 'lunatic',
+    ];
+
+    public static function detectOffensiveWords(?string $text): array
+    {
+        $content = strtolower((string) $text);
+        if ($content === '') {
+            return [];
+        }
+
+        $found = [];
+        foreach (self::OFFENSIVE_WORDS as $word) {
+            if (preg_match('/\b' . preg_quote($word, '/') . '\b/i', $content)) {
+                $found[] = $word;
+            }
+        }
+
+        return array_values(array_unique($found));
+    }
+
+    public static function containsOffensiveLanguage(?string $text): bool
+    {
+        return count(self::detectOffensiveWords($text)) > 0;
+    }
 }

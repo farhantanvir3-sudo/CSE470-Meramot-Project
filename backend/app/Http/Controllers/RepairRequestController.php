@@ -23,6 +23,20 @@ use Illuminate\Http\Request;
 class RepairRequestController extends Controller
 {
     /**
+     * Redirect non-customer roles to their designated operational portal.
+     */
+    private function redirectForNonCustomer(User $user)
+    {
+        return match ($user->role) {
+            'admin' => redirect('/admin')
+                ->with('warning', 'Platform administrators manage operations from the Admin Console and do not hold customer orders.'),
+            'vendor' => redirect('/vendor/dashboard'),
+            'delivery_agent', 'delivery' => redirect('/delivery'),
+            default => redirect('/'),
+        };
+    }
+
+    /**
      * Customer "My Repair Requests & Direct Orders" Hub.
      * Routes: GET /requests, GET /orders
      */
@@ -36,20 +50,13 @@ class RepairRequestController extends Controller
                 ->with('warning', 'Please sign in to view your repair requests and past orders.');
         }
 
-        if ($user->role === 'vendor') {
-            return redirect('/vendor/dashboard');
-        }
-
-        if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
-            return redirect('/delivery');
+        if ($user->role !== 'customer') {
+            return $this->redirectForNonCustomer($user);
         }
 
         $query = RepairRequest::with(['bids.shop', 'requestedShop', 'repairJob.shop', 'customer', 'review'])
+            ->where('customer_id', $user->id)
             ->orderByDesc('created_at');
-
-        if ($user->role !== 'admin') {
-            $query->where('customer_id', $user->id);
-        }
 
         if ($statusFilter === 'BIDDING') {
             $query->where('status', 'BIDDING');
@@ -76,6 +83,16 @@ class RepairRequestController extends Controller
      */
     public function create(Request $request)
     {
+        if ($user = $request->user()) {
+            if ($user->role !== 'customer') {
+                return $this->redirectForNonCustomer($user);
+            }
+            if ($user->isBanned()) {
+                return redirect('/requests')
+                    ->with('error', 'Account Restricted: Banned accounts cannot post new repair requests. You may still view and track your ongoing and past orders.');
+            }
+        }
+
         $selectedShop = $request->filled('shop_id')
             ? RepairShop::where('is_active', true)->where('is_public', true)->find($request->query('shop_id'))
             : null;
@@ -90,6 +107,20 @@ class RepairRequestController extends Controller
      */
     public function store(Request $request)
     {
+        if ($user = $request->user()) {
+            if ($user->role !== 'customer') {
+                return $request->expectsJson()
+                    ? response()->json(['message' => 'Only customer accounts can post repair requests.'], 403)
+                    : $this->redirectForNonCustomer($user);
+            }
+            if ($user->isBanned()) {
+                return $request->expectsJson()
+                    ? response()->json(['message' => 'Account Restricted: Banned accounts cannot post repair requests.'], 403)
+                    : redirect('/requests')
+                        ->with('error', 'Account Restricted: Banned accounts cannot post new repair requests. You may still view and track your ongoing and past orders.');
+            }
+        }
+
         $validated = $request->validate([
             'device_type' => 'required|string|max:100',
             'brand' => 'required|string|max:100',
@@ -126,7 +157,8 @@ class RepairRequestController extends Controller
             }
         }
 
-        $customerId = $request->user()?->id ?? User::where('role', 'customer')->value('id') ?? User::value('id') ?? 1;
+        $customerId = $request->user()?->id ?? User::where('role', 'customer')->value('id');
+        abort_if(!$customerId, 403, 'A customer account is required to post a repair request.');
         $requestedShopId = $validated['preferred_shop_id'] ?? null;
         $targetShop = $requestedShopId ? RepairShop::find($requestedShopId) : null;
 

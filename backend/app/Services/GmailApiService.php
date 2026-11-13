@@ -382,4 +382,78 @@ class GmailApiService
 
         return $this->sendEmail($toEmail, $subject, $html);
     }
+
+    /**
+     * Feature R19: Send Moderation Notice / Account Ban Alert Email (offensive review language).
+     */
+    public function sendModerationSanctionEmail(
+        string $toEmail,
+        string $recipientName,
+        string $shopName,
+        string $reason,
+        bool $isBanned,
+        ?string $reviewExcerpt = null
+    ): array {
+        $requestsUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/requests';
+        $subject = $isBanned
+            ? 'Meramot Governance Alert: Offensive Review Deleted & Account Restricted'
+            : 'Meramot Governance Notice: Your Review Was Removed';
+        $heading = $isBanned
+            ? 'Review Removed & Ordering Privileges Restricted'
+            : 'Workshop Review Removed by Moderation';
+
+        $excerptHtml = $reviewExcerpt
+            ? "<p style=\"font-size: 12px; color: #5e6d64; margin-top: 8px;\"><strong>Removed review excerpt:</strong> &ldquo;" . e($reviewExcerpt) . "&rdquo;</p>"
+            : '';
+
+        $restrictionHtml = $isBanned
+            ? "
+                <div style=\"background-color: #fff7ed; padding: 14px 18px; border-radius: 10px; margin: 16px 0; color: #7c2d12; border: 1px solid #fed7aa;\">
+                    <p style=\"margin: 0 0 6px 0;\"><strong>Your account ordering and posting privileges have been restricted</strong> due to offensive language in a workshop review.</p>
+                    <p style=\"margin: 0;\">You can still sign in to Meramot anytime to view and track your <strong>ongoing repair orders and past orders</strong> at <a href=\"{$requestsUrl}\">/requests</a>, but placing new service orders, adding items to cart, posting repair requests, and submitting reviews are disabled.</p>
+                </div>
+            "
+            : '';
+
+        $html = "
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #f3d4d4; border-radius: 16px;\">
+                <h2 style=\"color: #991b1b; margin-top: 0;\">{$heading}</h2>
+                <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
+                <p>A Meramot platform administrator reviewed your feedback on <strong>" . e($shopName) . "</strong> and removed the review under our Community Guidelines.</p>
+                <div style=\"background-color: #fef2f2; padding: 14px 18px; border-radius: 10px; margin: 16px 0; color: #7f1d1d; border: 1px solid #fecaca;\">
+                    <strong>Moderation Reason:</strong> " . e($reason) . "
+                    {$excerptHtml}
+                </div>
+                {$restrictionHtml}
+                <div style=\"margin: 22px 0; text-align: center;\">
+                    <a href=\"{$requestsUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">View Ongoing &amp; Past Orders</a>
+                </div>
+                <p style=\"margin-top: 20px;\">Regards,<br/><strong>Meramot Moderation &amp; Governance Team</strong></p>
+            </div>
+        ";
+
+        return $this->sendEmail($toEmail, $subject, $html);
+    }
+
+    /**
+     * Feature R19: Send Account Restriction Lifted / Unban Email.
+     */
+    public function sendAccountUnbannedEmail(string $toEmail, string $recipientName): array
+    {
+        $loginUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/login';
+        $subject = 'Meramot Governance Update: Account Restrictions Lifted';
+        $html = "
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px;\">
+                <h2 style=\"color: #214c34; margin-top: 0;\">Your Meramot Ordering &amp; Request Access Is Restored</h2>
+                <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
+                <p>An administrator has lifted the moderation restriction on your Meramot account. Full access to order repair services, post repair requests, and use the Direct-Order Cart has been restored.</p>
+                <div style=\"margin: 22px 0; text-align: center;\">
+                    <a href=\"{$loginUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Open Meramot Marketplace</a>
+                </div>
+                <p style=\"margin-top: 20px;\">Thanks,<br/><strong>Meramot Moderation &amp; Governance Team</strong></p>
+            </div>
+        ";
+
+        return $this->sendEmail($toEmail, $subject, $html);
+    }
 }

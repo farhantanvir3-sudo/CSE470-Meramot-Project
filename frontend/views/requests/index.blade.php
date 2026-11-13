@@ -32,13 +32,23 @@ Controller: RepairRequestController@index
                 Compare incoming Quote 1 marketplace bids, approve Quote 2 bench diagnostics, and monitor Direct-Order bookings.
             </p>
         </div>
+        @php
+            $isBannedViewer = auth()->check() && auth()->user()->isBanned();
+        @endphp
         <div class="flex flex-wrap items-center gap-2 shrink-0">
             <a href="/packages/catalog" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                 Fixed Packages
             </a>
-            <a href="/requests/create" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
-                + Post New Repair Request
-            </a>
+            @if($isBannedViewer)
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700">
+                    <i class="fa-solid fa-ban text-[11px]"></i>
+                    <span>New Requests Restricted</span>
+                </span>
+            @else
+                <a href="/requests/create" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                    + Post New Repair Request
+                </a>
+            @endif
         </div>
     </div>
 
@@ -149,13 +159,20 @@ Controller: RepairRequestController@index
                                         </button>
                                     </form>
                                 @else
-                                    <a
-                                        href="{{ route('reviews.create', ['shopId' => $assignedShop->id, 'order_id' => $req->id]) }}"
-                                        class="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
-                                    >
-                                        <i class="fa-solid fa-certificate text-[11px]"></i>
-                                        <span>Write Verified Repair Review</span>
-                                    </a>
+                                    @if($isBannedViewer)
+                                        <span class="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700">
+                                            <i class="fa-solid fa-ban text-[11px]"></i>
+                                            <span>Reviews Restricted (Banned)</span>
+                                        </span>
+                                    @else
+                                        <a
+                                            href="{{ route('reviews.create', ['shopId' => $assignedShop->id, 'order_id' => $req->id]) }}"
+                                            class="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                                        >
+                                            <i class="fa-solid fa-certificate text-[11px]"></i>
+                                            <span>Write Verified Repair Review</span>
+                                        </a>
+                                    @endif
                                 @endif
                             @endif
 
@@ -177,9 +194,11 @@ Controller: RepairRequestController@index
                 </div>
                 <h3 class="text-lg font-black text-[var(--foreground)]">No repair requests match this filter yet</h3>
                 <p class="mt-1 text-xs text-[var(--muted-foreground)]">Post a hardware issue to receive Quote 1 bids from verified workshops across Bangladesh.</p>
-                <a href="/requests/create" class="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
-                    Post a Repair Request &rarr;
-                </a>
+                @if(!$isBannedViewer)
+                    <a href="/requests/create" class="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                        Post a Repair Request &rarr;
+                    </a>
+                @endif
             </div>
         @endforelse
     </div>
