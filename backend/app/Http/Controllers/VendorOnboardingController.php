@@ -233,11 +233,18 @@ class VendorOnboardingController extends Controller
         $logoUrl = $existingProfile?->logo_url;
         if ($request->hasFile('logo')) {
             $logoUrl = MediaUploadService::fromRequest($request, 'logo', $logoUrl, 1000, 84);
+        } elseif ($request->boolean('remove_logo')) {
+            $logoUrl = null;
         } elseif (array_key_exists('logo_url', $validated) && $validated['logo_url'] !== null) {
             $logoUrl = trim((string) $validated['logo_url']) ?: null;
         }
 
-        $documentsPath = MediaUploadService::fromRequest($request, 'verification_document', $existingProfile?->documents_path);
+        $documentsPath = $existingProfile?->documents_path;
+        if ($request->hasFile('verification_document')) {
+            $documentsPath = MediaUploadService::fromRequest($request, 'verification_document', $documentsPath);
+        } elseif ($request->boolean('remove_document')) {
+            $documentsPath = null;
+        }
 
         $profile = DB::transaction(function () use (
             $isEditMode, $authUser, $existingProfile, $validated, $email, $cleanPhone,
@@ -1009,14 +1016,15 @@ class VendorOnboardingController extends Controller
                 'role' => 'vendor',
                 'is_active' => true,
             ]);
+        }
 
-            if (!empty($profile->user->email)) {
-                app(GmailApiService::class)->sendVendorApprovalEmail(
-                    $profile->user->email,
-                    $profile->user->name ?? 'Vendor Partner',
-                    $profile->shop_name
-                );
-            }
+        $notifyEmail = $profile->business_email ?: $profile->user?->email;
+        if (!empty($notifyEmail)) {
+            app(GmailApiService::class)->sendVendorApprovalEmail(
+                $notifyEmail,
+                $profile->owner_name ?: ($profile->user?->name ?? 'Vendor Partner'),
+                $profile->shop_name
+            );
         }
 
         $requiresPostApprovalSetup = false;

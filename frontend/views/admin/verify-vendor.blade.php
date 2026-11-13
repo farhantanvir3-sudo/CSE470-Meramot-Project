@@ -448,10 +448,17 @@ Models Touched: VendorProfile, RepairShop, User
                         @endphp
                         <tr>
                             <td class="px-4 py-3 font-bold text-[var(--foreground)]">
-                                {{ $vp->canonical_brand_name }}
-                                @if($vp->is_branched)
-                                    <span class="ml-1 rounded-full bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-extrabold text-[var(--accent-dark)]">Multi-Branch</span>
-                                @endif
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span>{{ $vp->canonical_brand_name }}</span>
+                                    @if($vp->is_branched)
+                                        <span class="rounded-full bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-extrabold text-[var(--accent-dark)]">Multi-Branch</span>
+                                    @endif
+                                    @if($firstShop && $firstShop->is_public && $firstShop->is_active)
+                                        <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Live</span>
+                                    @else
+                                        <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Setup Pending</span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-4 py-3 text-[var(--muted-foreground)]">{{ $vp->area }}, {{ $vp->city }}</td>
                             <td class="px-4 py-3 text-center font-bold">{{ $vp->shops->count() }}</td>
