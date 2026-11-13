@@ -25,6 +25,7 @@ class ShopReview extends Model
         'customer_id',
         'repair_request_id',
         'rating', // 1 to 5 stars
+        'service_provided',
         'review_comment',
         'is_verified_purchase',
         'is_hidden',

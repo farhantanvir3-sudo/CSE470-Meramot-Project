@@ -9,7 +9,36 @@
     $isShopOwner = auth()->check()
         && auth()->user()->role === 'vendor'
         && (int) ($shop->vendorProfile?->user_id ?? 0) === (int) auth()->id();
-    $reviewsList = ($shop->reviews ?? collect())->where('is_hidden', false)->values();
+    $currentUserId = auth()->check() ? (int) auth()->id() : null;
+    $reviewsList = ($shop->reviews ?? collect())
+        ->where('is_hidden', false)
+        ->sortByDesc(function ($rev) use ($currentUserId) {
+            $isOwn = $currentUserId !== null && (int) $rev->customer_id === $currentUserId ? 1 : 0;
+            $isVerified = ($rev->is_verified_purchase ?? true) ? 1 : 0;
+            $ts = $rev->created_at ? $rev->created_at->getTimestamp() : 0;
+            return sprintf('%d-%d-%012d-%08d', $isOwn, $isVerified, $ts, (int) $rev->id);
+        })
+        ->values();
+    $ownReviewIds = $currentUserId !== null
+        ? $reviewsList->filter(fn ($r) => (int) $r->customer_id === $currentUserId)->pluck('id')->map(fn ($id) => (int) $id)->values()
+        : collect();
+    $serviceSkillBreakdown = $reviewsList
+        ->filter(fn ($r) => (bool) ($r->is_verified_purchase ?? false))
+        ->map(function ($r) {
+            $srv = trim((string) ($r->service_provided ?: ($r->repairRequest?->issue_category ? $r->repairRequest->issue_category . ' — ' . $r->repairRequest->title : ($r->repairRequest?->title ?? ''))));
+            return [
+                'service' => $srv !== '' ? $srv : 'General Bench Repair',
+                'rating' => (int) ($r->rating ?? 5),
+            ];
+        })
+        ->groupBy('service')
+        ->map(fn ($group, $srvName) => [
+            'service' => $srvName,
+            'avg_rating' => round((float) $group->avg('rating'), 1),
+            'count' => $group->count(),
+        ])
+        ->sortByDesc('avg_rating')
+        ->values();
     $totalReviewsCount = $reviewsList->count() > 0 ? $reviewsList->count() : (int) ($shop->review_count ?? 0);
     $avgRating = $reviewsList->count() > 0
         ? round((float) $reviewsList->avg('rating'), 2)
@@ -394,12 +423,40 @@
                 </div>
 
                 <!-- Right Card: Reviews List -->
-                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+                <div
+                    class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm"
+                    x-data="{
+                        ownIds: @js($ownReviewIds),
+                        selectedReviewIds: [],
+                        editingReviewId: null,
+                        toggleOwnReview(id) {
+                            if (this.selectedReviewIds.includes(id)) {
+                                this.selectedReviewIds = this.selectedReviewIds.filter(i => i !== id);
+                            } else {
+                                this.selectedReviewIds.push(id);
+                            }
+                        },
+                        selectAllOwn() {
+                            if (this.selectedReviewIds.length === this.ownIds.length) {
+                                this.selectedReviewIds = [];
+                            } else {
+                                this.selectedReviewIds = [...this.ownIds];
+                            }
+                        }
+                    }"
+                >
                     <div class="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
-                        <p class="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
-                            Feedback from verified clients
-                        </p>
-                        <div class="flex items-center gap-2">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                                Feedback from verified clients
+                            </p>
+                            @if($ownReviewIds->isNotEmpty())
+                                <p class="text-[11px] font-semibold text-emerald-800 dark:text-emerald-400 mt-0.5">
+                                    <i class="fa-solid fa-thumbtack mr-1 text-[10px]"></i>Your own {{ \Illuminate\Support\Str::plural('review', $ownReviewIds->count()) }} pinned to top — select to edit or delete
+                                </p>
+                            @endif
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
                             <span class="rounded-full bg-[var(--mint-100)] px-3 py-0.5 text-xs font-semibold text-[var(--accent-dark)]">
                                 {{ $shop->area ? $shop->area . ', ' . $shop->city : ($shop->city ?: 'Bangladesh') }}
                             </span>
@@ -408,6 +465,9 @@
                                     <i class="fa-solid fa-store mr-1 text-[10px]"></i> Your Workshop
                                 </span>
                             @elseif($isOperational)
+                                <a href="/requests?filter=COMPLETED" class="rounded-full border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition" title="Write a Verified Repair Review from your completed Past Orders">
+                                    <i class="fa-solid fa-certificate mr-1 text-[10px] text-emerald-600"></i> Review Past Order
+                                </a>
                                 <a href="/reviews/create/{{ $shop->id }}" class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-xs font-semibold text-white hover:opacity-90 transition">
                                     <i class="fa-solid fa-pen-to-square mr-1 text-[10px]"></i> Write Review
                                 </a>
@@ -419,32 +479,230 @@
                         </div>
                     </div>
 
+                    @if($serviceSkillBreakdown->isNotEmpty())
+                        <div class="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] p-3.5 space-y-2">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
+                                    <i class="fa-solid fa-screwdriver-wrench mr-1"></i>Workshop Skill Breakdown by Verified Repair Service
+                                </span>
+                                <span class="text-[10px] text-[var(--muted-foreground)]">From past order reviews</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($serviceSkillBreakdown as $skillItem)
+                                    @php
+                                        $isStrongSkill = $skillItem['avg_rating'] >= 4.0;
+                                        $isWeakSkill = $skillItem['avg_rating'] < 3.0;
+                                    @endphp
+                                    <div class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold {{ $isStrongSkill ? 'border-emerald-300 bg-emerald-100/80 text-emerald-900' : ($isWeakSkill ? 'border-rose-300 bg-rose-100/80 text-rose-900' : 'border-amber-300 bg-amber-100/80 text-amber-900') }}">
+                                        <span>{{ $skillItem['service'] }}</span>
+                                        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-white/80">
+                                            ★ {{ number_format($skillItem['avg_rating'], 1) }} ({{ $skillItem['count'] }})
+                                        </span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($ownReviewIds->isNotEmpty())
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 px-3.5 py-2 text-xs">
+                            <label class="inline-flex items-center gap-2 cursor-pointer font-bold text-[var(--foreground)]">
+                                <input
+                                    type="checkbox"
+                                    :checked="selectedReviewIds.length > 0 && selectedReviewIds.length === ownIds.length"
+                                    @change="selectAllOwn()"
+                                    class="h-4 w-4 rounded accent-[#214c34] cursor-pointer"
+                                >
+                                <span>Select My Reviews (<span x-text="selectedReviewIds.length">0</span>/{{ $ownReviewIds->count() }})</span>
+                            </label>
+
+                            <form
+                                x-show="selectedReviewIds.length > 0"
+                                x-cloak
+                                method="POST"
+                                action="{{ route('reviews.bulk-destroy') }}"
+                                onsubmit="return confirm('Delete your selected review(s)?');"
+                                class="inline-flex items-center gap-2"
+                            >
+                                @csrf
+                                <input type="hidden" name="repair_shop_id" value="{{ $shop->id }}">
+                                <template x-for="rid in selectedReviewIds" :key="rid">
+                                    <input type="hidden" name="review_ids[]" :value="rid">
+                                </template>
+                                <button
+                                    type="submit"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                >
+                                    <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                    <span>Delete Selected (<span x-text="selectedReviewIds.length"></span>)</span>
+                                </button>
+                            </form>
+                        </div>
+                    @endif
+
                     <div class="space-y-4">
                         @forelse($reviewsList as $rev)
-                            <article class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 shadow-sm text-xs">
+                            @php
+                                $isOwnReview = $currentUserId !== null && (int) $rev->customer_id === $currentUserId;
+                                $isVerifiedRepair = (bool) ($rev->is_verified_purchase ?? false);
+                                $serviceProvidedLabel = trim((string) ($rev->service_provided ?: ($isVerifiedRepair && $rev->repairRequest ? (($rev->repairRequest->issue_category ?: $rev->repairRequest->device_type) . ' — ' . $rev->repairRequest->title) : '')));
+                            @endphp
+                            <article
+                                id="review-{{ $rev->id }}"
+                                class="rounded-[1.5rem] border {{ $isOwnReview ? 'border-emerald-500/70 bg-emerald-50/50 dark:bg-emerald-950/20 ring-1 ring-emerald-500/20' : 'border-[var(--border)] bg-[var(--mint-100)]/50' }} p-4 shadow-sm text-xs transition"
+                            >
                                 <div class="flex items-start justify-between gap-2">
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <p class="font-bold text-[var(--foreground)] text-sm">{{ $rev->customer->name ?? 'Meramot Customer' }}</p>
-                                            @if($rev->is_verified_purchase ?? true)
-                                                <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
-                                                    Verified repair
-                                                </span>
+                                    <div class="flex items-start gap-2.5 min-w-0">
+                                        @if($isOwnReview)
+                                            <input
+                                                type="checkbox"
+                                                :checked="selectedReviewIds.includes({{ (int) $rev->id }})"
+                                                @change="toggleOwnReview({{ (int) $rev->id }})"
+                                                aria-label="Select your review #{{ $rev->id }}"
+                                                class="mt-1 h-4 w-4 rounded accent-[#214c34] cursor-pointer shrink-0"
+                                            >
+                                        @endif
+                                        <div class="min-w-0">
+                                            <div class="flex flex-wrap items-center gap-1.5">
+                                                <p class="font-bold text-[var(--foreground)] text-sm">{{ $rev->customer->name ?? 'Meramot Customer' }}</p>
+                                                @if($isOwnReview)
+                                                    <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white">
+                                                        Your Review
+                                                    </span>
+                                                @endif
+                                                @if($isVerifiedRepair)
+                                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
+                                                        <i class="fa-solid fa-certificate mr-0.5 text-[8px]"></i>Verified repair
+                                                    </span>
+                                                @else
+                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-600 border border-slate-300">
+                                                        Public review
+                                                    </span>
+                                                @endif
+                                            </div>
+
+                                            @if($serviceProvidedLabel !== '')
+                                                <div class="mt-1">
+                                                    <span class="inline-flex items-center gap-1 rounded-full bg-[var(--mint-200)]/90 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] border border-[var(--border)]">
+                                                        <i class="fa-solid fa-screwdriver-wrench text-[9px]"></i>
+                                                        <span>Service Provided: {{ $serviceProvidedLabel }}</span>
+                                                    </span>
+                                                </div>
                                             @endif
+
+                                            <p class="text-[10px] text-[var(--muted-foreground)] mt-1">
+                                                {{ $rev->created_at ? $rev->created_at->diffForHumans() : 'Recently verified' }}
+                                                @if($isVerifiedRepair && $rev->repair_request_id)
+                                                    • Past Order #{{ $rev->repair_request_id }}
+                                                @endif
+                                            </p>
                                         </div>
-                                        <p class="text-[10px] text-[var(--muted-foreground)] mt-0.5">
-                                            {{ $rev->created_at ? $rev->created_at->diffForHumans() : 'Recently verified' }}
-                                        </p>
                                     </div>
-                                    <div class="text-amber-500">
-                                        @for($s = 1; $s <= 5; $s++)
-                                            <i class="fa-solid fa-star text-[10px] {{ $s <= ($rev->rating ?? 5) ? 'text-amber-500' : 'text-gray-300' }}"></i>
-                                        @endfor
+
+                                    <div class="flex flex-col items-end gap-1.5 shrink-0">
+                                        <div class="text-amber-500">
+                                            @for($s = 1; $s <= 5; $s++)
+                                                <i class="fa-solid fa-star text-[10px] {{ $s <= ($rev->rating ?? 5) ? 'text-amber-500' : 'text-gray-300' }}"></i>
+                                            @endfor
+                                        </div>
+
+                                        @if($isOwnReview)
+                                            <div class="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    @click="editingReviewId = (editingReviewId === {{ (int) $rev->id }} ? null : {{ (int) $rev->id }})"
+                                                    class="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-white dark:bg-[var(--card)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition"
+                                                >
+                                                    <i class="fa-solid fa-pen text-[9px]"></i>
+                                                    <span x-text="editingReviewId === {{ (int) $rev->id }} ? 'Cancel' : 'Edit'">Edit</span>
+                                                </button>
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ route('reviews.destroy', $rev->id) }}"
+                                                    onsubmit="return confirm('Delete this review?');"
+                                                    class="inline"
+                                                >
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button
+                                                        type="submit"
+                                                        class="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-600 hover:text-white transition"
+                                                    >
+                                                        <i class="fa-solid fa-trash-can text-[9px]"></i>
+                                                        <span>Delete</span>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
-                                <p class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
+
+                                <p x-show="editingReviewId !== {{ (int) $rev->id }}" class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
                                     "{{ $rev->review_comment }}"
                                 </p>
+
+                                @if($isOwnReview)
+                                    <form
+                                        x-show="editingReviewId === {{ (int) $rev->id }}"
+                                        x-cloak
+                                        method="POST"
+                                        action="{{ route('reviews.update', $rev->id) }}"
+                                        class="mt-3 pt-3 border-t border-[var(--border)] space-y-3"
+                                    >
+                                        @csrf
+                                        @method('PUT')
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-[10px] font-bold uppercase text-[var(--muted-foreground)] mb-1">Rating (1–5 ★)</label>
+                                                <select name="rating" required class="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] px-3 py-2 text-xs font-bold text-[var(--foreground)] outline-none">
+                                                    @for($rOpt = 5; $rOpt >= 1; $rOpt--)
+                                                        <option value="{{ $rOpt }}" {{ (int) $rev->rating === $rOpt ? 'selected' : '' }}>
+                                                            {{ $rOpt }} {{ \Illuminate\Support\Str::plural('Star', $rOpt) }} ({{ str_repeat('★', $rOpt) }})
+                                                        </option>
+                                                    @endfor
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[10px] font-bold uppercase text-[var(--muted-foreground)] mb-1">Service Provided</label>
+                                                <input
+                                                    type="text"
+                                                    name="service_provided"
+                                                    value="{{ $serviceProvidedLabel }}"
+                                                    maxlength="180"
+                                                    placeholder="e.g. OLED Screen Replacement"
+                                                    class="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] outline-none"
+                                                >
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold uppercase text-[var(--muted-foreground)] mb-1">Your Review Comment</label>
+                                            <textarea
+                                                name="review_comment"
+                                                rows="3"
+                                                required
+                                                minlength="10"
+                                                maxlength="1000"
+                                                class="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] px-3 py-2 text-xs text-[var(--foreground)] outline-none"
+                                            >{{ $rev->review_comment }}</textarea>
+                                        </div>
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button
+                                                type="button"
+                                                @click="editingReviewId = null"
+                                                class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--foreground)]"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                class="rounded-full bg-[var(--accent-dark)] px-4 py-1.5 text-[11px] font-bold text-white shadow-sm hover:opacity-90 transition"
+                                            >
+                                                Save Changes
+                                            </button>
+                                        </div>
+                                    </form>
+                                @endif
                             </article>
                         @empty
                             <div class="rounded-[1.5rem] border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center text-xs text-[var(--muted-foreground)] space-y-2">

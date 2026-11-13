@@ -49,7 +49,7 @@ Controller: RepairRequestController@index
             'BIDDING' => 'Bidding Open (Quote 1)',
             'DIRECT' => 'Direct-Order Cart',
             'ACTIVE' => 'In Progress / Bench',
-            'COMPLETED' => 'Completed',
+            'COMPLETED' => 'Past Orders (Completed)',
         ] as $filterKey => $filterLabel)
             <a
                 href="/requests?filter={{ $filterKey }}"
@@ -117,13 +117,35 @@ Controller: RepairRequestController@index
                             @endif
                         </div>
 
-                        <a
-                            href="{{ route('requests.track', $req->id) }}"
-                            class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
-                        >
-                            <span>{{ $st === 'WAITING_APPROVAL' ? 'Review Quote 2' : ($st === 'BIDDING' && $activeBidsCount > 0 ? 'Compare Bids' : 'Track Lifecycle') }}</span>
-                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                        </a>
+                        <div class="flex flex-wrap items-center gap-2">
+                            @if(in_array($st, ['COMPLETED', 'RETURNED_TO_CUSTOMER'], true) && $assignedShop)
+                                @if($req->review)
+                                    <a
+                                        href="{{ route('shops.show', $assignedShop->slug) }}#review-{{ $req->review->id }}"
+                                        class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
+                                    >
+                                        <i class="fa-solid fa-star text-amber-500 text-[11px]"></i>
+                                        <span>Reviewed ({{ $req->review->rating }}★) • Edit</span>
+                                    </a>
+                                @else
+                                    <a
+                                        href="{{ route('reviews.create', ['shopId' => $assignedShop->id, 'order_id' => $req->id]) }}"
+                                        class="inline-flex items-center gap-1.5 rounded-full border border-emerald-600/40 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                                    >
+                                        <i class="fa-solid fa-certificate text-[11px]"></i>
+                                        <span>Write Verified Repair Review</span>
+                                    </a>
+                                @endif
+                            @endif
+
+                            <a
+                                href="{{ route('requests.track', $req->id) }}"
+                                class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
+                            >
+                                <span>{{ $st === 'WAITING_APPROVAL' ? 'Review Quote 2' : ($st === 'BIDDING' && $activeBidsCount > 0 ? 'Compare Bids' : 'Track Lifecycle') }}</span>
+                                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>

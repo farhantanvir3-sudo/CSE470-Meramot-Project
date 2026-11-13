@@ -54,6 +54,90 @@
             @csrf
             <input type="hidden" name="repair_shop_id" value="{{ $shop->id }}">
 
+            @if(!empty($isFromPastOrders) && !empty($selectedOrder))
+                <input type="hidden" name="repair_request_id" value="{{ $selectedOrder->id }}">
+                <input type="hidden" name="from_past_orders" value="1">
+
+                <div class="rounded-2xl border border-emerald-400/60 bg-emerald-50/80 dark:bg-emerald-950/40 p-4 flex items-start gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+                        <i class="fa-solid fa-certificate text-sm"></i>
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                                Verified Repair Review
+                            </span>
+                            <span class="font-mono text-[11px] font-bold text-emerald-900 dark:text-emerald-300">
+                                Past Order #{{ $selectedOrder->id }}
+                            </span>
+                        </div>
+                        <p class="mt-1 font-bold text-[var(--foreground)]">
+                            {{ $selectedOrder->brand }} {{ $selectedOrder->model_name }} — {{ $selectedOrder->title }}
+                        </p>
+                        <p class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">
+                            Submitted from your Past Orders history. Your review will carry the <strong>Verified Repair</strong> badge and highlight the service performed.
+                        </p>
+                    </div>
+                </div>
+            @else
+                <div class="rounded-2xl border border-amber-300/70 bg-amber-50/80 dark:bg-amber-950/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="rounded-full bg-amber-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-amber-950">
+                                General Public Review
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-[var(--foreground)] leading-relaxed">
+                            Only reviews initiated from your <strong>Past Orders</strong> page receive the <strong>Verified Repair</strong> badge and service skill attribution.
+                        </p>
+                    </div>
+                    <a
+                        href="/requests?filter=COMPLETED"
+                        class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-4 py-2 text-[11px] font-bold text-white shadow-sm hover:opacity-90 transition shrink-0"
+                    >
+                        <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
+                        <span>Review from Past Orders</span>
+                    </a>
+                </div>
+            @endif
+
+            <!-- Service Provided / Repair Work Performed -->
+            <div>
+                <label for="service_provided" class="mb-1.5 block font-bold text-[var(--foreground)]">
+                    Service Provided / Repair Work Performed {{ !empty($isFromPastOrders) ? '*' : '(Optional)' }}
+                </label>
+                <input
+                    type="text"
+                    name="service_provided"
+                    id="service_provided"
+                    value="{{ old('service_provided', $prefilledService ?? '') }}"
+                    {{ !empty($isFromPastOrders) ? 'required' : '' }}
+                    maxlength="180"
+                    placeholder="e.g. OLED Screen Replacement, Logic Board Micro-Soldering, Battery Swap"
+                    class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-xs font-semibold text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none transition"
+                >
+                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">
+                    Helps other gadget owners see which specific repair works {{ $shop->name }} excels at (or struggles with).
+                </p>
+                @if(($shop->services ?? collect())->isNotEmpty())
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        <span class="text-[10px] font-bold text-[var(--muted-foreground)] mr-1">Quick pick shop service:</span>
+                        @foreach($shop->services->take(6) as $srv)
+                            <button
+                                type="button"
+                                onclick="document.getElementById('service_provided').value = @js($srv->service_name)"
+                                class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition"
+                            >
+                                + {{ $srv->service_name }}
+                            </button>
+                        @endforeach
+                    </div>
+                @endif
+                @error('service_provided')
+                    <p class="mt-1 text-xs font-bold text-rose-700">{{ $message }}</p>
+                @enderror
+            </div>
+
             <!-- Interactive Star Selector (Powered by frontend/js/marketplace-client.js) -->
             <div>
                 <label class="mb-2 block font-bold text-[var(--foreground)]">Overall Repair Rating *</label>

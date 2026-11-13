@@ -31,7 +31,7 @@ class RepairRequestController extends Controller
         $statusFilter = strtoupper((string) $request->query('filter', 'ALL'));
         $user = $request->user();
 
-        $query = RepairRequest::with(['bids.shop', 'requestedShop', 'repairJob.shop', 'customer'])
+        $query = RepairRequest::with(['bids.shop', 'requestedShop', 'repairJob.shop', 'customer', 'review'])
             ->orderByDesc('created_at');
 
         if ($user && $user->role === 'customer' && $request->query('scope') !== 'all') {
@@ -226,6 +226,7 @@ class RepairRequestController extends Controller
             'repairJob.shop',
             'deliveryJobs.deliveryAgent.user',
             'payments',
+            'review',
         ])->findOrFail($id);
 
         return view('requests.track', compact('repairRequest'));

@@ -220,4 +220,9 @@ class RepairRequest extends Model
     {
         return $this->hasMany(PaymentTransaction::class);
     }
+
+    public function review()
+    {
+        return $this->hasOne(ShopReview::class, 'repair_request_id');
+    }
 }
