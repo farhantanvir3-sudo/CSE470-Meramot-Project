@@ -148,6 +148,9 @@ Route::post('/cart/checkout/place', [ServicePackageController::class, 'placeDire
 
 Route::get('/reviews/create/{shopId}', [ReviewController::class, 'create'])->name('reviews.create');   // R9
 Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');                    // R9
+Route::put('/reviews/{id}', [ReviewController::class, 'update'])->name('reviews.update');              // R9 Edit own review
+Route::delete('/reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');         // R9 Delete own review
+Route::post('/reviews/bulk-delete', [ReviewController::class, 'bulkDestroy'])->name('reviews.bulk-destroy'); // R9 Bulk delete own reviews
 Route::get('/ai-consultant/chat', [AIChatController::class, 'index'])->name('ai-consultant.chat');     // R10
 
 // -------------------------------------------------------------

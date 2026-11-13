@@ -293,6 +293,7 @@ class ShopDiscoveryController extends Controller
         $shop = RepairShop::with([
             'vendorProfile',
             'reviews.customer',
+            'reviews.repairRequest',
             'services' => function ($q) {
                 $q->where('is_active', true)->orderBy('sort_order', 'asc');
             },

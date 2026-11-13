@@ -219,17 +219,42 @@
                 @endphp
 
                 <!-- Current Status Badge -->
-                <div class="mb-6 flex items-center gap-3 p-4 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)]">
-                    <div class="h-12 w-12 rounded-xl bg-[var(--accent-dark)] flex items-center justify-center text-[var(--accent-foreground)] shrink-0">
-                        <i class="fa-solid {{ $statusInfo['icon'] }} text-lg"></i>
+                <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)]">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="h-12 w-12 rounded-xl bg-[var(--accent-dark)] flex items-center justify-center text-[var(--accent-foreground)] shrink-0">
+                            <i class="fa-solid {{ $statusInfo['icon'] }} text-lg"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] font-bold">Current Status</p>
+                            <h3 class="text-lg font-black text-[var(--foreground)]">{{ $statusInfo['label'] }}</h3>
+                            <p class="text-xs text-[var(--muted-foreground)]">
+                                Last updated: {{ $repairRequest->updated_at?->diffForHumans() ?? 'just now' }}
+                            </p>
+                        </div>
                     </div>
-                    <div class="min-w-0">
-                        <p class="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] font-bold">Current Status</p>
-                        <h3 class="text-lg font-black text-[var(--foreground)]">{{ $statusInfo['label'] }}</h3>
-                        <p class="text-xs text-[var(--muted-foreground)]">
-                            Last updated: {{ $repairRequest->updated_at?->diffForHumans() ?? 'just now' }}
-                        </p>
-                    </div>
+
+                    @php
+                        $completedShop = $repairRequest->repairJob?->shop ?? $repairRequest->requestedShop;
+                    @endphp
+                    @if(in_array($currentStatus, ['COMPLETED', 'RETURNED_TO_CUSTOMER'], true) && $completedShop)
+                        @if($repairRequest->review)
+                            <a
+                                href="{{ route('shops.show', $completedShop->slug) }}#review-{{ $repairRequest->review->id }}"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition shrink-0"
+                            >
+                                <i class="fa-solid fa-star text-amber-500"></i>
+                                <span>Verified Review ({{ $repairRequest->review->rating }}★) • Edit</span>
+                            </a>
+                        @else
+                            <a
+                                href="{{ route('reviews.create', ['shopId' => $completedShop->id, 'order_id' => $repairRequest->id]) }}"
+                                class="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition shrink-0"
+                            >
+                                <i class="fa-solid fa-certificate"></i>
+                                <span>Write Verified Repair Review</span>
+                            </a>
+                        @endif
+                    @endif
                 </div>
 
                 <!-- Progress Steps -->
