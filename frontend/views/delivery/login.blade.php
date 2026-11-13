@@ -86,17 +86,17 @@
         </div>
 
         <!-- ── Dedicated Delivery Partner Company Login Card ── -->
-        <div class="relative rounded-[2rem] border border-white/60 bg-white/95 px-8 py-7 shadow-2xl backdrop-blur">
+        <div class="relative rounded-[2rem] border border-white/60 bg-white/95 px-5 sm:px-8 py-6 sm:py-7 shadow-2xl backdrop-blur">
             <a
                 href="{{ $backHref }}"
                 title="{{ $backLabel }}"
                 aria-label="{{ $backLabel }}"
-                class="group absolute left-6 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-md"
+                class="group absolute left-4 sm:left-6 top-5 sm:top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-md"
             >
                 <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
             </a>
 
-            <div class="mb-5 text-center px-8">
+            <div class="mb-5 text-center px-10 sm:px-8">
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-[#eef5ea] border border-[#cbe0c2] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#214c34] mb-2">
                     <i class="fa-solid fa-motorcycle"></i> Meramot Logistics
                 </span>
@@ -134,7 +134,7 @@
             @endif
 
             <!-- Company Email & Immutable Password Form Box -->
-            <form method="POST" action="/delivery/login" class="space-y-4 rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-5">
+            <form method="POST" action="/delivery/login" class="space-y-4 rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-4 sm:p-5">
                 @csrf
 
                 <div>
@@ -162,8 +162,8 @@
                             name="password"
                             required
                             autocomplete="current-password"
-                            placeholder="Enter company-generated password"
-                            class="w-full rounded-2xl border border-[#c8dac2] bg-white px-4 py-3 pr-14 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                            placeholder="Enter company password"
+                            class="w-full rounded-2xl border border-[#c8dac2] bg-white pl-4 pr-16 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         />
                         <button
                             type="button"

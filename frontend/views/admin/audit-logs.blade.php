@@ -41,37 +41,39 @@ Controller: AuditLogController@index
     </div>
 
     <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
-        <table class="min-w-full divide-y divide-[var(--border)] text-xs">
-            <thead class="bg-[var(--mint-100)] text-[var(--muted-foreground)] uppercase font-bold">
-                <tr>
-                    <th class="px-6 py-3.5 text-left">Timestamp</th>
-                    <th class="px-6 py-3.5 text-left">Action</th>
-                    <th class="px-6 py-3.5 text-left">Resource</th>
-                    <th class="px-6 py-3.5 text-left">Actor</th>
-                    <th class="px-6 py-3.5 text-left">IP Address</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--border)] font-mono">
-                @forelse($logs ?? [] as $audit)
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-[var(--border)] text-xs">
+                <thead class="bg-[var(--mint-100)] text-[var(--muted-foreground)] uppercase font-bold">
                     <tr>
-                        <td class="px-6 py-4 text-[var(--muted-foreground)]">{{ $audit->created_at?->format('Y-m-d H:i:s') }}</td>
-                        <td class="px-6 py-4 font-bold text-[var(--foreground)]">{{ $audit->action ?? 'SYSTEM_EVENT' }}</td>
-                        <td class="px-6 py-4 text-[var(--muted-foreground)]">{{ $audit->target_resource ?? 'platform' }}</td>
-                        <td class="px-6 py-4 text-[var(--foreground)] font-sans">{{ $audit->actor->email ?? 'System' }}</td>
-                        <td class="px-6 py-4 text-[var(--muted-foreground)]">{{ $audit->ip_address ?? '127.0.0.1' }}</td>
+                        <th class="px-6 py-3.5 text-left whitespace-nowrap">Timestamp</th>
+                        <th class="px-6 py-3.5 text-left whitespace-nowrap">Action</th>
+                        <th class="px-6 py-3.5 text-left whitespace-nowrap">Resource</th>
+                        <th class="px-6 py-3.5 text-left whitespace-nowrap">Actor</th>
+                        <th class="px-6 py-3.5 text-left whitespace-nowrap">IP Address</th>
                     </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-6 py-10 text-center text-[var(--muted-foreground)] font-sans space-y-3">
-                            <p>No compliance audit events recorded yet. Automated state-diff logging will expand in an upcoming platform release.</p>
-                            <a href="/coming-soon/security-audit-logs" class="inline-block rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] px-4 py-2 text-xs font-bold text-[var(--foreground)] transition">
-                                View Security Compliance Roadmap &rarr;
-                            </a>
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)] font-mono">
+                    @forelse($logs ?? [] as $audit)
+                        <tr>
+                            <td class="px-6 py-4 text-[var(--muted-foreground)] whitespace-nowrap">{{ $audit->created_at?->format('Y-m-d H:i:s') }}</td>
+                            <td class="px-6 py-4 font-bold text-[var(--foreground)] whitespace-nowrap">{{ $audit->action ?? 'SYSTEM_EVENT' }}</td>
+                            <td class="px-6 py-4 text-[var(--muted-foreground)] whitespace-nowrap">{{ $audit->target_resource ?? 'platform' }}</td>
+                            <td class="px-6 py-4 text-[var(--foreground)] font-sans whitespace-nowrap">{{ $audit->actor->email ?? 'System' }}</td>
+                            <td class="px-6 py-4 text-[var(--muted-foreground)] whitespace-nowrap">{{ $audit->ip_address ?? '127.0.0.1' }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-6 py-10 text-center text-[var(--muted-foreground)] font-sans space-y-3">
+                                <p>No compliance audit events recorded yet. Automated state-diff logging will expand in an upcoming platform release.</p>
+                                <a href="/coming-soon/security-audit-logs" class="inline-block rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] px-4 py-2 text-xs font-bold text-[var(--foreground)] transition">
+                                    View Security Compliance Roadmap &rarr;
+                                </a>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 @endsection

@@ -14,7 +14,7 @@
         <span class="text-[var(--foreground)] font-semibold">Post Repair Request</span>
     </div>
 
-    <div class="meramot-card p-6 md:p-8 shadow-sm">
+    <div class="meramot-card p-4 sm:p-6 md:p-8 shadow-sm">
         
         <div class="mb-6 border-b border-[var(--border)] pb-4">
             <span class="dev-only-badge text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-2">
@@ -29,17 +29,17 @@
         </div>
 
         <!-- AI Assistant Banner Hook -->
-        <div class="mb-6 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-4 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
+        <div class="mb-6 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+            <div class="flex items-start sm:items-center gap-3 min-w-0">
                 <div class="h-10 w-10 rounded-2xl bg-[var(--card)] border border-[var(--border)] flex items-center justify-center text-amber-600 font-bold text-lg shrink-0">
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                 </div>
-                <div>
+                <div class="min-w-0">
                     <h4 class="font-bold text-xs text-[var(--foreground)]">Unsure what is wrong with your device?</h4>
                     <p class="text-[11px] text-[var(--muted-foreground)]">Our AI fault diagnostics assistant can evaluate your symptoms and estimate expected repair costs in real time.</p>
                 </div>
             </div>
-            <a href="/ai-consultant/chat" class="rounded-full bg-[var(--accent-dark)] text-white text-[11px] font-bold px-4 py-2 hover:opacity-90 transition shrink-0">
+            <a href="/ai-consultant/chat" class="w-full sm:w-auto text-center rounded-full bg-[var(--accent-dark)] text-white text-[11px] font-bold px-4 py-2 hover:opacity-90 transition shrink-0">
                 Open AI Consultant
             </a>
         </div>
@@ -58,7 +58,7 @@
             <!-- Pre-selected Shop alert if came from shop profile -->
             @if(request('shop_id'))
                 <input type="hidden" name="preferred_shop_id" value="{{ request('shop_id') }}">
-                <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs flex items-center justify-between gap-2">
+                <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div class="flex items-center gap-2">
                         <i class="fa-solid fa-circle-check text-emerald-700"></i>
                         <span>
@@ -466,11 +466,11 @@
             </div>
 
             <!-- Submit Button -->
-            <div class="pt-4 border-t border-[var(--border)] flex items-center justify-between">
-                <a href="/shops" class="text-xs font-semibold text-[var(--muted-foreground)] hover:underline">
+            <div class="pt-4 border-t border-[var(--border)] flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
+                <a href="/shops" class="w-full sm:w-auto text-center text-xs font-semibold text-[var(--muted-foreground)] hover:underline py-2">
                     Cancel & Return
                 </a>
-                <button type="submit" class="rounded-full bg-[var(--accent-dark)] px-8 py-3 text-xs font-bold text-white shadow-lg hover:opacity-90 transition">
+                <button type="submit" class="w-full sm:w-auto text-center rounded-full bg-[var(--accent-dark)] px-8 py-3 text-xs font-bold text-white shadow-lg hover:opacity-90 transition">
                     Publish Request to Bidding Marketplace &rarr;
                 </button>
             </div>

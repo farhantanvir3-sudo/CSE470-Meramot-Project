@@ -40,7 +40,7 @@ Models Touched: VendorProfile, RepairShop, User
     </div>
 
     <!-- KPI Cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
         <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
             <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] block">Pending Audits</span>
             <span class="text-2xl font-black text-amber-700 mt-1 block">{{ $stats['pendingCount'] }}</span>
@@ -64,8 +64,8 @@ Models Touched: VendorProfile, RepairShop, User
     </div>
 
     <!-- Pending Vendor Verification Queue -->
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-5">
-        <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
+    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
             <h2 class="text-base font-black text-[var(--foreground)] flex items-center gap-2">
                 <i class="fa-solid fa-clipboard-check text-amber-600"></i>
                 <span>Pending Vendor Onboarding Applications ({{ $pendingVendors->count() }})</span>
@@ -133,7 +133,7 @@ Models Touched: VendorProfile, RepairShop, User
                             <div class="rounded-xl bg-[var(--card)] p-3 border border-[var(--border)]">
                                 <span class="text-[10px] font-bold uppercase text-[var(--muted-foreground)] block">Owner &amp; Contact</span>
                                 <span class="font-bold text-[var(--foreground)] block mt-0.5">{{ $vendor->owner_name ?: ($vendor->user->name ?? 'Vendor Applicant') }}</span>
-                                <span class="text-[11px] text-[var(--muted-foreground)]">{{ $vendor->business_email ?: ($vendor->user->email ?? 'N/A') }} • {{ $vendor->phone ?: ($vendor->user->phone ?? 'N/A') }}</span>
+                                <span class="text-[11px] text-[var(--muted-foreground)] break-all sm:break-words">{{ $vendor->business_email ?: ($vendor->user->email ?? 'N/A') }} • {{ $vendor->phone ?: ($vendor->user->phone ?? 'N/A') }}</span>
                             </div>
 
                             <div class="rounded-xl bg-[var(--card)] p-3 border border-[var(--border)]">
@@ -383,15 +383,15 @@ Models Touched: VendorProfile, RepairShop, User
                 <h2 class="text-base font-black text-[var(--foreground)]">Verified Partner Brands Directory</h2>
                 <p class="text-xs text-[var(--muted-foreground)]">Search approved brands, inspect multi-branch storefronts, curate Homepage Featured Shops, or revoke approval if needed.</p>
             </div>
-            <form method="GET" action="/admin/vendors/pending" class="flex items-center gap-2">
+            <form method="GET" action="/admin/vendors/pending" class="flex items-center gap-2 w-full sm:w-auto">
                 <input
                     type="text"
                     name="q"
                     value="{{ $search }}"
                     placeholder="Search brand, city, license..."
-                    class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs outline-none focus:border-[var(--accent-dark)]"
+                    class="flex-1 sm:w-56 min-w-0 rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs outline-none focus:border-[var(--accent-dark)]"
                 >
-                <button type="submit" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)]">
+                <button type="submit" class="shrink-0 rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)]">
                     Search
                 </button>
             </form>

@@ -6,6 +6,7 @@ use App\Models\RepairShop;
 use App\Models\ServicePackage;
 use App\Services\GeolocationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * ============================================================================
@@ -37,10 +38,17 @@ class ShopDiscoveryController extends Controller
      */
     public function home()
     {
-        $featuredShops = RepairShop::where('is_active', true)
+        $featuredQuery = RepairShop::where('is_active', true)
             ->where('is_public', true)
-            ->where('is_featured', true)
-            ->orderByRaw('COALESCE(featured_at, updated_at) DESC')
+            ->where('is_featured', true);
+
+        if (Schema::hasColumn('repair_shops', 'featured_at')) {
+            $featuredQuery->orderByRaw('COALESCE(featured_at, updated_at) DESC');
+        } else {
+            $featuredQuery->orderByDesc('updated_at');
+        }
+
+        $featuredShops = $featuredQuery
             ->orderByDesc('id')
             ->take(6)
             ->get();

@@ -201,7 +201,7 @@
     @endif
 
     <!-- Main Profile Card (Matches Reference Profile Dashboard + Dual Address Picker) -->
-    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 md:p-8 shadow-sm">
         @csrf
 
         <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -255,7 +255,7 @@
         <!-- Core Profile Fields Grid -->
         <div class="mt-8 grid gap-4 md:grid-cols-2">
             <!-- 1. Full Name -->
-            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-5">
+            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
                     Full name
                 </p>
@@ -270,25 +270,25 @@
                     >
                 </template>
                 <template x-if="!editing">
-                    <p class="mt-2 text-base font-medium text-[var(--foreground)]">
+                    <p class="mt-2 break-words text-base font-medium text-[var(--foreground)]">
                         {{ $user->name ?: 'Not provided' }}
                     </p>
                 </template>
             </div>
 
             <!-- 2. Username (Read-Only) -->
-            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-5">
+            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
                     Username
                 </p>
-                <p class="mt-2 text-base font-medium text-[var(--foreground)]">
+                <p class="mt-2 break-words text-base font-medium text-[var(--foreground)]">
                     {{ $user->username ?: 'Not provided' }}
                 </p>
             </div>
 
             <!-- 3. Email (Read-Only + Verification Status) -->
-            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-5">
-                <div class="flex items-center justify-between gap-2">
+            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
+                <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
                         Email
                     </p>
@@ -306,13 +306,13 @@
                         </button>
                     @endif
                 </div>
-                <p class="mt-2 text-base font-medium text-[var(--foreground)] break-all">
+                <p class="mt-2 text-base font-medium text-[var(--foreground)] break-all sm:break-words">
                     {{ $user->email }}
                 </p>
             </div>
 
             <!-- 4. Phone Number (Editable Anytime — Required When Ordering) -->
-            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-5">
+            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
                 <div class="flex items-center justify-between gap-2">
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
                         Phone
@@ -403,9 +403,9 @@
 
             <!-- View Mode Display -->
             <div x-show="!editing" class="grid gap-4 md:grid-cols-3 pt-1">
-                <div class="md:col-span-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+                <div class="md:col-span-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 min-w-0">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Street Address</p>
-                    <p class="mt-1 text-base font-medium text-[var(--foreground)]">
+                    <p class="mt-1 break-words text-base font-medium text-[var(--foreground)]">
                         {{ $user->address ?: 'Not provided' }}
                     </p>
                     @if($user->latitude && $user->longitude)
@@ -414,13 +414,13 @@
                         </p>
                     @endif
                 </div>
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+                <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 min-w-0">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">City</p>
-                    <p class="mt-1 text-base font-medium text-[var(--foreground)]">{{ $user->city ?: 'Not provided' }}</p>
+                    <p class="mt-1 break-words text-base font-medium text-[var(--foreground)]">{{ $user->city ?: 'Not provided' }}</p>
                 </div>
-                <div class="md:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4">
+                <div class="md:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 min-w-0">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Area / Neighborhood</p>
-                    <p class="mt-1 text-base font-medium text-[var(--foreground)]">{{ $user->area ?: 'Not provided' }}</p>
+                    <p class="mt-1 break-words text-base font-medium text-[var(--foreground)]">{{ $user->area ?: 'Not provided' }}</p>
                 </div>
             </div>
 

@@ -469,7 +469,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 required
                                 minlength="8"
                                 placeholder="Min. 8 characters"
-                                class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                                class="w-full rounded-2xl border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                             >
                             <button type="button" @click="showPass = !showPass" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">
                                 <span x-text="showPass ? 'Hide' : 'Show'">Show</span>
@@ -492,7 +492,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 x-model="confirmPassword"
                                 required
                                 placeholder="Confirm password"
-                                class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                                class="w-full rounded-2xl border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                             >
                             <button type="button" @click="showConfirmPass = !showConfirmPass" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">
                                 <span x-text="showConfirmPass ? 'Hide' : 'Show'">Show</span>
@@ -634,9 +634,9 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                             x-model="customSpecialty"
                             @keydown.enter.prevent="addCustomSpecialty()"
                             placeholder="Add custom specialty (e.g. MacBook Logic Board)..."
-                            class="flex-1 rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/40 px-3 py-2 text-xs outline-none focus:border-[#244229]"
+                            class="flex-1 min-w-0 rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/40 px-3 py-2 text-xs outline-none focus:border-[#244229]"
                         >
-                        <button type="button" @click="addCustomSpecialty()" class="rounded-xl bg-[#244229] px-3.5 py-2 text-xs font-semibold text-white">
+                        <button type="button" @click="addCustomSpecialty()" class="shrink-0 rounded-xl bg-[#244229] px-3.5 py-2 text-xs font-semibold text-white">
                             + Add
                         </button>
                     </div>
@@ -647,7 +647,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 type="button"
                                 @click="toggleSpecialty(opt)"
                                 :class="selectedSpecialties.includes(opt) ? 'bg-[#244229] text-white border-[#244229]' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50'"
-                                class="rounded-full border px-3 py-1 text-[11px] font-medium transition"
+                                class="rounded-full border px-3 py-1 text-[11px] font-medium leading-snug text-left sm:text-center transition"
                                 x-text="opt"
                             ></button>
                         </template>

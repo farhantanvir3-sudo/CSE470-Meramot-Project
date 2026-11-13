@@ -128,7 +128,7 @@
 
     <!-- ── Multi-Branch Switcher Bar ── -->
     <div class="mb-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3.5 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full">
+        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 max-w-full">
             <span class="font-bold uppercase tracking-wider text-[10px] text-[var(--muted-foreground)] shrink-0">
                 <i class="fa-solid fa-building-circle-check text-[var(--accent-dark)] mr-1"></i>Active Scope:
             </span>
@@ -160,12 +160,12 @@
     </div>
 
     <!-- ── Dashboard Navigation Tabs ── -->
-    <div class="flex overflow-x-auto whitespace-nowrap gap-2 border-b border-[var(--border)] pb-2 mb-6 text-sm no-scrollbar">
+    <div class="flex flex-wrap gap-1.5 sm:gap-2 border-b border-[var(--border)] pb-3 mb-6 text-xs sm:text-sm">
         <button
             type="button"
             @click="activeTab = 'overview'"
-            :class="activeTab === 'overview' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
-            class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
+            :class="activeTab === 'overview' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
+            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
         >
             <i class="fa-solid fa-chart-pie text-xs"></i>
             <span>Overview</span>
@@ -174,8 +174,8 @@
         <button
             type="button"
             @click="activeTab = 'branches'"
-            :class="activeTab === 'branches' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
-            class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
+            :class="activeTab === 'branches' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
+            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
         >
             <i class="fa-solid fa-code-branch text-xs text-[var(--accent-dark)]"></i>
             <span>Branches &amp; Dual Locations</span>
@@ -185,8 +185,8 @@
         <button
             type="button"
             @click="activeTab = 'marketplace'"
-            :class="activeTab === 'marketplace' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
-            class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
+            :class="activeTab === 'marketplace' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
+            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
         >
             <i class="fa-solid fa-gavel text-xs text-amber-600"></i>
             <span>Marketplace Bids</span>
@@ -196,8 +196,8 @@
         <button
             type="button"
             @click="activeTab = 'direct_orders'"
-            :class="activeTab === 'direct_orders' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
-            class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
+            :class="activeTab === 'direct_orders' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
+            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
         >
             <i class="fa-solid fa-box text-xs text-emerald-700"></i>
             <span>Direct Orders</span>
@@ -207,8 +207,8 @@
         <button
             type="button"
             @click="activeTab = 'assigned_jobs'"
-            :class="activeTab === 'assigned_jobs' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border-t border-x border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)]'"
-            class="rounded-t-2xl px-5 py-2.5 transition flex items-center gap-2"
+            :class="activeTab === 'assigned_jobs' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
+            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
         >
             <i class="fa-solid fa-screwdriver-wrench text-xs text-[var(--accent-dark)]"></i>
             <span>My Repair Jobs</span>
@@ -219,37 +219,37 @@
     <!-- ── TAB 1: OVERVIEW ── -->
     <div x-show="activeTab === 'overview'" class="space-y-6">
         <!-- 4 Summary KPI Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="meramot-card p-5 shadow-sm">
-                <div class="flex items-center justify-between mb-1.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+            <div class="meramot-card p-4 sm:p-5 min-w-0 shadow-sm">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
                     <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Gross Inflow</span>
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-sack-dollar text-xs"></i></span>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-sack-dollar text-xs"></i></span>
                 </div>
-                <span class="text-2xl font-black text-[var(--accent-dark)]">৳{{ number_format($branchMetrics['gross_inflow'] ?? 48500) }}</span>
+                <span class="text-2xl font-black text-[var(--accent-dark)] whitespace-nowrap">৳{{ number_format($branchMetrics['gross_inflow'] ?? 48500) }}</span>
                 <span class="text-[10px] text-[var(--muted-foreground)] block mt-1"><i class="fa-solid fa-arrow-trend-up text-[var(--accent-dark)]"></i> {{ $activeBranch ? ($activeBranch->display_branch_tag ?: $activeBranch->area) : 'Across ' . count($branches) . ' branches' }}</span>
             </div>
-            <div class="meramot-card p-5 shadow-sm">
-                <div class="flex items-center justify-between mb-1.5">
+            <div class="meramot-card p-4 sm:p-5 min-w-0 shadow-sm">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
                     <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Active Repair Jobs</span>
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-screwdriver-wrench text-xs"></i></span>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-screwdriver-wrench text-xs"></i></span>
                 </div>
                 <span class="text-2xl font-black text-[var(--foreground)]">{{ $branchMetrics['active_jobs_count'] ?? 8 }}</span>
                 <span class="text-[10px] text-[var(--muted-foreground)] block mt-1">Bench &amp; rider queue</span>
             </div>
-            <div class="meramot-card p-5 shadow-sm">
-                <div class="flex items-center justify-between mb-1.5">
+            <div class="meramot-card p-4 sm:p-5 min-w-0 shadow-sm">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
                     <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Active Shop Branches</span>
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-code-branch text-xs"></i></span>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-code-branch text-xs"></i></span>
                 </div>
                 <span class="text-2xl font-black text-[var(--foreground)]">{{ count($branches) }}</span>
                 <span class="text-[10px] text-[var(--accent-dark)] font-semibold block mt-1">{{ $vendorProfile->is_branched ? 'Branch Tags Active on Tiles' : 'Single Storefront Mode' }}</span>
             </div>
-            <div class="meramot-card p-5 shadow-sm">
-                <div class="flex items-center justify-between mb-1.5">
+            <div class="meramot-card p-4 sm:p-5 min-w-0 shadow-sm">
+                <div class="flex items-center justify-between gap-2 mb-1.5">
                     <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Customer Rating</span>
-                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-star text-xs"></i></span>
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-star text-xs"></i></span>
                 </div>
-                <span class="text-2xl font-black text-amber-500">★ {{ number_format($branchMetrics['avg_rating'] ?? 4.9, 1) }}</span>
+                <span class="text-2xl font-black text-amber-500 whitespace-nowrap">★ {{ number_format($branchMetrics['avg_rating'] ?? 4.9, 1) }}</span>
                 <span class="text-[10px] text-[var(--muted-foreground)] block mt-1">Based on {{ number_format($branchMetrics['total_reviews'] ?? 84) }} reviews</span>
             </div>
         </div>
@@ -263,9 +263,9 @@
                 </h3>
                 <div class="divide-y divide-[var(--border)] text-xs">
                     @forelse(($activeJobs ?? collect())->take(4) as $rJob)
-                        <div class="py-3 flex items-center justify-between gap-3">
-                            <div>
-                                <span class="font-bold text-[var(--foreground)] block">
+                        <div class="py-3 flex flex-wrap sm:flex-nowrap items-start sm:items-center justify-between gap-2.5">
+                            <div class="min-w-0 flex-1">
+                                <span class="break-words font-bold text-[var(--foreground)] block">
                                     #{{ $rJob->id }} — {{ $rJob->repairRequest?->brand }} {{ $rJob->repairRequest?->model_name }} ({{ $rJob->repairRequest?->title ?? 'Hardware Service' }})
                                 </span>
                                 <span class="text-[var(--muted-foreground)]">
@@ -396,8 +396,8 @@
                     }"
                 >
                     <div>
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                            <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <h3 class="text-base font-black text-[var(--foreground)]">{{ $branch->name }}</h3>
                                     @if($branch->display_branch_tag)
@@ -823,18 +823,18 @@
                             </p>
                             <span class="font-extrabold text-[var(--accent-dark)] text-sm">৳{{ number_format($order->quoted_final_amount ?? 0, 2) }}</span>
                         </div>
-                        <div class="flex items-center gap-2 shrink-0">
-                            <form method="POST" action="{{ route('vendor.direct-orders.respond', $order->id) }}">
+                        <div class="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
+                            <form method="POST" action="{{ route('vendor.direct-orders.respond', $order->id) }}" class="w-full sm:w-auto">
                                 @csrf
                                 <input type="hidden" name="decision" value="accept">
-                                <button type="submit" class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-4 py-2 hover:opacity-90 shadow-sm transition">
+                                <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-4 py-2 hover:opacity-90 shadow-sm transition">
                                     Accept &amp; Dispatch Rider
                                 </button>
                             </form>
-                            <form method="POST" action="{{ route('vendor.direct-orders.respond', $order->id) }}">
+                            <form method="POST" action="{{ route('vendor.direct-orders.respond', $order->id) }}" class="w-full sm:w-auto">
                                 @csrf
                                 <input type="hidden" name="decision" value="decline">
-                                <button type="submit" class="rounded-full border border-rose-300 bg-white text-rose-700 font-bold px-4 py-2 hover:bg-rose-50 transition">
+                                <button type="submit" class="w-full sm:w-auto rounded-full border border-rose-300 bg-white text-rose-700 font-bold px-4 py-2 hover:bg-rose-50 transition">
                                     Decline
                                 </button>
                             </form>
@@ -851,7 +851,7 @@
 
     <!-- ── TAB 4: MY REPAIR JOBS (Real Database Bench Workflow & Quote 2 Dispatch) ── -->
     <div x-show="activeTab === 'assigned_jobs'" x-cloak class="space-y-4">
-        <div class="meramot-card p-6 shadow-sm">
+        <div class="meramot-card p-4 sm:p-6 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div>
                     <h3 class="font-bold text-base text-[var(--foreground)]">Active Repair Queue &amp; Bench Milestones</h3>
@@ -862,9 +862,9 @@
                 @forelse($activeJobs ?? [] as $job)
                     <div class="py-4 space-y-3" x-data="{ chosenStatus: @js($job->status) }">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                            <div>
+                            <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2 mb-1">
-                                    <span class="font-bold text-sm text-[var(--foreground)]">
+                                    <span class="break-words font-bold text-sm text-[var(--foreground)]">
                                         Job #{{ $job->id }}: {{ $job->repairRequest?->brand }} {{ $job->repairRequest?->model_name }} — {{ $job->repairRequest?->title ?? 'Hardware Service' }}
                                     </span>
                                     <span class="rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] font-bold text-[10px] px-2.5 py-0.5">
@@ -885,9 +885,9 @@
                                 </p>
                             </div>
 
-                            <form method="POST" action="{{ route('vendor.jobs.status', $job->id) }}" class="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <form method="POST" action="{{ route('vendor.jobs.status', $job->id) }}" class="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
                                 @csrf
-                                <select name="status" x-model="chosenStatus" class="rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
+                                <select name="status" x-model="chosenStatus" class="w-full sm:w-auto min-w-0 max-w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
                                     <option value="AT_SHOP">At Shop (Received)</option>
                                     <option value="DIAGNOSING">Diagnosing Bench</option>
                                     <option value="WAITING_APPROVAL">Send Final Quote (Await Approval)</option>
@@ -896,25 +896,25 @@
                                 </select>
 
                                 <template x-if="chosenStatus === 'WAITING_APPROVAL'">
-                                    <div class="flex flex-wrap items-center gap-2">
+                                    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                                         <input
                                             type="number"
                                             name="final_quoted_amount"
                                             value="{{ (float) ($job->final_quoted_amount ?? $job->repairRequest?->quoted_final_amount ?? 3200) }}"
                                             placeholder="Final Quote (৳)"
-                                            class="w-28 rounded-xl border border-amber-400 bg-white px-2.5 py-2 text-xs font-bold outline-none"
+                                            class="w-full sm:w-28 rounded-xl border border-amber-400 bg-white px-2.5 py-2 text-xs font-bold outline-none"
                                             required
                                         >
                                         <input
                                             type="text"
                                             name="diagnosis_notes"
                                             placeholder="Bench findings note..."
-                                            class="w-48 rounded-xl border border-amber-400 bg-white px-2.5 py-2 text-xs outline-none"
+                                            class="w-full sm:w-48 rounded-xl border border-amber-400 bg-white px-2.5 py-2 text-xs outline-none"
                                         >
                                     </div>
                                 </template>
 
-                                <button type="submit" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 font-bold text-white hover:opacity-90 transition shrink-0">
+                                <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] px-4 py-2 font-bold text-white hover:opacity-90 transition shrink-0">
                                     Save Status
                                 </button>
                             </form>

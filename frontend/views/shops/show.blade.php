@@ -107,7 +107,7 @@
             </div>
         @endif
 
-        <div class="p-5 md:p-8">
+        <div class="p-4 sm:p-5 md:p-8">
         <div class="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[130px_minmax(0,1fr)_260px] lg:items-start">
 
             <!-- Left: Shop Logo / Avatar -->
@@ -130,7 +130,7 @@
                 </p>
 
                 <div class="mt-1 flex flex-wrap items-center gap-2.5">
-                    <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
+                    <h1 class="break-words text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
                         {{ $shop->name }}
                     </h1>
                     @if($shop->display_branch_tag)
@@ -154,9 +154,9 @@
                         </span>
                     @endif
                     <span class="opacity-40">·</span>
-                    <span class="flex items-center gap-1 text-[var(--muted-foreground)]">
-                        <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
-                        {{ $shop->public_address }}
+                    <span class="flex items-start sm:items-center gap-1 text-[var(--muted-foreground)] break-words">
+                        <i class="fa-solid fa-location-dot text-[var(--accent-dark)] mt-0.5 sm:mt-0 shrink-0"></i>
+                        <span class="break-words">{{ $shop->public_address }}</span>
                     </span>
                     <span class="distance-display {{ isset($shop->distance_km) ? '' : 'hidden' }} rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-xs font-bold text-[var(--accent-dark)]">
                         {{ isset($shop->distance_km) ? \App\Services\GeolocationService::formatDistance((float) $shop->distance_km) : '' }}
@@ -541,7 +541,7 @@
 
                     @if($serviceSkillBreakdown->isNotEmpty())
                         <div class="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] p-3.5 space-y-2">
-                            <div class="flex items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
                                 <span class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
                                     <i class="fa-solid fa-screwdriver-wrench mr-1"></i>Workshop Skill Breakdown by Verified Repair Service
                                 </span>
@@ -672,9 +672,9 @@
 
                                             @if($serviceProvidedLabel !== '')
                                                 <div class="mt-1">
-                                                    <span class="inline-flex items-center gap-1 rounded-full bg-[var(--mint-200)]/90 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] border border-[var(--border)]">
-                                                        <i class="fa-solid fa-screwdriver-wrench text-[9px]"></i>
-                                                        <span>Service Provided: {{ $serviceProvidedLabel }}</span>
+                                                    <span class="inline-flex flex-wrap items-center gap-1 rounded-2xl bg-[var(--mint-200)]/90 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] border border-[var(--border)] break-words">
+                                                        <i class="fa-solid fa-screwdriver-wrench text-[9px] shrink-0"></i>
+                                                        <span class="break-words">Service Provided: {{ $serviceProvidedLabel }}</span>
                                                     </span>
                                                 </div>
                                             @endif
