@@ -121,12 +121,33 @@ Controller: RepairRequestController@index
                             @if(in_array($st, ['COMPLETED', 'RETURNED_TO_CUSTOMER'], true) && $assignedShop)
                                 @if($req->review)
                                     <a
-                                        href="{{ route('shops.show', $assignedShop->slug) }}#review-{{ $req->review->id }}"
+                                        href="{{ route('shops.show', $assignedShop->slug) }}?edit_review={{ $req->review->id }}#review-{{ $req->review->id }}"
                                         class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
                                     >
-                                        <i class="fa-solid fa-star text-amber-500 text-[11px]"></i>
-                                        <span>Reviewed ({{ $req->review->rating }}★) • Edit</span>
+                                        <i class="fa-solid fa-pen-to-square text-emerald-700 text-[11px]"></i>
+                                        <span>Edit Review ({{ $req->review->rating }}★)</span>
                                     </a>
+                                    <form
+                                        method="POST"
+                                        action="{{ route('reviews.destroy', $req->review->id) }}"
+                                        data-confirm-delete
+                                        data-confirm-title="Delete Verified Review?"
+                                        data-confirm-item="Order #{{ $req->id }}"
+                                        data-confirm-message="Your verified review will be deleted and you can write a new one anytime."
+                                        data-confirm-cta="Delete Review"
+                                        class="inline"
+                                    >
+                                        @csrf
+                                        @method('DELETE')
+                                        <input type="hidden" name="redirect_back" value="1">
+                                        <button
+                                            type="submit"
+                                            class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                        >
+                                            <i class="fa-solid fa-trash-can text-[11px]"></i>
+                                            <span>Delete Review</span>
+                                        </button>
+                                    </form>
                                 @else
                                     <a
                                         href="{{ route('reviews.create', ['shopId' => $assignedShop->id, 'order_id' => $req->id]) }}"

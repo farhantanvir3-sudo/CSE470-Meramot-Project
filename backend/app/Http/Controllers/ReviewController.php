@@ -44,42 +44,34 @@ class ReviewController extends Controller
         }
 
         $user = $request->user();
-        if ($user && (int) ($shop->vendorProfile?->user_id ?? 0) === (int) $user->id) {
+        if (!$user) {
+            return redirect()->guest(route('login'))
+                ->with('warning', 'Please sign in to write or manage your reviews.');
+        }
+
+        if ((int) ($shop->vendorProfile?->user_id ?? 0) === (int) $user->id) {
             return redirect()
                 ->route('shops.show', $shop->slug)
                 ->with('warning', 'Workshop owners cannot submit customer reviews for their own shop.');
         }
 
-        $customerId = $user?->id ?? User::where('role', 'customer')->value('id');
+        $customerId = (int) $user->id;
 
-        // Completed orders for this customer at this shop (via requested_shop_id or repairJob.shop_id)
-        $completedOrders = collect();
-        if ($customerId) {
-            $completedOrders = RepairRequest::with('repairJob')
-                ->where('customer_id', $customerId)
-                ->whereIn('status', ['COMPLETED', 'RETURNED_TO_CUSTOMER'])
-                ->where(function ($q) use ($shop) {
-                    $q->where('requested_shop_id', $shop->id)
-                      ->orWhereHas('repairJob', fn ($jq) => $jq->where('shop_id', $shop->id));
-                })
-                ->orderByDesc('updated_at')
-                ->get();
-        }
+        // Completed orders strictly belonging to this customer at this shop (via requested_shop_id or repairJob.shop_id)
+        $completedOrders = RepairRequest::with('repairJob')
+            ->where('customer_id', $customerId)
+            ->whereIn('status', ['COMPLETED', 'RETURNED_TO_CUSTOMER'])
+            ->where(function ($q) use ($shop) {
+                $q->where('requested_shop_id', $shop->id)
+                  ->orWhereHas('repairJob', fn ($jq) => $jq->where('shop_id', $shop->id));
+            })
+            ->orderByDesc('updated_at')
+            ->get();
 
         $selectedOrder = null;
         if ($request->filled('order_id')) {
             $orderId = (int) $request->query('order_id');
             $selectedOrder = $completedOrders->firstWhere('id', $orderId);
-            if (!$selectedOrder) {
-                $selectedOrder = RepairRequest::with('repairJob')
-                    ->where('id', $orderId)
-                    ->whereIn('status', ['COMPLETED', 'RETURNED_TO_CUSTOMER'])
-                    ->where(function ($q) use ($shop) {
-                        $q->where('requested_shop_id', $shop->id)
-                          ->orWhereHas('repairJob', fn ($jq) => $jq->where('shop_id', $shop->id));
-                    })
-                    ->first();
-            }
         }
 
         $isFromPastOrders = $selectedOrder !== null;
@@ -108,6 +100,11 @@ class ReviewController extends Controller
      */
     public function store(Request $request)
     {
+        if (!$request->user()) {
+            return redirect()->guest(route('login'))
+                ->with('warning', 'Please sign in to submit a review.');
+        }
+
         $validated = $request->validate([
             'repair_shop_id' => 'required|exists:repair_shops,id',
             'rating' => 'required|integer|min:1|max:5',
@@ -126,20 +123,19 @@ class ReviewController extends Controller
                 ->with('error', 'Cannot post reviews for an unverified or inactive workshop.');
         }
 
-        if ($request->user() && (int) ($shop->vendorProfile?->user_id ?? 0) === (int) $request->user()->id) {
+        if ((int) ($shop->vendorProfile?->user_id ?? 0) === (int) $request->user()->id) {
             return redirect()
                 ->route('shops.show', $shop->slug)
                 ->with('warning', 'Workshop owners cannot submit customer reviews for their own shop.');
         }
 
-        $customerId = $request->user()?->id
-            ?? User::where('role', 'customer')->value('id')
-            ?? 1;
+        $customerId = (int) $request->user()->id;
 
         $verifiedOrder = null;
         if (!empty($validated['repair_request_id'])) {
             $verifiedOrder = RepairRequest::with('repairJob')
                 ->where('id', (int) $validated['repair_request_id'])
+                ->where('customer_id', $customerId)
                 ->whereIn('status', ['COMPLETED', 'RETURNED_TO_CUSTOMER'])
                 ->where(function ($q) use ($shop) {
                     $q->where('requested_shop_id', $shop->id)
@@ -268,6 +264,12 @@ class ReviewController extends Controller
 
         if ($shop) {
             self::recalculateShopRating($shop);
+        }
+
+        if ($request->boolean('redirect_back')) {
+            return redirect()
+                ->back()
+                ->with('success', 'Your review has been deleted.');
         }
 
         return redirect()

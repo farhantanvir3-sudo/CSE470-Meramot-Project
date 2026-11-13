@@ -21,7 +21,11 @@ class ReviewTest extends TestCase
     {
         $shop = RepairShop::factory()->create();
 
-        $response = $this->get("/reviews/create/{$shop->id}");
+        // Unauthenticated guests must be redirected to login
+        $this->get("/reviews/create/{$shop->id}")->assertRedirect(route('login'));
+
+        $user = User::factory()->create(['role' => 'customer']);
+        $response = $this->actingAs($user)->get("/reviews/create/{$shop->id}");
 
         $response->assertStatus(200);
         $response->assertViewIs('reviews.write-review');
@@ -197,7 +201,7 @@ class ReviewTest extends TestCase
             'created_at' => now()->subHour(),
         ]);
 
-        // 1. Viewing shop as $me shows $me's review BEFORE $other's review
+        // 1. Viewing shop as $me shows $me's review BEFORE $other's review + prominent Edit/Delete buttons
         $page = $this->actingAs($me)->get(route('shops.show', $shop->slug));
         $page->assertStatus(200);
         $page->assertSeeInOrder([
@@ -205,6 +209,8 @@ class ReviewTest extends TestCase
             'Other customer newer review that appears below mine.',
         ]);
         $page->assertSee('Service Provided: Battery Replacement');
+        $page->assertSee('Edit Review');
+        $page->assertSee('Delete Review');
 
         // 2. Editing own review updates rating, service_provided, comment, and recalculates shop average
         $this->actingAs($me)->put("/reviews/{$myReview->id}", [
@@ -223,11 +229,50 @@ class ReviewTest extends TestCase
         // 3. Cannot delete another user's review
         $this->actingAs($me)->delete("/reviews/{$otherReview->id}")->assertStatus(403);
 
-        // 4. Deleting own review succeeds and updates shop review_count
-        $this->actingAs($me)->delete("/reviews/{$myReview->id}")
-            ->assertRedirect(route('shops.show', $shop->slug));
+        // 4. Deleting own review with redirect_back=1 works cleanly from Past Orders / Track pages
+        $this->actingAs($me)->from('/requests?filter=COMPLETED')->delete("/reviews/{$myReview->id}", [
+            'redirect_back' => 1,
+        ])->assertRedirect('/requests?filter=COMPLETED');
 
         $this->assertDatabaseMissing('shop_reviews', ['id' => $myReview->id]);
         $this->assertEquals(1, (int) $shop->fresh()->review_count);
+    }
+
+    /** @test */
+    public function it_blocks_guests_from_viewing_past_orders_and_isolates_customer_orders()
+    {
+        $customerA = User::factory()->create(['role' => 'customer']);
+        $customerB = User::factory()->create(['role' => 'customer']);
+        $shop = RepairShop::factory()->create(['name' => 'Privacy Check Lab']);
+
+        \App\Models\RepairRequest::create([
+            'customer_id' => $customerA->id,
+            'requested_shop_id' => $shop->id,
+            'title' => 'Secret Customer A Past Order Title',
+            'device_type' => 'Laptop',
+            'brand' => 'Lenovo',
+            'model_name' => 'ThinkPad X1',
+            'issue_category' => 'Display',
+            'problem' => 'Backlight fuse failure',
+            'preferred_service_type' => 'walk_in',
+            'status' => 'COMPLETED',
+        ]);
+
+        // Unauthenticated guests must be redirected to login and never see Customer A's orders
+        $this->get('/requests')->assertRedirect(route('login'));
+        $this->get('/requests?filter=COMPLETED')->assertRedirect(route('login'));
+        $this->get('/orders')->assertRedirect(route('login'));
+
+        // Logged-in Customer B (with 0 orders) must NOT see Customer A's orders
+        $respB = $this->actingAs($customerB)->get('/requests?filter=COMPLETED');
+        $respB->assertStatus(200);
+        $respB->assertSee('No repair requests match this filter yet');
+        $respB->assertDontSee('Secret Customer A Past Order Title');
+
+        // Logged-in Customer A sees their own completed order and the Verified Review CTA
+        $respA = $this->actingAs($customerA)->get('/requests?filter=COMPLETED');
+        $respA->assertStatus(200);
+        $respA->assertSee('Secret Customer A Past Order Title');
+        $respA->assertSee('Write Verified Repair Review');
     }
 }

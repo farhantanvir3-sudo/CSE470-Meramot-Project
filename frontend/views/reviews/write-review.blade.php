@@ -125,10 +125,10 @@
                         @foreach($shop->services->take(6) as $srv)
                             <button
                                 type="button"
-                                onclick="document.getElementById('service_provided').value = @js($srv->service_name)"
+                                onclick="document.getElementById('service_provided').value = @js($srv->name)"
                                 class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition"
                             >
-                                + {{ $srv->service_name }}
+                                + {{ $srv->name }}
                             </button>
                         @endforeach
                     </div>
