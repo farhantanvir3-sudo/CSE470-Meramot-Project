@@ -828,17 +828,14 @@
                         <!-- Cart Button (Links directly to Unified Direct-Order Cart `/cart`) -->
                         <a
                             href="/cart"
-                            class="relative flex items-center justify-center rounded-full bg-[var(--mint-100)] p-2 transition hover:scale-105 hover:bg-[var(--mint-300)]"
+                            class="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:scale-105 hover:bg-[var(--mint-300)]"
                             title="Direct-Order Cart"
+                            aria-label="Direct-Order Cart"
                         >
-                            <img
-                                src="/images/cart.svg"
-                                alt="Cart"
-                                class="h-[45px] w-[45px] object-contain"
-                            />
+                            <i class="fa-solid fa-cart-shopping text-sm"></i>
                             <span
                                 data-cart-badge
-                                class="{{ $navCartCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[10px] font-bold text-[var(--accent-foreground)] shadow"
+                                class="{{ $navCartCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[9px] font-bold text-[var(--accent-foreground)] shadow"
                             >{{ $navCartCount }}</span>
                         </a>
                     </div>
@@ -974,11 +971,17 @@
                 >
                     <i :class="darkMode ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon'"></i>
                 </button>
-                <a href="/cart" @click="mobileMenuOpen = false" class="relative">
-                    <img src="/images/cart.svg" alt="Cart" class="h-9 w-9">
+                <a
+                    href="/cart"
+                    @click="mobileMenuOpen = false"
+                    class="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:bg-[var(--mint-300)]"
+                    title="Direct-Order Cart"
+                    aria-label="Direct-Order Cart"
+                >
+                    <i class="fa-solid fa-cart-shopping text-sm"></i>
                     <span
                         data-cart-badge
-                        class="{{ $navCartCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[9px] font-bold text-[var(--accent-foreground)]"
+                        class="{{ $navCartCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[9px] font-bold text-[var(--accent-foreground)] shadow"
                     >{{ $navCartCount }}</span>
                 </a>
             </div>
