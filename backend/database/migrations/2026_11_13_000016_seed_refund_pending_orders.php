@@ -60,7 +60,7 @@ return new class extends Migration
                 'problem' => 'Replacement battery swelled and trackpad stopped clicking 48 hours after order settlement.',
                 'amount' => 6500.00,
                 'method' => 'NAGAD',
-                'dispute_status' => 'UNDER_REVIEW',
+                'dispute_status' => 'INVESTIGATING',
                 'note' => 'Vendor did not respond to 24-hour warranty replacement notice; escalated for Admin refund.',
             ],
         ];
@@ -96,7 +96,7 @@ return new class extends Migration
                 'model_name' => $c['model_name'],
                 'issue_category' => $c['issue_category'],
                 'problem' => $c['problem'],
-                'mode' => 'FINAL_QUOTE',
+                'mode' => 'CHECKUP_AND_REPAIR',
                 'status' => 'COMPLETED',
                 'preferred_pickup' => false,
                 'preferred_service_type' => 'walk_in',
