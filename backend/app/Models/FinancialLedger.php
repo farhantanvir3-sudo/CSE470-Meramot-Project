@@ -49,11 +49,13 @@ class FinancialLedger extends Model
         'currency',
         'description',
         'effective_at',
+        'hidden_at',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'effective_at' => 'datetime',
+        'hidden_at' => 'datetime',
     ];
 
     // Allowed Entry Types

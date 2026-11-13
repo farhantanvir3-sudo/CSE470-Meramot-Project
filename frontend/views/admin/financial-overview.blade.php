@@ -345,8 +345,47 @@
          RELOCATED BLOCK 4: Immutable Real-Time Double-Entry Ledger Journal
          Original Author: Md. Nawshad Zaman Khan [23301622] (Commit 4742c9c)
          ====================================================================== --}}
-    <div class="meramot-card overflow-hidden shadow-sm">
-        <div class="px-6 py-4 border-b border-[var(--border)] bg-[var(--mint-100)] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+    <div
+        class="meramot-card overflow-hidden shadow-sm"
+        x-data="{
+            pageIds: @js($entries->pluck('id')->map(fn ($id) => (int) $id)->values()),
+            selectedIds: [],
+            deleteModalOpen: false,
+            deleteMode: 'records_only',
+            submittingDelete: false,
+            get allPageSelected() {
+                return this.pageIds.length > 0 && this.pageIds.every(id => this.selectedIds.includes(id));
+            },
+            toggleAllPage() {
+                if (this.allPageSelected) {
+                    this.selectedIds = this.selectedIds.filter(id => !this.pageIds.includes(id));
+                } else {
+                    const merged = new Set([...this.selectedIds, ...this.pageIds]);
+                    this.selectedIds = Array.from(merged);
+                }
+            },
+            toggleRow(id) {
+                if (this.selectedIds.includes(id)) {
+                    this.selectedIds = this.selectedIds.filter(item => item !== id);
+                } else {
+                    this.selectedIds.push(id);
+                }
+            },
+            openBulkDeleteModal() {
+                if (this.selectedIds.length === 0) return;
+                this.deleteMode = 'records_only';
+                this.submittingDelete = false;
+                this.deleteModalOpen = true;
+            },
+            openSingleDeleteModal(id) {
+                this.selectedIds = [id];
+                this.deleteMode = 'records_only';
+                this.submittingDelete = false;
+                this.deleteModalOpen = true;
+            }
+        }"
+    >
+        <div class="px-6 py-4 border-b border-[var(--border)] bg-[var(--mint-100)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
                 <h2 class="text-sm font-black text-[var(--foreground)] uppercase tracking-wider flex items-center gap-2">
                     <i class="fa-solid fa-book-bookmark text-emerald-600 dark:text-emerald-400"></i>
@@ -354,15 +393,47 @@
                 </h2>
                 <p class="text-xs text-[var(--muted-foreground)] mt-0.5">Real-time chronologically audited ledger transactions and calculated running balance.</p>
             </div>
-            <span class="text-xs font-mono font-bold text-[var(--muted-foreground)]">
-                Showing {{ $entries->firstItem() ?? 0 }}–{{ $entries->lastItem() ?? 0 }} of {{ $entries->total() }} entries
-            </span>
+            <div class="flex flex-wrap items-center gap-3">
+                <template x-if="selectedIds.length > 0">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-800 shadow-sm">
+                        <span x-text="selectedIds.length + ' selected'"></span>
+                        <button
+                            type="button"
+                            @click="openBulkDeleteModal()"
+                            class="inline-flex items-center gap-1 rounded-full bg-rose-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-rose-700 transition"
+                        >
+                            <i class="fa-solid fa-trash-can text-[10px]"></i>
+                            <span>Delete Selected</span>
+                        </button>
+                        <button
+                            type="button"
+                            @click="selectedIds = []"
+                            class="text-[11px] font-semibold text-rose-700 hover:underline px-1"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                </template>
+                <span class="text-xs font-mono font-bold text-[var(--muted-foreground)]">
+                    Showing {{ $entries->firstItem() ?? 0 }}–{{ $entries->lastItem() ?? 0 }} of {{ $entries->total() }} entries
+                </span>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-[var(--border)] text-xs text-left">
                 <thead class="bg-[var(--mint-50)] text-[var(--muted-foreground)] uppercase font-bold tracking-wider">
                     <tr>
+                        <th class="px-4 py-3.5 w-10 text-center">
+                            <input
+                                type="checkbox"
+                                :checked="allPageSelected"
+                                @change="toggleAllPage()"
+                                title="Select all on this page"
+                                aria-label="Select all audit entries on this page"
+                                class="h-4 w-4 rounded accent-[#214c34] cursor-pointer"
+                            >
+                        </th>
                         <th class="px-5 py-3.5">Entry #</th>
                         <th class="px-5 py-3.5">Effective Date</th>
                         <th class="px-5 py-3.5">Category / Flow</th>
@@ -371,11 +442,25 @@
                         <th class="px-5 py-3.5 text-right">Amount</th>
                         <th class="px-5 py-3.5 text-right">Running Balance</th>
                         <th class="px-5 py-3.5">Description</th>
+                        <th class="px-4 py-3.5 text-right">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--border)]">
                     @forelse($entries as $entry)
-                        <tr class="hover:bg-[var(--mint-50)]/70 transition">
+                        <tr
+                            class="hover:bg-[var(--mint-50)]/70 transition"
+                            :class="selectedIds.includes({{ (int) $entry->id }}) ? 'bg-rose-50/40 dark:bg-rose-950/20' : ''"
+                        >
+                            <!-- Multi-Select Checkbox -->
+                            <td class="px-4 py-3.5 text-center">
+                                <input
+                                    type="checkbox"
+                                    :checked="selectedIds.includes({{ (int) $entry->id }})"
+                                    @change="toggleRow({{ (int) $entry->id }})"
+                                    aria-label="Select entry #{{ $entry->id }}"
+                                    class="h-4 w-4 rounded accent-[#214c34] cursor-pointer"
+                                >
+                            </td>
 
                             <!-- Entry ID -->
                             <td class="px-5 py-3.5 font-mono font-bold text-[var(--foreground)]">
@@ -437,10 +522,22 @@
                             <td class="px-5 py-3.5 text-[var(--muted-foreground)] max-w-xs truncate text-[11px]" title="{{ $entry->description }}">
                                 {{ $entry->description ?: '—' }}
                             </td>
+
+                            <!-- Single Delete Trigger -->
+                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+                                <button
+                                    type="button"
+                                    @click="openSingleDeleteModal({{ (int) $entry->id }})"
+                                    title="Delete audit entry #{{ $entry->id }}"
+                                    class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition"
+                                >
+                                    <i class="fa-solid fa-trash-can text-[11px]"></i>
+                                </button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-[var(--muted-foreground)]">
+                            <td colspan="10" class="px-6 py-12 text-center text-[var(--muted-foreground)]">
                                 <div class="max-w-sm mx-auto">
                                     <div class="w-12 h-12 mx-auto rounded-full bg-[var(--mint-100)] flex items-center justify-center text-[var(--muted-foreground)] mb-3">
                                         <i class="fa-solid fa-receipt text-xl"></i>
@@ -460,6 +557,122 @@
                 {{ $entries->links() }}
             </div>
         @endif
+
+        <!-- ── Audit / Ledger Deletion Mode Confirmation Pop-Up Tile ── -->
+        <div
+            x-show="deleteModalOpen"
+            x-cloak
+            @keydown.escape.window="if (deleteModalOpen && !submittingDelete) deleteModalOpen = false"
+            class="fixed inset-0 z-[110] flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="audit-delete-modal-title"
+        >
+            <div
+                x-show="deleteModalOpen"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                class="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-sm"
+                @click="if (!submittingDelete) deleteModalOpen = false"
+            ></div>
+
+            <div
+                x-show="deleteModalOpen"
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+                x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+                class="relative z-[111] w-full max-w-lg overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
+            >
+                <div class="h-1.5 w-full bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500"></div>
+
+                <form method="POST" action="{{ route('admin.financial-overview.bulk-delete') }}" @submit="submittingDelete = true" class="p-7 sm:p-8 space-y-5">
+                    @csrf
+                    <template x-for="id in selectedIds" :key="id">
+                        <input type="hidden" name="entry_ids[]" :value="id">
+                    </template>
+                    <input type="hidden" name="delete_mode" :value="deleteMode">
+
+                    <div class="text-center">
+                        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600 shadow-inner">
+                            <i class="fa-solid fa-trash-can text-xl"></i>
+                        </div>
+                        <h3 id="audit-delete-modal-title" class="text-xl font-extrabold text-[var(--foreground)]">
+                            Delete Selected Audit Records?
+                        </h3>
+                        <div class="mt-2 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1 text-xs font-bold text-[var(--foreground)]">
+                            <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+                            <span x-text="selectedIds.length + (selectedIds.length === 1 ? ' audit entry selected' : ' audit entries selected')"></span>
+                        </div>
+                        <p class="mt-2.5 text-xs text-[var(--muted-foreground)]">
+                            Choose whether to remove only the visible audit records or also reverse their financial effects on the ledger.
+                        </p>
+                    </div>
+
+                    <div class="space-y-3 text-left">
+                        <button
+                            type="button"
+                            @click="deleteMode = 'records_only'"
+                            :class="deleteMode === 'records_only' ? 'border-[#214c34] bg-[var(--mint-100)] ring-2 ring-[#214c34]/20' : 'border-[var(--border)] bg-[var(--background)] hover:bg-[var(--mint-50)]'"
+                            class="w-full rounded-2xl border p-4 text-left transition flex items-start gap-3"
+                        >
+                            <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2" :class="deleteMode === 'records_only' ? 'border-[#214c34] bg-[#214c34] text-white' : 'border-slate-300'">
+                                <i x-show="deleteMode === 'records_only'" class="fa-solid fa-check text-[10px]"></i>
+                            </span>
+                            <div>
+                                <div class="text-xs font-extrabold text-[var(--foreground)]">Delete Records Only</div>
+                                <p class="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+                                    Hides the selected audit entries from the journal table while keeping their amounts intact in Total Volume, 10% Cut, Escrow Balance, and Fund Distribution.
+                                </p>
+                            </div>
+                        </button>
+
+                        <button
+                            type="button"
+                            @click="deleteMode = 'undo_effects'"
+                            :class="deleteMode === 'undo_effects' ? 'border-rose-600 bg-rose-50/70 ring-2 ring-rose-500/20' : 'border-[var(--border)] bg-[var(--background)] hover:bg-rose-50/30'"
+                            class="w-full rounded-2xl border p-4 text-left transition flex items-start gap-3"
+                        >
+                            <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2" :class="deleteMode === 'undo_effects' ? 'border-rose-600 bg-rose-600 text-white' : 'border-slate-300'">
+                                <i x-show="deleteMode === 'undo_effects'" class="fa-solid fa-check text-[10px]"></i>
+                            </span>
+                            <div>
+                                <div class="text-xs font-extrabold text-rose-700">Delete &amp; Undo Ledger Effects</div>
+                                <p class="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+                                    Permanently removes the selected entries AND reverses their impact on Total Volume, 10% Commission, Vendor Escrow Balance, and Running Balances.
+                                </p>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <button
+                            type="button"
+                            @click="deleteModalOpen = false"
+                            :disabled="submittingDelete"
+                            class="rounded-full border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="submittingDelete"
+                            :class="deleteMode === 'undo_effects' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-[#163625] hover:bg-[#1d4630]'"
+                            class="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold text-white shadow-md transition disabled:opacity-60"
+                        >
+                            <i class="fa-solid" :class="submittingDelete ? 'fa-spinner fa-spin' : 'fa-trash-can'"></i>
+                            <span x-text="submittingDelete ? 'Processing...' : (deleteMode === 'undo_effects' ? 'Delete & Undo Effects' : 'Delete Records Only')"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
 </div>

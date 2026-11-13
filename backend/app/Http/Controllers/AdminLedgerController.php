@@ -77,7 +77,9 @@ class AdminLedgerController extends Controller
         });
 
         // 3. Filterable Query for Ledger Journal Table (Nawshad — Commit 4742c9c, fixed for PostgreSQL)
-        $query = FinancialLedger::with(['shop', 'payment'])->orderBy('id', 'asc');
+        $query = FinancialLedger::with(['shop', 'payment'])
+            ->whereNull('hidden_at')
+            ->orderBy('id', 'asc');
 
         if ($request->filled('entry_type')) {
             if ($request->entry_type === 'ADJUSTMENT') {
@@ -312,6 +314,54 @@ class AdminLedgerController extends Controller
                 'success',
                 "Batch auto-settlement completed: Disbursed {$settledCount} vendor payout(s) totaling ৳" . number_format($totalDisbursed, 2) . "."
             );
+    }
+
+    /**
+     * Bulk Delete or Undo Ledger Effects for selected audit/ledger entries.
+     * Route: POST /admin/financial-overview/bulk-delete
+     */
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'entry_ids' => 'required|array|min:1',
+            'entry_ids.*' => 'integer|exists:financial_ledgers,id',
+            'delete_mode' => 'required|in:records_only,undo_effects',
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $validated['entry_ids'])));
+        $mode = $validated['delete_mode'];
+
+        $affectedCount = 0;
+        DB::transaction(function () use ($ids, $mode, &$affectedCount) {
+            if ($mode === 'undo_effects') {
+                $affectedCount = DB::table('financial_ledgers')
+                    ->whereIn('id', $ids)
+                    ->delete();
+            } else {
+                $affectedCount = DB::table('financial_ledgers')
+                    ->whereIn('id', $ids)
+                    ->update(['hidden_at' => now()]);
+            }
+
+            if (class_exists(\App\Models\AuditLog::class)) {
+                \App\Models\AuditLog::create([
+                    'actor_id' => auth()->id(),
+                    'action' => $mode === 'undo_effects' ? 'ledger_entries_undone' : 'ledger_records_hidden',
+                    'target_resource' => 'financial_ledgers',
+                    'payload_before' => ['entry_ids' => $ids],
+                    'payload_after' => ['mode' => $mode, 'affected_count' => $affectedCount],
+                    'ip_address' => request()->ip() ?? '127.0.0.1',
+                ]);
+            }
+        });
+
+        $msg = $mode === 'undo_effects'
+            ? "Deleted {$affectedCount} ledger record(s) and reversed their financial effects on totals and balances."
+            : "Removed {$affectedCount} audit record(s) from the journal view while preserving ledger totals.";
+
+        return redirect()
+            ->route('admin.financial-overview')
+            ->with('success', $msg);
     }
 
     /**

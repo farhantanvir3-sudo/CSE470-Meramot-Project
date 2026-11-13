@@ -194,6 +194,7 @@ Route::prefix('admin')->middleware('admin.access')->group(function () {
     Route::get('/financial-overview', [AdminLedgerController::class, 'index'])->name('admin.financial-overview');         // R16
     Route::post('/financial-overview/settle', [AdminLedgerController::class, 'settleManual'])->name('admin.financial-overview.settle'); // R16
     Route::post('/financial-overview/auto-settle', [AdminLedgerController::class, 'autoSettleBatch'])->name('admin.financial-overview.auto-settle'); // R16
+    Route::post('/financial-overview/bulk-delete', [AdminLedgerController::class, 'bulkDelete'])->name('admin.financial-overview.bulk-delete'); // R16
 
     Route::get('/payouts/manage', [VendorPayoutController::class, 'index'])->name('admin.payouts.manage');                // R18
     Route::post('/payouts/{id}/disburse', [VendorPayoutController::class, 'disbursePayout'])->name('admin.payouts.disburse'); // R18
