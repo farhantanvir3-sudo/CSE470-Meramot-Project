@@ -55,6 +55,23 @@ class ReviewController extends Controller
                 ->with('warning', 'Workshop owners cannot submit customer reviews for their own shop.');
         }
 
+        if ($user->role !== 'customer') {
+            $dest = match ($user->role) {
+                'admin' => '/admin',
+                'vendor' => '/vendor/dashboard',
+                'delivery_agent', 'delivery' => '/delivery',
+                default => '/',
+            };
+
+            return redirect($dest)->with('warning', 'Only customer accounts can submit customer repair reviews.');
+        }
+
+        if ($user->isBanned()) {
+            return redirect()
+                ->route('shops.show', $shop->slug)
+                ->with('error', 'Account Restricted: Banned accounts cannot submit reviews. You can still view your ongoing and past orders.');
+        }
+
         $customerId = (int) $user->id;
 
         // Completed orders strictly belonging to this customer at this shop (via requested_shop_id or repairJob.shop_id)
@@ -105,6 +122,33 @@ class ReviewController extends Controller
                 ->with('warning', 'Please sign in to submit a review.');
         }
 
+        $authUser = $request->user();
+        if ($authUser->role === 'vendor' && $request->filled('repair_shop_id')) {
+            $targetShop = RepairShop::with('vendorProfile')->find($request->input('repair_shop_id'));
+            if ($targetShop && (int) ($targetShop->vendorProfile?->user_id ?? 0) === (int) $authUser->id) {
+                return redirect()
+                    ->route('shops.show', $targetShop->slug)
+                    ->with('warning', 'Workshop owners cannot submit customer reviews for their own shop.');
+            }
+        }
+
+        if ($authUser->role !== 'customer') {
+            $dest = match ($authUser->role) {
+                'admin' => '/admin',
+                'vendor' => '/vendor/dashboard',
+                'delivery_agent', 'delivery' => '/delivery',
+                default => '/',
+            };
+
+            return redirect($dest)
+                ->with('warning', 'Customer review submission is restricted to customer accounts.');
+        }
+
+        if ($authUser->isBanned()) {
+            return redirect('/requests')
+                ->with('error', 'Your account is restricted from submitting reviews. You may still view your past and ongoing orders.');
+        }
+
         $validated = $request->validate([
             'repair_shop_id' => 'required|exists:repair_shops,id',
             'rating' => 'required|integer|min:1|max:5',
@@ -127,6 +171,24 @@ class ReviewController extends Controller
             return redirect()
                 ->route('shops.show', $shop->slug)
                 ->with('warning', 'Workshop owners cannot submit customer reviews for their own shop.');
+        }
+
+        $authUser = $request->user();
+        if ($authUser->role !== 'customer') {
+            $dest = match ($authUser->role) {
+                'admin' => '/admin',
+                'vendor' => '/vendor/dashboard',
+                'delivery_agent', 'delivery' => '/delivery',
+                default => '/',
+            };
+
+            return redirect($dest)->with('warning', 'Only customer accounts can submit customer repair reviews.');
+        }
+
+        if ($authUser->isBanned()) {
+            return redirect()
+                ->route('shops.show', $shop->slug)
+                ->with('error', 'Account Restricted: Banned accounts cannot submit reviews. You can still view your ongoing and past orders.');
         }
 
         $customerId = (int) $request->user()->id;

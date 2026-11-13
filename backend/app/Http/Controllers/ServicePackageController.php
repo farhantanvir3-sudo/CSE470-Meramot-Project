@@ -167,11 +167,56 @@ class ServicePackageController extends Controller
     }
 
     /**
+     * Prevent non-customer roles and banned customers from using the Direct-Order Cart or placing orders.
+     */
+    private function guardCustomerOrdering(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return null;
+        }
+
+        if ($user->role !== 'customer') {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only customer accounts can order repair services.',
+                ], 403);
+            }
+
+            return match ($user->role) {
+                'admin' => redirect('/admin')->with('warning', 'Only customer accounts can place service orders.'),
+                'vendor' => redirect('/vendor/dashboard')->with('warning', 'Only customer accounts can place service orders.'),
+                'delivery_agent', 'delivery' => redirect('/delivery')->with('warning', 'Only customer accounts can place service orders.'),
+                default => redirect('/'),
+            };
+        }
+
+        if ($user->isBanned()) {
+            $msg = 'Account Restricted: Your account is banned from ordering services due to offensive review language. You can still view your ongoing and past orders.';
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $msg,
+                ], 403);
+            }
+
+            return redirect('/requests')->with('error', $msg);
+        }
+
+        return null;
+    }
+
+    /**
      * Add either a Fixed Package (`package_id`) or a Shop Service (`service_name` + `shop_id`) to Cart.
      * Route: POST /cart/add
      */
     public function addToCart(Request $request)
     {
+        if ($resp = $this->guardCustomerOrdering($request)) {
+            return $resp;
+        }
+
         $validated = $request->validate([
             'package_id' => 'nullable|exists:service_packages,id',
             'shop_id' => 'nullable|exists:repair_shops,id',
@@ -260,6 +305,10 @@ class ServicePackageController extends Controller
      */
     public function selectCartShop(Request $request)
     {
+        if ($resp = $this->guardCustomerOrdering($request)) {
+            return $resp;
+        }
+
         $validated = $request->validate([
             'shop_id' => 'required|exists:repair_shops,id',
         ]);
@@ -277,6 +326,10 @@ class ServicePackageController extends Controller
      */
     public function viewCart(Request $request)
     {
+        if ($resp = $this->guardCustomerOrdering($request)) {
+            return $resp;
+        }
+
         $cart = session()->get('cart', []);
         $total = array_reduce($cart, function ($sum, $item) {
             return $sum + ((float) $item['price'] * (int) $item['quantity']);
@@ -366,8 +419,12 @@ class ServicePackageController extends Controller
      * Proceed to checkout screen (kept compatible with Feature R8 routes & tests).
      * Route: GET /cart/checkout
      */
-    public function checkout()
+    public function checkout(Request $request)
     {
+        if ($resp = $this->guardCustomerOrdering($request)) {
+            return $resp;
+        }
+
         $cart = session()->get('cart', []);
 
         if (empty($cart)) {
@@ -397,6 +454,10 @@ class ServicePackageController extends Controller
      */
     public function placeDirectOrder(Request $request)
     {
+        if ($resp = $this->guardCustomerOrdering($request)) {
+            return $resp;
+        }
+
         $cart = session()->get('cart', []);
         if (empty($cart)) {
             return redirect()->route('packages.catalog')->with('error', 'Your cart is empty');
@@ -423,7 +484,7 @@ class ServicePackageController extends Controller
             return back()->with('error', 'No active verified repair shop available for dispatch.');
         }
 
-        $user = $request->user() ?? User::where('role', 'customer')->first() ?? User::first();
+        $user = $request->user() ?? User::where('role', 'customer')->firstOrFail();
         if ($request->user()) {
             $syncProfile = [];
             if (empty($request->user()->phone) && !empty($validated['phone'])) {

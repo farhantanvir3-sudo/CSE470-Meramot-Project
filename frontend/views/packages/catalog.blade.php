@@ -31,17 +31,24 @@
             </p>
         </div>
 
+        @php
+            $catalogUser = auth()->user();
+            $isBannedCatalogUser = $catalogUser && $catalogUser->isBanned();
+            $isNonCustomerCatalogUser = $catalogUser && $catalogUser->role !== 'customer';
+        @endphp
         <div class="flex flex-wrap items-center gap-3">
             <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3.5 py-2 rounded-full border border-[var(--border)]">
                 <i class="fa-solid fa-shield-halved text-emerald-700 mr-1"></i> Meramot Warranty Guaranteed
             </span>
-            <a href="{{ route('cart.view') }}" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+            @if(!$isBannedCatalogUser && !$isNonCustomerCatalogUser)
+                <a href="{{ route('cart.view') }}" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                 <i class="fa-solid fa-cart-shopping"></i>
                 <span>Direct-Order Cart</span>
                 <span data-cart-badge class="{{ ($cartCount ?? 0) > 0 ? '' : 'hidden' }} inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--mint-100)] px-1.5 text-[11px] font-black text-[#203126]">
                     {{ $cartCount ?? 0 }}
                 </span>
             </a>
+            @endif
         </div>
     </div>
 
@@ -176,14 +183,26 @@
                         </select>
                     </div>
 
-                    <button
-                        type="button"
-                        onclick="addToCart({{ $pkg->id }}, this)"
-                        class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] py-2.5 px-4 text-xs font-bold shadow-sm transition flex items-center justify-center gap-2"
-                    >
-                        <i class="fa-solid fa-cart-plus"></i>
-                        <span>Add Service to Direct Cart</span>
-                    </button>
+                    @if($isBannedCatalogUser)
+                        <span class="w-full rounded-full border border-rose-300 bg-rose-50 text-rose-700 py-2.5 px-4 text-xs font-bold flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-ban"></i>
+                            <span>Ordering Restricted (Banned)</span>
+                        </span>
+                    @elseif($isNonCustomerCatalogUser)
+                        <span class="w-full rounded-full border border-[var(--border)] bg-[var(--mint-100)] text-[var(--muted-foreground)] py-2.5 px-4 text-xs font-bold flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-user-shield"></i>
+                            <span>Customer Booking Only</span>
+                        </span>
+                    @else
+                        <button
+                            type="button"
+                            onclick="addToCart({{ $pkg->id }}, this)"
+                            class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] py-2.5 px-4 text-xs font-bold shadow-sm transition flex items-center justify-center gap-2"
+                        >
+                            <i class="fa-solid fa-cart-plus"></i>
+                            <span>Add Service to Direct Cart</span>
+                        </button>
+                    @endif
                 </div>
             </div>
         @empty

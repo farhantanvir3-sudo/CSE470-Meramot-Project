@@ -63,7 +63,7 @@
             </p>
         </a>
 
-        <a href="/requests" class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm hover:border-[var(--accent-dark)] transition block">
+        <a href="#platform-tickets-oversight" class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm hover:border-[var(--accent-dark)] transition block">
             <div class="flex items-center justify-between">
                 <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Active Repair Tickets</span>
                 <span class="h-9 w-9 rounded-2xl bg-[#e4f3df] text-[#244229] flex items-center justify-center"><i class="fa-solid fa-screwdriver-wrench"></i></span>
@@ -175,9 +175,9 @@
             </a>
 
             <a href="/admin/moderation" class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 hover:border-[var(--accent-dark)] transition">
-                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">Sprint 3 • Coming Soon</span>
+                <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">Live • Active Governance</span>
                 <h3 class="mt-2 font-bold text-sm text-[var(--foreground)]">Content Moderation</h3>
-                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Abusive review flagging, warnings, and account sanctions.</p>
+                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Review deletion, offensive language detection, and user ban controls.</p>
             </a>
 
             <a href="/admin/audit-logs" class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 hover:border-[var(--accent-dark)] transition">
@@ -185,6 +185,70 @@
                 <h3 class="mt-2 font-bold text-sm text-[var(--foreground)]">Security Audit Monitor</h3>
                 <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Immutable IP forensics and state-transition audit trail.</p>
             </a>
+        </div>
+    </div>
+
+    <!-- Read-Only Platform Repair Tickets Oversight -->
+    <div id="platform-tickets-oversight" class="mt-8 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+                <h2 class="text-base font-black text-[var(--foreground)]">Platform Repair Tickets Oversight</h2>
+                <p class="text-xs text-[var(--muted-foreground)]">Read-only snapshot of recent marketplace and direct-order repair tickets across all customers.</p>
+            </div>
+            <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
+                {{ $kpis['open_requests'] }} Open Platform Tickets
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="border-b border-[var(--border)] text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">
+                        <th class="py-2.5 pr-4">Ticket</th>
+                        <th class="py-2.5 pr-4">Customer</th>
+                        <th class="py-2.5 pr-4">Assigned Workshop</th>
+                        <th class="py-2.5 pr-4">Status</th>
+                        <th class="py-2.5">Updated</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)]/60">
+                    @forelse($recentRequests as $ticket)
+                        <tr class="hover:bg-[var(--mint-100)]/40 transition">
+                            <td class="py-3 pr-4">
+                                <div class="font-bold text-[var(--foreground)]">#{{ $ticket->id }} — {{ \Illuminate\Support\Str::limit($ticket->title ?? $ticket->device_model ?? 'Repair Ticket', 52) }}</div>
+                                <div class="text-[11px] text-[var(--muted-foreground)]">{{ $ticket->device_type ?? 'Device' }}</div>
+                            </td>
+                            <td class="py-3 pr-4 font-semibold text-[var(--foreground)]">
+                                {{ $ticket->customer->name ?? 'Customer' }}
+                                <div class="text-[10px] font-normal text-[var(--muted-foreground)]">{{ $ticket->customer->email ?? '' }}</div>
+                            </td>
+                            <td class="py-3 pr-4">
+                                @if($ticket->requestedShop)
+                                    <a href="{{ route('shops.show', $ticket->requestedShop->slug) }}" class="font-bold text-[var(--accent-dark)] hover:underline">
+                                        {{ $ticket->requestedShop->name }}
+                                    </a>
+                                @else
+                                    <span class="text-[var(--muted-foreground)]">Marketplace Bidding</span>
+                                @endif
+                            </td>
+                            <td class="py-3 pr-4">
+                                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-[var(--accent-dark)]">
+                                    {{ str_replace('_', ' ', $ticket->status) }}
+                                </span>
+                            </td>
+                            <td class="py-3 text-[var(--muted-foreground)]">
+                                {{ $ticket->updated_at?->diffForHumans() ?? 'Recently' }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="py-6 text-center text-[var(--muted-foreground)]">
+                                No platform repair tickets recorded yet.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 

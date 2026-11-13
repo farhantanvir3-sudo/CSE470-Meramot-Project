@@ -109,9 +109,9 @@ class AuthController extends Controller
             ]);
         }
 
-        if ($user && ($user->status === 'deleted' || $user->status === 'banned' || !$user->is_active)) {
+        if ($user && ($user->status === 'deleted' || ($user->status !== 'banned' && !$user->is_active))) {
             return back()->withInput($request->only('identifier'))->withErrors([
-                'identifier' => 'This account is inactive or restricted.',
+                'identifier' => 'This account is inactive or deactivated.',
             ]);
         }
 
@@ -124,6 +124,14 @@ class AuthController extends Controller
         if ($user && !empty($user->password) && Hash::check($credentials['password'], $user->password)) {
             Auth::login($user, $request->boolean('remember'));
             $request->session()->regenerate();
+
+            if ($user->isBanned()) {
+                $banNote = $user->ban_reason ?: 'Use of offensive language in reviews';
+                return redirect('/requests')->with(
+                    'warning',
+                    "Account Restricted ({$banNote}): You can view and track your ongoing and past orders, but placing new service orders or repair requests is disabled."
+                );
+            }
 
             $defaultTarget = $this->redirectPathForUser($user);
             $intendedUrl = (string) $request->session()->pull('url.intended', '');
@@ -529,9 +537,9 @@ class AuthController extends Controller
                     ]);
                 }
 
-                if ($user->status === 'banned' || !$user->is_active) {
+                if ($user->status !== 'banned' && !$user->is_active) {
                     return redirect('/login')->withErrors([
-                        'google' => 'Your account has been restricted or deactivated. Please contact Meramot Support.',
+                        'google' => 'Your account has been deactivated. Please contact Meramot Support.',
                     ]);
                 }
 
@@ -542,6 +550,14 @@ class AuthController extends Controller
 
                 Auth::login($user, true);
                 $request->session()->regenerate();
+
+                if ($user->isBanned()) {
+                    $banNote = $user->ban_reason ?: 'Use of offensive language in reviews';
+                    return redirect('/requests')->with(
+                        'warning',
+                        "Account Restricted ({$banNote}): You can view and track your ongoing and past orders, but placing new service orders or repair requests is disabled."
+                    );
+                }
 
                 return redirect($this->redirectPathForUser($user))
                     ->with('success', 'Welcome back, ' . ($user->name ?: $user->email) . '! Signed in with Google.');

@@ -465,6 +465,7 @@
 }"
 @meramot-toast.window="showToast($event.detail)"
 @meramot-open-location-modal.window="openLocationModal()"
+@meramot-open-notif-modal.window="if (window.innerWidth < 768) notifModalOpen = true"
 @meramot-location-changed.window="selectedLocation = $event.detail; locationLabel = window.MeramotLocationPicker ? window.MeramotLocationPicker.buildLocationLabel($event.detail) : locationLabel">
 
     <!-- Non-Blocking Meramot Mint Toast Notification -->
@@ -493,6 +494,13 @@
         $isVendorAuth = $navAuthUser && $navUserRole === 'vendor';
         $isAdminAuth = $navAuthUser && $navUserRole === 'admin';
         $isCustomerAuth = $navAuthUser && $navUserRole === 'customer';
+        $isBannedCustomer = $isCustomerAuth && method_exists($navAuthUser, 'isBanned') && $navAuthUser->isBanned();
+
+        $userNotifications = ($navAuthUser && \Illuminate\Support\Facades\Schema::hasTable('user_notifications'))
+            ? \App\Models\UserNotification::where('user_id', $navAuthUser->id)->latest()->take(8)->get()
+            : collect();
+        $unreadNotifCount = $userNotifications->where('is_read', false)->count();
+        $unseenPopupNotif = $userNotifications->first(fn ($n) => !$n->is_read && $n->popup_shown_at === null);
 
         $navVendorProfile = $isVendorAuth
             ? \App\Models\VendorProfile::with('shops')->where('user_id', $navAuthUser->id)->first()
@@ -530,7 +538,11 @@
                 <span class="opacity-70">Switch Portal:</span>
                 <a href="/shops/explore" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-store text-emerald-400"></i> Shops</a>
                 <span class="opacity-40">|</span>
-                <a href="/requests" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-list-check text-teal-300"></i> Requests</a>
+                @if($isAdminAuth)
+                    <a href="/admin/moderation" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-gavel text-amber-300"></i> Moderation</a>
+                @else
+                    <a href="/requests" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-list-check text-teal-300"></i> Requests</a>
+                @endif
                 <span class="opacity-40">|</span>
                 <a href="{{ $isVendorAuth ? $vendorWorkspaceUrl : '/vendor/dashboard' }}" class="hover:underline flex items-center gap-1"><i class="fa-solid fa-gavel text-amber-300"></i> Vendor Portal</a>
                 <span class="opacity-40">|</span>
@@ -588,7 +600,11 @@
                 <div class="flex shrink-0 items-center gap-2 md:gap-3">
                     
                     <!-- Notification Bell Dropdown (Desktop Only; Mobile uses Drawer Notification Tile) -->
-                    <div class="relative hidden md:block" x-data="{ notifOpen: false }">
+                    <div
+                        class="relative hidden md:block"
+                        x-data="{ notifOpen: {{ $unseenPopupNotif ? 'true' : 'false' }} }"
+                        x-init="if ({{ $unseenPopupNotif ? 'true' : 'false' }}) { $dispatch('meramot-open-notif-modal'); fetch('/notifications/mark-read', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ popup_only: true }) }).catch(() => {}); }"
+                    >
                         <button
                             type="button"
                             @click="notifOpen = !notifOpen"
@@ -597,22 +613,77 @@
                             aria-label="Notifications"
                         >
                             <i class="fa-regular fa-bell text-sm"></i>
-                            <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-600"></span>
+                            @if($unreadNotifCount > 0)
+                                <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-extrabold text-white shadow">
+                                    {{ $unreadNotifCount }}
+                                </span>
+                            @else
+                                <span class="absolute top-2 right-2 h-2 w-2 rounded-full bg-emerald-600"></span>
+                            @endif
                         </button>
 
                         <div
                             x-show="notifOpen"
                             @click.away="notifOpen = false"
                             x-cloak
-                            class="absolute right-0 z-40 mt-2 w-80 rounded-3xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-2xl text-xs"
+                            class="absolute right-0 z-40 mt-2 w-96 rounded-3xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-2xl text-xs"
                         >
                             <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5 mb-2.5">
-                                <span class="font-black text-sm text-[var(--foreground)]">Platform Updates</span>
-                                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">Live</span>
+                                <span class="font-black text-sm text-[var(--foreground)]">Notifications &amp; Alerts</span>
+                                <div class="flex items-center gap-2">
+                                    @if($unreadNotifCount > 0)
+                                        <form method="POST" action="{{ route('notifications.mark-read') }}" class="inline">
+                                            @csrf
+                                            <button type="submit" class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                                                Mark all read
+                                            </button>
+                                        </form>
+                                    @endif
+                                    <span class="rounded-full {{ $unreadNotifCount > 0 ? 'bg-rose-600 text-white' : 'bg-[var(--mint-100)] text-[var(--accent-dark)]' }} px-2.5 py-0.5 text-[10px] font-bold">
+                                        {{ $unreadNotifCount > 0 ? $unreadNotifCount . ' New' : 'Live' }}
+                                    </span>
+                                </div>
                             </div>
 
-                            <div class="space-y-2">
-                                <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
+                            <div class="space-y-2 max-h-80 overflow-y-auto pr-0.5">
+                                @foreach($userNotifications as $notif)
+                                    @php
+                                        $notifDanger = ($notif->severity ?? '') === 'danger';
+                                        $notifWarn = ($notif->severity ?? '') === 'warning';
+                                        $notifCardCls = $notifDanger
+                                            ? 'border border-rose-300 bg-rose-50/90 dark:bg-rose-950/40'
+                                            : ($notifWarn
+                                                ? 'border border-amber-300 bg-amber-50/90 dark:bg-amber-950/40'
+                                                : 'border border-[var(--border)] bg-[var(--mint-100)]/90');
+                                    @endphp
+                                    <div class="rounded-2xl p-3 {{ $notifCardCls }}">
+                                        <div class="font-extrabold flex items-center justify-between gap-2 {{ $notifDanger ? 'text-rose-900 dark:text-rose-200' : 'text-[var(--foreground)]' }}">
+                                            <span class="flex items-center gap-1.5">
+                                                <i class="fa-solid {{ $notifDanger ? 'fa-ban text-rose-600' : ($notifWarn ? 'fa-triangle-exclamation text-amber-600' : 'fa-circle-check text-emerald-600') }}"></i>
+                                                <span>{{ $notif->title }}</span>
+                                            </span>
+                                            @if(!$notif->is_read)
+                                                <span class="rounded-full bg-rose-600 px-1.5 py-0.5 text-[9px] font-black uppercase text-white">New</span>
+                                            @endif
+                                        </div>
+                                        <p class="mt-1 text-[11px] leading-relaxed {{ $notifDanger ? 'text-rose-800 dark:text-rose-300' : 'text-[var(--muted-foreground)]' }}">
+                                            {{ $notif->message }}
+                                        </p>
+                                        <div class="mt-1.5 flex items-center justify-between text-[10px] text-[var(--muted-foreground)]">
+                                            <span>{{ $notif->created_at ? $notif->created_at->diffForHumans() : 'Just now' }}</span>
+                                            @if($notif->action_url)
+                                                <a href="{{ $notif->action_url }}" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">
+                                                    Open &rarr;
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+
+                                @php
+                                    $notifQuoteUrl = $isAdminAuth ? '/admin' : ($isVendorAuth ? $vendorWorkspaceUrl : ($isRiderAuth ? '/delivery' : (auth()->check() ? '/requests' : '/login')));
+                                @endphp
+                                <a href="{{ $notifQuoteUrl }}" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
                                     <div class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                                         <i class="fa-solid fa-gavel text-amber-600"></i>
                                         <span>Quote 1 &amp; Quote 2 Lifecycle Active</span>
@@ -638,9 +709,9 @@
                                     <a href="/delivery/map" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Live Delivery Map &rarr;</a>
                                 @elseif($isAdminAuth)
                                     <a href="/admin" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">Admin Console</a>
-                                    <a href="/admin/financial-overview" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Financial Ledger &rarr;</a>
+                                    <a href="/admin/moderation" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Moderation Desk &rarr;</a>
                                 @else
-                                    <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">{{ auth()->check() ? 'My Requests' : 'Sign in to Track Orders' }}</a>
+                                    <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">{{ auth()->check() ? ($isBannedCustomer ? 'Ongoing & Past Orders' : 'My Requests') : 'Sign in to Track Orders' }}</a>
                                     <a href="/shops/explore" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Explore Workshops &rarr;</a>
                                 @endif
                             </div>
@@ -654,7 +725,8 @@
                     </a>
                     @endif
 
-                    <!-- Mobile Quick Cart Icon (Visible on Mobile Header) -->
+                    <!-- Mobile Quick Cart Icon (Visible on Mobile Header for Active Customers & Guests) -->
+                    @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
                     <a
                         href="/cart"
                         class="meramot-cart-btn relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition duration-200 hover:bg-[var(--mint-300)] md:hidden"
@@ -667,6 +739,7 @@
                             class="{{ $navCartCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[9px] font-bold text-[var(--accent-foreground)] shadow"
                         >{{ $navCartCount }}</span>
                     </a>
+                    @endif
 
                     <!-- Desktop: Full Action Bar -->
                     <div class="hidden md:flex md:items-center md:gap-3">
@@ -792,19 +865,21 @@
                                         </a>
                                     @else
                                         <a href="/requests" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                            My Repair Requests
+                                            {{ $isBannedCustomer ? 'Ongoing & Past Orders' : 'My Repair Requests' }}
                                         </a>
-                                        <a href="/requests/create" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                            Make Repair Request
-                                        </a>
+                                        @if(!$isBannedCustomer)
+                                            <a href="/requests/create" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                                Make Repair Request
+                                            </a>
+                                            <a href="/cart" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                                View cart
+                                            </a>
+                                        @endif
                                         <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Explore shops
                                         </a>
                                         <a href="/packages/catalog" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Service Packages
-                                        </a>
-                                        <a href="/cart" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                            View cart
                                         </a>
                                         <a href="/ai-consultant/chat" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             AI help chat
@@ -865,7 +940,8 @@
                             </div>
                         </div>
 
-                        <!-- Cart Button (Links directly to Unified Direct-Order Cart `/cart`) -->
+                        <!-- Cart Button (Links directly to Unified Direct-Order Cart `/cart` for Active Customers & Guests) -->
+                        @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
                         <a
                             href="/cart"
                             class="meramot-cart-btn relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition duration-200 hover:scale-105 hover:bg-[var(--mint-300)]"
@@ -878,6 +954,7 @@
                                 class="{{ $navCartCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[9px] font-bold text-[var(--accent-foreground)] shadow"
                             >{{ $navCartCount }}</span>
                         </a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -1012,7 +1089,11 @@
                     aria-label="Notifications"
                 >
                     <i class="fa-regular fa-bell text-sm"></i>
-                    <span class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-emerald-600"></span>
+                    @if($unreadNotifCount > 0)
+                        <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-extrabold text-white shadow">{{ $unreadNotifCount }}</span>
+                    @else
+                        <span class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-emerald-600"></span>
+                    @endif
                 </button>
                 <button
                     type="button"
@@ -1086,16 +1167,18 @@
                         Explore all shops
                     </a>
                     <a href="/requests" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                        My Repair Requests
+                        {{ $isBannedCustomer ? 'Ongoing & Past Orders' : 'My Repair Requests' }}
                     </a>
-                    <a href="/requests/create" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                        Make Repair Request
-                    </a>
+                    @if(!$isBannedCustomer)
+                        <a href="/requests/create" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                            Make Repair Request
+                        </a>
+                        <a href="/cart" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                            Direct-Order Cart
+                        </a>
+                    @endif
                     <a href="/packages/catalog" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
                         Service Packages
-                    </a>
-                    <a href="/cart" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                        Direct-Order Cart
                     </a>
                     <a href="/ai-consultant/chat" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
                         AI Diagnostic Help
@@ -1371,24 +1454,59 @@
                         <i class="fa-regular fa-bell text-sm"></i>
                     </span>
                     <div>
-                        <h2 id="meramot-notif-modal-title" class="font-black text-base text-[var(--foreground)]">Platform Updates</h2>
-                        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700">
-                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span> Live
+                        <h2 id="meramot-notif-modal-title" class="font-black text-base text-[var(--foreground)]">Notifications &amp; Alerts</h2>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold {{ $unreadNotifCount > 0 ? 'text-rose-600' : 'text-emerald-700' }}">
+                            <span class="h-1.5 w-1.5 rounded-full {{ $unreadNotifCount > 0 ? 'bg-rose-600' : 'bg-emerald-600' }}"></span>
+                            {{ $unreadNotifCount > 0 ? $unreadNotifCount . ' Unread' : 'Live' }}
                         </span>
                     </div>
                 </div>
-                <button
-                    type="button"
-                    @click="notifModalOpen = false"
-                    class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-200)] transition"
-                    aria-label="Close notifications"
-                >
-                    ✕
-                </button>
+                <div class="flex items-center gap-2">
+                    @if($unreadNotifCount > 0)
+                        <form method="POST" action="{{ route('notifications.mark-read') }}" class="inline">
+                            @csrf
+                            <button type="submit" class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                                Mark read
+                            </button>
+                        </form>
+                    @endif
+                    <button
+                        type="button"
+                        @click="notifModalOpen = false"
+                        class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-200)] transition"
+                        aria-label="Close notifications"
+                    >
+                        ✕
+                    </button>
+                </div>
             </div>
 
-            <div class="space-y-2.5">
-                <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
+            <div class="space-y-2.5 max-h-80 overflow-y-auto">
+                @foreach($userNotifications as $notif)
+                    @php
+                        $notifDanger = ($notif->severity ?? '') === 'danger';
+                        $notifWarn = ($notif->severity ?? '') === 'warning';
+                        $notifCardCls = $notifDanger
+                            ? 'border border-rose-300 bg-rose-50/90 dark:bg-rose-950/40'
+                            : ($notifWarn
+                                ? 'border border-amber-300 bg-amber-50/90 dark:bg-amber-950/40'
+                                : 'border border-[var(--border)] bg-[var(--mint-100)]/90');
+                    @endphp
+                    <div class="rounded-2xl p-3.5 {{ $notifCardCls }}">
+                        <div class="font-extrabold flex items-center justify-between gap-2 {{ $notifDanger ? 'text-rose-900 dark:text-rose-200' : 'text-[var(--foreground)]' }}">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid {{ $notifDanger ? 'fa-ban text-rose-600' : ($notifWarn ? 'fa-triangle-exclamation text-amber-600' : 'fa-circle-check text-emerald-600') }}"></i>
+                                <span>{{ $notif->title }}</span>
+                            </span>
+                            @if(!$notif->is_read)
+                                <span class="rounded-full bg-rose-600 px-1.5 py-0.5 text-[9px] font-black uppercase text-white">New</span>
+                            @endif
+                        </div>
+                        <p class="mt-1 text-[11px] leading-relaxed {{ $notifDanger ? 'text-rose-800 dark:text-rose-300' : 'text-[var(--muted-foreground)]' }}">{{ $notif->message }}</p>
+                    </div>
+                @endforeach
+
+                <a href="{{ $isAdminAuth ? '/admin' : ($isVendorAuth ? $vendorWorkspaceUrl : ($isRiderAuth ? '/delivery' : (auth()->check() ? '/requests' : '/login'))) }}" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
                     <div class="font-bold text-[var(--foreground)] flex items-center gap-2">
                         <i class="fa-solid fa-gavel text-amber-600"></i>
                         <span>Quote 1 &amp; Quote 2 Lifecycle Active</span>
@@ -1414,9 +1532,9 @@
                     <a href="/delivery/map" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Live Delivery Map &rarr;</a>
                 @elseif($isAdminAuth)
                     <a href="/admin" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">Admin Console</a>
-                    <a href="/admin/financial-overview" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Financial Ledger &rarr;</a>
+                    <a href="/admin/moderation" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Moderation Desk &rarr;</a>
                 @else
-                    <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">{{ auth()->check() ? 'My Requests' : 'Sign in to Track Orders' }}</a>
+                    <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">{{ auth()->check() ? ($isBannedCustomer ? 'Ongoing & Past Orders' : 'My Requests') : 'Sign in to Track Orders' }}</a>
                     <a href="/shops/explore" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Explore Workshops &rarr;</a>
                 @endif
             </div>
@@ -1511,6 +1629,28 @@
         });
     </script>
 
+    <!-- Banned Customer Read-Only Account Restriction Banner -->
+    @if($isBannedCustomer)
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+            <div class="p-4 text-xs font-semibold text-rose-950 rounded-2xl bg-rose-50 border border-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                <div class="space-y-0.5">
+                    <div class="font-extrabold flex items-center gap-2 text-rose-900">
+                        <i class="fa-solid fa-ban text-rose-600"></i>
+                        <span>Account Restricted from New Orders &amp; Requests</span>
+                    </div>
+                    <p class="text-[11px] text-rose-800 leading-relaxed">
+                        Reason: {{ $navAuthUser->ban_reason ?: 'Community Guidelines violation (offensive language in review)' }}.
+                        You can still view and track your <strong>ongoing orders and past orders</strong>, while new service bookings, cart orders, repair requests, and reviews are disabled.
+                    </p>
+                </div>
+                <a href="/requests" class="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-4 py-2 text-[11px] font-bold text-white hover:bg-rose-800 transition">
+                    <i class="fa-solid fa-list-check"></i>
+                    <span>View Ongoing &amp; Past Orders</span>
+                </a>
+            </div>
+        </div>
+    @endif
+
     <!-- Flash Alert System -->
     @if(session('success'))
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
@@ -1574,7 +1714,9 @@
                     @else
                         <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Customer &amp; Partner Hub</h5>
                         <ul class="space-y-1.5">
-                            <li><a href="/requests/create" class="hover:underline">Post Repair Request</a></li>
+                            @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
+                                <li><a href="/requests/create" class="hover:underline">Post Repair Request</a></li>
+                            @endif
                             <li><a href="/ai-consultant/chat" class="hover:underline">AI Fault Diagnostics</a></li>
                             <li><a href="/packages/catalog" class="hover:underline">Standard Fixed Packages</a></li>
                             @if($isVendorAuth)

@@ -204,6 +204,9 @@ Route::prefix('admin')->middleware('admin.access')->group(function () {
     Route::post('/payouts/{id}/disburse', [VendorPayoutController::class, 'disbursePayout'])->name('admin.payouts.disburse'); // R18
     Route::get('/moderation', [AdminModerationController::class, 'index'])->name('admin.moderation');                     // R19
     Route::post('/moderation/sanction', [AdminModerationController::class, 'applySanction'])->name('admin.moderation.sanction'); // R19
+    Route::post('/reviews/{reviewId}/moderate', [AdminModerationController::class, 'moderateReview'])->name('admin.reviews.moderate'); // R19
+    Route::post('/users/{userId}/ban', [AdminModerationController::class, 'banUser'])->name('admin.users.ban');          // R19
+    Route::post('/users/{userId}/unban', [AdminModerationController::class, 'unbanUser'])->name('admin.users.unban');    // R19
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');                            // R20
 });
 
@@ -224,6 +227,7 @@ Route::get('/api/profile', [ProfileController::class, 'show']);
 Route::put('/api/profile', [ProfileController::class, 'update']);
 Route::delete('/api/profile', [ProfileController::class, 'destroy']);
 Route::get('/notifications', fn (Request $r) => app(ComingSoonController::class)->show($r, 'multi-channel-alerts'));
+Route::post('/notifications/mark-read', [ProfileController::class, 'markNotificationsRead'])->name('notifications.mark-read');
 Route::get('/support', fn (Request $r) => app(ComingSoonController::class)->show($r, 'support-desk'));
 Route::get('/help', fn (Request $r) => app(ComingSoonController::class)->show($r, 'support-desk'));
 Route::get('/terms', fn (Request $r) => app(ComingSoonController::class)->show($r, 'terms-of-service'));

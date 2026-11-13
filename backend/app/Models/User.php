@@ -33,6 +33,8 @@ class User extends Authenticatable
         'phone_otp_code',
         'phone_otp_expires_at',
         'status',
+        'ban_reason',
+        'banned_at',
         'pending_penalty',
         'is_active',
     ];
@@ -48,11 +50,22 @@ class User extends Authenticatable
         'is_phone_verified' => 'boolean',
         'email_otp_expires_at' => 'datetime',
         'phone_otp_expires_at' => 'datetime',
+        'banned_at' => 'datetime',
         'is_active' => 'boolean',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
         'pending_penalty' => 'decimal:2',
     ];
+
+    public function isBanned(): bool
+    {
+        return ($this->status ?? '') === 'banned';
+    }
+
+    public function inAppNotifications()
+    {
+        return $this->hasMany(UserNotification::class, 'user_id');
+    }
 
     public function vendorProfile()
     {
