@@ -50,7 +50,7 @@
         confirmManualAddress() {
             this.manualConfirmError = '';
             if (!this.draft.address || !this.draft.address.trim()) {
-                this.manualConfirmError = 'Please type your street / house / road delivery address first.';
+                this.manualConfirmError = 'Please enter your full street, house, and road delivery address first.';
                 return;
             }
             if (!this.draft.city || !this.draft.city.trim()) {
@@ -61,7 +61,7 @@
             this.draft.longitude = '';
             this.addressConfirmed = true;
             window.dispatchEvent(new CustomEvent('meramot-toast', {
-                detail: { message: 'Manual delivery address confirmed! Click Save changes to store it.', type: 'success' }
+                detail: { message: 'Manual delivery address confirmed. Click Save Changes to update your profile.', type: 'success' }
             }));
         },
         openOtpModal(channel) {

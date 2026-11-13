@@ -32,7 +32,7 @@
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R6 • Lead: Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Discover verified electronics & hardware repair experts across all 64 districts of Bangladesh</span>
+                <span>Browse vetted electronics and device repair specialists across Bangladesh.</span>
             </p>
         </div>
 
@@ -470,8 +470,8 @@
                 @empty
                     <div class="col-span-2 py-16 text-center rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-8">
                         <div class="text-4xl mb-3">🔍</div>
-                        <h3 class="text-base font-bold text-[var(--foreground)]">No repair shops found</h3>
-                        <p class="text-xs text-[var(--muted-foreground)] mt-1">We couldn't find any shops matching your filter parameters. Try clearing some filters or searching a different area.</p>
+                        <h3 class="text-base font-bold text-[var(--foreground)]">No matching workshops found</h3>
+                        <p class="text-xs text-[var(--muted-foreground)] mt-1">No repair centers matched your current filters. Adjust your criteria or reset all filters to view available shops.</p>
                         <a href="/shops" class="inline-block mt-4 rounded-full bg-[var(--accent-dark)] px-5 py-2 text-xs font-bold text-white">
                             Reset All Filters
                         </a>

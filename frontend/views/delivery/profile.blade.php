@@ -26,7 +26,7 @@
             </div>
             <div class="min-w-0">
                 <h1 class="break-words text-2xl font-extrabold text-[#163625]">{{ $deliveryName }}</h1>
-                <p class="mt-1 text-sm font-medium text-[#163625]/65">Deliveryman Data &bull; Official Meramot Fleet</p>
+                <p class="mt-1 text-sm font-medium text-[#163625]/65">Courier Profile &bull; Official Meramot Fleet</p>
             </div>
         </div>
 

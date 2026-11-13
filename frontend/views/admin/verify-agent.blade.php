@@ -25,7 +25,7 @@
             <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Delivery Operations</p>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Delivery Partner Management &amp; Verification</h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                Inspect applicant personal details, NID, BRTA driving license, and uploaded scans. Approving generates a unique <code class="font-mono font-bold text-[var(--accent-dark)]">@meramotbd.com</code> company email and secure password once and emails them to the applicant's personal inbox.
+                Review applicant identity details, NID, driving license, and uploaded verification scans. Approving a partner automatically provisions and emails a unique <code class="font-mono font-bold text-[var(--accent-dark)]">@meramotbd.com</code> account credential to the applicant's email address.
             </p>
             <span class="dev-only-badge text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mt-1.5">
                 Feature R1 &bull; Assigned to: Md. Nafiul Islam [22299035]
@@ -295,7 +295,7 @@
                     <i class="fa-solid fa-motorcycle text-[var(--accent-dark)]"></i>
                     All Delivery Partners Directory ({{ $allPartners->count() }})
                 </h2>
-                <span class="text-[11px] font-semibold text-[var(--muted-foreground)]">Approved (`@meramotbd.com`), Pending &amp; Rejected Applications</span>
+                <span class="text-[11px] font-semibold text-[var(--muted-foreground)]">Approved (<code class="font-mono">@meramotbd.com</code>), Pending &amp; Rejected Applications</span>
             </div>
 
             <div class="overflow-x-auto">

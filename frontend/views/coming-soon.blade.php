@@ -41,18 +41,18 @@
             @if(!empty($wasFormSubmission))
                 <div class="mt-4 inline-flex items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-900">
                     <i class="fa-solid fa-circle-info text-emerald-700"></i>
-                    <span>Your action was received — live execution for this module unlocks in {{ $meta['sprint'] ?? 'an upcoming sprint' }}.</span>
+                    <span>Your submission was received. Full interactive execution for this module will unlock in an upcoming release.</span>
                 </div>
             @endif
 
             <p class="mt-4 max-w-xl text-sm leading-relaxed text-[var(--muted-foreground)]">
-                {{ $meta['summary'] ?? 'This feature is scheduled for a future sprint milestone and will be available soon.' }}
+                {{ $meta['summary'] ?? 'This feature is scheduled for an upcoming platform release.' }}
             </p>
 
-            <!-- Sprint 1 Live Highlights Box -->
+            <!-- Live Platform Highlights Box -->
             <div class="mt-7 w-full max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/70 p-4 text-left text-xs">
                 <p class="font-extrabold uppercase tracking-wider text-[10px] text-[var(--accent-dark)] mb-2">
-                    <i class="fa-solid fa-circle-check mr-1"></i> Available Right Now in Sprint 1
+                    <i class="fa-solid fa-circle-check mr-1"></i> Available Now on Meramot
                 </p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[var(--foreground)] font-medium">
                     <a href="/shops" class="flex items-center gap-2 rounded-xl bg-[var(--card)] px-3 py-2 border border-[var(--border)] hover:border-[var(--accent-dark)] transition">

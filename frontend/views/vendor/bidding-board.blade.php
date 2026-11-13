@@ -15,7 +15,7 @@
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R12 • Assigned: Farhan Tanvir [22299179] (Lead)
                 </span>
-                <span>Submit itemized Quote 1 diagnostic bids on open customer hardware tickets across Bangladesh</span>
+                <span>Submit itemized diagnostic estimates on open customer repair tickets across Bangladesh.</span>
             </p>
         </div>
         <div class="flex items-center gap-2 self-start">
@@ -55,18 +55,18 @@
                     </div>
 
                     <div class="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between text-[11px]">
-                        <span class="text-[var(--muted-foreground)]">Need automated bench triage?</span>
+                        <span class="text-[var(--muted-foreground)]">Diagnostic summary</span>
                         <a href="/vendor/request-details/{{ $req->id }}" class="font-bold text-[var(--accent-dark)] hover:underline">
-                            AI Triage (Sprint 2) &rarr;
+                            View Full Ticket Details &rarr;
                         </a>
                     </div>
                 </div>
 
-                <!-- Right: Submit Real Diagnostic Bid Form -->
+                <!-- Right: Submit Diagnostic Estimate Form -->
                 <div class="lg:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-5">
                     <h4 class="font-bold text-sm text-[var(--foreground)] mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-file-invoice-dollar text-[var(--accent-dark)]"></i>
-                        Submit Verified Quote 1 Bid on Ticket #{{ $req->id }}
+                        Submit Verified Estimate on Ticket #{{ $req->id }}
                     </h4>
 
                     <form method="POST" action="{{ route('vendor.requests.bid', $req->id) }}" class="space-y-3.5 text-xs">
@@ -115,7 +115,7 @@
                                 10.00% Platform Escrow Commission automatically accounted on completion
                             </span>
                             <button type="submit" class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-bold px-6 py-2.5 shadow hover:opacity-90 transition">
-                                Place Quote 1 Bid &rarr;
+                                Submit Estimate &rarr;
                             </button>
                         </div>
                     </form>
@@ -124,10 +124,10 @@
         @empty
             <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-10 text-center shadow-sm">
                 <i class="fa-solid fa-gavel text-3xl text-[var(--muted-foreground)] mb-3 block"></i>
-                <h3 class="text-lg font-black text-[var(--foreground)]">No open marketplace tickets awaiting bids right now</h3>
-                <p class="text-xs text-[var(--muted-foreground)] mt-1">Post a test repair request as a customer to see it appear live here immediately.</p>
-                <a href="/requests/create" class="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-xs font-bold text-[var(--accent-foreground)]">
-                    Post Sample Repair Request &rarr;
+                <h3 class="text-lg font-black text-[var(--foreground)]">No open marketplace tickets awaiting estimates</h3>
+                <p class="text-xs text-[var(--muted-foreground)] mt-1">New customer repair requests will appear here automatically as they are published.</p>
+                <a href="/vendor/dashboard" class="mt-4 inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-xs font-bold text-[var(--accent-foreground)]">
+                    Return to Vendor Dashboard &rarr;
                 </a>
             </div>
         @endforelse

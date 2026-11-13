@@ -187,22 +187,23 @@ class GmailApiService
     }
 
     /**
-     * Send 6-Digit Email Verification / Authorization OTP.
+     * Send 6-Digit Email Verification / Authorization Code.
      */
     public function sendVerificationOtpEmail(string $toEmail, string $recipientName, string $otp): array
     {
-        $subject = "Meramot Security: Your Verification Code ({$otp})";
+        $subject = "Meramot — Email Verification Code ({$otp})";
         $html = "
-            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px; background: #ffffff;\">
-                <h2 style=\"color: #214c34; margin-top: 0; margin-bottom: 8px;\">Verify Your Meramot Account</h2>
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 580px; margin: 0 auto; padding: 26px; border: 1px solid #D7E2D2; border-radius: 16px; background: #ffffff;\">
+                <h2 style=\"color: #214c34; margin-top: 0; margin-bottom: 10px;\">Verify Your Email Address</h2>
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
-                <p>Use the 6-digit verification code below to authorize your email address on Meramot:</p>
+                <p>Please enter the six-digit verification code below to confirm your email address on Meramot:</p>
                 <div style=\"background-color: #eef5ea; padding: 18px; border-radius: 12px; margin: 22px 0; text-align: center; border: 1px solid #cbe0c2;\">
-                    <span style=\"font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; color: #5a7566; display: block; margin-bottom: 6px;\">Your Verification OTP</span>
+                    <span style=\"font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: #5a7566; display: block; margin-bottom: 6px; font-weight: bold;\">Verification Code</span>
                     <span style=\"font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #214c34;\">{$otp}</span>
                 </div>
-                <p style=\"font-size: 13px; color: #5e6d64;\">This code expires in <strong>10 minutes</strong>. If you did not request this code, you can safely ignore this email.</p>
-                <p style=\"margin-top: 24px; font-size: 13px; color: #214c34;\">Thanks,<br/><strong>Meramot Official Team</strong></p>
+                <p style=\"font-size: 13px; color: #5e6d64;\">This code remains valid for <strong>10 minutes</strong>. For your security, never share this code with anyone. If you did not initiate this request, no further action is required.</p>
+                <p style=\"margin-top: 22px; font-size: 13px; color: #214c34;\">Sincerely,<br/><strong>Meramot Trust &amp; Security</strong></p>
+                <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
             </div>
         ";
 
@@ -219,26 +220,27 @@ class GmailApiService
     ): array {
         $statusUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/delivery-agent/status';
         $subject = $isResubmission
-            ? 'Updated Delivery Application Received - Pending Review | Meramot'
-            : 'Delivery Registration Received - Under Review | Meramot';
+            ? 'Meramot Logistics — Updated Partner Application Received'
+            : 'Meramot Logistics — Delivery Partner Application Received';
         $heading = $isResubmission
-            ? 'Updated Delivery Partner Application Received'
-            : 'Delivery Partner Registration Received';
+            ? 'Updated Application Received'
+            : 'Application Received for Verification';
 
         $html = "
-            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px;\">
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 580px; margin: 0 auto; padding: 26px; border: 1px solid #D7E2D2; border-radius: 16px; background: #ffffff;\">
                 <h2 style=\"color: #214c34; margin-top: 0;\">{$heading}</h2>
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
-                <p>We have received your delivery partner onboarding application and verification documents.</p>
+                <p>Thank you for submitting your Delivery Partner application and supporting credentials. Our verification team has queued your submission for compliance review.</p>
                 <div style=\"background-color: #eef5ea; padding: 14px 18px; border-radius: 12px; margin: 18px 0; border: 1px solid #cbe0c2;\">
-                    <p style=\"margin: 4px 0;\"><strong>What happens next:</strong></p>
+                    <p style=\"margin: 4px 0;\"><strong>Next Steps:</strong></p>
                     <ul style=\"margin: 6px 0 0 18px; padding: 0;\">
-                        <li>If <strong>accepted</strong>, your auto-generated unique <code>@meramotbd.com</code> company email and secure system password will be emailed here to <strong>" . e($personalEmail) . "</strong>.</li>
-                        <li>If <strong>rejected</strong>, our admin verification team's reason will be emailed here and shown on the Check Application Status page so you can edit and resubmit anytime.</li>
+                        <li><strong>Upon Approval:</strong> Your official <code>@meramotbd.com</code> account credentials will be issued and delivered to <strong>" . e($personalEmail) . "</strong>.</li>
+                        <li><strong>If Revisions Are Needed:</strong> Verification notes will be sent to this email address and made available on the Application Status portal so you may update and resubmit your documents.</li>
                     </ul>
                 </div>
-                <p>You can check your application status or edit your application anytime at <a href=\"{$statusUrl}\">{$statusUrl}</a> using OTP verification on this personal email.</p>
-                <p style=\"margin-top: 24px;\">Thank you,<br/><strong>Meramot Delivery Operations</strong></p>
+                <p>You may track your review progress at any time via <a href=\"{$statusUrl}\" style=\"color: #214c34; font-weight: bold;\">{$statusUrl}</a> using email verification.</p>
+                <p style=\"margin-top: 22px;\">Sincerely,<br/><strong>Meramot Logistics Operations</strong></p>
+                <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
             </div>
         ";
 
@@ -247,7 +249,7 @@ class GmailApiService
 
     /**
      * Feature R1: Send Official `@meramotbd.com` Company Email & System Password to Personal Email.
-     * Used both upon one-time Admin Approval and on OTP-verified "Forgot Company Credentials".
+     * Used both upon one-time Admin Approval and on OTP-verified Credential Retrieval.
      */
     public function sendDeliveryApprovalCredentials(
         string $personalEmail,
@@ -258,29 +260,30 @@ class GmailApiService
     ): array {
         $loginUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/delivery/login';
         $subject = $isResend
-            ? 'Your Meramot Delivery Partner Company Credentials (Reminder)'
-            : 'Delivery Partner Approved - Your @meramotbd.com Company Credentials';
+            ? 'Meramot Logistics — Your Delivery Partner Credentials'
+            : 'Meramot Logistics — Delivery Partner Application Approved';
         $heading = $isResend
-            ? 'Your Meramot Company Login Credentials'
-            : 'Delivery Partner Registration Approved!';
+            ? 'Your Delivery Partner Login Credentials'
+            : 'Welcome to Meramot Logistics';
         $intro = $isResend
-            ? 'As requested from the verified Check Application Status page, here are your assigned Meramot Delivery Partner company credentials:'
-            : 'Congratulations! Your identity and driving license documents have been verified and approved by Meramot Logistics. Use your official company credentials below to sign in to the Delivery Partner Portal:';
+            ? 'Per your verified request on the Application Status portal, here are your assigned Meramot Logistics partner credentials:'
+            : 'Your identity documentation and driving credentials have been verified and approved by Meramot Logistics. Please use your assigned partner credentials below to sign in to the Delivery Partner Portal:';
 
         $html = "
-            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px;\">
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 580px; margin: 0 auto; padding: 26px; border: 1px solid #D7E2D2; border-radius: 16px; background: #ffffff;\">
                 <h2 style=\"color: #214c34; margin-top: 0;\">{$heading}</h2>
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
                 <p>{$intro}</p>
                 <div style=\"background-color: #eef5ea; padding: 16px 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #cbe0c2;\">
-                    <p style=\"margin: 6px 0;\"><strong>Company Email:</strong> <code>" . e($companyEmail) . "</code></p>
-                    <p style=\"margin: 6px 0;\"><strong>Company Password:</strong> <code>" . e($plainPassword) . "</code></p>
+                    <p style=\"margin: 6px 0;\"><strong>Official Login Email:</strong> <code>" . e($companyEmail) . "</code></p>
+                    <p style=\"margin: 6px 0;\"><strong>System Password:</strong> <code>" . e($plainPassword) . "</code></p>
                 </div>
-                <p style=\"font-size: 12px; color: #5e6d64;\">Note: Your <code>@meramotbd.com</code> company email and system-generated password are fixed for security and cannot be changed manually. Keep this email safe.</p>
+                <p style=\"font-size: 12px; color: #5e6d64;\">For fleet security, your assigned <code>@meramotbd.com</code> credentials are managed centrally by Meramot Logistics. Please store this message securely.</p>
                 <div style=\"margin: 24px 0; text-align: center;\">
-                    <a href=\"{$loginUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 26px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Sign In to Delivery Partner Portal</a>
+                    <a href=\"{$loginUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 26px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Sign In to Partner Portal</a>
                 </div>
-                <p style=\"margin-top: 20px;\">Safe riding,<br/><strong>Meramot Logistics Team</strong></p>
+                <p style=\"margin-top: 20px;\">Sincerely,<br/><strong>Meramot Logistics Operations</strong></p>
+                <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
             </div>
         ";
 
@@ -293,20 +296,21 @@ class GmailApiService
     public function sendDeliveryRejectionNotice(string $personalEmail, string $recipientName, string $reason): array
     {
         $statusUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/delivery-agent/status';
-        $subject = 'Update on Your Meramot Delivery Partner Application';
+        $subject = 'Meramot Logistics — Action Required on Your Partner Application';
         $html = "
-            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #f3d4d4; border-radius: 16px;\">
-                <h2 style=\"color: #991b1b; margin-top: 0;\">Action Required: Delivery Partner Application</h2>
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 580px; margin: 0 auto; padding: 26px; border: 1px solid #f3d4d4; border-radius: 16px; background: #ffffff;\">
+                <h2 style=\"color: #991b1b; margin-top: 0;\">Verification Update: Additional Information Required</h2>
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
-                <p>Our verification team reviewed your delivery partner application and requires the following correction before approval:</p>
+                <p>Our compliance team has reviewed your Delivery Partner application and requires the following update before approval can be completed:</p>
                 <div style=\"background-color: #fef2f2; padding: 14px 18px; border-radius: 10px; margin: 18px 0; color: #7f1d1d; border: 1px solid #fecaca;\">
-                    <strong>Reason for Rejection:</strong> " . e($reason) . "
+                    <strong>Verification Feedback:</strong> " . e($reason) . "
                 </div>
-                <p>Verify your personal email via OTP on the <strong>Check Application Status</strong> page to edit and resubmit your application for fresh admin review:</p>
+                <p>Please verify your email address on the <strong>Check Application Status</strong> portal to update your details and resubmit your application for review.</p>
                 <div style=\"margin: 22px 0; text-align: center;\">
-                    <a href=\"{$statusUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Check Status &amp; Edit Application</a>
+                    <a href=\"{$statusUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Review &amp; Update Application</a>
                 </div>
-                <p style=\"margin-top: 20px;\">Regards,<br/><strong>Meramot Logistics Team</strong></p>
+                <p style=\"margin-top: 20px;\">Sincerely,<br/><strong>Meramot Logistics Operations</strong></p>
+                <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
             </div>
         ";
 
@@ -314,22 +318,23 @@ class GmailApiService
     }
 
     /**
-     * Feature R1: Send 6-Digit OTP to Personal Email for "Check Application Status" Verification.
+     * Feature R1: Send 6-Digit Verification Code to Personal Email for "Check Application Status".
      */
     public function sendDeliveryStatusOtpEmail(string $personalEmail, string $recipientName, string $otp): array
     {
-        $subject = "Meramot Delivery Partner: Application Status OTP ({$otp})";
+        $subject = "Meramot Logistics — Application Status Verification Code ({$otp})";
         $html = "
-            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px; background: #ffffff;\">
-                <h2 style=\"color: #214c34; margin-top: 0; margin-bottom: 8px;\">Verify Your Application Status Check</h2>
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 580px; margin: 0 auto; padding: 26px; border: 1px solid #D7E2D2; border-radius: 16px; background: #ffffff;\">
+                <h2 style=\"color: #214c34; margin-top: 0; margin-bottom: 10px;\">Verify Your Identity</h2>
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
-                <p>Enter the 6-digit OTP below to view your Meramot Delivery Partner application status, edit your application, or retrieve your company credentials:</p>
+                <p>Enter the six-digit verification code below to view your Delivery Partner application status, review compliance notes, or retrieve your account credentials:</p>
                 <div style=\"background-color: #eef5ea; padding: 18px; border-radius: 12px; margin: 22px 0; text-align: center; border: 1px solid #cbe0c2;\">
-                    <span style=\"font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; color: #5a7566; display: block; margin-bottom: 6px;\">Application Status OTP</span>
+                    <span style=\"font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: #5a7566; display: block; margin-bottom: 6px; font-weight: bold;\">Verification Code</span>
                     <span style=\"font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #214c34;\">{$otp}</span>
                 </div>
-                <p style=\"font-size: 13px; color: #5e6d64;\">This code expires in <strong>10 minutes</strong>.</p>
-                <p style=\"margin-top: 24px; font-size: 13px; color: #214c34;\">Thanks,<br/><strong>Meramot Delivery Operations</strong></p>
+                <p style=\"font-size: 13px; color: #5e6d64;\">This code remains valid for <strong>10 minutes</strong>. If you did not request this code, please disregard this email.</p>
+                <p style=\"margin-top: 22px; font-size: 13px; color: #214c34;\">Sincerely,<br/><strong>Meramot Logistics Operations</strong></p>
+                <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
             </div>
         ";
 
@@ -342,15 +347,17 @@ class GmailApiService
     public function sendVendorApprovalEmail(string $toEmail, string $vendorName, string $shopName): array
     {
         $loginUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/login';
-        $subject = "Welcome to Meramot — {$shopName} is Approved!";
+        $subject = "Meramot Partner Network — {$shopName} Has Been Approved";
         $html = "
-            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px;\">
-                <h2 style=\"color: #214c34; margin-top: 0;\">Welcome to Meramot, " . e($vendorName) . "!</h2>
-                <p>Your repair workshop <strong>" . e($shopName) . "</strong> has passed administrative trade license verification and is now live on the Meramot Marketplace.</p>
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 580px; margin: 0 auto; padding: 26px; border: 1px solid #D7E2D2; border-radius: 16px; background: #ffffff;\">
+                <h2 style=\"color: #214c34; margin-top: 0;\">Your Workshop Application Is Approved</h2>
+                <p>Congratulations, <strong>" . e($vendorName) . "</strong>.</p>
+                <p>Your workshop, <strong>" . e($shopName) . "</strong>, has completed administrative trade license and identity verification. Sign in to finalize your service catalog, pricing, and storefront settings.</p>
                 <div style=\"margin: 24px 0; text-align: center;\">
-                    <a href=\"{$loginUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 26px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Open Vendor Dashboard</a>
+                    <a href=\"{$loginUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 26px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Access Vendor Portal</a>
                 </div>
-                <p style=\"margin-top: 20px;\">Thanks,<br/><strong>Meramot Official Team</strong></p>
+                <p style=\"margin-top: 20px;\">Sincerely,<br/><strong>Meramot Partner Operations</strong></p>
+                <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
             </div>
         ";
 
@@ -363,20 +370,21 @@ class GmailApiService
     public function sendVendorRejectionEmail(string $toEmail, string $vendorName, string $shopName, string $reason): array
     {
         $onboardingUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/vendor/onboarding';
-        $subject = "Action Required: Update on Your Meramot Vendor Application ({$shopName})";
+        $subject = "Meramot Partner Network — Action Required for {$shopName}";
         $html = "
-            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #f3d4d4; border-radius: 16px;\">
-                <h2 style=\"color: #991b1b; margin-top: 0;\">Action Required: Vendor Application Review</h2>
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 580px; margin: 0 auto; padding: 26px; border: 1px solid #f3d4d4; border-radius: 16px; background: #ffffff;\">
+                <h2 style=\"color: #991b1b; margin-top: 0;\">Verification Update: Application Revision Required</h2>
                 <p>Hello <strong>" . e($vendorName) . "</strong>,</p>
-                <p>Our verification team reviewed your vendor onboarding application for <strong>" . e($shopName) . "</strong> and requires the following correction before approval:</p>
+                <p>Our compliance team has reviewed the partner application for <strong>" . e($shopName) . "</strong> and requires the following clarification or document update before approval:</p>
                 <div style=\"background-color: #fef2f2; padding: 14px 18px; border-radius: 10px; margin: 18px 0; color: #7f1d1d; border: 1px solid #fecaca;\">
-                    <strong>Reason / Remediation Note:</strong> " . e($reason) . "
+                    <strong>Verification Notes:</strong> " . e($reason) . "
                 </div>
-                <p>Sign in to your Meramot Vendor Onboarding page to update your trade credentials or location details and resubmit for fresh admin review:</p>
+                <p>Please sign in to your Vendor Onboarding portal to update the requested details and resubmit your application for review.</p>
                 <div style=\"margin: 22px 0; text-align: center;\">
-                    <a href=\"{$onboardingUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Edit &amp; Resubmit Application</a>
+                    <a href=\"{$onboardingUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Review &amp; Resubmit Application</a>
                 </div>
-                <p style=\"margin-top: 20px;\">Regards,<br/><strong>Meramot Official Team</strong></p>
+                <p style=\"margin-top: 20px;\">Sincerely,<br/><strong>Meramot Partner Operations</strong></p>
+                <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
             </div>
         ";
 
@@ -384,7 +392,7 @@ class GmailApiService
     }
 
     /**
-     * Feature R19: Send Moderation Notice / Account Ban Alert Email (offensive review language).
+     * Feature R19: Send Moderation Notice / Account Restriction Alert Email.
      */
     public function sendModerationSanctionEmail(
         string $toEmail,
@@ -396,39 +404,40 @@ class GmailApiService
     ): array {
         $requestsUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/requests';
         $subject = $isBanned
-            ? 'Meramot Governance Alert: Offensive Review Deleted & Account Restricted'
-            : 'Meramot Governance Notice: Your Review Was Removed';
+            ? 'Meramot Trust & Safety — Review Removed & Account Restricted'
+            : 'Meramot Trust & Safety — Notice of Review Removal';
         $heading = $isBanned
-            ? 'Review Removed & Ordering Privileges Restricted'
-            : 'Workshop Review Removed by Moderation';
+            ? 'Notice of Content Removal & Account Restriction'
+            : 'Notice of Content Removal';
 
         $excerptHtml = $reviewExcerpt
-            ? "<p style=\"font-size: 12px; color: #5e6d64; margin-top: 8px;\"><strong>Removed review excerpt:</strong> &ldquo;" . e($reviewExcerpt) . "&rdquo;</p>"
+            ? "<p style=\"font-size: 12px; color: #5e6d64; margin: 8px 0 0 0;\"><strong>Removed Content Excerpt:</strong> &ldquo;" . e($reviewExcerpt) . "&rdquo;</p>"
             : '';
 
         $restrictionHtml = $isBanned
             ? "
                 <div style=\"background-color: #fff7ed; padding: 14px 18px; border-radius: 10px; margin: 16px 0; color: #7c2d12; border: 1px solid #fed7aa;\">
-                    <p style=\"margin: 0 0 6px 0;\"><strong>Your account ordering and posting privileges have been restricted</strong> due to offensive language in a workshop review.</p>
-                    <p style=\"margin: 0;\">You can still sign in to Meramot anytime to view and track your <strong>ongoing repair orders and past orders</strong> at <a href=\"{$requestsUrl}\">/requests</a>, but placing new service orders, adding items to cart, posting repair requests, and submitting reviews are disabled.</p>
+                    <p style=\"margin: 0 0 6px 0;\"><strong>Account Restriction Applied:</strong> New ordering and posting privileges have been suspended on your account.</p>
+                    <p style=\"margin: 0;\">You may continue to sign in to Meramot at any time to view and track your <strong>ongoing and completed orders</strong> via <a href=\"{$requestsUrl}\" style=\"color: #7c2d12; font-weight: bold;\">My Orders &amp; Repair Requests</a>. However, placing new service bookings, using the cart, submitting repair requests, and posting reviews are disabled while this restriction remains in effect.</p>
                 </div>
             "
             : '';
 
         $html = "
-            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #f3d4d4; border-radius: 16px;\">
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 580px; margin: 0 auto; padding: 26px; border: 1px solid #f3d4d4; border-radius: 16px; background: #ffffff;\">
                 <h2 style=\"color: #991b1b; margin-top: 0;\">{$heading}</h2>
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
-                <p>A Meramot platform administrator reviewed your feedback on <strong>" . e($shopName) . "</strong> and removed the review under our Community Guidelines.</p>
+                <p>Following a Trust &amp; Safety review, your customer review submitted for <strong>" . e($shopName) . "</strong> has been removed in accordance with the Meramot Community &amp; Marketplace Guidelines.</p>
                 <div style=\"background-color: #fef2f2; padding: 14px 18px; border-radius: 10px; margin: 16px 0; color: #7f1d1d; border: 1px solid #fecaca;\">
-                    <strong>Moderation Reason:</strong> " . e($reason) . "
+                    <strong>Reason for Action:</strong> " . e($reason) . "
                     {$excerptHtml}
                 </div>
                 {$restrictionHtml}
                 <div style=\"margin: 22px 0; text-align: center;\">
                     <a href=\"{$requestsUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">View Ongoing &amp; Past Orders</a>
                 </div>
-                <p style=\"margin-top: 20px;\">Regards,<br/><strong>Meramot Moderation &amp; Governance Team</strong></p>
+                <p style=\"margin-top: 20px;\">Sincerely,<br/><strong>Meramot Trust &amp; Safety Team</strong></p>
+                <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
             </div>
         ";
 
@@ -436,21 +445,22 @@ class GmailApiService
     }
 
     /**
-     * Feature R19: Send Account Restriction Lifted / Unban Email.
+     * Feature R19: Send Account Restriction Lifted Confirmation Email.
      */
     public function sendAccountUnbannedEmail(string $toEmail, string $recipientName): array
     {
         $loginUrl = rtrim((string) config('app.url', 'https://cse470-meramot-project.onrender.com'), '/') . '/login';
-        $subject = 'Meramot Governance Update: Account Restrictions Lifted';
+        $subject = 'Meramot Trust & Safety — Account Access Restored';
         $html = "
-            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.6; max-width: 580px; margin: 0 auto; padding: 24px; border: 1px solid #D7E2D2; border-radius: 16px;\">
-                <h2 style=\"color: #214c34; margin-top: 0;\">Your Meramot Ordering &amp; Request Access Is Restored</h2>
+            <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 580px; margin: 0 auto; padding: 26px; border: 1px solid #D7E2D2; border-radius: 16px; background: #ffffff;\">
+                <h2 style=\"color: #214c34; margin-top: 0;\">Your Account Privileges Have Been Restored</h2>
                 <p>Hello <strong>" . e($recipientName) . "</strong>,</p>
-                <p>An administrator has lifted the moderation restriction on your Meramot account. Full access to order repair services, post repair requests, and use the Direct-Order Cart has been restored.</p>
+                <p>Following an administrative review, the restriction on your Meramot account has been lifted. Full access to book repair services, submit custom repair requests, use the cart, and publish verified reviews is now active.</p>
                 <div style=\"margin: 22px 0; text-align: center;\">
-                    <a href=\"{$loginUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Open Meramot Marketplace</a>
+                    <a href=\"{$loginUrl}\" style=\"background-color: #214c34; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block;\">Sign In to Meramot</a>
                 </div>
-                <p style=\"margin-top: 20px;\">Thanks,<br/><strong>Meramot Moderation &amp; Governance Team</strong></p>
+                <p style=\"margin-top: 20px;\">Sincerely,<br/><strong>Meramot Trust &amp; Safety Team</strong></p>
+                <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
             </div>
         ";
 

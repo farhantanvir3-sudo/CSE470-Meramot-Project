@@ -150,7 +150,7 @@
                     @else
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-xs font-bold text-[var(--accent-dark)]">
                             <i class="fa-solid {{ $isOperational ? 'fa-sparkles' : 'fa-clock' }} text-[10px]"></i>
-                            <span>{{ $isOperational ? 'New Shop · No reviews yet' : 'Not yet onboarded · 0 reviews' }}</span>
+                            <span>{{ $isOperational ? 'New Workshop · No reviews yet' : 'Pending Verification · 0 reviews' }}</span>
                         </span>
                     @endif
                     <span class="opacity-40">·</span>
@@ -273,9 +273,9 @@
                         <h2 class="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Available services</h2>
                         <p class="mt-1 text-xs md:text-sm text-[var(--muted-foreground)]">
                             @if($isOperational)
-                                Add fixed services to your Direct-Order Cart for {{ $shop->name }}, or request a custom diagnostic quote.
+                                Add fixed-price services to your Direct-Order Cart for {{ $shop->name }}, or submit a custom diagnostic request.
                             @else
-                                Proposed service catalog submitted with {{ $shop->name }}'s onboarding application (read-only until verified).
+                                Proposed service catalog submitted with {{ $shop->name }}'s onboarding application (read-only until verification is complete).
                             @endif
                         </p>
                     </div>
@@ -494,7 +494,7 @@
                             </p>
                             @if($ownReviewIds->isNotEmpty())
                                 <p class="text-[11px] font-semibold text-emerald-800 dark:text-emerald-400 mt-0.5">
-                                    <i class="fa-solid fa-thumbtack mr-1 text-[10px]"></i>Your own {{ \Illuminate\Support\Str::plural('review', $ownReviewIds->count()) }} pinned to top — select to edit or delete
+                                    <i class="fa-solid fa-thumbtack mr-1 text-[10px]"></i>Your {{ \Illuminate\Support\Str::plural('review', $ownReviewIds->count()) }} {{ $ownReviewIds->count() === 1 ? 'is' : 'are' }} pinned at the top for quick editing or deletion.
                                 </p>
                             @endif
                         </div>
@@ -545,7 +545,7 @@
                                 <span class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
                                     <i class="fa-solid fa-screwdriver-wrench mr-1"></i>Workshop Skill Breakdown by Verified Repair Service
                                 </span>
-                                <span class="text-[10px] text-[var(--muted-foreground)]">From past order reviews</span>
+                                <span class="text-[10px] text-[var(--muted-foreground)]">Based on completed service orders</span>
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 @foreach($serviceSkillBreakdown as $skillItem)
@@ -714,7 +714,7 @@
                                                     data-confirm-delete
                                                     data-confirm-title="Delete Review?"
                                                     data-confirm-item="Review #{{ $rev->id }} by {{ $rev->customer->name ?? 'Customer' }}"
-                                                    data-confirm-message="This deletes the review, recalculates the workshop rating, and notifies the author via email and bell alert."
+                                                    data-confirm-message="This deletes the review, recalculates the workshop rating, and notifies the author via email and in-app alert."
                                                     data-confirm-cta="Delete Review"
                                                     class="inline"
                                                 >
@@ -751,7 +751,7 @@
                                                 @csrf
                                                 <input type="hidden" name="action_type" value="delete_and_ban">
                                                 <label class="block text-[10px] font-extrabold uppercase tracking-wider text-rose-900 dark:text-rose-200">
-                                                    Ban Reason (Sent via Email &amp; Notification Bell Pop-Up to {{ $rev->customer->email }})
+                                                    Suspension Reason (Sent via Email &amp; In-App Notification to {{ $rev->customer->email }})
                                                 </label>
                                                 <input
                                                     type="text"
@@ -778,7 +778,7 @@
                                         class="mt-3 pt-3 border-t border-emerald-500/30 flex flex-wrap items-center justify-between gap-2"
                                     >
                                         <span class="text-[11px] font-semibold text-[var(--muted-foreground)]">
-                                            <i class="fa-solid fa-user-check text-emerald-700 mr-1"></i>Pinned to top — only visible with edit/delete controls to your account
+                                            <i class="fa-solid fa-user-check text-emerald-700 mr-1"></i>Pinned to top — edit and delete controls are visible only to your account.
                                         </span>
                                         <div class="flex flex-wrap items-center gap-2">
                                             <button
@@ -882,9 +882,9 @@
                                 <p class="font-bold text-sm text-[var(--foreground)]">No verified customer reviews yet</p>
                                 <p class="max-w-md mx-auto leading-relaxed">
                                     @if(!$isOperational)
-                                        {{ $shop->name }} has not yet completed onboarding verification and has served 0 orders on Meramot.
+                                        {{ $shop->name }} is currently completing administrative onboarding verification and has not yet served marketplace orders.
                                     @else
-                                        Customer ratings and feedback appear automatically once verified repair orders are completed with {{ $shop->name }}.
+                                        Verified customer ratings and reviews appear automatically once orders are completed with {{ $shop->name }}.
                                     @endif
                                 </p>
                             </div>

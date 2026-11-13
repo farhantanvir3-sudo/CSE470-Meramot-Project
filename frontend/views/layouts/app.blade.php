@@ -397,7 +397,7 @@
             this.draftLocation = resolved;
             window.MeramotLocationPicker.draftLocation = resolved;
         } catch (err) {
-            this.locationError = err.message || 'Location permission denied. You can still click the map to pin your address.';
+            this.locationError = err.message || 'Location access was declined. Please click directly on the map to pin your address.';
         } finally {
             this.locationLoading = false;
         }
@@ -409,7 +409,7 @@
         try {
             const found = await window.MeramotLocationPicker.forwardGeocode(this.mapSearchQuery);
             if (!found) {
-                this.locationError = 'Could not find that address on OpenStreetMap. Try clicking the map or picking a Dhaka hub.';
+                this.locationError = 'Unable to locate that address automatically. Please pin your location on the map or select a service hub.';
             } else {
                 this.draftLocation = found;
                 window.MeramotLocationPicker.draftLocation = found;
@@ -439,7 +439,7 @@
     },
     confirmMapLocation() {
         if (!this.draftLocation) {
-            this.locationError = 'Choose a point on the map first.';
+            this.locationError = 'Please select a location on the map before confirming.';
             return;
         }
         this.locationSaving = true;
@@ -686,17 +686,17 @@
                                 <a href="{{ $notifQuoteUrl }}" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
                                     <div class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                                         <i class="fa-solid fa-gavel text-amber-600"></i>
-                                        <span>Quote 1 &amp; Quote 2 Lifecycle Active</span>
+                                        <span>Live Estimates &amp; Diagnostics Active</span>
                                     </div>
-                                    <p class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Track incoming workshop bids and bench diagnostics in real time.</p>
+                                    <p class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Compare incoming workshop estimates and review bench diagnostics in real time.</p>
                                 </a>
 
                                 <a href="/shops?branched=true" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
                                     <div class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                                         <i class="fa-solid fa-map-location-dot text-[var(--accent-dark)]"></i>
-                                        <span>Nationwide Bangladesh Directory Live</span>
+                                        <span>Nationwide Workshop Network</span>
                                     </div>
-                                    <p class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Explore verified workshops &amp; multi-branch brands across Bangladesh.</p>
+                                    <p class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Browse verified repair centers and multi-branch specialists across Bangladesh.</p>
                                 </a>
                             </div>
 
@@ -932,7 +932,7 @@
                                 </button>
                                 <button
                                     type="button"
-                                    @click="currentLang = 'bn'; localStorage.setItem('meramot_lang', 'bn'); langMenuOpen = false; showToast({ message: 'বাংলা নির্বাচন করা হয়েছে (Full Bangla translations coming soon).', type: 'success' })"
+                                    @click="currentLang = 'bn'; localStorage.setItem('meramot_lang', 'bn'); langMenuOpen = false; showToast({ message: 'Bangla interface selected. Expanded localized copy is rolling out progressively.', type: 'success' })"
                                     class="block w-full rounded-xl px-4 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
                                 >
                                     বাংলা
@@ -1232,7 +1232,7 @@
                     </p>
                     <h2 class="mt-1 text-2xl font-bold text-[var(--foreground)]">Choose your location</h2>
                     <p class="mt-1 text-sm text-[var(--muted-foreground)]">
-                        Click or drag the pin on the map to select an address anywhere in Bangladesh, search a landmark, or use GPS.
+                        Click or drag the map pin to set your service address anywhere in Bangladesh, search a landmark, or detect via GPS.
                     </p>
                 </div>
 
@@ -1272,7 +1272,7 @@
                     <div class="relative min-h-[360px] flex-1 overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-50)]">
                         <div id="meramot-leaflet-map" style="height: 400px; min-height: 360px; width: 100%;" class="w-full z-10"></div>
                         <div class="pointer-events-none absolute left-4 top-4 z-[400] rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#244229] shadow-sm">
-                            OpenStreetMap + Leaflet
+                            Interactive Service Map
                         </div>
                     </div>
                 </div>
@@ -1294,7 +1294,7 @@
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
                             Selected address
                         </p>
-                        <p class="mt-2 text-sm font-semibold leading-6 text-[var(--foreground)]" x-text="draftLocation?.address || 'No location selected yet. Click anywhere on the map.'"></p>
+                        <p class="mt-2 text-sm font-semibold leading-6 text-[var(--foreground)]" x-text="draftLocation?.address || 'No address selected yet. Click anywhere on the map to pin your location.'"></p>
                         <template x-if="draftLocation && (draftLocation.area || draftLocation.city)">
                             <p class="mt-1.5 text-xs font-semibold text-[var(--accent-dark)]" x-text="[draftLocation.area, draftLocation.city].filter(Boolean).join(', ')"></p>
                         </template>
@@ -1509,17 +1509,17 @@
                 <a href="{{ $isAdminAuth ? '/admin' : ($isVendorAuth ? $vendorWorkspaceUrl : ($isRiderAuth ? '/delivery' : (auth()->check() ? '/requests' : '/login'))) }}" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
                     <div class="font-bold text-[var(--foreground)] flex items-center gap-2">
                         <i class="fa-solid fa-gavel text-amber-600"></i>
-                        <span>Quote 1 &amp; Quote 2 Lifecycle Active</span>
+                        <span>Live Estimates &amp; Diagnostics Active</span>
                     </div>
-                    <p class="mt-1 text-[11px] leading-relaxed text-[var(--muted-foreground)]">Track incoming workshop bids and bench diagnostics in real time.</p>
+                    <p class="mt-1 text-[11px] leading-relaxed text-[var(--muted-foreground)]">Compare incoming workshop estimates and review bench diagnostics in real time.</p>
                 </a>
 
                 <a href="/shops?branched=true" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
                     <div class="font-bold text-[var(--foreground)] flex items-center gap-2">
                         <i class="fa-solid fa-map-location-dot text-[var(--accent-dark)]"></i>
-                        <span>Nationwide Bangladesh Directory Live</span>
+                        <span>Nationwide Workshop Network</span>
                     </div>
-                    <p class="mt-1 text-[11px] leading-relaxed text-[var(--muted-foreground)]">Explore verified workshops &amp; multi-branch brands across Bangladesh.</p>
+                    <p class="mt-1 text-[11px] leading-relaxed text-[var(--muted-foreground)]">Browse verified repair centers and multi-branch specialists across Bangladesh.</p>
                 </a>
             </div>
 
@@ -1639,8 +1639,8 @@
                         <span>Account Restricted from New Orders &amp; Requests</span>
                     </div>
                     <p class="text-[11px] text-rose-800 leading-relaxed">
-                        Reason: {{ $navAuthUser->ban_reason ?: 'Community Guidelines violation (offensive language in review)' }}.
-                        You can still view and track your <strong>ongoing orders and past orders</strong>, while new service bookings, cart orders, repair requests, and reviews are disabled.
+                        Reason: {{ $navAuthUser->ban_reason ?: 'Community guidelines violation in a submitted review' }}.
+                        You can still view and track your <strong>ongoing and past orders</strong>, while new service bookings, cart orders, repair requests, and review submissions remain disabled.
                     </p>
                 </div>
                 <a href="/requests" class="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-4 py-2 text-[11px] font-bold text-white hover:bg-rose-800 transition">
@@ -1679,46 +1679,48 @@
         @yield('content')
     </main>
 
-    <!-- Authentic Meramot Footer -->
-    <footer class="mt-16 border-t border-[var(--border)] bg-[var(--mint-100)] py-10 text-xs text-[var(--muted-foreground)]">
+    <!-- Meramot Marketplace Footer -->
+    <footer class="mt-14 border-t border-[var(--border)] bg-[var(--mint-100)] py-8 sm:py-10 text-xs text-[var(--muted-foreground)]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-                <div>
-                    <img src="/images/meramot.svg" alt="Meramot" class="h-10 w-auto mb-3">
-                    <p class="leading-relaxed">Bangladesh's premiere digital electronic repair ecosystem connecting gadget owners with vetted repair shops and doorstep riders.</p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-12 gap-x-6 gap-y-7 mb-8">
+                <div class="col-span-2 sm:col-span-3 lg:col-span-4 pb-5 border-b border-[var(--border)]/60 lg:border-b-0 lg:pb-0 lg:pr-6">
+                    <img src="/images/meramot.svg" alt="Meramot" class="h-9 sm:h-10 w-auto mb-2.5">
+                    <p class="leading-relaxed max-w-md text-[var(--muted-foreground)]">
+                        Bangladesh's premier digital electronics repair marketplace connecting device owners with vetted local workshops and tracked doorstep couriers.
+                    </p>
                 </div>
-                <div>
-                    <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Popular Services</h5>
+                <div class="col-span-1 lg:col-span-2">
+                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Popular Services</h5>
                     <ul class="space-y-1.5">
-                        <li><a href="/shops?q=screen" class="hover:underline">Screen Replacement</a></li>
-                        <li><a href="/shops?q=battery" class="hover:underline">Battery Health Service</a></li>
-                        <li><a href="/shops?q=motherboard" class="hover:underline">Logic Board Diagnostics</a></li>
-                        <li><a href="/shops?q=keyboard" class="hover:underline">Keyboard & Port Repair</a></li>
+                        <li><a href="/shops?q=screen" class="hover:text-[var(--foreground)] hover:underline transition">Screen Replacement</a></li>
+                        <li><a href="/shops?q=battery" class="hover:text-[var(--foreground)] hover:underline transition">Battery Replacement</a></li>
+                        <li><a href="/shops?q=motherboard" class="hover:text-[var(--foreground)] hover:underline transition">Logic Board Diagnostics</a></li>
+                        <li><a href="/shops?q=keyboard" class="hover:text-[var(--foreground)] hover:underline transition">Keyboard &amp; Port Repair</a></li>
                     </ul>
                 </div>
-                <div>
-                    <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Key Metro Hubs</h5>
+                <div class="col-span-1 lg:col-span-3">
+                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Service Hubs</h5>
                     <ul class="space-y-1.5">
-                        <li><a href="/shops?area=Banani" class="hover:underline">Banani DOHS & Road 11</a></li>
-                        <li><a href="/shops?area=Gulshan" class="hover:underline">Gulshan 1 & 2 Circle</a></li>
-                        <li><a href="/shops?area=Dhanmondi" class="hover:underline">Dhanmondi Satmasjid</a></li>
-                        <li><a href="/shops?area=Uttara" class="hover:underline">Uttara Sector 3 & 7</a></li>
+                        <li><a href="/shops?area=Banani" class="hover:text-[var(--foreground)] hover:underline transition">Banani DOHS &amp; Road 11</a></li>
+                        <li><a href="/shops?area=Gulshan" class="hover:text-[var(--foreground)] hover:underline transition">Gulshan 1 &amp; 2 Circle</a></li>
+                        <li><a href="/shops?area=Dhanmondi" class="hover:text-[var(--foreground)] hover:underline transition">Dhanmondi &amp; Panthapath</a></li>
+                        <li><a href="/shops?area=Uttara" class="hover:text-[var(--foreground)] hover:underline transition">Uttara Sector 3 &amp; 7</a></li>
                     </ul>
                 </div>
-                <div>
+                <div class="col-span-2 sm:col-span-1 lg:col-span-3">
                     @if($isDevMode)
-                        <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Academic Course Work</h5>
-                        <p class="mb-2">CSE 470: Software Engineering (Section 06)</p>
+                        <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Academic Course Work</h5>
+                        <p class="mb-1.5">CSE 470: Software Engineering (Section 06)</p>
                         <p>Faculty: <strong>Nazmul Islam [NZU]</strong></p>
                         <p class="mt-2 text-[10px] text-emerald-800 font-bold">Strict MVC Architecture • Laravel 10 • FastAPI Microservice • PostgreSQL</p>
                     @else
-                        <h5 class="font-bold text-[var(--foreground)] mb-2 uppercase tracking-wider text-[11px]">Customer &amp; Partner Hub</h5>
-                        <ul class="space-y-1.5">
+                        <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Customer &amp; Partner Hub</h5>
+                        <ul class="grid grid-cols-2 sm:grid-cols-1 gap-x-4 gap-y-1.5">
                             @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
-                                <li><a href="/requests/create" class="hover:underline">Post Repair Request</a></li>
+                                <li><a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition">Post Repair Request</a></li>
                             @endif
-                            <li><a href="/ai-consultant/chat" class="hover:underline">AI Fault Diagnostics</a></li>
-                            <li><a href="/packages/catalog" class="hover:underline">Standard Fixed Packages</a></li>
+                            <li><a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition">AI Fault Diagnostics</a></li>
+                            <li><a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition">Fixed-Price Packages</a></li>
                             @if($isVendorAuth)
                                 <li><a href="{{ $vendorWorkspaceUrl }}" class="font-semibold text-[var(--accent-dark)] hover:underline">{{ $vendorWorkspaceLabel }}</a></li>
                             @elseif($isRiderAuth)
@@ -1726,21 +1728,23 @@
                             @elseif($isAdminAuth)
                                 <li><a href="/admin" class="font-semibold text-[var(--accent-dark)] hover:underline">Admin Console</a></li>
                             @else
-                                <li><a href="/vendor/apply" class="hover:underline">Register as Partner Shop</a></li>
-                                <li><a href="{{ $isCustomerAuth ? '/delivery-agent/register' : '/delivery/login' }}" class="hover:underline">{{ $isCustomerAuth ? 'Become a Delivery Partner' : 'Delivery Partner Portal' }}</a></li>
+                                <li><a href="/vendor/apply" class="hover:text-[var(--foreground)] hover:underline transition">Register as Partner Shop</a></li>
+                                <li><a href="{{ $isCustomerAuth ? '/delivery-agent/register' : '/delivery/login' }}" class="hover:text-[var(--foreground)] hover:underline transition">{{ $isCustomerAuth ? 'Become a Delivery Partner' : 'Delivery Partner Portal' }}</a></li>
                             @endif
                         </ul>
                     @endif
                 </div>
             </div>
-            <div class="border-t border-[var(--border)] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
+            <div class="border-t border-[var(--border)] pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-center sm:text-left">
                 <p>&copy; 2026 Meramot (মেরামত) Digital Marketplace. All rights reserved.</p>
-                <div class="flex items-center gap-4">
-                    <a href="/shops" class="hover:underline">Explore All Shops</a>
-                    <a href="/packages/catalog" class="hover:underline">Service Packages</a>
-                    <a href="/requests/create" class="hover:underline">Request Repair</a>
-                    <a href="/ai-consultant/chat" class="hover:underline">AI Diagnostics</a>
-                    <a href="{{ request()->fullUrlWithQuery(['dev' => $isDevMode ? '0' : '1']) }}" class="text-[10px] text-[var(--muted-foreground)] opacity-40 hover:opacity-100 transition" title="Press Ctrl+Shift+D or click to toggle academic defense mode">
+                <div class="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2">
+                    <a href="/shops" class="hover:text-[var(--foreground)] hover:underline transition">Explore All Shops</a>
+                    <a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition">Service Packages</a>
+                    @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
+                        <a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition">Request Repair</a>
+                    @endif
+                    <a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition">AI Diagnostics</a>
+                    <a href="{{ request()->fullUrlWithQuery(['dev' => $isDevMode ? '0' : '1']) }}" class="text-[10px] text-[var(--muted-foreground)] opacity-40 hover:opacity-100 transition" title="Toggle developer presentation mode (Ctrl+Shift+D)">
                         <i class="fa-solid fa-code"></i> {{ $isDevMode ? 'Dev Mode (ON)' : 'Dev' }}
                     </a>
                 </div>

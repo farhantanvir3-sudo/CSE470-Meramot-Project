@@ -163,11 +163,11 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     @if(!empty($profile->rejection_reason))
                         <p class="text-rose-800"><strong>Admin Feedback:</strong> {{ $profile->rejection_reason }}</p>
                     @endif
-                    <p class="text-[11px] text-rose-700">Update the details below and resubmit — your application will return to pending admin review.</p>
+                    <p class="text-[11px] text-rose-700">Update the requested details below and resubmit your application for administrative review.</p>
                 </div>
             @else
                 <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs md:text-sm text-amber-900">
-                    Update your previous vendor application and submit again. It will go back to pending admin review.
+                    Update your submitted application details below and resubmit for administrative review.
                 </div>
             @endif
         @endif
@@ -531,7 +531,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         <label class="text-xs font-bold text-[#244229]">Map Location <span class="text-red-500">*</span></label>
                     </div>
                     <p class="pl-1 text-[11px] leading-relaxed text-[#5e6d64]">
-                        Pin your shop's approximate location on the map. Used for distance calculations, sorting, and rider ETA — kept private unless you sync it below.
+                        Pin your workshop location on the map for distance matching, local discovery, and courier routing. Private coordinates remain hidden unless matched to your public storefront address below.
                     </p>
 
                     <input type="hidden" name="shop_latitude" :value="shopLat">

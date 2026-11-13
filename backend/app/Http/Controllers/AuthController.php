@@ -149,7 +149,7 @@ class AuthController extends Controller
             }
 
             return redirect($target)
-                ->with('success', 'Welcome back, ' . ($user->name ?: $user->username) . '!');
+                ->with('success', 'Signed in successfully. Welcome back, ' . ($user->name ?: $user->username) . '.');
         }
 
         return back()->withInput($request->only('identifier'))->withErrors([
@@ -560,7 +560,7 @@ class AuthController extends Controller
                 }
 
                 return redirect($this->redirectPathForUser($user))
-                    ->with('success', 'Welcome back, ' . ($user->name ?: $user->email) . '! Signed in with Google.');
+                    ->with('success', 'Signed in with Google. Welcome back, ' . ($user->name ?: $user->email) . '.');
             }
 
             // -----------------------------------------------------------------
@@ -679,30 +679,31 @@ class AuthController extends Controller
             $loginUrl = url('/login');
 
             $html = "
-                <div style=\"font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #d9e5d5; border-radius: 16px; background: #f8fbf6;\">
-                    <h2 style=\"color: #163625; margin-top: 0;\">Meramot Password Recovery</h2>
-                    <p style=\"color: #203126; font-size: 14px; line-height: 1.6;\">Hello {$safeName},</p>
-                    <p style=\"color: #203126; font-size: 14px; line-height: 1.6;\">
-                        We received a password recovery request for your Meramot account (<strong>{$safeEmail}</strong>).
-                        If you did not request this, you can safely ignore this email.
+                <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 560px; margin: 0 auto; padding: 26px; border: 1px solid #d9e5d5; border-radius: 16px; background: #ffffff;\">
+                    <h2 style=\"color: #214c34; margin-top: 0;\">Password Recovery Request</h2>
+                    <p style=\"font-size: 14px;\">Hello <strong>{$safeName}</strong>,</p>
+                    <p style=\"font-size: 14px;\">
+                        We received a password recovery request for the Meramot account associated with <strong>{$safeEmail}</strong>.
+                        If you did not initiate this request, you may safely disregard this message and no changes will be made.
                     </p>
-                    <p style=\"margin: 24px 0;\">
-                        <a href=\"{$loginUrl}\" style=\"display: inline-block; background: #163625; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 999px; font-weight: bold; font-size: 13px;\">
+                    <div style=\"margin: 24px 0; text-align: center;\">
+                        <a href=\"{$loginUrl}\" style=\"display: inline-block; background: #214c34; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 999px; font-weight: bold; font-size: 13px;\">
                             Return to Meramot Sign In
                         </a>
-                    </p>
-                    <p style=\"color: #5e6d64; font-size: 12px;\">— Meramot Account Security</p>
+                    </div>
+                    <p style=\"font-size: 13px; color: #214c34;\">Sincerely,<br/><strong>Meramot Trust &amp; Security</strong></p>
+                    <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
                 </div>
             ";
 
             try {
-                $gmailService->sendEmail($email, 'Meramot — Password Recovery Request', $html);
+                $gmailService->sendEmail($email, 'Meramot — Password Recovery Instructions', $html);
             } catch (\Throwable $e) {
                 // Keep response uniform and non-enumerating
             }
         }
 
-        $message = "An email has been sent to {$email} with recovery instructions if an account is registered under that address.";
+        $message = "If an account is registered under {$email}, password recovery instructions have been sent to that inbox.";
 
         if ($request->expectsJson()) {
             return response()->json([

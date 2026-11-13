@@ -62,12 +62,24 @@ class GeolocationService
             'New Market' => ['lat' => 23.7339, 'lng' => 90.3868],
             'Motijheel' => ['lat' => 23.7330, 'lng' => 90.4172],
             'Wari' => ['lat' => 23.7185, 'lng' => 90.4114],
+            'Panthapath' => ['lat' => 23.7511, 'lng' => 90.3865],
+            'Shahbag' => ['lat' => 23.7389, 'lng' => 90.3958],
+            'Kalabagan' => ['lat' => 23.7494, 'lng' => 90.3831],
+            'Khilgaon' => ['lat' => 23.7516, 'lng' => 90.4253],
+            'Malibagh' => ['lat' => 23.7503, 'lng' => 90.4132],
+            'Banasree' => ['lat' => 23.7629, 'lng' => 90.4326],
             'Agrabad' => ['lat' => 22.3264, 'lng' => 91.8155],
             'GEC Circle' => ['lat' => 22.3591, 'lng' => 91.8215],
+            'Nasirabad' => ['lat' => 22.3636, 'lng' => 91.8214],
+            'Panchlaish' => ['lat' => 22.3619, 'lng' => 91.8330],
+            'Halishahar' => ['lat' => 22.3338, 'lng' => 91.7820],
             'Zindabazar' => ['lat' => 24.8949, 'lng' => 91.8687],
+            'Amberkhana' => ['lat' => 24.9056, 'lng' => 91.8700],
             'Shaheb Bazar' => ['lat' => 24.3653, 'lng' => 88.6003],
             'Shib Bari' => ['lat' => 22.8206, 'lng' => 89.5535],
+            'Sonadanga' => ['lat' => 22.8170, 'lng' => 89.5444],
             'Joydebpur' => ['lat' => 23.9999, 'lng' => 90.4203],
+            'Tongi' => ['lat' => 23.8915, 'lng' => 90.4023],
             'Satmatha' => ['lat' => 24.8481, 'lng' => 89.3730],
             'Ganginarpar' => ['lat' => 24.7564, 'lng' => 90.4065],
             'Dhaka' => ['lat' => 23.8103, 'lng' => 90.4125],
@@ -171,5 +183,98 @@ class GeolocationService
                $lat <= $dhakaBounds['lat_max'] &&
                $lng >= $dhakaBounds['lng_min'] && 
                $lng <= $dhakaBounds['lng_max'];
+    }
+
+    /**
+     * Normalize user-supplied or Nominatim city/area strings into canonical
+     * Bangladesh district/city names matching `repair_shops.city`.
+     */
+    public static function normalizeCityName(
+        ?string $rawCity = null,
+        ?string $rawArea = null,
+        ?string $rawAddress = null,
+        ?float $lat = null,
+        ?float $lng = null
+    ): string {
+        $haystack = strtolower(trim(implode(' ', array_filter([$rawCity, $rawArea, $rawAddress]))));
+
+        $cityAliases = [
+            'Dhaka' => [
+                'dhaka', 'dhaka north', 'dhaka south', 'dacca', 'panthapath',
+                'banani', 'gulshan', 'dhanmondi', 'uttara', 'mirpur', 'mohammadpur',
+                'bashundhara', 'farmgate', 'tejgaon', 'mohakhali', 'badda', 'rampura',
+                'motijheel', 'new market', 'wari', 'hatirpool', 'shahbag', 'kalabagan',
+                'khilgaon', 'malibagh', 'banasree',
+            ],
+            'Chattogram' => [
+                'chattogram', 'chittagong', 'agrabad', 'gec circle', 'nasirabad',
+                'panchlaish', 'halishahar', 'chawkbazar', 'patenga',
+            ],
+            'Sylhet' => ['sylhet', 'zindabazar', 'amberkhana', 'upashahar'],
+            'Rajshahi' => ['rajshahi', 'shaheb bazar', 'boalia'],
+            'Khulna' => ['khulna', 'shib bari', 'sonadanga'],
+            'Gazipur' => ['gazipur', 'joydebpur', 'tongi'],
+            'Narayanganj' => ['narayanganj'],
+            'Mymensingh' => ['mymensingh', 'ganginarpar'],
+            'Bogura' => ['bogura', 'bogra', 'satmatha'],
+            'Cumilla' => ['cumilla', 'comilla'],
+            'Rangpur' => ['rangpur'],
+            'Barishal' => ['barishal', 'barisal'],
+            'Jashore' => ['jashore', 'jessore'],
+            "Cox's Bazar" => ['cox'],
+        ];
+
+        $rawCityLower = strtolower(trim((string) $rawCity));
+        if ($rawCityLower !== '') {
+            foreach ($cityAliases as $canonical => $aliases) {
+                if (in_array($rawCityLower, $aliases, true)) {
+                    return $canonical;
+                }
+            }
+        }
+
+        if ($haystack !== '') {
+            foreach ($cityAliases as $canonical => $aliases) {
+                foreach ($aliases as $alias) {
+                    if (str_contains($haystack, $alias)) {
+                        return $canonical;
+                    }
+                }
+            }
+        }
+
+        if ($lat !== null && $lng !== null) {
+            if ($lat >= 23.66 && $lat <= 23.92 && $lng >= 90.30 && $lng <= 90.52) {
+                return 'Dhaka';
+            }
+
+            $districts = [
+                'Dhaka', 'Chattogram', 'Sylhet', 'Rajshahi', 'Khulna',
+                'Gazipur', 'Narayanganj', 'Mymensingh', 'Bogura', 'Cumilla',
+                'Rangpur', 'Barishal', 'Jashore', "Cox's Bazar", 'Narail',
+                'Tangail', 'Moulvibazar',
+            ];
+            $closestCity = null;
+            $closestDist = INF;
+            foreach ($districts as $district) {
+                $coords = self::getAreaCoordinates($district);
+                if ($coords) {
+                    $dist = self::calculateDistance($lat, $lng, $coords['lat'], $coords['lng']);
+                    if ($dist < $closestDist) {
+                        $closestDist = $dist;
+                        $closestCity = $district;
+                    }
+                }
+            }
+            if ($closestCity !== null && $closestDist <= 30.0) {
+                return $closestCity;
+            }
+        }
+
+        if (trim((string) $rawCity) !== '') {
+            return ucwords(strtolower(trim((string) $rawCity)));
+        }
+
+        return 'Dhaka';
     }
 }

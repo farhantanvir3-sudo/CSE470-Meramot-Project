@@ -23,7 +23,7 @@ Models Touched: VendorProfile, RepairShop, User
             <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Partner Governance</p>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Vendor Business Verification &amp; Storefront Audit</h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                Audit submitted Trade Licenses, Owner NIDs, Dual Shop Locations (GPS Pin vs Public Address), and Multi-Branch tags before publishing workshops to customers.
+                Review submitted trade licenses, owner NID verification documents, storefront addresses, location coordinates, and multi-branch records prior to marketplace publication.
             </p>
             <span class="dev-only-badge text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mt-1.5">
                 Feature R11 • Assigned to: Farhan Tanvir [22299179] (Team Lead)

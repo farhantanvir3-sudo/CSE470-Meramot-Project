@@ -41,7 +41,7 @@
 
                 <div class="rounded-2xl border border-[#cbe0c2] bg-[#eef5ea] p-4 text-xs text-[#163625] space-y-2 leading-relaxed">
                     <p>
-                        Thank you, <strong>{{ $submittedPopup['name'] ?? 'Applicant' }}</strong>! Your delivery agent application has been queued for Admin verification.
+                        Thank you, <strong>{{ $submittedPopup['name'] ?? 'Applicant' }}</strong>. Your delivery partner application has been queued for administrative verification.
                     </p>
                     <p>
                         All official updates from <strong>meramotbd.official@gmail.com</strong> will be sent to your personal email:

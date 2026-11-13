@@ -194,7 +194,7 @@ class VendorBranchController extends Controller
         }
 
         return redirect('/vendor/dashboard?tab=branches')
-            ->with('success', "Multi-branch mode enabled! '{$validated['primary_branch_name']}' tag is now live on {$brandName} shop tiles.");
+            ->with('success', "Multi-branch mode enabled. The '{$validated['primary_branch_name']}' label is now active on {$brandName} listings.");
     }
 
     /**
@@ -397,7 +397,7 @@ class VendorBranchController extends Controller
         }
 
         return redirect("/vendor/dashboard?shop_id={$newBranch->id}&tab=branches")
-            ->with('success', "Expanded business! New branch '{$brandName} — {$branchName}' ({$area}, {$city}) is now live.");
+            ->with('success', "New branch added. '{$brandName} — {$branchName}' ({$area}, {$city}) is now active on the marketplace.");
     }
 
     /**
@@ -483,7 +483,7 @@ class VendorBranchController extends Controller
         }
 
         return redirect("/vendor/dashboard?shop_id={$shop->id}&tab=branches")
-            ->with('success', "Updated GPS approximate pin & public storefront address for {$shop->name}" . ($shop->display_branch_tag ? " [{$shop->display_branch_tag}]" : '') . '.');
+            ->with('success', "Updated location coordinates and public storefront address for {$shop->name}" . ($shop->display_branch_tag ? " [{$shop->display_branch_tag}]" : '') . '.');
     }
 
     /**
@@ -902,7 +902,7 @@ class VendorBranchController extends Controller
             }
 
             return redirect()->route('vendor.setup-shop')
-                ->with('warning', 'Your vendor application is approved! Please complete your shop pricing and services setup below to unlock your Vendor Dashboard.');
+                ->with('warning', 'Your vendor application is approved. Complete your shop pricing and service configuration below to access the Vendor Dashboard.');
         }
 
         return null;

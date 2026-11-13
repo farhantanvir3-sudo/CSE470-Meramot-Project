@@ -37,7 +37,7 @@
                 <span>Previous Rejection Reason from Admin</span>
             </h3>
             <p class="font-semibold text-rose-950">{{ $agent->rejection_reason ?: 'Please update your credentials and re-submit.' }}</p>
-            <p class="text-rose-800">Saving your changes below will automatically move your application back to <strong>PENDING</strong> status for Admin review.</p>
+            <p class="text-rose-800">Saving your updated information will return your application to pending administrative review.</p>
         </div>
     @endif
 
@@ -361,7 +361,7 @@
                 Cancel
             </a>
             <button type="submit" class="group w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-7 py-3.5 text-xs font-bold shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]">
-                <span>{{ $isRejected ? 'Save & Re-Submit for Admin Approval (PENDING)' : 'Save Updated Application' }}</span>
+                <span>{{ $isRejected ? 'Save &amp; Re-Submit for Review' : 'Save Updated Application' }}</span>
                 <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
             </button>
         </div>

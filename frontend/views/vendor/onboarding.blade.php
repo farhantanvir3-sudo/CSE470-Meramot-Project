@@ -85,7 +85,7 @@ Models Touched: User, VendorProfile, RepairShop
                 });
                 const data = await resp.json();
                 if (!resp.ok) throw new Error(data.message || 'Could not send verification code.');
-                this.otpFeedback = data.message || 'Verification code sent!';
+                this.otpFeedback = data.message || 'Verification code sent.';
                 this.otpStepSent = true;
             } catch (err) {
                 this.otpError = err.message || 'Failed to send verification code.';
@@ -314,7 +314,7 @@ Models Touched: User, VendorProfile, RepairShop
                     @if($vStatus === 'approved' && !$setupComplete)
                         Set your inspection &amp; labor fees, service options, and repair catalog to publish your shop.
                     @elseif($vStatus === 'approved' && $setupComplete)
-                        Your shop is live! Head to your Vendor Dashboard or refine your shop setup anytime.
+                        Your workshop is active and publicly listed. Open your Vendor Dashboard to manage requests or update your storefront configuration anytime.
                     @else
                         Track your approval status or update your vendor application details if needed.
                     @endif
@@ -686,12 +686,12 @@ Models Touched: User, VendorProfile, RepairShop
                 </div>
             </div>
 
-            <!-- ── Dual Shop Addresses Card (1. GPS Approximate vs 2. Vendor-Provided) ── -->
+            <!-- Storefront & Coordinate Addressing Card -->
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/70 p-4 md:p-5 space-y-4">
                 <div class="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--border)] pb-3">
                     <div>
-                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Dual Shop Addressing</span>
-                        <h3 class="text-sm font-black text-[var(--foreground)]">1. GPS Approximate Location &amp; 2. Public Storefront Address</h3>
+                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Workshop Addressing</span>
+                        <h3 class="text-sm font-black text-[var(--foreground)]">1. Service Map Coordinates &amp; 2. Public Storefront Address</h3>
                     </div>
                     <button
                         type="button"
@@ -699,21 +699,21 @@ Models Touched: User, VendorProfile, RepairShop
                         class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
                     >
                         <i class="fa-solid fa-map-location-dot"></i>
-                        <span>Pin GPS on OpenStreetMap</span>
+                        <span>Pin Location on Map</span>
                     </button>
                 </div>
 
-                <!-- Address 1: GPS Approximate Location -->
+                <!-- Address 1: Map Coordinates -->
                 <div class="space-y-1.5">
                     <label class="block font-bold text-[var(--foreground)]">
-                        1. GPS Approximate Location <span class="font-normal text-[var(--muted-foreground)]">(Powers distance &amp; rider ETA — kept private unless synced below)</span>
+                        1. Service Map Coordinates <span class="font-normal text-[var(--muted-foreground)]">(Powers distance matching &amp; courier routing — kept private unless synced below)</span>
                     </label>
                     <input
                         type="text"
                         name="gps_address"
                         x-model="gpsAddress"
                         @input="syncSameAsGps()"
-                        placeholder="Click 'Pin GPS on OpenStreetMap' or type approximate road/area..."
+                        placeholder="Click 'Pin Location on Map' or enter approximate street and area..."
                         class="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 text-xs outline-none"
                     >
                     <input type="hidden" name="shop_latitude" :value="shopLat">
@@ -725,7 +725,7 @@ Models Touched: User, VendorProfile, RepairShop
                     </template>
                 </div>
 
-                <!-- Option: Make 1 & 2 the Same -->
+                <!-- Option: Sync Coordinates to Storefront Address -->
                 <label class="flex items-center gap-2.5 cursor-pointer rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5 font-bold text-[var(--foreground)]">
                     <input
                         type="checkbox"
@@ -735,13 +735,13 @@ Models Touched: User, VendorProfile, RepairShop
                         @change="syncSameAsGps()"
                         class="h-4 w-4 accent-[#244229]"
                     >
-                    <span>Use GPS approximate location as my Vendor-Provided Public Shop Address (1 &amp; 2 same)</span>
+                    <span>Use pinned map coordinates as my public storefront address</span>
                 </label>
 
-                <!-- Address 2: Vendor-Provided Public Location -->
+                <!-- Address 2: Public Storefront Location -->
                 <div class="space-y-2">
                     <label class="block font-bold text-[var(--foreground)]">
-                        2. Vendor-Provided Public Location * <span class="font-normal text-[var(--muted-foreground)]">(Displayed publicly on shop cards &amp; profile)</span>
+                        2. Public Storefront Address * <span class="font-normal text-[var(--muted-foreground)]">(Displayed publicly on workshop cards and storefront profile)</span>
                     </label>
                     <input
                         type="text"

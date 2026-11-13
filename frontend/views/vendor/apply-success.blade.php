@@ -18,7 +18,7 @@
         </p>
 
         <p class="mt-2 text-sm text-[#5e6d64] leading-relaxed">
-            Your application is now pending admin review. You can sign in on the normal login page anytime to verify your email &amp; phone and check whether your application is pending, approved, or rejected.
+            Your application has been queued for administrative verification. Sign in anytime using your registered account to verify your contact details and track your review status.
         </p>
 
         @if(!empty($applicationId))

@@ -248,7 +248,7 @@ class RepairRequestController extends Controller
 
         return redirect()
             ->route('requests.track', $repairRequest->id)
-            ->with('success', 'Repair request published! Verified workshops across Bangladesh can now submit Quote 1 bids.');
+            ->with('success', 'Repair request published. Verified workshops across your region can now submit initial estimates.');
     }
 
     /**

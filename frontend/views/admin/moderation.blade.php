@@ -12,7 +12,7 @@
             </span>
             <h1 class="mt-2 text-2xl sm:text-3xl font-black text-[var(--foreground)]">Content Moderation &amp; User Sanctions</h1>
             <p class="mt-1 text-xs sm:text-sm text-[var(--muted-foreground)]">
-                Review workshop feedback for offensive language, delete abusive reviews, ban or restore user accounts, and notify affected users via email and notification bell pop-up alerts.
+                Audit workshop reviews for policy violations, remove abusive feedback, restrict or restore user ordering privileges, and dispatch email and in-app alerts to affected accounts.
             </p>
         </div>
 
@@ -103,7 +103,7 @@
                                 data-confirm-delete
                                 data-confirm-title="Delete Review?"
                                 data-confirm-item="Review #{{ $rev->id }} by {{ $rev->customer->name ?? 'Customer' }}"
-                                data-confirm-message="This deletes the review, recalculates the workshop rating, and sends an email + notification bell alert."
+                                data-confirm-message="This removes the review, recalculates the workshop rating, and sends email and in-app notifications."
                                 data-confirm-cta="Delete Review"
                             >
                                 @csrf
@@ -140,7 +140,7 @@
                             <input type="hidden" name="action_type" value="delete_and_ban">
                             <div>
                                 <label class="block text-[11px] font-extrabold uppercase tracking-wider text-rose-800 mb-1">
-                                    Ban Reason (Delivered via Email &amp; In-System Notification Bell Pop-Up to {{ $rev->customer->email }})
+                                    Restriction Reason (Delivered via Email &amp; In-App Notification to {{ $rev->customer->email }})
                                 </label>
                                 <input
                                     type="text"

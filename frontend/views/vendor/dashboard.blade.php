@@ -95,7 +95,7 @@
                 class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-bold px-4 py-2 flex items-center gap-1.5 shadow-sm hover:opacity-90 transition"
             >
                 <i class="fa-solid fa-code-branch"></i>
-                <span>Spread Business / Branches</span>
+                <span>Manage Branches</span>
             </button>
             <a href="/vendor/setup-shop" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                 <i class="fa-solid fa-sliders mr-1"></i> Pricing &amp; Services
@@ -155,7 +155,7 @@
             @click="activeTab = 'branches'"
             class="text-[11px] font-bold text-[var(--accent-dark)] hover:underline shrink-0"
         >
-            + Add Branch / Edit Dual Locations
+            + Add Branch / Manage Locations
         </button>
     </div>
 
@@ -278,13 +278,13 @@
                         </div>
                     @empty
                         <div class="py-6 text-center text-[var(--muted-foreground)]">
-                            No active repair jobs in this branch filter yet. Accept a Marketplace Bid or Direct Order to start a bench job!
+                            No active repair jobs under this branch scope yet. Submit a marketplace estimate or accept a direct order to begin.
                         </div>
                     @endforelse
                 </div>
             </div>
 
-            <!-- Selected Shop Dual-Location Summary -->
+            <!-- Selected Shop Location Summary -->
             <div class="meramot-card p-6 shadow-sm space-y-4">
                 <h3 class="font-bold text-base text-[var(--foreground)]">
                     {{ $publicPreviewShop ? ($publicPreviewShop->display_branch_tag ?: $publicPreviewShop->name) : 'Shop Settings' }}
@@ -292,15 +292,15 @@
                 @if($publicPreviewShop)
                     <div class="space-y-2.5 text-xs">
                         <div class="rounded-xl bg-[var(--mint-100)] p-3 border border-[var(--border)]">
-                            <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] block">1. GPS Approximate Pin (Private)</span>
-                            <span class="font-semibold text-[var(--foreground)] block mt-0.5">{{ $publicPreviewShop->gps_address ?: 'Pinned via OpenStreetMap' }}</span>
+                            <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] block">1. Map Coordinates (Private)</span>
+                            <span class="font-semibold text-[var(--foreground)] block mt-0.5">{{ $publicPreviewShop->gps_address ?: 'Pinned on Service Map' }}</span>
                             <span class="font-mono text-[10px] text-[var(--accent-dark)]">{{ number_format((float)$publicPreviewShop->latitude, 5) }}, {{ number_format((float)$publicPreviewShop->longitude, 5) }}</span>
                         </div>
                         <div class="rounded-xl bg-[var(--mint-100)] p-3 border border-[var(--border)]">
                             <div class="flex items-center justify-between">
-                                <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)]">2. Vendor Public Address</span>
+                                <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)]">2. Public Storefront Address</span>
                                 @if($publicPreviewShop->same_as_gps_location)
-                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-900">Synced with GPS</span>
+                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-900">Synced with Map</span>
                                 @endif
                             </div>
                             <span class="font-semibold text-[var(--foreground)] block mt-0.5">{{ $publicPreviewShop->public_address }}</span>
@@ -316,7 +316,7 @@
                     @click="activeTab = 'branches'"
                     class="block w-full text-center rounded-xl bg-[var(--accent-dark)] py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
                 >
-                    Manage Branches &amp; Dual Locations
+                    Manage Branches &amp; Locations
                 </button>
             </div>
         </div>
@@ -445,10 +445,10 @@
                             <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/70 p-3">
                                 <div class="flex items-center justify-between gap-1">
                                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">
-                                        2. Vendor-Provided Location
+                                        2. Public Storefront Address
                                     </span>
                                     @if($branch->same_as_gps_location)
-                                        <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-900">1 &amp; 2 Same</span>
+                                        <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-900">Matches Map Pin</span>
                                     @else
                                         <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[9px] font-bold text-amber-900">Custom Storefront</span>
                                     @endif
@@ -457,7 +457,7 @@
                             </div>
                         </div>
 
-                        <!-- Inline Edit Dual Addresses Form -->
+                        <!-- Inline Edit Branch Addresses Form -->
                         <form
                             x-show="editing"
                             x-cloak
@@ -483,7 +483,7 @@
 
                             <div>
                                 <div class="flex items-center justify-between mb-1">
-                                    <label class="font-bold text-[var(--foreground)]">1. GPS Approximate Location *</label>
+                                    <label class="font-bold text-[var(--foreground)]">1. Map Pin Address *</label>
                                     <button
                                         type="button"
                                         @click="openMapFor({{ $branch->id }})"
@@ -513,11 +513,11 @@
                                     @change="if (sameGps) pubAddr = gpsAddr"
                                     class="accent-[#244229]"
                                 >
-                                <span>Make Vendor-Provided Location same as GPS Approximate Location</span>
+                                <span>Use pinned map coordinates as my public storefront address</span>
                             </label>
 
                             <div>
-                                <label class="block font-bold text-[var(--foreground)] mb-1">2. Vendor-Provided Public Location *</label>
+                                <label class="block font-bold text-[var(--foreground)] mb-1">2. Public Storefront Address *</label>
                                 <input
                                     type="text"
                                     name="address"
@@ -568,7 +568,7 @@
                     class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
                 >
                     <i class="fa-solid fa-map-location-dot"></i>
-                    <span>Pin New Branch on OpenStreetMap</span>
+                    <span>Pin New Branch on Map</span>
                 </button>
             </div>
 
@@ -618,7 +618,7 @@
                 <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4 space-y-3">
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">
-                            1. GPS Approximate Location * <span class="font-normal text-[var(--muted-foreground)]">(Pin on OpenStreetMap or enter approximate road/area)</span>
+                            1. Map Pin Address * <span class="font-normal text-[var(--muted-foreground)]">(Pin on map or enter street and neighborhood)</span>
                         </label>
                         <input
                             type="text"
@@ -709,7 +709,7 @@
         <div class="rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-bullhorn text-amber-700 text-lg"></i>
-                <span>Reverse Bidding Engine: Submit itemized parts cost, labor cost, and turnaround days. Your bid is saved directly to the customer's tracking page!</span>
+                <span>Marketplace Estimating: Submit itemized parts cost, labor fees, and turnaround days directly to customer repair tickets.</span>
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 <a href="/vendor/alert-settings" class="rounded-full border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] px-3.5 py-1.5 font-bold hover:bg-[var(--mint-50)] transition">
@@ -785,14 +785,15 @@
                             >
 
                             <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] py-2.5 font-bold text-white shadow hover:opacity-90 transition">
-                                Submit Itemized Quote 1 Bid &rarr;
+                                Submit Itemized Estimate &rarr;
                             </button>
                         </form>
                     </div>
                 </div>
             @empty
                 <div class="md:col-span-2 meramot-card p-8 text-center text-xs text-[var(--muted-foreground)]">
-                    No open marketplace tickets awaiting Quote 1 bids right now. <a href="/requests/create" class="font-bold text-[var(--accent-dark)] underline">Post a test request</a>!
+                    No open marketplace tickets awaiting estimates at this time.
+                </div>
                 </div>
             @endforelse
         </div>
@@ -854,7 +855,7 @@
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div>
                     <h3 class="font-bold text-base text-[var(--foreground)]">Active Repair Queue &amp; Bench Milestones</h3>
-                    <p class="text-xs text-[var(--muted-foreground)]">Update live job status, dispatch Quote 2 bench diagnostics, or mark Completed to post 10%/90% ledger settlements.</p>
+                    <p class="text-xs text-[var(--muted-foreground)]">Update live job status, issue final bench diagnostic quotes, or mark Completed to settle the 10% commission and 90% workshop payout ledger.</p>
                 </div>
             </div>
             <div class="divide-y divide-[var(--border)] text-xs">
@@ -889,8 +890,8 @@
                                 <select name="status" x-model="chosenStatus" class="rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
                                     <option value="AT_SHOP">At Shop (Received)</option>
                                     <option value="DIAGNOSING">Diagnosing Bench</option>
-                                    <option value="WAITING_APPROVAL">Send Quote 2 (Await Approval)</option>
-                                    <option value="REPAIRING">Repairing / Soldering</option>
+                                    <option value="WAITING_APPROVAL">Send Final Quote (Await Approval)</option>
+                                    <option value="REPAIRING">Repairing / Servicing</option>
                                     <option value="COMPLETED">Completed (Settle Ledger)</option>
                                 </select>
 
@@ -900,7 +901,7 @@
                                             type="number"
                                             name="final_quoted_amount"
                                             value="{{ (float) ($job->final_quoted_amount ?? $job->repairRequest?->quoted_final_amount ?? 3200) }}"
-                                            placeholder="Quote 2 (৳)"
+                                            placeholder="Final Quote (৳)"
                                             class="w-28 rounded-xl border border-amber-400 bg-white px-2.5 py-2 text-xs font-bold outline-none"
                                             required
                                         >

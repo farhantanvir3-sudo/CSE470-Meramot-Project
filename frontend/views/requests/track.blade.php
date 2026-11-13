@@ -34,7 +34,7 @@
                 Track Your Repair Request
             </h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                Monitor real-time status updates, Quote 1 marketplace bids, and Quote 2 bench diagnostics
+                Monitor real-time status updates, incoming workshop estimates, and final diagnostic quotes.
             </p>
         </div>
 
@@ -134,11 +134,11 @@
                     <div class="flex items-start justify-between gap-4">
                         <div>
                             <span class="rounded-full bg-amber-200 px-3 py-0.5 text-[10px] font-extrabold uppercase text-amber-900">
-                                Quote 2 • Action Required
+                                Final Estimate • Action Required
                             </span>
-                            <h3 class="mt-1 text-lg font-black text-[#203126]">Bench Diagnosis Complete — Approve Final Quote</h3>
+                            <h3 class="mt-1 text-lg font-black text-[#203126]">Bench Inspection Complete — Approve Final Quote</h3>
                             <p class="mt-1 text-xs text-amber-950/80 leading-relaxed">
-                                {{ $repairRequest->repairJob->diagnosis_notes ?? 'Physical bench inspection completed. Please review the final component & labor quote below before soldering/repair proceeds.' }}
+                                {{ $repairRequest->repairJob->diagnosis_notes ?? 'Physical bench inspection is complete. Review the itemized final parts and labor quote below before repair work begins.' }}
                             </p>
                         </div>
                         <div class="text-right shrink-0">
@@ -180,13 +180,13 @@
                     $statuses = [
                         'DRAFT' => ['label' => 'Draft', 'icon' => 'fa-file-lines'],
                         'PENDING' => ['label' => 'Pending Workshop Review', 'icon' => 'fa-clock'],
-                        'BIDDING' => ['label' => 'Bidding Open (Quote 1)', 'icon' => 'fa-gavel'],
+                        'BIDDING' => ['label' => 'Open for Estimates', 'icon' => 'fa-gavel'],
                         'ASSIGNED' => ['label' => 'Vendor Assigned', 'icon' => 'fa-handshake'],
                         'PICKUP_SCHEDULED' => ['label' => 'Pickup Scheduled', 'icon' => 'fa-calendar-check'],
                         'PICKED_UP' => ['label' => 'Device Picked Up', 'icon' => 'fa-box'],
                         'AT_SHOP' => ['label' => 'At Repair Shop', 'icon' => 'fa-store'],
                         'DIAGNOSING' => ['label' => 'Bench Diagnosing', 'icon' => 'fa-magnifying-glass'],
-                        'WAITING_APPROVAL' => ['label' => 'Awaiting Quote 2 Approval', 'icon' => 'fa-hourglass-half'],
+                        'WAITING_APPROVAL' => ['label' => 'Awaiting Final Quote Approval', 'icon' => 'fa-hourglass-half'],
                         'REPAIRING' => ['label' => 'Under Repair', 'icon' => 'fa-wrench'],
                         'RETURN_SCHEDULED' => ['label' => 'Return Courier Scheduled', 'icon' => 'fa-truck'],
                         'RETURNING' => ['label' => 'Out for Return Delivery', 'icon' => 'fa-truck-fast'],
@@ -450,7 +450,7 @@
                                 @if($bid->id === $repairRequest->selected_bid_id)
                                     <div class="mt-3 flex items-center gap-2 text-emerald-700">
                                         <i class="fa-solid fa-circle-check"></i>
-                                        <span class="text-xs font-bold">Accepted Bid (Quote 1)</span>
+                                        <span class="text-xs font-bold">Accepted Initial Estimate</span>
                                     </div>
                                 @elseif($currentStatus === 'BIDDING' && $canActAsCustomer)
                                     <form method="POST" action="{{ route('requests.accept-bid', $repairRequest->id) }}" class="mt-3">
@@ -468,7 +468,7 @@
                     <div class="text-center py-8">
                         <i class="fa-solid fa-inbox text-3xl text-[var(--muted-foreground)] mb-3"></i>
                         <p class="text-sm text-[var(--muted-foreground)]">
-                            No bids received yet. Verified workshops across Dhaka have been notified of your request.
+                            No estimates received yet. Verified workshops across your service region have been notified of your request.
                         </p>
                     </div>
                 @endif
@@ -582,7 +582,7 @@
                     <i class="fa-solid fa-headset mr-2 text-[var(--accent-dark)]"></i>Need Escrow or Courier Help?
                 </h3>
                 <p class="text-xs text-[var(--muted-foreground)] mb-3">
-                    Our Dhaka rider & escrow dispute desk monitors every verified repair job.
+                    Our dedicated operations and escrow dispute team monitors every verified repair order.
                 </p>
                 <a href="/support/rider-chat/1" class="block w-full py-2.5 rounded-full bg-[var(--accent-dark)] text-center text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                     Open Support Desk

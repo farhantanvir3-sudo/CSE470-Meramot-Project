@@ -267,4 +267,266 @@ class ServicePackageTest extends TestCase
 
         $this->assertEquals('ASSIGNED', $createdReq->fresh()->status);
     }
+
+    /** @test */
+    public function it_quickmatches_nearest_highest_rated_workshop_first()
+    {
+        $customer = \App\Models\User::factory()->create([
+            'role' => 'customer',
+            'status' => 'active',
+        ]);
+
+        // Closer (0.6 km) but lower rated (4.2) inside same 1.0 km proximity band as Shop A
+        $closerLowerRated = \App\Models\RepairShop::factory()->create([
+            'name' => 'Kalabagan Bench',
+            'slug' => 'kalabagan-bench-' . uniqid(),
+            'city' => 'Dhaka',
+            'area' => 'Kalabagan',
+            'latitude' => 23.748500,
+            'longitude' => 90.385800,
+            'rating' => 4.20,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+            'delivery_radius_km' => 20,
+            'is_featured' => false,
+        ]);
+
+        // Near (0.8 km) and higher rated (4.8) inside nearest 1.0 km proximity band -> MUST WIN
+        $nearestTopRated = \App\Models\RepairShop::factory()->create([
+            'name' => 'Dhanmondi Pro Repair',
+            'slug' => 'dhanmondi-pro-repair-' . uniqid(),
+            'city' => 'Dhaka',
+            'area' => 'Dhanmondi',
+            'latitude' => 23.752000,
+            'longitude' => 90.383500,
+            'rating' => 4.80,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+            'delivery_radius_km' => 20,
+            'is_featured' => false,
+        ]);
+
+        // Farther (13.7 km away in Uttara) with 5.0 rating -> loses to closer Dhanmondi distance band
+        \App\Models\RepairShop::factory()->create([
+            'name' => 'Uttara Apex Center',
+            'slug' => 'uttara-apex-' . uniqid(),
+            'city' => 'Dhaka',
+            'area' => 'Uttara',
+            'latitude' => 23.873810,
+            'longitude' => 90.398410,
+            'rating' => 5.00,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+            'delivery_radius_km' => 20,
+            'is_featured' => true,
+            'featured_at' => now(),
+        ]);
+
+        $package = \App\Models\ServicePackage::create([
+            'title' => 'Display Replacement Package',
+            'description' => 'Certified OLED assembly replacement.',
+            'device_category' => 'Smartphone',
+            'fixed_price' => 3500,
+            'estimated_turnaround_hours' => 4,
+            'warranty_months' => 3,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($customer);
+
+        $syncRes = $this->postJson('/location/sync', [
+            'lat' => 23.751000,
+            'lng' => 90.391000,
+            'city' => 'Dhaka',
+            'area' => 'Panthapath',
+            'address' => 'Panthapath Signal, Dhaka',
+        ]);
+
+        $syncRes->assertOk()
+            ->assertJson([
+                'success' => true,
+                'shop_id' => $nearestTopRated->id,
+            ]);
+
+        $this->postJson('/cart/add', [
+            'package_id' => $package->id,
+            'quantity' => 1,
+            'customer_lat' => 23.751000,
+            'customer_lng' => 90.391000,
+            'customer_city' => 'Dhaka',
+            'customer_area' => 'Panthapath',
+        ])->assertOk();
+
+        $this->assertEquals($nearestTopRated->id, session('cart_shop_id'));
+        $this->assertNotEquals($closerLowerRated->id, session('cart_shop_id'));
+    }
+
+    /** @test */
+    public function it_falls_back_to_featured_workshop_when_distance_or_ratings_do_not_resolve()
+    {
+        $customer = \App\Models\User::factory()->create([
+            'role' => 'customer',
+            'status' => 'active',
+        ]);
+
+        // Unfeatured Sylhet shop with same rating as featured Sylhet shop
+        \App\Models\RepairShop::factory()->create([
+            'name' => 'Sylhet Standard Electronics',
+            'slug' => 'sylhet-standard-' . uniqid(),
+            'city' => 'Sylhet',
+            'area' => 'Zindabazar',
+            'latitude' => 24.894900,
+            'longitude' => 91.868700,
+            'rating' => 4.70,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+            'delivery_radius_km' => 20,
+            'is_featured' => false,
+        ]);
+
+        // Featured Sylhet shop -> MUST WIN Tier 2 when no coordinates/area disambiguate
+        $featuredSylhet = \App\Models\RepairShop::factory()->create([
+            'name' => 'Sylhet Featured Care',
+            'slug' => 'sylhet-featured-' . uniqid(),
+            'city' => 'Sylhet',
+            'area' => 'Amberkhana',
+            'latitude' => 24.904500,
+            'longitude' => 91.869800,
+            'rating' => 4.70,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+            'delivery_radius_km' => 20,
+            'is_featured' => true,
+            'featured_at' => now(),
+        ]);
+
+        // Higher-rated featured shop in another city (Dhaka) must NOT override local Sylhet featured shop
+        \App\Models\RepairShop::factory()->create([
+            'name' => 'Dhaka Flagship Center',
+            'slug' => 'dhaka-flagship-' . uniqid(),
+            'city' => 'Dhaka',
+            'area' => 'Banani',
+            'latitude' => 23.790428,
+            'longitude' => 90.398003,
+            'rating' => 5.00,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+            'delivery_radius_km' => 20,
+            'is_featured' => true,
+            'featured_at' => now(),
+        ]);
+
+        $this->actingAs($customer);
+
+        // City-only sync (no coordinates or specific neighborhood) triggers Tier 2 Featured fallback within city
+        $syncRes = $this->postJson('/location/sync', [
+            'city' => 'Sylhet',
+        ]);
+
+        $syncRes->assertOk()
+            ->assertJson([
+                'success' => true,
+                'city' => 'Sylhet',
+                'shop_id' => $featuredSylhet->id,
+            ]);
+    }
+
+    /** @test */
+    public function it_never_quickmatches_far_away_or_cross_city_workshops()
+    {
+        $customer = \App\Models\User::factory()->create([
+            'role' => 'customer',
+            'status' => 'active',
+        ]);
+
+        // Cross-city Chattogram workshop with 5.0 rating
+        $chattogramShop = \App\Models\RepairShop::factory()->create([
+            'name' => 'ProTech Solutions Agrabad',
+            'slug' => 'protech-agrabad-' . uniqid(),
+            'city' => 'Chattogram',
+            'area' => 'Agrabad',
+            'latitude' => 22.326410,
+            'longitude' => 91.815520,
+            'rating' => 5.00,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+            'delivery_radius_km' => 20,
+            'is_featured' => true,
+            'featured_at' => now(),
+        ]);
+
+        // Same city label ("Dhaka") but far away (> 25 km in outer Gazipur)
+        $farShop = \App\Models\RepairShop::factory()->create([
+            'name' => 'Distant Outer Hub',
+            'slug' => 'distant-outer-' . uniqid(),
+            'city' => 'Dhaka',
+            'area' => 'Gazipur Outskirts',
+            'latitude' => 24.020000,
+            'longitude' => 90.420000,
+            'rating' => 5.00,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+            'delivery_radius_km' => 15,
+            'is_featured' => true,
+            'featured_at' => now(),
+        ]);
+
+        $package = \App\Models\ServicePackage::create([
+            'title' => 'Battery Replacement Package',
+            'description' => 'Certified replacement battery.',
+            'device_category' => 'Laptop',
+            'fixed_price' => 4500,
+            'estimated_turnaround_hours' => 6,
+            'warranty_months' => 6,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($customer);
+
+        $syncRes = $this->postJson('/location/sync', [
+            'lat' => 23.751000,
+            'lng' => 90.391000,
+            'city' => 'Dhaka',
+            'area' => 'Panthapath',
+        ]);
+
+        $syncRes->assertOk()
+            ->assertJson([
+                'success' => true,
+                'shop_id' => null,
+            ]);
+
+        $this->postJson('/cart/add', [
+            'package_id' => $package->id,
+            'quantity' => 1,
+            'customer_lat' => 23.751000,
+            'customer_lng' => 90.391000,
+            'customer_city' => 'Dhaka',
+            'customer_area' => 'Panthapath',
+        ])->assertOk();
+
+        $this->assertNull(session('cart_shop_id'));
+        $this->assertNotEquals($chattogramShop->id, session('cart_shop_id'));
+        $this->assertNotEquals($farShop->id, session('cart_shop_id'));
+
+        $cartResponse = $this->get('/cart');
+        $cartResponse->assertOk();
+        $cartResponse->assertDontSee('ProTech Solutions Agrabad');
+    }
 }

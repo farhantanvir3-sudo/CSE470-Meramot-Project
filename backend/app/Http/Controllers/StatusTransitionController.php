@@ -176,7 +176,7 @@ class StatusTransitionController extends Controller
 
         return redirect()
             ->route('requests.track', $repairRequest->id)
-            ->with('success', 'Quote 1 bid accepted! Workshop has been assigned and doorstep pickup is ready.');
+            ->with('success', 'Initial estimate accepted. The workshop has been assigned and courier pickup is ready.');
     }
 
     /**
@@ -228,7 +228,7 @@ class StatusTransitionController extends Controller
                 $this->ensureCourierDeliveryJob($repairRequest->fresh(), $job, 'TO_SHOP');
             }
 
-            return back()->with('success', "Direct Order #{$repairRequest->id} accepted! Status moved to ASSIGNED for courier pickup.");
+            return back()->with('success', "Direct Order #{$repairRequest->id} has been accepted and scheduled for courier pickup.");
         }
 
         // Vendor declined: transition PENDING -> REJECTED & auto-refund paid/authorized transactions
@@ -244,7 +244,7 @@ class StatusTransitionController extends Controller
             ->whereNotIn('status', ['DELIVERED', 'CANCELLED'])
             ->update(['status' => 'CANCELLED', 'cancellation_reason' => 'Declined by workshop']);
 
-        return back()->with('success', "Direct Order #{$repairRequest->id} declined and marked REJECTED (payment refunded if applicable).");
+        return back()->with('success', "Direct Order #{$repairRequest->id} has been declined. Any authorized payment has been refunded.");
     }
 
     /**
@@ -283,7 +283,7 @@ class StatusTransitionController extends Controller
                 }
                 return redirect()
                     ->route('requests.track', $repairRequest->id)
-                    ->with('success', 'Final diagnosis quote approved! Bench repair is now in progress.');
+                    ->with('success', 'Final diagnostic quote approved. Workshop repair is now underway.');
             }
         } else {
             if ($repairRequest->transitionTo(RepairRequest::STATUS_RETURN_SCHEDULED)) {

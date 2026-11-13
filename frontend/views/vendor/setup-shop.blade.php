@@ -126,8 +126,8 @@
         </h1>
         <p class="mt-2 max-w-3xl text-sm text-slate-600">
             {{ $isEditMode
-                ? 'Update your shop information, services, pricing, and skill tags here.'
-                : 'Complete your shop profile before operating as a vendor. Your shop goes live publicly right after you set your own pricing, services, and business details.' }}
+                ? 'Update your workshop details, offered services, standard rates, and skill specializations.'
+                : 'Complete your workshop profile before accepting marketplace orders. Your listing becomes publicly visible once pricing, services, and business details are confirmed.' }}
         </p>
 
         @if($errors->any())
@@ -308,7 +308,7 @@
             <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
                 <h2 class="text-lg font-semibold text-[#244229]">Your pricing</h2>
                 <p class="mt-1 text-xs md:text-sm text-slate-600">
-                    Set your own business rates here. Shops only go public with vendor-confirmed rates.
+                    Configure your standard rates below. Workshops are published only with merchant-confirmed pricing.
                 </p>
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
