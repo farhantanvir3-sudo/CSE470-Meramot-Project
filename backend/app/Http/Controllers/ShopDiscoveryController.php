@@ -40,7 +40,8 @@ class ShopDiscoveryController extends Controller
         $featuredShops = RepairShop::where('is_active', true)
             ->where('is_public', true)
             ->where('is_featured', true)
-            ->orderBy('rating', 'desc')
+            ->orderByRaw('COALESCE(featured_at, updated_at) DESC')
+            ->orderByDesc('id')
             ->take(6)
             ->get();
 

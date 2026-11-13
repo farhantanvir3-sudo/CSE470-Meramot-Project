@@ -1217,10 +1217,22 @@ class VendorOnboardingController extends Controller
      */
     public function toggleFeatured($shopId)
     {
-        $shop = RepairShop::findOrFail($shopId);
-        $shop->update([
-            'is_featured' => !$shop->is_featured,
-        ]);
+        $shop = RepairShop::with('vendorProfile')->findOrFail($shopId);
+        $newFeatured = !$shop->is_featured;
+
+        $updates = [
+            'is_featured' => $newFeatured,
+            'featured_at' => $newFeatured ? now() : null,
+        ];
+
+        // If an Admin explicitly features an approved vendor's shop, ensure it is
+        // immediately active & publicly discoverable in Featured Shops and /shops search.
+        if ($newFeatured && $shop->vendorProfile?->verification_status === 'approved') {
+            $updates['is_active'] = true;
+            $updates['is_public'] = true;
+        }
+
+        $shop->update($updates);
 
         $stateLabel = $shop->is_featured ? 'added to' : 'removed from';
 

@@ -558,4 +558,77 @@ class SprintOneEndToEndAuditTest extends TestCase
         $trackResp->assertSee('৳3,400.00');
         $trackResp->assertDontSee('(3400)');
     }
+
+    /** @test */
+    public function featuring_approved_shop_publishes_it_and_orders_featured_shops_as_lifo_stack()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        // Create an older high-rated featured shop
+        $olderVendor = User::factory()->create(['role' => 'vendor']);
+        $olderProfile = VendorProfile::create([
+            'user_id' => $olderVendor->id,
+            'owner_name' => 'Older Owner',
+            'shop_name' => 'Older High Rated Lab',
+            'brand_name' => 'Older High Rated Lab',
+            'phone' => '01700000111',
+            'address' => 'Banani, Dhaka',
+            'verification_status' => 'approved',
+        ]);
+        $olderShop = RepairShop::factory()->create([
+            'vendor_profile_id' => $olderProfile->id,
+            'name' => 'Older High Rated Lab',
+            'slug' => 'older-high-rated-lab',
+            'rating' => 4.95,
+            'is_featured' => true,
+            'featured_at' => now()->subDays(2),
+            'is_active' => true,
+            'is_public' => true,
+        ]);
+
+        // Create a newly approved shop that hasn't completed /vendor/setup-shop yet (is_public=false, rating=0)
+        $dragonVendor = User::factory()->create(['role' => 'vendor']);
+        $dragonProfile = VendorProfile::create([
+            'user_id' => $dragonVendor->id,
+            'owner_name' => 'Dragon Owner',
+            'shop_name' => 'Dragon Tech',
+            'brand_name' => 'Dragon Tech',
+            'phone' => '01700000222',
+            'address' => 'Panthapath, Dhaka',
+            'verification_status' => 'approved',
+        ]);
+        $dragonShop = RepairShop::factory()->create([
+            'vendor_profile_id' => $dragonProfile->id,
+            'name' => 'Dragon Tech',
+            'slug' => 'dragon-tech',
+            'city' => 'Dhaka',
+            'area' => 'Panthapath',
+            'rating' => 0.00,
+            'is_featured' => false,
+            'is_active' => false,
+            'is_public' => false,
+            'setup_complete' => false,
+        ]);
+
+        // Admin clicks ★ Feature on Dragon Tech
+        $this->actingAs($admin)
+            ->post(route('admin.vendors.toggle-featured', $dragonShop->id))
+            ->assertRedirect();
+
+        $dragonShop->refresh();
+        $this->assertTrue((bool) $dragonShop->is_featured);
+        $this->assertTrue((bool) $dragonShop->is_active);
+        $this->assertTrue((bool) $dragonShop->is_public);
+        $this->assertNotNull($dragonShop->featured_at);
+
+        // Dragon Tech is immediately searchable via /shops?q=dragon
+        $this->get('/shops?q=dragon')
+            ->assertStatus(200)
+            ->assertSee('Dragon Tech');
+
+        // Homepage Featured Shops behaves as a LIFO stack: Dragon Tech appears BEFORE Older High Rated Lab
+        $homeResp = $this->get('/');
+        $homeResp->assertStatus(200);
+        $homeResp->assertSeeInOrder(['Dragon Tech', 'Older High Rated Lab']);
+    }
 }
