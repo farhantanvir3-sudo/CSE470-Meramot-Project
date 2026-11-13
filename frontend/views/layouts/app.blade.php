@@ -250,6 +250,7 @@
     mobileMenuOpen: false, 
     locationModalOpen: false, 
     showLogoutConfirm: false,
+    notifModalOpen: false,
     deleteConfirmOpen: false,
     deleteConfirmTitle: 'Delete permanently?',
     deleteConfirmItem: '',
@@ -547,8 +548,8 @@
                 <!-- Right side icons — always visible -->
                 <div class="flex shrink-0 items-center gap-2 md:gap-3">
                     
-                    <!-- Notification Bell Dropdown -->
-                    <div class="relative" x-data="{ notifOpen: false }">
+                    <!-- Notification Bell Dropdown (Desktop Only; Mobile uses Drawer Notification Tile) -->
+                    <div class="relative hidden md:block" x-data="{ notifOpen: false }">
                         <button
                             type="button"
                             @click="notifOpen = !notifOpen"
@@ -966,24 +967,23 @@
             <div class="mb-4 flex items-center gap-4">
                 <button
                     type="button"
+                    @click="mobileMenuOpen = false; notifModalOpen = true"
+                    class="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:bg-[var(--mint-300)]"
+                    title="Notifications"
+                    aria-label="Notifications"
+                >
+                    <i class="fa-regular fa-bell text-sm"></i>
+                    <span class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-emerald-600"></span>
+                </button>
+                <button
+                    type="button"
                     @click="toggleDark()"
-                    class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)]"
+                    class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:bg-[var(--mint-300)]"
+                    title="Toggle theme"
+                    aria-label="Toggle theme"
                 >
                     <i :class="darkMode ? 'fa-solid fa-sun text-amber-400' : 'fa-solid fa-moon'"></i>
                 </button>
-                <a
-                    href="/cart"
-                    @click="mobileMenuOpen = false"
-                    class="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:bg-[var(--mint-300)]"
-                    title="Direct-Order Cart"
-                    aria-label="Direct-Order Cart"
-                >
-                    <i class="fa-solid fa-cart-shopping text-sm"></i>
-                    <span
-                        data-cart-badge
-                        class="{{ $navCartCount > 0 ? '' : 'hidden' }} absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[9px] font-bold text-[var(--accent-foreground)] shadow"
-                    >{{ $navCartCount }}</span>
-                </a>
             </div>
 
             <nav class="space-y-1">
@@ -1290,6 +1290,96 @@
                         Yes
                     </button>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Mobile Notifications Pop-Up Tile ── -->
+    <div
+        x-show="notifModalOpen"
+        x-cloak
+        @keydown.escape.window="if (notifModalOpen) notifModalOpen = false"
+        class="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="meramot-notif-modal-title"
+    >
+        <div
+            x-show="notifModalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-[#0b1f14]/50 backdrop-blur-sm"
+            @click="notifModalOpen = false"
+        ></div>
+
+        <div
+            x-show="notifModalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+            class="relative z-[111] w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl text-xs"
+        >
+            <div class="flex items-center justify-between border-b border-[var(--border)] pb-3 mb-3.5">
+                <div class="flex items-center gap-2.5">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--accent-dark)]">
+                        <i class="fa-regular fa-bell text-sm"></i>
+                    </span>
+                    <div>
+                        <h2 id="meramot-notif-modal-title" class="font-black text-base text-[var(--foreground)]">Platform Updates</h2>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700">
+                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span> Live
+                        </span>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    @click="notifModalOpen = false"
+                    class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-200)] transition"
+                    aria-label="Close notifications"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <div class="space-y-2.5">
+                <a href="/requests" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
+                    <div class="font-bold text-[var(--foreground)] flex items-center gap-2">
+                        <i class="fa-solid fa-gavel text-amber-600"></i>
+                        <span>Quote 1 &amp; Quote 2 Lifecycle Active</span>
+                    </div>
+                    <p class="mt-1 text-[11px] leading-relaxed text-[var(--muted-foreground)]">Track incoming workshop bids and bench diagnostics in real time.</p>
+                </a>
+
+                <a href="/shops?branched=true" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
+                    <div class="font-bold text-[var(--foreground)] flex items-center gap-2">
+                        <i class="fa-solid fa-map-location-dot text-[var(--accent-dark)]"></i>
+                        <span>Nationwide Bangladesh Directory Live</span>
+                    </div>
+                    <p class="mt-1 text-[11px] leading-relaxed text-[var(--muted-foreground)]">Explore verified workshops &amp; multi-branch brands across Bangladesh.</p>
+                </a>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-[var(--border)] flex items-center justify-between">
+                @if($isVendorAuth)
+                    <a href="{{ $vendorWorkspaceUrl }}" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">{{ $vendorWorkspaceLabel }}</a>
+                    <a href="/vendor/alert-settings" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">SMS Alert Settings &rarr;</a>
+                @elseif($isRiderAuth)
+                    <a href="/delivery" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">Rider Dashboard</a>
+                    <a href="/delivery/map" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Live Delivery Map &rarr;</a>
+                @elseif($isAdminAuth)
+                    <a href="/admin" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">Admin Console</a>
+                    <a href="/admin/financial-overview" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Financial Ledger &rarr;</a>
+                @else
+                    <a href="/requests" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">My Requests</a>
+                    <a href="/shops/explore" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Explore Workshops &rarr;</a>
+                @endif
             </div>
         </div>
     </div>
