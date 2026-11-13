@@ -139,43 +139,43 @@
          Merged with Original Meramot `AdminFinancePage` 6 BI Metrics
          ====================================================================== --}}
     <div class="meramot-card p-6 shadow-sm bg-[var(--mint-100)] border border-[var(--border)] space-y-5">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div class="max-w-xl">
-                <div class="flex items-center gap-2">
+        <div class="space-y-4">
+            <div class="max-w-3xl">
+                <div class="flex flex-wrap items-center gap-2">
                     <span class="px-2.5 py-0.5 text-[10px] font-black uppercase rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] tracking-wide">
                         10% Rule Engine
                     </span>
-                    <h3 class="text-sm font-black text-[var(--foreground)]">Automated Platform Commission & Escrow Accounting</h3>
+                    <h3 class="text-sm font-black text-[var(--foreground)]">Automated Platform Commission &amp; Escrow Accounting</h3>
                 </div>
                 <p class="text-xs text-[var(--muted-foreground)] mt-2 leading-relaxed">
                     Meramot enforces an automated <strong>10% platform commission</strong> deduction on gross electronic repair tickets. The remaining <strong>90%</strong> is credited to vendor escrow accounts for banking/bKash settlement.
                 </p>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-center">
-                <div class="meramot-card px-3.5 py-2.5 shadow-none border border-[var(--border)] bg-[var(--card)]">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block">Total Volume</span>
-                    <span class="text-xs font-black text-[var(--foreground)] font-mono">৳{{ number_format($totalCustomerInflow, 2) }}</span>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
+                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Total Volume</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalCustomerInflow, 2) }}</span>
                 </div>
-                <div class="meramot-card px-3.5 py-2.5 shadow-none border border-[var(--border)] bg-[var(--card)]">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block">10% Cut</span>
-                    <span class="text-xs font-black text-teal-700 dark:text-teal-400 font-mono">৳{{ number_format($totalCommissionRevenue, 2) }}</span>
+                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">10% Cut</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-black text-teal-700 dark:text-teal-400 font-mono whitespace-nowrap">৳{{ number_format($totalCommissionRevenue, 2) }}</span>
                 </div>
-                <div class="meramot-card px-3.5 py-2.5 shadow-none border border-[var(--border)] bg-[var(--card)]">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block">Vendor Payouts</span>
-                    <span class="text-xs font-black text-[var(--foreground)] font-mono">৳{{ number_format($totalVendorDisbursed ?? 0, 2) }}</span>
+                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Vendor Payouts</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalVendorDisbursed ?? 0, 2) }}</span>
                 </div>
-                <div class="meramot-card px-3.5 py-2.5 shadow-none border border-[var(--border)] bg-[var(--card)]">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block">Refunds Issued</span>
-                    <span class="text-xs font-black text-rose-700 dark:text-rose-400 font-mono">৳{{ number_format($totalRefunds ?? 0, 2) }}</span>
+                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Refunds Issued</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-black text-rose-700 dark:text-rose-400 font-mono whitespace-nowrap">৳{{ number_format($totalRefunds ?? 0, 2) }}</span>
                 </div>
-                <div class="meramot-card px-3.5 py-2.5 shadow-none border border-[var(--border)] bg-[var(--card)]">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block">Escrow Balance</span>
-                    <span class="text-xs font-black text-amber-700 dark:text-amber-400 font-mono">৳{{ number_format($pendingEscrowReserve, 2) }}</span>
+                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Escrow Balance</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 font-mono whitespace-nowrap">৳{{ number_format($pendingEscrowReserve, 2) }}</span>
                 </div>
-                <div class="meramot-card px-3.5 py-2.5 shadow-none border border-[var(--border)] bg-[var(--card)]">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block">Open Settlements</span>
-                    <span class="text-xs font-black text-[var(--accent-dark)] font-mono">{{ $pendingSettlementCount ?? 0 }}</span>
+                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Open Settlements</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--accent-dark)] font-mono whitespace-nowrap">{{ $pendingSettlementCount ?? 0 }}</span>
                 </div>
             </div>
         </div>

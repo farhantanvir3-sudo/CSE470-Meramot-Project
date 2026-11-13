@@ -80,7 +80,19 @@ class AdminLedgerController extends Controller
         $query = FinancialLedger::with(['shop', 'payment'])->orderBy('id', 'asc');
 
         if ($request->filled('entry_type')) {
-            $query->where('entry_type', $request->entry_type);
+            if ($request->entry_type === 'ADJUSTMENT') {
+                $query->where(function ($q) {
+                    $q->where('entry_type', 'ADJUSTMENT')
+                      ->orWhere('description', 'ILIKE', '%[Manual Settlement]%')
+                      ->orWhere(function ($mq) {
+                          $mq->whereNull('payment_id')
+                             ->whereNull('invoice_id')
+                             ->where('description', 'ILIKE', '%Customer settlement payment received for repair order%');
+                      });
+                });
+            } else {
+                $query->where('entry_type', $request->entry_type);
+            }
         }
 
         if ($request->filled('direction')) {
@@ -170,13 +182,17 @@ class AdminLedgerController extends Controller
         $shop = RepairShop::findOrFail($validated['shop_id']);
         $grossAmount = (float) $validated['gross_amount'];
 
+        $customNote = !empty($validated['note'])
+            ? '[Manual Settlement] ' . trim($validated['note'])
+            : '[Manual Settlement] Admin manual order settlement';
+
         $result = self::settleOrderWithCommission(
             $grossAmount,
             (int) $shop->id,
             $validated['payment_id'] ?? null,
             null,
             0.10,
-            $validated['note'] ?? null
+            $customNote
         );
 
         return redirect()
