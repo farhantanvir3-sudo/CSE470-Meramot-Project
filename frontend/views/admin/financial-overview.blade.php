@@ -275,6 +275,109 @@
         </form>
     </div>
 
+    <!-- Customer Refund & Post-Settlement Dispute Resolution Desk -->
+    <div class="meramot-card p-6 shadow-sm space-y-5 border border-[var(--border)]">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+            <div>
+                <h3 class="text-sm font-black text-[var(--foreground)] flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-left text-rose-600"></i>
+                    <span>Refunds &amp; Post-Settlement Dispute Resolution</span>
+                </h3>
+                <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                    Orders flagged with vendor issues after settlement. Issuing a refund credits the customer, resolves the dispute, and logs a <code class="font-mono font-bold">REFUND</code> debit in the Double-Entry Ledger.
+                </p>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-[11px] font-bold text-rose-800">
+                {{ ($pendingRefundDisputes ?? collect())->count() }} Pending Dispute(s)
+            </span>
+        </div>
+
+        @if(($pendingRefundDisputes ?? collect())->isNotEmpty())
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                @foreach($pendingRefundDisputes as $dispute)
+                    <form method="POST" action="{{ route('admin.financial-overview.issue-refund') }}" class="rounded-2xl border border-rose-200 bg-rose-50/40 dark:bg-rose-950/20 p-4 space-y-3 text-xs">
+                        @csrf
+                        <input type="hidden" name="payment_id" value="{{ $dispute->payment_id }}">
+                        <input type="hidden" name="dispute_case_id" value="{{ $dispute->dispute_id }}">
+
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex flex-wrap items-center gap-1.5">
+                                    <span class="rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-bold text-white">{{ $dispute->dispute_status }}</span>
+                                    <span class="font-mono text-[11px] font-bold text-[var(--muted-foreground)]">{{ $dispute->transaction_reference }}</span>
+                                    <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-[10px] font-bold text-[var(--foreground)]">{{ $dispute->payment_method }}</span>
+                                </div>
+                                <h4 class="mt-1.5 text-sm font-extrabold text-[var(--foreground)]">{{ $dispute->order_title }}</h4>
+                                <p class="text-[11px] text-[var(--muted-foreground)]">
+                                    Customer: <strong class="text-[var(--foreground)]">{{ $dispute->customer_name }}</strong>
+                                    · Workshop: <strong class="text-[var(--foreground)]">{{ $dispute->shop_name ?? 'Verified Workshop' }}</strong>
+                                </p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] block">Settled Paid</span>
+                                <span class="text-sm font-black font-mono text-rose-700">৳{{ number_format($dispute->paid_amount, 2) }}</span>
+                            </div>
+                        </div>
+
+                        <p class="rounded-xl border border-rose-200/70 bg-white/80 dark:bg-[var(--card)] px-3 py-2 text-[11px] text-[var(--foreground)] leading-relaxed">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1"></i>
+                            {{ $dispute->dispute_reason }}
+                        </p>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                            <div>
+                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] uppercase mb-1">Refund Amount (৳)</label>
+                                <input type="number" step="0.01" min="1" max="{{ $dispute->paid_amount }}" name="refund_amount" value="{{ $dispute->paid_amount }}" required
+                                       class="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] px-3 py-2 text-xs font-mono font-bold text-[var(--foreground)] outline-none">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] uppercase mb-1">Refund Reason</label>
+                                <input type="text" name="reason" value="Admin approved post-settlement vendor issue refund" required
+                                       class="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] px-3 py-2 text-xs text-[var(--foreground)] outline-none">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Issue Refund &amp; Post to Ledger</span>
+                        </button>
+                    </form>
+                @endforeach
+            </div>
+        @else
+            <p class="text-xs text-[var(--muted-foreground)]">No open post-settlement disputes awaiting refund. You can still issue a refund against any settled payment below.</p>
+        @endif
+
+        @if(($settledPayments ?? collect())->isNotEmpty())
+            <form method="POST" action="{{ route('admin.financial-overview.issue-refund') }}" class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end text-xs">
+                @csrf
+                <div class="lg:col-span-2">
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Manual Refund on Any Settled Payment</label>
+                    <select name="payment_id" required class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] outline-none">
+                        @foreach($settledPayments as $sp)
+                            <option value="{{ $sp->id }}">
+                                {{ $sp->transaction_reference }} — {{ $sp->shop_name ?? 'Workshop' }} (৳{{ number_format($sp->amount, 2) }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Refund Amount (৳)</label>
+                    <input type="number" step="0.01" min="1" name="refund_amount" placeholder="e.g. 1500" required
+                           class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs font-mono text-[var(--foreground)] outline-none">
+                </div>
+                <div>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Reason</label>
+                    <input type="text" name="reason" placeholder="Vendor issue / customer claim" required
+                           class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs text-[var(--foreground)] outline-none">
+                </div>
+                <button type="submit" class="rounded-full bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
+                    Issue Refund
+                </button>
+            </form>
+        @endif
+    </div>
+
     {{-- ======================================================================
          RELOCATED BLOCK 3: Filter Bar & Search (with Shop Filter added)
          Original Author: Md. Nawshad Zaman Khan [23301622] (Commit 4742c9c)
@@ -497,7 +600,11 @@
 
                             <!-- Direction Badge -->
                             <td class="px-5 py-3.5 text-center whitespace-nowrap">
-                                @if($entry->direction === 'CREDIT')
+                                @if(!empty($entry->is_allocation))
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700 uppercase tracking-wider" title="Internal sub-ledger allocation (does not double-count cash)">
+                                        <i class="fa-solid fa-layer-group mr-1 text-[9px]"></i> ALLOC
+                                    </span>
+                                @elseif($entry->direction === 'CREDIT')
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/50 dark:border-emerald-800 uppercase tracking-wider">
                                         <i class="fa-solid fa-plus mr-1 text-[9px]"></i> CREDIT
                                     </span>
@@ -509,8 +616,12 @@
                             </td>
 
                             <!-- Amount -->
-                            <td class="px-5 py-3.5 text-right font-mono font-black whitespace-nowrap text-xs {{ $entry->direction === 'CREDIT' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400' }}">
-                                {{ $entry->direction === 'CREDIT' ? '+' : '-' }}৳{{ number_format($entry->amount, 2) }}
+                            <td class="px-5 py-3.5 text-right font-mono font-black whitespace-nowrap text-xs {{ !empty($entry->is_allocation) ? 'text-slate-700 dark:text-slate-300' : ($entry->direction === 'CREDIT' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400') }}">
+                                @if(!empty($entry->is_allocation))
+                                    ৳{{ number_format($entry->amount, 2) }}
+                                @else
+                                    {{ $entry->direction === 'CREDIT' ? '+' : '-' }}৳{{ number_format($entry->amount, 2) }}
+                                @endif
                             </td>
 
                             <!-- Running Balance -->

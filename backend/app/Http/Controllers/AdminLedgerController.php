@@ -36,21 +36,42 @@ class AdminLedgerController extends Controller
      * ------------------------------------------------------------------------ */
     public function index(Request $request)
     {
-        // 1. Overall cumulative totals for cards (Nawshad — Commit 4742c9c)
-        $totalCredits = (float) FinancialLedger::where('direction', 'CREDIT')->sum('amount');
-        $totalDebits  = (float) FinancialLedger::where('direction', 'DEBIT')->sum('amount');
-        $netPlatformBalance = $totalCredits - $totalDebits;
+        // 1. Industry-Standard Treasury Cash Flows (External Cash Inflows vs Cash Outflows)
+        // Sub-ledger allocations (PLATFORM_COMMISSION, VENDOR_EARNING) partition customer inflow
+        // internally and must NOT be double-counted as separate cash credits/debits.
+        $cashInflowTypes  = ['CUSTOMER_PAYMENT', 'DELIVERY_FEE'];
+        $cashOutflowTypes = ['VENDOR_PAYOUT', 'DELIVERY_PAYOUT', 'REFUND'];
 
-        // 2. 10% Platform Commission Accounting Metrics (Nawshad — Commit 4742c9c)
-        $totalCommissionRevenue = (float) FinancialLedger::where('entry_type', 'PLATFORM_COMMISSION')->sum('amount');
+        $totalCredits = (float) FinancialLedger::where('direction', 'CREDIT')
+            ->whereIn('entry_type', array_merge($cashInflowTypes, ['ADJUSTMENT']))
+            ->sum('amount');
+
+        $totalDebits = (float) FinancialLedger::where('direction', 'DEBIT')
+            ->whereIn('entry_type', array_merge($cashOutflowTypes, ['ADJUSTMENT']))
+            ->sum('amount');
+
+        // Actual Cash Treasury Balance held by Platform (Commission Reserve + Unsettled Vendor Escrow + Delivery Float)
+        $netPlatformBalance = round($totalCredits - $totalDebits, 2);
+
+        // 2. 10% Platform Commission & Vendor Escrow Sub-Ledger Accounting
+        $grossCommissionEarned  = (float) FinancialLedger::where('entry_type', 'PLATFORM_COMMISSION')->where('direction', 'CREDIT')->sum('amount');
+        $commissionReversals    = (float) FinancialLedger::where('entry_type', 'PLATFORM_COMMISSION')->where('direction', 'DEBIT')->sum('amount');
         $totalCustomerInflow    = (float) FinancialLedger::where('entry_type', 'CUSTOMER_PAYMENT')->sum('amount');
         $totalVendorDisbursed   = (float) FinancialLedger::where('entry_type', 'VENDOR_PAYOUT')->sum('amount');
         $totalVendorAllocated   = (float) FinancialLedger::where('entry_type', 'VENDOR_EARNING')->sum('amount');
         $totalRiderDisbursed    = (float) FinancialLedger::where('entry_type', 'DELIVERY_PAYOUT')->sum('amount');
         $totalRefunds           = (float) FinancialLedger::where('entry_type', 'REFUND')->sum('amount');
 
-        // Escrow pending payout = (Customer inflow - refunds) - (Vendor payouts + Rider payouts + Platform commission)
-        $pendingEscrowReserve = max(0, ($totalCustomerInflow - $totalRefunds) - ($totalVendorDisbursed + $totalRiderDisbursed + $totalCommissionRevenue));
+        // Net Commission Revenue deducts the 10% commission share on any refunded orders
+        $refundCommissionOffset = $commissionReversals > 0
+            ? $commissionReversals
+            : round($totalRefunds * 0.10, 2);
+        $totalCommissionRevenue = max(0, round($grossCommissionEarned - $refundCommissionOffset, 2));
+
+        // Vendor Escrow Payable = Net Allocated Earnings (after 90% refund clawbacks) minus Disbursed Payouts
+        $refundVendorClawback   = round($totalRefunds * 0.90, 2);
+        $netVendorPayable       = max(0, round($totalVendorAllocated - $refundVendorClawback, 2));
+        $pendingEscrowReserve   = max(0, round($netVendorPayable - $totalVendorDisbursed, 2));
 
         // Open settlements count (shops with positive unsettled vendor escrow balances)
         $pendingSettlementCount = self::countUnsettledShops();
@@ -117,17 +138,25 @@ class AdminLedgerController extends Controller
             });
         }
 
-        // Fetch all ordered ascending to compute exact sequential running balance (Nawshad — Commit 4742c9c)
+        // Fetch all ordered ascending to compute exact sequential Treasury Cash running balance.
+        // Internal sub-ledger allocations (PLATFORM_COMMISSION, VENDOR_EARNING) partition existing
+        // cash rather than moving cash in/out of the platform treasury.
         $allEntries = $query->get();
 
-        $runningBalance = 0;
+        $allocationTypes = ['PLATFORM_COMMISSION', 'VENDOR_EARNING'];
+        $runningBalance = 0.0;
         foreach ($allEntries as $entry) {
-            if ($entry->direction === 'CREDIT') {
-                $runningBalance += (float) $entry->amount;
-            } else {
-                $runningBalance -= (float) $entry->amount;
+            $isAllocation = in_array($entry->entry_type, $allocationTypes, true);
+            $entry->is_allocation = $isAllocation;
+
+            if (!$isAllocation) {
+                if ($entry->direction === 'CREDIT') {
+                    $runningBalance += (float) $entry->amount;
+                } else {
+                    $runningBalance -= (float) $entry->amount;
+                }
             }
-            $entry->running_balance = $runningBalance;
+            $entry->running_balance = round($runningBalance, 2);
         }
 
         // Paginate manually from the sequential collection (display latest first for admin convenience)
@@ -144,6 +173,50 @@ class AdminLedgerController extends Controller
 
         $shops = RepairShop::select('id', 'name')->orderBy('name')->get();
 
+        // Pending post-settlement disputes / orders eligible for Admin Refund
+        $pendingRefundDisputes = DB::table('dispute_cases as dc')
+            ->join('payment_transactions as pt', 'pt.id', '=', 'dc.payment_id')
+            ->join('repair_requests as rr', 'rr.id', '=', 'dc.repair_request_id')
+            ->join('users as cu', 'cu.id', '=', 'dc.opened_by_id')
+            ->leftJoin('invoices as inv', 'inv.id', '=', 'pt.invoice_id')
+            ->leftJoin('repair_shops as rs', 'rs.id', '=', 'inv.shop_id')
+            ->whereIn('dc.status', ['OPEN', 'UNDER_REVIEW'])
+            ->where('pt.status', 'PAID')
+            ->select(
+                'dc.id as dispute_id',
+                'dc.status as dispute_status',
+                'dc.resolution as dispute_reason',
+                'pt.id as payment_id',
+                'pt.amount as paid_amount',
+                'pt.payment_method',
+                'pt.transaction_reference',
+                'rr.title as order_title',
+                'cu.name as customer_name',
+                'rs.id as shop_id',
+                'rs.name as shop_name'
+            )
+            ->orderByDesc('dc.id')
+            ->get();
+
+        $settledPayments = DB::table('payment_transactions as pt')
+            ->leftJoin('users as u', 'u.id', '=', 'pt.user_id')
+            ->leftJoin('invoices as inv', 'inv.id', '=', 'pt.invoice_id')
+            ->leftJoin('repair_shops as rs', 'rs.id', '=', 'inv.shop_id')
+            ->where('pt.status', 'PAID')
+            ->select(
+                'pt.id',
+                'pt.amount',
+                'pt.payment_method',
+                'pt.transaction_reference',
+                'pt.paid_at',
+                'u.name as customer_name',
+                'rs.id as shop_id',
+                'rs.name as shop_name'
+            )
+            ->orderByDesc('pt.id')
+            ->limit(20)
+            ->get();
+
         return view('admin.financial-overview', [
             'entries'                 => $paginatedEntries,
             'totalCredits'            => $totalCredits,
@@ -159,6 +232,8 @@ class AdminLedgerController extends Controller
             'totalRefunds'            => $totalRefunds,
             'fundDistribution'        => $fundDistribution,
             'shops'                   => $shops,
+            'pendingRefundDisputes'   => $pendingRefundDisputes,
+            'settledPayments'         => $settledPayments,
             'selectedEntryType'       => $request->entry_type,
             'selectedDirection'       => $request->direction,
             'selectedShop'            => $request->shop_id,
@@ -221,14 +296,15 @@ class AdminLedgerController extends Controller
             ->select(
                 'shop_id',
                 DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_EARNING' THEN amount ELSE 0 END) as total_earned"),
-                DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_PAYOUT' THEN amount ELSE 0 END) as total_paid")
+                DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_PAYOUT' THEN amount ELSE 0 END) as total_paid"),
+                DB::raw("SUM(CASE WHEN entry_type = 'REFUND' THEN amount * 0.90 ELSE 0 END) as total_refund_clawback")
             )
             ->whereNotNull('shop_id')
-            ->whereIn('entry_type', ['VENDOR_EARNING', 'VENDOR_PAYOUT'])
+            ->whereIn('entry_type', ['VENDOR_EARNING', 'VENDOR_PAYOUT', 'REFUND'])
             ->groupBy('shop_id')
             ->orderBy('shop_id', 'asc')
             ->get()
-            ->filter(fn ($row) => round((float) $row->total_earned - (float) $row->total_paid, 2) > 0.009)
+            ->filter(fn ($row) => round((float) $row->total_earned - (float) $row->total_paid - (float) $row->total_refund_clawback, 2) > 0.009)
             ->take($limit)
             ->values();
 
@@ -238,7 +314,7 @@ class AdminLedgerController extends Controller
         DB::transaction(function () use ($unsettledShops, &$settledCount, &$totalDisbursed) {
             foreach ($unsettledShops as $row) {
                 $shopId = (int) $row->shop_id;
-                $unsettledAmount = round((float) $row->total_earned - (float) $row->total_paid, 2);
+                $unsettledAmount = round((float) $row->total_earned - (float) $row->total_paid - (float) $row->total_refund_clawback, 2);
                 if ($unsettledAmount <= 0.009) {
                     continue;
                 }
@@ -365,6 +441,105 @@ class AdminLedgerController extends Controller
     }
 
     /**
+     * Issue a Customer Refund (full or partial) against a settled PaymentTransaction
+     * and record the DEBIT entry in FinancialLedger + refunds + dispute_cases.
+     * Route: POST /admin/financial-overview/issue-refund
+     */
+    public function issueRefund(Request $request)
+    {
+        $validated = $request->validate([
+            'payment_id' => 'required|integer|exists:payment_transactions,id',
+            'refund_amount' => 'required|numeric|min:1',
+            'reason' => 'required|string|max:300',
+            'dispute_case_id' => 'nullable|integer',
+        ]);
+
+        $payment = PaymentTransaction::findOrFail($validated['payment_id']);
+        $refundAmount = round((float) $validated['refund_amount'], 2);
+
+        if ($payment->status === 'REFUNDED') {
+            return redirect()->route('admin.financial-overview')
+                ->with('warning', "Transaction {$payment->transaction_reference} has already been fully refunded.");
+        }
+
+        if ($refundAmount > (float) $payment->amount) {
+            return redirect()->route('admin.financial-overview')
+                ->withErrors(['refund_amount' => "Refund amount (৳{$refundAmount}) cannot exceed the paid amount (৳{$payment->amount})."]);
+        }
+
+        $shopId = $payment->invoice_id
+            ? DB::table('invoices')->where('id', $payment->invoice_id)->value('shop_id')
+            : FinancialLedger::where('payment_id', $payment->id)->whereNotNull('shop_id')->value('shop_id');
+        $isFullRefund = $refundAmount >= round((float) $payment->amount - 0.01, 2);
+
+        DB::transaction(function () use ($payment, $validated, $refundAmount, $shopId, $isFullRefund) {
+            $disputeId = $validated['dispute_case_id'] ?? DB::table('dispute_cases')
+                ->where('payment_id', $payment->id)
+                ->whereIn('status', ['OPEN', 'UNDER_REVIEW'])
+                ->value('id');
+
+            DB::table('refunds')->insert([
+                'payment_id' => $payment->id,
+                'dispute_case_id' => $disputeId ?: null,
+                'approved_by_id' => auth()->id(),
+                'amount' => $refundAmount,
+                'reason' => trim($validated['reason']),
+                'status' => 'PROCESSED',
+                'processed_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $payment->update([
+                'status' => $isFullRefund ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
+            ]);
+
+            if ($payment->invoice_id && $isFullRefund) {
+                DB::table('invoices')->where('id', $payment->invoice_id)->update([
+                    'status' => 'REFUNDED',
+                    'updated_at' => now(),
+                ]);
+            }
+
+            if ($disputeId) {
+                DB::table('dispute_cases')->where('id', $disputeId)->update([
+                    'status' => 'REFUNDED',
+                    'resolution' => trim($validated['reason']),
+                    'resolved_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            self::logEntry(
+                'REFUND',
+                'DEBIT',
+                $refundAmount,
+                "Customer refund issued ({$payment->transaction_reference}) — " . trim($validated['reason']),
+                [
+                    'shop_id' => $shopId,
+                    'payment_id' => $payment->id,
+                    'invoice_id' => $payment->invoice_id,
+                ]
+            );
+
+            if (class_exists(\App\Models\AuditLog::class)) {
+                \App\Models\AuditLog::create([
+                    'actor_id' => auth()->id(),
+                    'action' => 'admin_refund_issued',
+                    'target_resource' => "payment_transactions:{$payment->id}",
+                    'payload_before' => ['status' => 'PAID', 'amount' => $payment->amount],
+                    'payload_after' => ['refund_amount' => $refundAmount, 'reason' => trim($validated['reason'])],
+                    'ip_address' => request()->ip() ?? '127.0.0.1',
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('admin.financial-overview')
+            ->with('success', "Refund of ৳" . number_format($refundAmount, 2) . " issued for {$payment->transaction_reference} and logged to the Double-Entry Ledger.");
+    }
+
+    /**
      * Count how many workshops currently hold a positive unsettled escrow balance.
      */
     public static function countUnsettledShops(): int
@@ -373,13 +548,14 @@ class AdminLedgerController extends Controller
             ->select(
                 'shop_id',
                 DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_EARNING' THEN amount ELSE 0 END) as total_earned"),
-                DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_PAYOUT' THEN amount ELSE 0 END) as total_paid")
+                DB::raw("SUM(CASE WHEN entry_type = 'VENDOR_PAYOUT' THEN amount ELSE 0 END) as total_paid"),
+                DB::raw("SUM(CASE WHEN entry_type = 'REFUND' THEN amount * 0.90 ELSE 0 END) as total_refund_clawback")
             )
             ->whereNotNull('shop_id')
-            ->whereIn('entry_type', ['VENDOR_EARNING', 'VENDOR_PAYOUT'])
+            ->whereIn('entry_type', ['VENDOR_EARNING', 'VENDOR_PAYOUT', 'REFUND'])
             ->groupBy('shop_id')
             ->get()
-            ->filter(fn ($row) => round((float) $row->total_earned - (float) $row->total_paid, 2) > 0.009)
+            ->filter(fn ($row) => round((float) $row->total_earned - (float) $row->total_paid - (float) $row->total_refund_clawback, 2) > 0.009)
             ->count();
     }
 
