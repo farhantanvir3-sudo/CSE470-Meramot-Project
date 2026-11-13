@@ -646,6 +646,60 @@ class AuthController extends Controller
     }
 
     /**
+     * Send password recovery email from the Forgot Password dialog.
+     */
+    public function sendForgotPasswordEmail(Request $request, GmailApiService $gmailService)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email|max:255',
+        ]);
+
+        $email = strtolower(trim($validated['email']));
+        $user = User::where('email', $email)->first();
+
+        if ($user && $user->status !== 'deleted') {
+            $safeName = htmlspecialchars($user->name ?: 'Meramot User', ENT_QUOTES, 'UTF-8');
+            $safeEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+            $loginUrl = url('/login');
+
+            $html = "
+                <div style=\"font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #d9e5d5; border-radius: 16px; background: #f8fbf6;\">
+                    <h2 style=\"color: #163625; margin-top: 0;\">Meramot Password Recovery</h2>
+                    <p style=\"color: #203126; font-size: 14px; line-height: 1.6;\">Hello {$safeName},</p>
+                    <p style=\"color: #203126; font-size: 14px; line-height: 1.6;\">
+                        We received a password recovery request for your Meramot account (<strong>{$safeEmail}</strong>).
+                        If you did not request this, you can safely ignore this email.
+                    </p>
+                    <p style=\"margin: 24px 0;\">
+                        <a href=\"{$loginUrl}\" style=\"display: inline-block; background: #163625; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 999px; font-weight: bold; font-size: 13px;\">
+                            Return to Meramot Sign In
+                        </a>
+                    </p>
+                    <p style=\"color: #5e6d64; font-size: 12px;\">— Meramot Account Security</p>
+                </div>
+            ";
+
+            try {
+                $gmailService->sendEmail($email, 'Meramot — Password Recovery Request', $html);
+            } catch (\Throwable $e) {
+                // Keep response uniform and non-enumerating
+            }
+        }
+
+        $message = "An email has been sent to {$email} with recovery instructions if an account is registered under that address.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'email' => $email,
+                'message' => $message,
+            ]);
+        }
+
+        return redirect('/login')->with('forgot_password_sent_email', $email)->with('success', $message);
+    }
+
+    /**
      * Log out
      */
     public function logout(Request $request)

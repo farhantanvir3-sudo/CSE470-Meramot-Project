@@ -71,6 +71,7 @@ Route::post('/verify-email-otp/send', [AuthController::class, 'sendVerificationO
 Route::post('/api/verification/send-otp', [AuthController::class, 'sendVerificationOtp']);
 Route::post('/api/verification/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::get('/forgot-password', fn (Request $r) => app(ComingSoonController::class)->show($r, 'password-recovery'))->name('password.request');
+Route::post('/forgot-password', [AuthController::class, 'sendForgotPasswordEmail'])->name('password.email');
 
 // -------------------------------------------------------------
 // MODULE: Delivery & Rider Logistics (Assigned: Md. Nafiul Islam [22299035])
