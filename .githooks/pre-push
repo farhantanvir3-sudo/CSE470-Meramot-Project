@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # ============================================================================
-# MERAMOT GIT HOOK: Block direct teammate pushes to 'main'
+# MERAMOT GIT HOOK: Protect 'main' against direct non-admin pushes & force push
 # ============================================================================
 
 BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
@@ -23,14 +23,13 @@ do
 
         echo ""
         echo "========================================================================"
-        echo "ERROR: Direct pushes to 'main' are disabled!"
+        echo "ERROR: Direct pushes to 'main' are blocked by branch protection rules."
         echo "========================================================================"
-        echo "Team Lead (Farhan Tanvir) is preparing 'main' for deployment and the"
-        echo "November 12 Sprint 1 Defense Demo."
+        echo "The 'main' branch is protected on GitHub. Push your commits to a feature"
+        echo "branch and open a Pull Request for code-owner review:"
         echo ""
-        echo "Please push your commits to a separate branch instead:"
-        echo "   git checkout -b <your-name>-feature"
-        echo "   git push -u origin <your-name>-feature"
+        echo "   git checkout -b feature/<topic>"
+        echo "   git push -u origin feature/<topic>"
         echo "========================================================================"
         echo ""
         exit 1

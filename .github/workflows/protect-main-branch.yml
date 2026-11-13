@@ -1,18 +1,86 @@
-name: Main Branch Freeze Guard (Sprint 1 Demo Preparation)
+name: Main Branch Protection & CI
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
 
 jobs:
-  verify-branch-actor:
+  ci-verification:
+    name: Automated Laravel & Blade CI
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: meramot_test
+          POSTGRES_USER: meramot_user
+          POSTGRES_PASSWORD: meramot_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:2fl+Ktvkfl+Fuz4Qp/A75G2RTiWVA/ZoKZvp6fiiM10=
+      BCRYPT_ROUNDS: "4"
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_DATABASE: meramot_test
+      DB_USERNAME: meramot_user
+      DB_PASSWORD: meramot_pass
+      DB_SSLMODE: disable
+      CACHE_DRIVER: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      MAIL_MAILER: array
+      ENABLE_EMAIL_NOTIFICATIONS: "false"
+
     steps:
-      - name: Enforce Feature Branch Workflow for Teammates
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify authorized actor on direct push to main
+        if: github.event_name == 'push'
         run: |
           if [ "${{ github.actor }}" != "farhantanvir3-sudo" ]; then
-            echo "::error::Direct commits/pushes to 'main' are locked while Team Lead (farhantanvir3-sudo) prepares 'main' for deployment and the Nov 12 Sprint 1 Demo. Please create and push to your own branch (e.g., git checkout -b <your-name>-sprint1 && git push -u origin <your-name>-sprint1) and open a Pull Request."
+            echo "::error::Direct pushes to 'main' are restricted to the repository administrator (farhantanvir3-sudo). Create a feature branch and open a Pull Request."
             exit 1
           fi
-          echo "Push by Team Lead verified."
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, pdo_pgsql, pgsql, gd, bcmath
+          coverage: none
+
+      - name: Prepare Laravel storage and cache directories
+        run: |
+          mkdir -p backend/resources/views
+          mkdir -p backend/storage/framework/views
+          mkdir -p backend/storage/framework/cache/data
+          mkdir -p backend/storage/framework/sessions
+          mkdir -p backend/storage/logs
+          mkdir -p backend/bootstrap/cache
+
+      - name: Install Composer dependencies
+        working-directory: backend
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Compile Blade templates
+        working-directory: backend
+        run: php artisan view:cache
+
+      - name: Run PHPUnit feature test suite
+        working-directory: backend
+        run: php artisan test
