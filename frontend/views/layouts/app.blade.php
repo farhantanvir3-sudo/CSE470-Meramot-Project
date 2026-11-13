@@ -231,12 +231,16 @@
             max-height: none !important;
         }
 
-        /* Radial spreading circular disk on Cart hover & mobile press */
+        /* Radial subtle darker-green outline disk + outward spread on hover & mobile press */
         .meramot-cart-btn {
             position: relative;
             isolation: isolate;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
+            box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.22);
+        }
+        .dark .meramot-cart-btn {
+            box-shadow: 0 0 0 3px rgba(181, 228, 168, 0.26);
         }
         .meramot-cart-btn::before {
             content: "";
