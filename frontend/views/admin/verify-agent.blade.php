@@ -247,7 +247,14 @@
                                         </button>
                                     </form>
 
-                                    <form method="POST" action="/admin/delivery-agents/{{ $agent->id }}" onsubmit="return confirm('Permanently delete this application? Once deleted, the applicant can no longer edit it.');" class="inline">
+                                    <form method="POST"
+                                          action="/admin/delivery-agents/{{ $agent->id }}"
+                                          data-confirm-delete
+                                          data-confirm-title="Delete Rider Application?"
+                                          data-confirm-item="{{ $agent->name }} ({{ $agent->personal_email }})"
+                                          data-confirm-message="This will permanently remove the application and uploaded verification documents. The applicant will no longer be able to edit it."
+                                          data-confirm-cta="Delete Application"
+                                          class="inline">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="px-3 py-1.5 rounded-full border border-rose-300 bg-white text-rose-700 text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-50 hover:shadow">
@@ -361,7 +368,14 @@
                                             </form>
                                         @endif
 
-                                        <form method="POST" action="/admin/delivery-agents/{{ $partner->id }}" onsubmit="return confirm('Delete this delivery partner application permanently?');" class="inline">
+                                        <form method="POST"
+                                              action="/admin/delivery-agents/{{ $partner->id }}"
+                                              data-confirm-delete
+                                              data-confirm-title="Delete Delivery Partner?"
+                                              data-confirm-item="{{ $partner->name }} ({{ $partner->personal_email ?? $partner->email }})"
+                                              data-confirm-message="This permanently removes the delivery partner record from the Meramot directory and cannot be undone."
+                                              data-confirm-cta="Delete Partner"
+                                              class="inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="px-2.5 py-1 rounded-full border border-rose-300 bg-white text-rose-700 text-[11px] font-bold hover:bg-rose-50 transition" title="Delete Application">
