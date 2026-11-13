@@ -158,4 +158,79 @@ class AdminLedgerTest extends TestCase
             ->assertStatus(200)
             ->assertSee('100.00');
     }
+
+    /** @test */
+    public function it_issues_customer_refunds_against_settled_payments_and_logs_to_ledger()
+    {
+        $customer = \App\Models\User::factory()->create(['role' => 'customer']);
+        $shop = RepairShop::factory()->create(['name' => 'Refund Target Lab']);
+
+        $payment = \App\Models\PaymentTransaction::create([
+            'user_id' => $customer->id,
+            'amount' => 3500.00,
+            'currency' => 'BDT',
+            'payment_method' => 'BKASH',
+            'status' => 'PAID',
+            'transaction_reference' => 'TRX-TEST-RFD-01',
+            'paid_at' => now(),
+        ]);
+
+        $this->post('/admin/financial-overview/issue-refund', [
+            'payment_id' => $payment->id,
+            'refund_amount' => 3500.00,
+            'reason' => 'Vendor failed post-settlement warranty check',
+        ])->assertRedirect('/admin/financial-overview');
+
+        $this->assertEquals('REFUNDED', $payment->fresh()->status);
+        $this->assertDatabaseHas('financial_ledgers', [
+            'payment_id' => $payment->id,
+            'entry_type' => 'REFUND',
+            'direction' => 'DEBIT',
+            'amount' => 3500.00,
+        ]);
+        $this->get('/admin/financial-overview')
+            ->assertStatus(200)
+            ->assertSee('3,500.00');
+    }
+
+    /** @test */
+    public function it_enforces_industry_standard_treasury_and_refund_clawback_accounting()
+    {
+        $customer = \App\Models\User::factory()->create(['role' => 'customer']);
+        $shop = RepairShop::factory()->create(['name' => 'Escrow Integrity Lab']);
+
+        $payment = \App\Models\PaymentTransaction::create([
+            'user_id' => $customer->id,
+            'amount' => 4500.00,
+            'currency' => 'BDT',
+            'payment_method' => 'BKASH',
+            'status' => 'PAID',
+            'transaction_reference' => 'TRX-ESCROW-STD-01',
+            'paid_at' => now(),
+        ]);
+
+        // Settle ৳4,500 order: Treasury Cash = ৳4,500 (no double-count), Commission = ৳450, Escrow = ৳4,050
+        AdminLedgerController::settleOrderWithCommission(4500.00, $shop->id, $payment->id);
+
+        $this->assertSame(1, AdminLedgerController::countUnsettledShops());
+
+        // Issuing full ৳4,500 refund must claw back 90% (৳4,050) from unsettled vendor escrow
+        $this->post('/admin/financial-overview/issue-refund', [
+            'payment_id' => $payment->id,
+            'refund_amount' => 4500.00,
+            'reason' => 'Full refund clawback integrity check',
+        ])->assertRedirect('/admin/financial-overview');
+
+        // Shop must NO LONGER be eligible for vendor payout after full refund
+        $this->assertSame(0, AdminLedgerController::countUnsettledShops());
+
+        // Batch auto-settle must NOT create any VENDOR_PAYOUT for this refunded order
+        $this->post('/admin/financial-overview/auto-settle', ['limit' => 20])
+            ->assertRedirect('/admin/financial-overview');
+
+        $this->assertDatabaseMissing('financial_ledgers', [
+            'shop_id' => $shop->id,
+            'entry_type' => 'VENDOR_PAYOUT',
+        ]);
+    }
 }
