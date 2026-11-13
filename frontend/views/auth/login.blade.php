@@ -36,9 +36,12 @@
             @endif
 
             @if($errors->any())
-                <div class="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-700 space-y-1">
+                <div class="mb-4 rounded-2xl bg-red-50/90 border border-red-200 px-4 py-3 text-xs font-medium text-red-800 space-y-1.5 shadow-sm">
                     @foreach($errors->all() as $err)
-                        <div>{{ $err }}</div>
+                        <div class="flex items-start gap-2 leading-relaxed">
+                            <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0 text-red-600"></i>
+                            <span>{{ $err }}</span>
+                        </div>
                     @endforeach
                 </div>
             @endif

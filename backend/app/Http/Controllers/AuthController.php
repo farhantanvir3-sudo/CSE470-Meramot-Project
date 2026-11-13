@@ -519,19 +519,19 @@ class AuthController extends Controller
             if ($intent === 'login') {
                 if (!$user || $user->status === 'deleted') {
                     return redirect('/register')->withErrors([
-                        'google' => "You haven't signed up with Google using {$email} yet. Please click \"Sign up with Google\" below first.",
+                        'google' => "No Meramot account was found for {$email}. Please create an account using \"Sign up with Google\" to continue.",
                     ]);
                 }
 
                 if (empty($user->google_id)) {
                     return redirect('/register')->withErrors([
-                        'google' => "The email {$email} was not registered via Google. Please sign in with your password on the Login page, or register a Google customer account first.",
+                        'google' => "An account for {$email} is registered with a password. Please sign in with your password, or register a new Google account.",
                     ]);
                 }
 
                 if ($user->status === 'banned' || !$user->is_active) {
                     return redirect('/login')->withErrors([
-                        'google' => 'Your account has been restricted or deactivated.',
+                        'google' => 'Your account has been restricted or deactivated. Please contact Meramot Support.',
                     ]);
                 }
 
@@ -554,12 +554,12 @@ class AuthController extends Controller
             if ($user && $user->status !== 'deleted') {
                 if (!empty($user->google_id)) {
                     return redirect('/login')->withErrors([
-                        'google' => "This Google account ({$email}) is already registered! Click \"Sign in with Google\" below to sign in.",
+                        'google' => "An account is already registered with {$email}. Please use \"Sign in with Google\" to access your account.",
                     ]);
                 }
 
                 return redirect('/login')->withErrors([
-                    'google' => "An account with {$email} already exists. Please sign in using your username and password.",
+                    'google' => "An account already exists for {$email}. Please sign in using your username and password.",
                 ]);
             }
 
