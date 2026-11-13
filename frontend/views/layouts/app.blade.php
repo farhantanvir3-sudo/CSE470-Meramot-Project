@@ -612,7 +612,7 @@
                             </div>
 
                             <div class="space-y-2">
-                                <a href="/requests" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
+                                <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
                                     <div class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                                         <i class="fa-solid fa-gavel text-amber-600"></i>
                                         <span>Quote 1 &amp; Quote 2 Lifecycle Active</span>
@@ -640,7 +640,7 @@
                                     <a href="/admin" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">Admin Console</a>
                                     <a href="/admin/financial-overview" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Financial Ledger &rarr;</a>
                                 @else
-                                    <a href="/requests" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">My Requests</a>
+                                    <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">{{ auth()->check() ? 'My Requests' : 'Sign in to Track Orders' }}</a>
                                     <a href="/shops/explore" @click="notifOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Explore Workshops &rarr;</a>
                                 @endif
                             </div>
@@ -1388,7 +1388,7 @@
             </div>
 
             <div class="space-y-2.5">
-                <a href="/requests" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
+                <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
                     <div class="font-bold text-[var(--foreground)] flex items-center gap-2">
                         <i class="fa-solid fa-gavel text-amber-600"></i>
                         <span>Quote 1 &amp; Quote 2 Lifecycle Active</span>
@@ -1416,7 +1416,7 @@
                     <a href="/admin" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">Admin Console</a>
                     <a href="/admin/financial-overview" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Financial Ledger &rarr;</a>
                 @else
-                    <a href="/requests" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">My Requests</a>
+                    <a href="{{ auth()->check() ? '/requests' : '/login' }}" @click="notifModalOpen = false" class="font-bold text-[var(--accent-dark)] hover:underline">{{ auth()->check() ? 'My Requests' : 'Sign in to Track Orders' }}</a>
                     <a href="/shops/explore" @click="notifModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">Explore Workshops &rarr;</a>
                 @endif
             </div>

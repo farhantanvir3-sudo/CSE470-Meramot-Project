@@ -31,14 +31,24 @@ class RepairRequestController extends Controller
         $statusFilter = strtoupper((string) $request->query('filter', 'ALL'));
         $user = $request->user();
 
+        if (!$user) {
+            return redirect()->guest(route('login'))
+                ->with('warning', 'Please sign in to view your repair requests and past orders.');
+        }
+
+        if ($user->role === 'vendor') {
+            return redirect('/vendor/dashboard');
+        }
+
+        if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+            return redirect('/delivery');
+        }
+
         $query = RepairRequest::with(['bids.shop', 'requestedShop', 'repairJob.shop', 'customer', 'review'])
             ->orderByDesc('created_at');
 
-        if ($user && $user->role === 'customer' && $request->query('scope') !== 'all') {
-            $hasOwnRequests = RepairRequest::where('customer_id', $user->id)->exists();
-            if ($hasOwnRequests) {
-                $query->where('customer_id', $user->id);
-            }
+        if ($user->role !== 'admin') {
+            $query->where('customer_id', $user->id);
         }
 
         if ($statusFilter === 'BIDDING') {

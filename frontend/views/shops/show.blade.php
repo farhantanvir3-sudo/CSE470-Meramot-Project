@@ -428,7 +428,7 @@
                     x-data="{
                         ownIds: @js($ownReviewIds),
                         selectedReviewIds: [],
-                        editingReviewId: null,
+                        editingReviewId: @js(request()->filled('edit_review') ? (int) request()->query('edit_review') : null),
                         toggleOwnReview(id) {
                             if (this.selectedReviewIds.includes(id)) {
                                 this.selectedReviewIds = this.selectedReviewIds.filter(i => i !== id);
@@ -442,6 +442,12 @@
                             } else {
                                 this.selectedReviewIds = [...this.ownIds];
                             }
+                        },
+                        editSelectedOwn() {
+                            if (this.selectedReviewIds.length !== 1) return;
+                            this.editingReviewId = this.selectedReviewIds[0];
+                            const el = document.getElementById('review-' + this.editingReviewId);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }
                     }"
                 >
@@ -465,12 +471,18 @@
                                     <i class="fa-solid fa-store mr-1 text-[10px]"></i> Your Workshop
                                 </span>
                             @elseif($isOperational)
-                                <a href="/requests?filter=COMPLETED" class="rounded-full border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition" title="Write a Verified Repair Review from your completed Past Orders">
-                                    <i class="fa-solid fa-certificate mr-1 text-[10px] text-emerald-600"></i> Review Past Order
-                                </a>
-                                <a href="/reviews/create/{{ $shop->id }}" class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-xs font-semibold text-white hover:opacity-90 transition">
-                                    <i class="fa-solid fa-pen-to-square mr-1 text-[10px]"></i> Write Review
-                                </a>
+                                @auth
+                                    <a href="/requests?filter=COMPLETED" class="rounded-full border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition" title="Write a Verified Repair Review from your completed Past Orders">
+                                        <i class="fa-solid fa-certificate mr-1 text-[10px] text-emerald-600"></i> Review Past Order
+                                    </a>
+                                    <a href="/reviews/create/{{ $shop->id }}" class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-xs font-semibold text-white hover:opacity-90 transition">
+                                        <i class="fa-solid fa-pen-to-square mr-1 text-[10px]"></i> Write Review
+                                    </a>
+                                @else
+                                    <a href="{{ route('reviews.create', $shop->id) }}" class="rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-xs font-bold text-white hover:opacity-90 transition">
+                                        <i class="fa-solid fa-right-to-bracket mr-1 text-[10px]"></i> Sign in to Review / Edit Your Reviews
+                                    </a>
+                                @endauth
                             @else
                                 <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed">
                                     <i class="fa-solid fa-lock mr-1 text-[10px]"></i> Reviews Locked
@@ -505,7 +517,7 @@
                     @endif
 
                     @if($ownReviewIds->isNotEmpty())
-                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 px-3.5 py-2 text-xs">
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 px-3.5 py-2.5 text-xs">
                             <label class="inline-flex items-center gap-2 cursor-pointer font-bold text-[var(--foreground)]">
                                 <input
                                     type="checkbox"
@@ -516,27 +528,44 @@
                                 <span>Select My Reviews (<span x-text="selectedReviewIds.length">0</span>/{{ $ownReviewIds->count() }})</span>
                             </label>
 
-                            <form
-                                x-show="selectedReviewIds.length > 0"
-                                x-cloak
-                                method="POST"
-                                action="{{ route('reviews.bulk-destroy') }}"
-                                onsubmit="return confirm('Delete your selected review(s)?');"
-                                class="inline-flex items-center gap-2"
-                            >
-                                @csrf
-                                <input type="hidden" name="repair_shop_id" value="{{ $shop->id }}">
-                                <template x-for="rid in selectedReviewIds" :key="rid">
-                                    <input type="hidden" name="review_ids[]" :value="rid">
-                                </template>
+                            <div class="flex flex-wrap items-center gap-2">
                                 <button
-                                    type="submit"
-                                    class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                    type="button"
+                                    x-show="selectedReviewIds.length === 1"
+                                    x-cloak
+                                    @click="editSelectedOwn()"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-90 transition"
                                 >
-                                    <i class="fa-solid fa-trash-can text-[10px]"></i>
-                                    <span>Delete Selected (<span x-text="selectedReviewIds.length"></span>)</span>
+                                    <i class="fa-solid fa-pen-to-square text-[11px]"></i>
+                                    <span>Edit Selected</span>
                                 </button>
-                            </form>
+
+                                <form
+                                    x-show="selectedReviewIds.length > 0"
+                                    x-cloak
+                                    method="POST"
+                                    action="{{ route('reviews.bulk-destroy') }}"
+                                    data-confirm-delete
+                                    data-confirm-title="Delete Selected Reviews?"
+                                    data-confirm-item="{{ $shop->name }}"
+                                    data-confirm-message="This will permanently delete your selected review(s) and update the shop rating."
+                                    data-confirm-cta="Delete Selected"
+                                    class="inline-flex items-center"
+                                >
+                                    @csrf
+                                    <input type="hidden" name="repair_shop_id" value="{{ $shop->id }}">
+                                    <template x-for="rid in selectedReviewIds" :key="rid">
+                                        <input type="hidden" name="review_ids[]" :value="rid">
+                                    </template>
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                    >
+                                        <i class="fa-solid fa-trash-can text-[11px]"></i>
+                                        <span>Delete Selected (<span x-text="selectedReviewIds.length"></span>)</span>
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     @endif
 
@@ -605,42 +634,54 @@
                                                 <i class="fa-solid fa-star text-[10px] {{ $s <= ($rev->rating ?? 5) ? 'text-amber-500' : 'text-gray-300' }}"></i>
                                             @endfor
                                         </div>
-
-                                        @if($isOwnReview)
-                                            <div class="flex items-center gap-1.5">
-                                                <button
-                                                    type="button"
-                                                    @click="editingReviewId = (editingReviewId === {{ (int) $rev->id }} ? null : {{ (int) $rev->id }})"
-                                                    class="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-white dark:bg-[var(--card)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition"
-                                                >
-                                                    <i class="fa-solid fa-pen text-[9px]"></i>
-                                                    <span x-text="editingReviewId === {{ (int) $rev->id }} ? 'Cancel' : 'Edit'">Edit</span>
-                                                </button>
-
-                                                <form
-                                                    method="POST"
-                                                    action="{{ route('reviews.destroy', $rev->id) }}"
-                                                    onsubmit="return confirm('Delete this review?');"
-                                                    class="inline"
-                                                >
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button
-                                                        type="submit"
-                                                        class="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10px] font-bold text-rose-700 hover:bg-rose-600 hover:text-white transition"
-                                                    >
-                                                        <i class="fa-solid fa-trash-can text-[9px]"></i>
-                                                        <span>Delete</span>
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        @endif
                                     </div>
                                 </div>
 
                                 <p x-show="editingReviewId !== {{ (int) $rev->id }}" class="mt-2.5 text-xs text-[var(--foreground)] leading-relaxed">
                                     "{{ $rev->review_comment }}"
                                 </p>
+
+                                @if($isOwnReview)
+                                    <div
+                                        x-show="editingReviewId !== {{ (int) $rev->id }}"
+                                        class="mt-3 pt-3 border-t border-emerald-500/30 flex flex-wrap items-center justify-between gap-2"
+                                    >
+                                        <span class="text-[11px] font-semibold text-[var(--muted-foreground)]">
+                                            <i class="fa-solid fa-user-check text-emerald-700 mr-1"></i>Pinned to top — only visible with edit/delete controls to your account
+                                        </span>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <button
+                                                type="button"
+                                                @click="editingReviewId = {{ (int) $rev->id }}"
+                                                class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-90 transition"
+                                            >
+                                                <i class="fa-solid fa-pen-to-square text-[11px]"></i>
+                                                <span>Edit Review</span>
+                                            </button>
+
+                                            <form
+                                                method="POST"
+                                                action="{{ route('reviews.destroy', $rev->id) }}"
+                                                data-confirm-delete
+                                                data-confirm-title="Delete Your Review?"
+                                                data-confirm-item="Review on {{ $shop->name }}"
+                                                data-confirm-message="This will permanently delete your review and recalculate the workshop rating."
+                                                data-confirm-cta="Delete Review"
+                                                class="inline"
+                                            >
+                                                @csrf
+                                                @method('DELETE')
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                                >
+                                                    <i class="fa-solid fa-trash-can text-[11px]"></i>
+                                                    <span>Delete Review</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                @endif
 
                                 @if($isOwnReview)
                                     <form

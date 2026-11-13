@@ -235,25 +235,49 @@
 
                     @php
                         $completedShop = $repairRequest->repairJob?->shop ?? $repairRequest->requestedShop;
+                        $isOrderOwner = auth()->check() && (int) auth()->id() === (int) $repairRequest->customer_id;
                     @endphp
-                    @if(in_array($currentStatus, ['COMPLETED', 'RETURNED_TO_CUSTOMER'], true) && $completedShop)
-                        @if($repairRequest->review)
-                            <a
-                                href="{{ route('shops.show', $completedShop->slug) }}#review-{{ $repairRequest->review->id }}"
-                                class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition shrink-0"
-                            >
-                                <i class="fa-solid fa-star text-amber-500"></i>
-                                <span>Verified Review ({{ $repairRequest->review->rating }}★) • Edit</span>
-                            </a>
-                        @else
-                            <a
-                                href="{{ route('reviews.create', ['shopId' => $completedShop->id, 'order_id' => $repairRequest->id]) }}"
-                                class="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition shrink-0"
-                            >
-                                <i class="fa-solid fa-certificate"></i>
-                                <span>Write Verified Repair Review</span>
-                            </a>
-                        @endif
+                    @if($isOrderOwner && in_array($currentStatus, ['COMPLETED', 'RETURNED_TO_CUSTOMER'], true) && $completedShop)
+                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                            @if($repairRequest->review)
+                                <a
+                                    href="{{ route('shops.show', $completedShop->slug) }}?edit_review={{ $repairRequest->review->id }}#review-{{ $repairRequest->review->id }}"
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
+                                >
+                                    <i class="fa-solid fa-pen-to-square text-emerald-700"></i>
+                                    <span>Edit Review ({{ $repairRequest->review->rating }}★)</span>
+                                </a>
+                                <form
+                                    method="POST"
+                                    action="{{ route('reviews.destroy', $repairRequest->review->id) }}"
+                                    data-confirm-delete
+                                    data-confirm-title="Delete Verified Review?"
+                                    data-confirm-item="Order #{{ $repairRequest->id }}"
+                                    data-confirm-message="Your verified review will be deleted and you can write a new one anytime."
+                                    data-confirm-cta="Delete Review"
+                                    class="inline"
+                                >
+                                    @csrf
+                                    @method('DELETE')
+                                    <input type="hidden" name="redirect_back" value="1">
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                    >
+                                        <i class="fa-solid fa-trash-can text-[11px]"></i>
+                                        <span>Delete Review</span>
+                                    </button>
+                                </form>
+                            @else
+                                <a
+                                    href="{{ route('reviews.create', ['shopId' => $completedShop->id, 'order_id' => $repairRequest->id]) }}"
+                                    class="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                                >
+                                    <i class="fa-solid fa-certificate"></i>
+                                    <span>Write Verified Repair Review</span>
+                                </a>
+                            @endif
+                        </div>
                     @endif
                 </div>
 
