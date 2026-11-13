@@ -249,7 +249,34 @@
 <body class="min-h-screen flex flex-col antialiased" x-data="{ 
     mobileMenuOpen: false, 
     locationModalOpen: false, 
-    showLogoutConfirm: false, 
+    showLogoutConfirm: false,
+    deleteConfirmOpen: false,
+    deleteConfirmTitle: 'Delete permanently?',
+    deleteConfirmItem: '',
+    deleteConfirmMessage: 'This action cannot be undone.',
+    deleteConfirmCta: 'Delete Permanently',
+    deleteConfirmForm: null,
+    deleteConfirmSubmitting: false,
+    openDeleteConfirm(form) {
+        this.deleteConfirmForm = form;
+        this.deleteConfirmTitle = form.dataset.confirmTitle || 'Delete permanently?';
+        this.deleteConfirmItem = form.dataset.confirmItem || '';
+        this.deleteConfirmMessage = form.dataset.confirmMessage || 'This action is permanent and cannot be undone.';
+        this.deleteConfirmCta = form.dataset.confirmCta || 'Delete Permanently';
+        this.deleteConfirmSubmitting = false;
+        this.deleteConfirmOpen = true;
+    },
+    cancelDeleteConfirm() {
+        if (this.deleteConfirmSubmitting) return;
+        this.deleteConfirmOpen = false;
+        this.deleteConfirmForm = null;
+    },
+    proceedDeleteConfirm() {
+        if (!this.deleteConfirmForm || this.deleteConfirmSubmitting) return;
+        this.deleteConfirmSubmitting = true;
+        this.deleteConfirmForm.dataset.confirmed = 'true';
+        HTMLFormElement.prototype.submit.call(this.deleteConfirmForm);
+    },
     selectedLocation: null,
     draftLocation: null,
     locationLabel: 'Choose your location',
@@ -1263,6 +1290,94 @@
             </div>
         </div>
     </div>
+
+    <!-- ── Classy Polished Delete Confirmation Pop-Up Tile ── -->
+    <div
+        x-show="deleteConfirmOpen"
+        x-cloak
+        @keydown.escape.window="if (deleteConfirmOpen) cancelDeleteConfirm()"
+        @meramot-confirm-delete.window="openDeleteConfirm($event.detail.form)"
+        class="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="meramot-delete-modal-title"
+    >
+        <div
+            x-show="deleteConfirmOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-sm"
+            @click="cancelDeleteConfirm()"
+        ></div>
+
+        <div
+            x-show="deleteConfirmOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+            class="relative z-[111] w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
+        >
+            <div class="h-1.5 w-full bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500"></div>
+
+            <div class="p-7 sm:p-8 text-center">
+                <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600 shadow-inner">
+                    <i class="fa-solid fa-trash-can text-2xl"></i>
+                </div>
+
+                <h2 id="meramot-delete-modal-title" class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]" x-text="deleteConfirmTitle"></h2>
+
+                <template x-if="deleteConfirmItem">
+                    <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                        <span class="h-2 w-2 shrink-0 rounded-full bg-rose-500"></span>
+                        <span class="truncate" x-text="deleteConfirmItem"></span>
+                    </div>
+                </template>
+
+                <p class="mt-3.5 text-sm leading-relaxed text-[var(--muted-foreground)]" x-text="deleteConfirmMessage"></p>
+
+                <div class="mt-7 grid grid-cols-2 gap-3">
+                    <button
+                        type="button"
+                        @click="cancelDeleteConfirm()"
+                        :disabled="deleteConfirmSubmitting"
+                        class="rounded-full border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-sm font-bold text-[var(--foreground)] transition hover:bg-[var(--mint-50)] disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        @click="proceedDeleteConfirm()"
+                        :disabled="deleteConfirmSubmitting"
+                        class="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-rose-600/20 transition hover:bg-rose-700 active:scale-[0.98] disabled:opacity-60"
+                    >
+                        <i class="fa-solid" :class="deleteConfirmSubmitting ? 'fa-spinner fa-spin' : 'fa-trash-can'"></i>
+                        <span x-text="deleteConfirmSubmitting ? 'Deleting...' : deleteConfirmCta"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (!(form instanceof HTMLFormElement) || !form.hasAttribute('data-confirm-delete')) {
+                return;
+            }
+            if (form.dataset.confirmed === 'true') {
+                return;
+            }
+            event.preventDefault();
+            window.dispatchEvent(new CustomEvent('meramot-confirm-delete', { detail: { form: form } }));
+        });
+    </script>
 
     <!-- Flash Alert System -->
     @if(session('success'))

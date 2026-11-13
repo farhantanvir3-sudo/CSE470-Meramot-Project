@@ -241,7 +241,13 @@ Models Touched: VendorProfile, RepairShop, User
                             <i class="fa-solid fa-xmark mr-1"></i> Reject
                         </button>
 
-                        <form method="POST" action="{{ route('admin.vendors.destroy', $vendor->id) }}" onsubmit="return confirm('Permanently delete this vendor application and draft shop?');">
+                        <form method="POST"
+                              action="{{ route('admin.vendors.destroy', $vendor->id) }}"
+                              data-confirm-delete
+                              data-confirm-title="Delete Vendor Application?"
+                              data-confirm-item="{{ $vendor->shop?->name ?? $vendor->name }} ({{ $vendor->personal_email ?? $vendor->email }})"
+                              data-confirm-message="This will permanently delete the vendor application and its draft storefront. This action cannot be undone."
+                              data-confirm-cta="Delete Application">
                             @csrf
                             @method('DELETE')
                             <button type="submit" title="Delete Application" class="rounded-full border border-[var(--border)] bg-[var(--card)] hover:bg-rose-50 hover:text-rose-700 px-3 py-2 text-xs font-bold text-[var(--muted-foreground)] transition">
@@ -350,7 +356,13 @@ Models Touched: VendorProfile, RepairShop, User
                                     Override &amp; Approve
                                 </button>
                             </form>
-                            <form method="POST" action="{{ route('admin.vendors.destroy', $rej->id) }}" onsubmit="return confirm('Permanently delete this rejected vendor application?');">
+                            <form method="POST"
+                                  action="{{ route('admin.vendors.destroy', $rej->id) }}"
+                                  data-confirm-delete
+                                  data-confirm-title="Delete Rejected Application?"
+                                  data-confirm-item="{{ $rej->shop?->name ?? $rej->name }} ({{ $rej->personal_email ?? $rej->email }})"
+                                  data-confirm-message="This permanently removes the rejected vendor application and draft shop from the archive."
+                                  data-confirm-cta="Delete Permanently">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" title="Delete Application" class="rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 text-[11px] font-bold text-rose-700 transition">
