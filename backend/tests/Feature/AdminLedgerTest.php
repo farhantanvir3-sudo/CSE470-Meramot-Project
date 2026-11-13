@@ -184,8 +184,15 @@ class AdminLedgerTest extends TestCase
     /** @test */
     public function it_issues_customer_refunds_against_settled_payments_and_logs_to_ledger()
     {
+        $admin = \App\Models\User::factory()->create(['role' => 'admin']);
         $customer = \App\Models\User::factory()->create(['role' => 'customer']);
-        $shop = RepairShop::factory()->create(['name' => 'Refund Target Lab']);
+        $shop = RepairShop::factory()->create(['name' => 'Refund Target Lab', 'is_active' => true, 'is_public' => true]);
+
+        // Verify the seed migration executes cleanly against a populated database (matching Render/Neon)
+        $seedMigration = require database_path('migrations/2026_11_13_000016_seed_refund_pending_orders.php');
+        $seedMigration->up();
+        $this->assertDatabaseHas('invoices', ['invoice_number' => 'INV-2026-RFD-PEND01']);
+        $this->assertDatabaseHas('dispute_cases', ['status' => 'INVESTIGATING']);
 
         $payment = \App\Models\PaymentTransaction::create([
             'user_id' => $customer->id,

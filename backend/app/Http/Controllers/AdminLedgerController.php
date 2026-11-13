@@ -181,7 +181,7 @@ class AdminLedgerController extends Controller
             ->join('users as cu', 'cu.id', '=', 'dc.opened_by_id')
             ->leftJoin('invoices as inv', 'inv.id', '=', 'pt.invoice_id')
             ->leftJoin('repair_shops as rs', 'rs.id', '=', 'inv.shop_id')
-            ->whereIn('dc.status', ['OPEN', 'UNDER_REVIEW'])
+            ->whereIn('dc.status', ['OPEN', 'INVESTIGATING', 'WAITING_EVIDENCE', 'WAITING_RESPONSE'])
             ->where('pt.status', 'PAID')
             ->select(
                 'dc.id as dispute_id',
@@ -518,7 +518,7 @@ class AdminLedgerController extends Controller
         DB::transaction(function () use ($payment, $validated, $refundAmount, $shopId, $isFullRefund) {
             $disputeId = $validated['dispute_case_id'] ?? DB::table('dispute_cases')
                 ->where('payment_id', $payment->id)
-                ->whereIn('status', ['OPEN', 'UNDER_REVIEW'])
+                ->whereIn('status', ['OPEN', 'INVESTIGATING', 'WAITING_EVIDENCE', 'WAITING_RESPONSE'])
                 ->value('id');
 
             DB::table('refunds')->insert([
