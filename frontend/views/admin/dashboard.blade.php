@@ -106,7 +106,7 @@
                         </div>
                     @empty
                         <p class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/40 p-4 text-center text-[var(--muted-foreground)]">
-                            All vendor applications are currently reviewed! <a href="/vendor/onboarding" class="font-bold text-[var(--accent-dark)] underline">Submit a test vendor onboarding</a>.
+                            All pending vendor onboarding applications have been reviewed.
                         </p>
                     @endforelse
                 </div>
@@ -141,7 +141,7 @@
                         </div>
                     @empty
                         <p class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/40 p-4 text-center text-[var(--muted-foreground)]">
-                            No pending courier applications right now. <a href="/delivery-agent/register" class="font-bold text-[var(--accent-dark)] underline">Open rider registration form</a>.
+                            No pending delivery agent applications at this time.
                         </p>
                     @endforelse
                 </div>
@@ -149,41 +149,41 @@
         </div>
     </div>
 
-    <!-- Upcoming Sprint Governance Modules -->
+    <!-- Upcoming Operations & Governance Modules -->
     <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--mint-100)]/60 p-6 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div>
-                <h2 class="text-base font-black text-[var(--foreground)]">Scheduled Governance &amp; Dispatch Modules (Upcoming Sprints)</h2>
-                <p class="text-xs text-[var(--muted-foreground)]">Preview scaffolded panels scheduled for Sprints 2, 3, and 4.</p>
+                <h2 class="text-base font-black text-[var(--foreground)]">Operations, Payout &amp; Governance Modules</h2>
+                <p class="text-xs text-[var(--muted-foreground)]">Direct shortcuts to courier dispatch, vendor settlements, content moderation, and compliance auditing.</p>
             </div>
             <span class="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
-                Roadmap Preview
+                Platform Operations
             </span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
             <a href="/delivery/jobs-queue" class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 hover:border-[var(--accent-dark)] transition">
-                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">Sprint 2 • Coming Soon</span>
+                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">Operations • Queue</span>
                 <h3 class="mt-2 font-bold text-sm text-[var(--foreground)]">Rider Dispatch Queue</h3>
-                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Live pickup/return job claiming and 4-digit OTP milestones.</p>
+                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Live pickup and return trip allocation with OTP handover milestones.</p>
             </a>
 
             <a href="/admin/payouts/manage" class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 hover:border-[var(--accent-dark)] transition">
-                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">Sprint 3 • Coming Soon</span>
+                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">Finance • Scheduled</span>
                 <h3 class="mt-2 font-bold text-sm text-[var(--foreground)]">Vendor Payout Settlements</h3>
-                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Automated vendor bank/bKash withdrawal disbursements.</p>
+                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Automated workshop bank and mobile banking withdrawal disbursements.</p>
             </a>
 
             <a href="/admin/moderation" class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 hover:border-[var(--accent-dark)] transition">
-                <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">Live • Active Governance</span>
+                <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">Active Governance</span>
                 <h3 class="mt-2 font-bold text-sm text-[var(--foreground)]">Content Moderation</h3>
-                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Review deletion, offensive language detection, and user ban controls.</p>
+                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Review removal, policy enforcement, and account restriction controls.</p>
             </a>
 
             <a href="/admin/audit-logs" class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 hover:border-[var(--accent-dark)] transition">
-                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">Sprint 4 • Coming Soon</span>
+                <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">Active Compliance</span>
                 <h3 class="mt-2 font-bold text-sm text-[var(--foreground)]">Security Audit Monitor</h3>
-                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Immutable IP forensics and state-transition audit trail.</p>
+                <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Immutable IP forensics and state-transition compliance audit trail.</p>
             </a>
         </div>
     </div>

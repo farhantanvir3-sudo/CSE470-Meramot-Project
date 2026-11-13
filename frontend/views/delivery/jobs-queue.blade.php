@@ -14,16 +14,16 @@ Controller: DeliveryJobController@index, claimJob, updateMilestone
 
 @section('content')
 <div class="space-y-6">
-    <!-- Sprint 2 Roadmap Banner -->
+    <!-- Dispatch Expansion Banner -->
     <div class="rounded-3xl border border-amber-300 bg-amber-50/90 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-start gap-3">
             <div class="h-10 w-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0">
                 <i class="fa-solid fa-motorcycle"></i>
             </div>
             <div>
-                <span class="text-[10px] font-black uppercase tracking-wider text-amber-900">Scheduled for Sprint 2 &bull; Coming Soon</span>
-                <h2 class="text-sm font-black text-amber-950">Open Dispatch Pool Claiming &amp; 4-Digit OTP Handover</h2>
-                <p class="text-xs text-amber-900 mt-0.5">Unassigned pool claiming launches in Sprint 2. View your assigned active deliveries directly in your Delivery Dashboard.</p>
+                <span class="text-[10px] font-black uppercase tracking-wider text-amber-900">Upcoming Release</span>
+                <h2 class="text-sm font-black text-amber-950">Open Dispatch Pool Claiming &amp; OTP Handover</h2>
+                <p class="text-xs text-amber-900 mt-0.5">Self-service open pool claiming will expand in a future update. Manage your assigned active deliveries in your Delivery Dashboard.</p>
             </div>
         </div>
         <div class="flex flex-wrap gap-2 shrink-0">
@@ -59,7 +59,7 @@ Controller: DeliveryJobController@index, claimJob, updateMilestone
                         <form method="POST" action="/delivery/jobs/{{ $job->id }}/claim" class="mt-4">
                             @csrf
                             <button type="submit" class="w-full bg-[#163625] hover:opacity-90 text-[#E4FCD5] font-bold text-xs py-2.5 rounded-full transition">
-                                Claim Delivery Task (Sprint 2)
+                                Claim Delivery Task
                             </button>
                         </form>
                     </div>

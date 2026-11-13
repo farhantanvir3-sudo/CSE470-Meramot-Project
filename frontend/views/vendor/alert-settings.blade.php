@@ -16,8 +16,8 @@ Architectural Layer: View (Vendor/AlertSettings)
     <div class="rounded-[1.75rem] border border-amber-300 bg-amber-50/90 p-4 text-xs flex items-start gap-3">
         <i class="fa-solid fa-bell text-amber-800 mt-0.5"></i>
         <div>
-            <p class="font-black text-amber-950">Multi-Channel BulkSMS BD & Email Alerts — Launching in Sprint 3</p>
-            <p class="text-amber-900 mt-0.5">Saving preferences previews the Sprint 3 gateway configuration.</p>
+            <p class="font-black text-amber-950">Multi-Channel SMS &amp; Email Dispatch Alerts — Upcoming Release</p>
+            <p class="text-amber-900 mt-0.5">Saving preferences previews the upcoming automated notification gateway configuration.</p>
         </div>
     </div>
 
@@ -28,7 +28,7 @@ Architectural Layer: View (Vendor/AlertSettings)
                 <p class="text-xs text-[var(--muted-foreground)] mt-1 dev-only-badge">Feature R14 | Assigned to: <strong class="text-[var(--accent-dark)]">Farhan Tanvir [22299179]</strong></p>
             </div>
             <span class="dev-only-badge text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3 py-1 rounded-full border border-[var(--border)]">
-                Sprint 3 Preview
+                Notification Preview
             </span>
         </div>
 
@@ -38,8 +38,8 @@ Architectural Layer: View (Vendor/AlertSettings)
                 <label class="flex items-center gap-3 p-4 bg-[var(--mint-100)] rounded-2xl border border-[var(--border)] cursor-pointer">
                     <input type="checkbox" name="sms_alerts" value="1" checked class="rounded text-[var(--accent-dark)]">
                     <div>
-                        <span class="font-bold text-[var(--foreground)] block">Instant BulkSMS BD Alerts</span>
-                        <span class="text-[var(--muted-foreground)] text-[11px]">Receive instant SMS notification on registered mobile when a device in your category opens for bidding.</span>
+                        <span class="font-bold text-[var(--foreground)] block">Instant SMS Ticket Alerts</span>
+                        <span class="text-[var(--muted-foreground)] text-[11px]">Receive an automated SMS notification on your registered mobile number when a matching repair ticket opens.</span>
                     </div>
                 </label>
 
@@ -47,14 +47,14 @@ Architectural Layer: View (Vendor/AlertSettings)
                     <input type="checkbox" name="email_alerts" value="1" checked class="rounded text-[var(--accent-dark)]">
                     <div>
                         <span class="font-bold text-[var(--foreground)] block">Email Dispatch Notification</span>
-                        <span class="text-[var(--muted-foreground)] text-[11px]">Receive structured diagnostic summary and customer issue attachments via email.</span>
+                        <span class="text-[var(--muted-foreground)] text-[11px]">Receive structured diagnostic summaries and customer issue attachments via email.</span>
                     </div>
                 </label>
             </div>
 
             <div class="flex flex-wrap gap-3 pt-2">
                 <button type="submit" class="flex-1 bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] font-bold py-3 rounded-full text-xs transition shadow">
-                    Save Notification Preferences (Sprint 3)
+                    Save Notification Preferences
                 </button>
                 <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] px-5 py-3 font-bold text-[var(--foreground)] transition text-center">
                     Back to Dashboard

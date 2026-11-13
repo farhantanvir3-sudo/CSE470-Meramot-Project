@@ -10,7 +10,9 @@ use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\ServicePackage;
 use App\Models\User;
+use App\Services\GeolocationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -34,6 +36,8 @@ class ServicePackageController extends Controller
     public const EXPRESS_DELIVERY_FEE = 150;
     public const SERVICE_CHARGE_RATE = 0.05;
     public const MIN_SERVICE_CHARGE = 30;
+    public const MAX_QUICKMATCH_RADIUS_KM = 20.0;
+    public const PROXIMITY_BAND_KM = 1.0;
 
     public static function calculateServiceCharge(float $subtotal): float
     {
@@ -44,14 +48,483 @@ class ServicePackageController extends Controller
     }
 
     /**
-     * Resolve target workshop for Direct Order (locked shop or Quickmatch top-rated Dhaka shop).
+     * Persist navbar / browser map location into session and refresh auto-matched workshop.
+     * Route: POST /location/sync
      */
-    private function resolveTargetShop(?int $requestedShopId = null): ?RepairShop
+    public function syncCustomerLocation(Request $request)
     {
+        $validated = $request->validate([
+            'lat' => 'nullable|numeric|between:-90,90',
+            'lng' => 'nullable|numeric|between:-180,180',
+            'city' => 'nullable|string|max:100',
+            'area' => 'nullable|string|max:120',
+            'address' => 'nullable|string|max:500',
+        ]);
+
+        $rawLat = isset($validated['lat']) ? (float) $validated['lat'] : null;
+        $rawLng = isset($validated['lng']) ? (float) $validated['lng'] : null;
+        $area = trim((string) ($validated['area'] ?? '')) ?: null;
+        $address = trim((string) ($validated['address'] ?? '')) ?: null;
+
+        $city = GeolocationService::normalizeCityName(
+            $validated['city'] ?? null,
+            $area,
+            $address,
+            $rawLat,
+            $rawLng
+        );
+
+        $hasCoordinates = $rawLat !== null && $rawLng !== null;
+        $lat = $rawLat;
+        $lng = $rawLng;
+
+        if (!$hasCoordinates && $area !== null && strcasecmp($area, $city) !== 0) {
+            $areaCoords = GeolocationService::getAreaCoordinates($area);
+            if ($areaCoords) {
+                $lat = $areaCoords['lat'];
+                $lng = $areaCoords['lng'];
+                $hasCoordinates = true;
+            }
+        }
+
+        $location = [
+            'city' => $city,
+            'area' => $area,
+            'address' => $address,
+            'lat' => $lat,
+            'lng' => $lng,
+            'has_coordinates' => $hasCoordinates,
+            'is_default_fallback' => false,
+        ];
+
+        session()->put('customer_location', $location);
+
+        $matched = null;
+        if (!session('cart_shop_locked')) {
+            session()->forget(['cart_shop_manual', 'cart_shop_id']);
+            $matched = $this->quickMatchWorkshop($location);
+            if (!empty(session('cart', []))) {
+                if ($matched) {
+                    session()->put('cart_shop_id', $matched->id);
+                }
+                $this->syncDatabaseCart($request->user(), $matched, session('cart', []));
+            }
+        } elseif (session('cart_shop_id')) {
+            $matched = RepairShop::find(session('cart_shop_id'));
+        }
+
+        return response()->json([
+            'success' => true,
+            'city' => $location['city'],
+            'area' => $location['area'],
+            'shop_id' => $matched?->id,
+            'shop_name' => $matched?->name,
+        ]);
+    }
+
+    /**
+     * Resolve customer's active city & coordinates from request, session, or authenticated profile.
+     */
+    private function resolveCustomerLocation(?Request $request = null): array
+    {
+        if ($request) {
+            $hasReqLoc = $request->filled('customer_lat')
+                || $request->filled('lat')
+                || $request->filled('customer_city')
+                || $request->filled('city')
+                || $request->filled('customer_area')
+                || $request->filled('area');
+
+            if ($hasReqLoc) {
+                $rawLat = $request->filled('customer_lat')
+                    ? (float) $request->input('customer_lat')
+                    : ($request->filled('lat') ? (float) $request->input('lat') : null);
+                $rawLng = $request->filled('customer_lng')
+                    ? (float) $request->input('customer_lng')
+                    : ($request->filled('lng') ? (float) $request->input('lng') : null);
+                $rawCity = $request->input('customer_city', $request->input('city'));
+                $rawArea = trim((string) $request->input('customer_area', $request->input('area', ''))) ?: null;
+                $rawAddr = trim((string) $request->input('address', '')) ?: null;
+
+                $city = GeolocationService::normalizeCityName($rawCity, $rawArea, $rawAddr, $rawLat, $rawLng);
+                $hasCoords = $rawLat !== null && $rawLng !== null;
+                $lat = $rawLat;
+                $lng = $rawLng;
+
+                if (!$hasCoords && $rawArea !== null && strcasecmp($rawArea, $city) !== 0) {
+                    $areaCoords = GeolocationService::getAreaCoordinates($rawArea);
+                    if ($areaCoords) {
+                        $lat = $areaCoords['lat'];
+                        $lng = $areaCoords['lng'];
+                        $hasCoords = true;
+                    }
+                }
+
+                $reqLoc = [
+                    'city' => $city,
+                    'area' => $rawArea,
+                    'address' => $rawAddr,
+                    'lat' => $lat,
+                    'lng' => $lng,
+                    'has_coordinates' => $hasCoords,
+                    'is_default_fallback' => false,
+                ];
+                session()->put('customer_location', $reqLoc);
+
+                return $reqLoc;
+            }
+        }
+
+        $sessionLoc = session('customer_location');
+        if (is_array($sessionLoc) && !empty($sessionLoc['city'])) {
+            return $sessionLoc;
+        }
+
+        $user = $request?->user() ?? auth()->user();
+        if ($user && ($user->latitude !== null || $user->longitude !== null || !empty($user->city) || !empty($user->area) || !empty($user->address))) {
+            $rawLat = $user->latitude !== null ? (float) $user->latitude : null;
+            $rawLng = $user->longitude !== null ? (float) $user->longitude : null;
+            $area = trim((string) ($user->area ?? '')) ?: null;
+            $address = trim((string) ($user->address ?? '')) ?: null;
+            $city = GeolocationService::normalizeCityName($user->city, $area, $address, $rawLat, $rawLng);
+
+            $hasCoords = $rawLat !== null && $rawLng !== null;
+            $lat = $rawLat;
+            $lng = $rawLng;
+
+            if (!$hasCoords && $area !== null && strcasecmp($area, $city) !== 0) {
+                $areaCoords = GeolocationService::getAreaCoordinates($area);
+                if ($areaCoords) {
+                    $lat = $areaCoords['lat'];
+                    $lng = $areaCoords['lng'];
+                    $hasCoords = true;
+                }
+            }
+
+            return [
+                'city' => $city,
+                'area' => $area,
+                'address' => $address,
+                'lat' => $lat,
+                'lng' => $lng,
+                'has_coordinates' => $hasCoords,
+                'is_default_fallback' => false,
+            ];
+        }
+
+        return [
+            'city' => 'Dhaka',
+            'area' => null,
+            'address' => null,
+            'lat' => 23.7806,
+            'lng' => 90.4070,
+            'has_coordinates' => true,
+            'is_default_fallback' => true,
+        ];
+    }
+
+    /**
+     * Resolve geographic coordinates for a workshop (stored lat/lng or area centroid fallback).
+     */
+    private function resolveShopCoordinates(RepairShop $shop): ?array
+    {
+        if ($shop->latitude !== null && $shop->longitude !== null) {
+            return [
+                'lat' => (float) $shop->latitude,
+                'lng' => (float) $shop->longitude,
+            ];
+        }
+
+        if (!empty($shop->area)) {
+            $areaCoords = GeolocationService::getAreaCoordinates($shop->area);
+            if ($areaCoords) {
+                return $areaCoords;
+            }
+        }
+
+        if (!empty($shop->city)) {
+            return GeolocationService::getAreaCoordinates($shop->city);
+        }
+
+        return null;
+    }
+
+    /**
+     * Filter workshops to strictly the customer's city and within max local service radius,
+     * computing dynamic Haversine distance when customer coordinates exist.
+     */
+    private function collectLocalEligibleShops(array $customerLocation, float $maxRadiusKm = self::MAX_QUICKMATCH_RADIUS_KM): Collection
+    {
+        $city = strtolower(trim((string) ($customerLocation['city'] ?? 'Dhaka')));
+        $hasCoords = !empty($customerLocation['has_coordinates'])
+            && $customerLocation['lat'] !== null
+            && $customerLocation['lng'] !== null;
+
+        $candidates = RepairShop::query()
+            ->where('is_active', true)
+            ->where('is_public', true)
+            ->where('setup_complete', true)
+            ->where('accepts_direct_orders', true)
+            ->whereRaw('LOWER(TRIM(city)) = ?', [$city])
+            ->get();
+
+        return $candidates->filter(function (RepairShop $shop) use ($customerLocation, $hasCoords, $maxRadiusKm) {
+            if (!$hasCoords) {
+                $shop->setAttribute('distance_km', null);
+                return true;
+            }
+
+            $coords = $this->resolveShopCoordinates($shop);
+            if (!$coords) {
+                return false;
+            }
+
+            $distanceKm = GeolocationService::calculateDistance(
+                (float) $customerLocation['lat'],
+                (float) $customerLocation['lng'],
+                (float) $coords['lat'],
+                (float) $coords['lng']
+            );
+
+            $shopLimit = ($shop->delivery_radius_km !== null && (float) $shop->delivery_radius_km > 0)
+                ? min((float) $shop->delivery_radius_km, $maxRadiusKm)
+                : $maxRadiusKm;
+
+            if ($distanceKm > $shopLimit) {
+                return false;
+            }
+
+            $shop->setAttribute('distance_km', round($distanceKm, 2));
+            return true;
+        })->values();
+    }
+
+    /**
+     * Smart Quick-Match Algorithm:
+     *   0. Strictly bounded to customer's city & <= MAX_QUICKMATCH_RADIUS_KM (never cross-city or far away).
+     *   1. Primary: Nearest proximity band first, then highest rating (and featured tie-break).
+     *   2. Fallback: If distance/ratings cannot resolve a match, prefer Featured shops in the same city.
+     *   3. Final Local Fallback: Best rated / closest verified same-city shop within range, else null.
+     */
+    public function quickMatchWorkshop(array $customerLocation): ?RepairShop
+    {
+        $eligible = $this->collectLocalEligibleShops($customerLocation, self::MAX_QUICKMATCH_RADIUS_KM);
+        if ($eligible->isEmpty()) {
+            return null;
+        }
+
+        $hasCoords = !empty($customerLocation['has_coordinates'])
+            && $customerLocation['lat'] !== null
+            && $customerLocation['lng'] !== null;
+
+        // Tier 1: Nearest distance band + highest rating
+        if ($hasCoords) {
+            $ratedLocal = $eligible->filter(fn (RepairShop $s) => (float) $s->rating > 0 && $s->distance_km !== null);
+            $qualityPool = $ratedLocal->filter(fn (RepairShop $s) => (float) $s->rating >= 3.5);
+            $tierOnePool = ($qualityPool->isNotEmpty() ? $qualityPool : $ratedLocal)->all();
+
+            if (!empty($tierOnePool)) {
+                usort($tierOnePool, function (RepairShop $a, RepairShop $b) {
+                    $bandA = (int) floor(round((float) $a->distance_km, 1) / self::PROXIMITY_BAND_KM);
+                    $bandB = (int) floor(round((float) $b->distance_km, 1) / self::PROXIMITY_BAND_KM);
+                    if ($bandA !== $bandB) {
+                        return $bandA <=> $bandB;
+                    }
+
+                    $ratingCmp = (float) $b->rating <=> (float) $a->rating;
+                    if ($ratingCmp !== 0) {
+                        return $ratingCmp;
+                    }
+
+                    $featCmp = ((int) $b->is_featured) <=> ((int) $a->is_featured);
+                    if ($featCmp !== 0) {
+                        return $featCmp;
+                    }
+
+                    $reviewCmp = ((int) $b->review_count) <=> ((int) $a->review_count);
+                    if ($reviewCmp !== 0) {
+                        return $reviewCmp;
+                    }
+
+                    return (float) $a->distance_km <=> (float) $b->distance_km;
+                });
+
+                return $tierOnePool[0];
+            }
+        }
+
+        // Tier 2: Featured workshops in the same city / local radius
+        $featuredLocal = $eligible->filter(fn (RepairShop $s) => (bool) $s->is_featured)->all();
+        if (!empty($featuredLocal)) {
+            usort($featuredLocal, function (RepairShop $a, RepairShop $b) use ($hasCoords) {
+                if ($hasCoords && $a->distance_km !== null && $b->distance_km !== null) {
+                    $bandA = (int) floor(round((float) $a->distance_km, 1) / self::PROXIMITY_BAND_KM);
+                    $bandB = (int) floor(round((float) $b->distance_km, 1) / self::PROXIMITY_BAND_KM);
+                    if ($bandA !== $bandB) {
+                        return $bandA <=> $bandB;
+                    }
+                }
+
+                $ratingCmp = (float) $b->rating <=> (float) $a->rating;
+                if ($ratingCmp !== 0) {
+                    return $ratingCmp;
+                }
+
+                $reviewCmp = ((int) $b->review_count) <=> ((int) $a->review_count);
+                if ($reviewCmp !== 0) {
+                    return $reviewCmp;
+                }
+
+                $featAtA = $a->featured_at ? $a->featured_at->getTimestamp() : 0;
+                $featAtB = $b->featured_at ? $b->featured_at->getTimestamp() : 0;
+                if ($featAtA !== $featAtB) {
+                    return $featAtB <=> $featAtA;
+                }
+
+                if ($hasCoords && $a->distance_km !== null && $b->distance_km !== null) {
+                    return (float) $a->distance_km <=> (float) $b->distance_km;
+                }
+
+                return $a->id <=> $b->id;
+            });
+
+            return $featuredLocal[0];
+        }
+
+        // Tier 3: Remaining verified local workshops within same city & radius
+        $fallbackPool = $eligible->all();
+        usort($fallbackPool, function (RepairShop $a, RepairShop $b) use ($hasCoords) {
+            $hasRatingA = (float) $a->rating > 0 ? 1 : 0;
+            $hasRatingB = (float) $b->rating > 0 ? 1 : 0;
+            if ($hasRatingA !== $hasRatingB) {
+                return $hasRatingB <=> $hasRatingA;
+            }
+
+            if ($hasCoords && $a->distance_km !== null && $b->distance_km !== null) {
+                $bandA = (int) floor(round((float) $a->distance_km, 1) / self::PROXIMITY_BAND_KM);
+                $bandB = (int) floor(round((float) $b->distance_km, 1) / self::PROXIMITY_BAND_KM);
+                if ($bandA !== $bandB) {
+                    return $bandA <=> $bandB;
+                }
+            }
+
+            $ratingCmp = (float) $b->rating <=> (float) $a->rating;
+            if ($ratingCmp !== 0) {
+                return $ratingCmp;
+            }
+
+            $reviewCmp = ((int) $b->review_count) <=> ((int) $a->review_count);
+            if ($reviewCmp !== 0) {
+                return $reviewCmp;
+            }
+
+            if ($hasCoords && $a->distance_km !== null && $b->distance_km !== null) {
+                return (float) $a->distance_km <=> (float) $b->distance_km;
+            }
+
+            return $a->id <=> $b->id;
+        });
+
+        return $fallbackPool[0] ?? null;
+    }
+
+    /**
+     * Attach computed Haversine distance onto a resolved workshop if customer coordinates exist.
+     */
+    private function attachDistanceToShop(?RepairShop $shop, array $customerLocation): ?RepairShop
+    {
+        if (!$shop) {
+            return null;
+        }
+
+        $hasCoords = !empty($customerLocation['has_coordinates'])
+            && $customerLocation['lat'] !== null
+            && $customerLocation['lng'] !== null;
+
+        if (!$hasCoords) {
+            $shop->setAttribute('distance_km', null);
+            return $shop;
+        }
+
+        $coords = $this->resolveShopCoordinates($shop);
+        if ($coords) {
+            $dist = GeolocationService::calculateDistance(
+                (float) $customerLocation['lat'],
+                (float) $customerLocation['lng'],
+                (float) $coords['lat'],
+                (float) $coords['lng']
+            );
+            $shop->setAttribute('distance_km', round($dist, 2));
+        } else {
+            $shop->setAttribute('distance_km', null);
+        }
+
+        return $shop;
+    }
+
+    /**
+     * Return bounded local-city workshops sorted by proximity, rating & featured status for dropdown selectors.
+     */
+    private function getLocalSelectableShops(array $customerLocation, ?RepairShop $activeShop = null): Collection
+    {
+        $hasCoords = !empty($customerLocation['has_coordinates'])
+            && $customerLocation['lat'] !== null
+            && $customerLocation['lng'] !== null;
+
+        $shops = $this->collectLocalEligibleShops($customerLocation, 25.0)->all();
+
+        usort($shops, function (RepairShop $a, RepairShop $b) use ($hasCoords) {
+            $rankA = ((float) $a->rating > 0 || $a->is_featured) ? 1 : 0;
+            $rankB = ((float) $b->rating > 0 || $b->is_featured) ? 1 : 0;
+            if ($rankA !== $rankB) {
+                return $rankB <=> $rankA;
+            }
+
+            if ($hasCoords && $a->distance_km !== null && $b->distance_km !== null) {
+                $bandA = (int) floor(round((float) $a->distance_km, 1) / self::PROXIMITY_BAND_KM);
+                $bandB = (int) floor(round((float) $b->distance_km, 1) / self::PROXIMITY_BAND_KM);
+                if ($bandA !== $bandB) {
+                    return $bandA <=> $bandB;
+                }
+            }
+
+            $ratingCmp = (float) $b->rating <=> (float) $a->rating;
+            if ($ratingCmp !== 0) {
+                return $ratingCmp;
+            }
+
+            $featCmp = ((int) $b->is_featured) <=> ((int) $a->is_featured);
+            if ($featCmp !== 0) {
+                return $featCmp;
+            }
+
+            if ($hasCoords && $a->distance_km !== null && $b->distance_km !== null) {
+                return (float) $a->distance_km <=> (float) $b->distance_km;
+            }
+
+            return strcmp((string) $a->name, (string) $b->name);
+        });
+
+        $collection = collect(array_slice($shops, 0, 25));
+
+        if ($activeShop && !$collection->contains('id', $activeShop->id)) {
+            $collection->prepend($activeShop);
+        }
+
+        return $collection;
+    }
+
+    /**
+     * Resolve target workshop for Direct Order (explicit/locked shop or Smart Quick-Match).
+     */
+    private function resolveTargetShop(?int $requestedShopId = null, ?Request $request = null): ?RepairShop
+    {
+        $customerLocation = $this->resolveCustomerLocation($request);
+
         if ($requestedShopId) {
             $shop = RepairShop::where('is_active', true)->where('is_public', true)->find($requestedShopId);
             if ($shop) {
-                return $shop;
+                return $this->attachDistanceToShop($shop, $customerLocation);
             }
         }
 
@@ -59,15 +532,33 @@ class ServicePackageController extends Controller
         if ($sessionShopId) {
             $shop = RepairShop::where('is_active', true)->where('is_public', true)->find($sessionShopId);
             if ($shop) {
-                return $shop;
+                if (session('cart_shop_locked')) {
+                    return $this->attachDistanceToShop($shop, $customerLocation);
+                }
+
+                if (session('cart_shop_manual')) {
+                    if (strcasecmp((string) $shop->city, (string) ($customerLocation['city'] ?? 'Dhaka')) === 0) {
+                        return $this->attachDistanceToShop($shop, $customerLocation);
+                    }
+                    session()->forget(['cart_shop_manual', 'cart_shop_id']);
+                } else {
+                    $matched = $this->quickMatchWorkshop($customerLocation);
+                    if ($matched) {
+                        session()->put('cart_shop_id', $matched->id);
+                    } else {
+                        session()->forget('cart_shop_id');
+                    }
+                    return $matched;
+                }
             }
         }
 
-        return RepairShop::where('is_active', true)
-            ->where('is_public', true)
-            ->orderBy('rating', 'desc')
-            ->orderBy('review_count', 'desc')
-            ->first() ?? RepairShop::where('is_active', true)->first();
+        $matched = $this->quickMatchWorkshop($customerLocation);
+        if ($matched) {
+            session()->put('cart_shop_id', $matched->id);
+        }
+
+        return $matched;
     }
 
     /**
@@ -111,7 +602,7 @@ class ServicePackageController extends Controller
     }
 
     /**
-     * Display service package catalog with Quickmatch shop selector.
+     * Display service package catalog with Smart Quick-Match & local shop selector.
      * Route: GET /packages/catalog
      */
     public function index(Request $request)
@@ -157,13 +648,12 @@ class ServicePackageController extends Controller
             ->pluck('device_category')
             ->toArray();
 
-        $verifiedShops = RepairShop::where('is_active', true)
-            ->where('is_public', true)
-            ->orderBy('rating', 'desc')
-            ->get(['id', 'name', 'area', 'rating']);
+        $customerLocation = $this->resolveCustomerLocation($request);
+        $activeShop = session('cart_shop_id') ? $this->resolveTargetShop(null, $request) : null;
+        $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
         $cartCount = count(session()->get('cart', []));
 
-        return view('packages.catalog', compact('packages', 'categories', 'verifiedShops', 'cartCount'));
+        return view('packages.catalog', compact('packages', 'categories', 'verifiedShops', 'cartCount', 'customerLocation'));
     }
 
     /**
@@ -193,7 +683,7 @@ class ServicePackageController extends Controller
         }
 
         if ($user->isBanned()) {
-            $msg = 'Account Restricted: Your account is banned from ordering services due to offensive review language. You can still view your ongoing and past orders.';
+            $msg = 'Account Restricted: Your account is restricted from placing new service orders. You may continue to view your ongoing and past orders.';
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
@@ -224,20 +714,33 @@ class ServicePackageController extends Controller
             'description' => 'nullable|string|max:500',
             'price' => 'required_without:package_id|nullable|numeric|min:0',
             'quantity' => 'nullable|integer|min:1|max:10',
+            'customer_lat' => 'nullable|numeric|between:-90,90',
+            'customer_lng' => 'nullable|numeric|between:-180,180',
+            'customer_city' => 'nullable|string|max:100',
+            'customer_area' => 'nullable|string|max:120',
         ]);
 
         $quantity = (int) ($validated['quantity'] ?? 1);
-        $shop = $this->resolveTargetShop(isset($validated['shop_id']) ? (int) $validated['shop_id'] : null);
+        $explicitShopId = isset($validated['shop_id']) ? (int) $validated['shop_id'] : null;
+        $shop = $this->resolveTargetShop($explicitShopId, $request);
         $cart = session()->get('cart', []);
 
         // If user explicitly added from a different shop profile, scope cart to that shop
-        if (!empty($validated['shop_id']) && session('cart_shop_id') && (int) session('cart_shop_id') !== (int) $validated['shop_id'] && empty($validated['package_id'])) {
+        if ($explicitShopId && session('cart_shop_id') && (int) session('cart_shop_id') !== $explicitShopId && empty($validated['package_id'])) {
             $cart = [];
         }
 
         if ($shop) {
             session()->put('cart_shop_id', $shop->id);
-            session()->put('cart_shop_locked', !empty($validated['service_name']) && empty($validated['package_id']));
+            $isShopService = !empty($validated['service_name']) && empty($validated['package_id']);
+            session()->put('cart_shop_locked', $isShopService);
+            if ($explicitShopId !== null) {
+                session()->put('cart_shop_manual', true);
+            } elseif (!session()->has('cart_shop_manual')) {
+                session()->put('cart_shop_manual', false);
+            }
+        } else {
+            session()->forget(['cart_shop_id', 'cart_shop_locked', 'cart_shop_manual']);
         }
 
         if (!empty($validated['package_id'])) {
@@ -284,7 +787,7 @@ class ServicePackageController extends Controller
         $this->syncDatabaseCart($request->user(), $shop, $cart);
 
         $message = $shop
-            ? "Service added to cart • {$shop->name}"
+            ? "Service added to cart — {$shop->name}"
             : 'Service added to cart';
 
         if (!$request->expectsJson()) {
@@ -295,12 +798,13 @@ class ServicePackageController extends Controller
             'success' => true,
             'message' => $message,
             'cart_count' => count($cart),
+            'shop_id' => $shop?->id,
             'shop_name' => $shop?->name,
         ]);
     }
 
     /**
-     * Switch target shop for Quickmatch Direct-Order Cart.
+     * Switch target shop for Direct-Order Cart (enforces same-city boundary when customer city is set).
      * Route: POST /cart/shop
      */
     public function selectCartShop(Request $request)
@@ -313,15 +817,31 @@ class ServicePackageController extends Controller
             'shop_id' => 'required|exists:repair_shops,id',
         ]);
 
-        $shop = RepairShop::findOrFail($validated['shop_id']);
+        $shop = RepairShop::where('is_active', true)
+            ->where('is_public', true)
+            ->findOrFail($validated['shop_id']);
+
+        $customerLocation = $this->resolveCustomerLocation($request);
+        $customerCity = $customerLocation['city'] ?? null;
+
+        if (!empty($customerCity) && !empty($shop->city) && strcasecmp((string) $shop->city, (string) $customerCity) !== 0) {
+            return redirect()->route('cart.view')
+                ->with('warning', "Please select a workshop within {$customerCity} for doorstep pickup, or update your pickup location first.");
+        }
+
         session()->put('cart_shop_id', $shop->id);
+        session()->put('cart_shop_manual', true);
         $this->syncDatabaseCart($request->user(), $shop, session()->get('cart', []));
 
-        return redirect()->route('cart.view')->with('success', "Direct Order workshop set to {$shop->name} ({$shop->area}).");
+        $locationTag = $shop->display_branch_tag
+            ? " [{$shop->display_branch_tag}]"
+            : ($shop->area ? " ({$shop->area})" : '');
+
+        return redirect()->route('cart.view')->with('success', "Workshop updated to {$shop->name}{$locationTag}.");
     }
 
     /**
-     * View single-page Direct-Order & Quickmatch Cart Wizard.
+     * View single-page Direct-Order Cart Wizard.
      * Route: GET /cart
      */
     public function viewCart(Request $request)
@@ -336,12 +856,11 @@ class ServicePackageController extends Controller
         }, 0);
 
         $serviceCharge = self::calculateServiceCharge($total);
-        $activeShop = !empty($cart) ? $this->resolveTargetShop() : null;
+        $customerLocation = $this->resolveCustomerLocation($request);
+        $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request) : null;
         $shopLocked = (bool) session('cart_shop_locked', false);
-        $verifiedShops = RepairShop::where('is_active', true)
-            ->where('is_public', true)
-            ->orderBy('rating', 'desc')
-            ->get(['id', 'name', 'area', 'rating', 'address']);
+        $shopManuallySelected = (bool) session('cart_shop_manual', false);
+        $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
 
         return view('packages.cart', compact(
             'cart',
@@ -349,7 +868,9 @@ class ServicePackageController extends Controller
             'serviceCharge',
             'activeShop',
             'shopLocked',
-            'verifiedShops'
+            'shopManuallySelected',
+            'verifiedShops',
+            'customerLocation'
         ));
     }
 
@@ -367,10 +888,11 @@ class ServicePackageController extends Controller
         }
 
         if (empty($cart)) {
-            session()->forget(['cart_shop_id', 'cart_shop_locked']);
+            session()->forget(['cart_shop_id', 'cart_shop_locked', 'cart_shop_manual']);
         }
 
-        $this->syncDatabaseCart($request->user(), $this->resolveTargetShop(), $cart);
+        $targetShop = empty($cart) ? null : $this->resolveTargetShop(null, $request);
+        $this->syncDatabaseCart($request->user(), $targetShop, $cart);
 
         return response()->json([
             'success' => true,
@@ -394,7 +916,7 @@ class ServicePackageController extends Controller
         if (isset($cart[$packageId])) {
             $cart[$packageId]['quantity'] = (int) $validated['quantity'];
             session()->put('cart', $cart);
-            $this->syncDatabaseCart($request->user(), $this->resolveTargetShop(), $cart);
+            $this->syncDatabaseCart($request->user(), $this->resolveTargetShop(null, $request), $cart);
         }
 
         return response()->json([
@@ -409,10 +931,10 @@ class ServicePackageController extends Controller
      */
     public function clearCart(Request $request)
     {
-        session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked']);
-        $this->syncDatabaseCart($request->user(), $this->resolveTargetShop(), []);
+        session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked', 'cart_shop_manual']);
+        $this->syncDatabaseCart($request->user(), null, []);
 
-        return redirect()->route('packages.catalog')->with('success', 'Cart cleared.');
+        return redirect()->route('packages.catalog')->with('success', 'Your cart has been cleared.');
     }
 
     /**
@@ -437,13 +959,11 @@ class ServicePackageController extends Controller
         }, 0);
 
         $serviceCharge = self::calculateServiceCharge($total);
-        $activeShop = $this->resolveTargetShop();
-        $verifiedShops = RepairShop::where('is_active', true)
-            ->where('is_public', true)
-            ->orderBy('rating', 'desc')
-            ->get(['id', 'name', 'area', 'rating']);
+        $customerLocation = $this->resolveCustomerLocation($request);
+        $activeShop = $this->resolveTargetShop(null, $request);
+        $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
 
-        return view('packages.checkout', compact('cart', 'total', 'serviceCharge', 'activeShop', 'verifiedShops'));
+        return view('packages.checkout', compact('cart', 'total', 'serviceCharge', 'activeShop', 'verifiedShops', 'customerLocation'));
     }
 
     /**
@@ -479,9 +999,11 @@ class ServicePackageController extends Controller
             return back()->withErrors(['scheduled_at' => 'Please choose a pickup date and time for scheduled bookings.'])->withInput();
         }
 
-        $shop = $this->resolveTargetShop(isset($validated['shop_id']) ? (int) $validated['shop_id'] : null);
+        $customerLocation = $this->resolveCustomerLocation($request);
+        $shop = $this->resolveTargetShop(isset($validated['shop_id']) ? (int) $validated['shop_id'] : null, $request);
         if (!$shop) {
-            return back()->with('error', 'No active verified repair shop available for dispatch.');
+            $cityLabel = $customerLocation['city'] ?? 'your selected area';
+            return back()->with('error', "No verified workshop is available within {$cityLabel} for doorstep dispatch. Please update your pickup location or select an available workshop.");
         }
 
         $user = $request->user() ?? User::where('role', 'customer')->firstOrFail();
@@ -518,14 +1040,18 @@ class ServicePackageController extends Controller
             ? 'Immediate Courier Pickup (NOW)'
             : 'Scheduled Pickup (' . $validated['scheduled_at'] . ')';
 
+        $customerCity = $customerLocation['city'] ?? ($shop->city ?: 'Dhaka');
         $fullAddress = trim($validated['address']);
-        if (!empty($validated['area']) && !str_contains($fullAddress, $validated['area'])) {
-            $fullAddress .= ', ' . $validated['area'] . ', Dhaka';
+        if (!empty($validated['area']) && !str_contains(strtolower($fullAddress), strtolower($validated['area']))) {
+            $fullAddress .= ', ' . $validated['area'];
+            if (!str_contains(strtolower($fullAddress), strtolower($customerCity))) {
+                $fullAddress .= ', ' . $customerCity;
+            }
         }
 
         $repairRequest = DB::transaction(function () use (
             $user, $shop, $cart, $firstItem, $validated, $title, $serviceLines, $scheduleLabel,
-            $subtotal, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress
+            $subtotal, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress, $customerCity
         ) {
             $requestedServiceId = is_numeric($firstItem['id'] ?? null) ? (int) $firstItem['id'] : null;
 
@@ -535,7 +1061,7 @@ class ServicePackageController extends Controller
                 'requested_shop_id' => $shop->id,
                 'requested_service_id' => $requestedServiceId,
                 'title' => $title,
-                'description' => "Direct Order Cart Checkout ({$shop->name})\n"
+                'description' => "Direct Service Booking ({$shop->name})\n"
                     . "Schedule: {$scheduleLabel}\n"
                     . "Logistics: {$validated['delivery_type']} (৳{$deliveryFee})\n"
                     . "Payment: {$validated['payment_method']}\n"
@@ -556,7 +1082,7 @@ class ServicePackageController extends Controller
                 'delivery_type' => $validated['delivery_type'],
                 'contact_phone' => $validated['phone'],
                 'pickup_address' => $fullAddress,
-                'dropoff_address' => $shop->address ?? ($shop->area . ', Dhaka'),
+                'dropoff_address' => $shop->address ?? trim(implode(', ', array_filter([$shop->area, $shop->city ?: $customerCity]))),
                 'checkup_fee' => $serviceCharge,
                 'quoted_final_amount' => $totalAmount,
             ]);
@@ -592,15 +1118,15 @@ class ServicePackageController extends Controller
             return $req;
         });
 
-        session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked']);
+        session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked', 'cart_shop_manual']);
 
         if ($validated['payment_method'] === 'SSLCOMMERZ') {
             return redirect("/checkout/payment/{$repairRequest->id}")
-                ->with('success', "Direct Order #{$repairRequest->id} created for {$shop->name}! Complete SSLCommerz escrow authorization below.");
+                ->with('success', "Booking #{$repairRequest->id} created with {$shop->name}. Please complete online escrow authorization below.");
         }
 
         return redirect()
             ->route('requests.track', $repairRequest->id)
-            ->with('success', "Direct Order #{$repairRequest->id} sent to {$shop->name}! Status is PENDING vendor acceptance in Direct Orders.");
+            ->with('success', "Booking #{$repairRequest->id} has been sent to {$shop->name} and is awaiting workshop confirmation.");
     }
 }

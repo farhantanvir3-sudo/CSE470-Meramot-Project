@@ -21,13 +21,13 @@
                 <span class="text-[var(--foreground)] font-semibold">Service Packages</span>
             </div>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">
-                Fixed-Price Service Packages & Quickmatch
+                Fixed-Price Service Packages &amp; Quick-Match
             </h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1 flex flex-wrap items-center gap-2">
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R8 • Lead: Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Transparent fixed repair pricing — Quickmatch with a top-rated Dhaka workshop or choose your preferred shop</span>
+                <span>Standardized upfront repair pricing — automatically matched with the nearest top-rated workshop in {{ $customerLocation['city'] ?? 'your city' }}, or choose your preferred local shop.</span>
             </p>
         </div>
 
@@ -132,7 +132,7 @@
                         <span class="text-3xl font-black text-[var(--accent-dark)]">
                             ৳{{ number_format($pkg->fixed_price) }}
                         </span>
-                        <span class="text-xs text-[var(--muted-foreground)]">Fixed Direct Package</span>
+                        <span class="text-xs text-[var(--muted-foreground)]">Standard Fixed-Price Service</span>
                     </div>
 
                     <!-- Turnaround & Warranty Specs -->
@@ -165,19 +165,19 @@
                 </div>
 
                 <!-- Quickmatch Workshop Selector + Add Service to Cart Action -->
-                <div class="mt-6 pt-4 border-t border-[var(--border)] space-y-2.5">
-                    <div>
+                <div class="mt-6 pt-4 border-t border-[var(--border)] space-y-2.5 min-w-0">
+                    <div class="min-w-0">
                         <label for="shop-select-{{ $pkg->id }}" class="block text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
-                            Dispatch Workshop (Quickmatch or Select)
+                            Assigned Workshop (Quick-Match or Manual Selection)
                         </label>
                         <select
                             id="shop-select-{{ $pkg->id }}"
-                            class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] outline-none"
+                            class="w-full max-w-full truncate rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] outline-none"
                         >
-                            <option value="">⚡ Auto-Quickmatch Top Dhaka Shop</option>
+                            <option value="">Auto-Match Nearest Top-Rated Local Shop</option>
                             @foreach($verifiedShops ?? [] as $vShop)
                                 <option value="{{ $vShop->id }}" {{ session('cart_shop_id') == $vShop->id ? 'selected' : '' }}>
-                                    {{ $vShop->name }}{{ $vShop->display_branch_tag ? ' [' . $vShop->display_branch_tag . ']' : ' (' . $vShop->area . ')' }} • ★{{ number_format($vShop->rating, 1) }}
+                                    {{ $vShop->name }}{{ $vShop->display_branch_tag ? ' [' . $vShop->display_branch_tag . ']' : ' (' . $vShop->area . ')' }} • ★{{ number_format($vShop->rating, 1) }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
                                 </option>
                             @endforeach
                         </select>

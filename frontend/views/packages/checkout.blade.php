@@ -41,12 +41,12 @@
                     Workshop & Pickup Details
                 </h2>
 
-                <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Target Verified Workshop</label>
-                    <select name="shop_id" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
+                <div class="min-w-0">
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Selected Local Workshop</label>
+                    <select name="shop_id" class="w-full max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
                         @foreach($verifiedShops ?? [] as $vShop)
                             <option value="{{ $vShop->id }}" {{ (isset($activeShop) && $activeShop && $activeShop->id === $vShop->id) ? 'selected' : '' }}>
-                                {{ $vShop->name }} ({{ $vShop->area }} • ★{{ number_format($vShop->rating, 1) }})
+                                {{ $vShop->name }}{{ $vShop->display_branch_tag ? ' [' . $vShop->display_branch_tag . ']' : ' (' . $vShop->area . ')' }} • ★{{ number_format($vShop->rating, 1) }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
                             </option>
                         @endforeach
                     </select>
@@ -104,7 +104,7 @@
                             </button>
                         </div>
                     </div>
-                    <textarea name="address" x-model="checkoutAddress" rows="3" required placeholder="House #, Road #, Area, Dhaka" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"></textarea>
+                    <textarea name="address" x-model="checkoutAddress" rows="3" required placeholder="House or Flat #, Road #, Area, City" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"></textarea>
                 </div>
             </div>
         </div>

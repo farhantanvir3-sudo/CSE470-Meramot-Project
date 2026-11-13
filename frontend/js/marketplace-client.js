@@ -59,6 +59,15 @@
                 triggerBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Adding...';
             }
 
+            const storedLoc = window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null;
+            const enrichedPayload = Object.assign({}, payload);
+            if (storedLoc) {
+                if (typeof storedLoc.lat === 'number') enrichedPayload.customer_lat = storedLoc.lat;
+                if (typeof storedLoc.lng === 'number') enrichedPayload.customer_lng = storedLoc.lng;
+                if (storedLoc.city) enrichedPayload.customer_city = storedLoc.city;
+                if (storedLoc.area) enrichedPayload.customer_area = storedLoc.area;
+            }
+
             try {
                 const res = await fetch('/cart/add', {
                     method: 'POST',
@@ -67,7 +76,7 @@
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': getCsrfToken()
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(enrichedPayload)
                 });
 
                 const data = await res.json();
@@ -170,7 +179,7 @@
         2: '2 Stars — Below expectations, room for improvement',
         3: '3 Stars — Satisfactory repair, average turnaround',
         4: '4 Stars — Great repair quality & transparent communication',
-        5: '5 Stars — Exceptional precision repair & fast courier handling!'
+        5: '5 Stars — Exceptional repair craftsmanship and reliable courier service'
     };
 
     function setShopReviewRating(rating) {

@@ -117,7 +117,7 @@
                     class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-xs font-semibold text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none transition"
                 >
                 <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">
-                    Helps other gadget owners see which specific repair works {{ $shop->name }} excels at (or struggles with).
+                    Helps future customers identify the specific repair services {{ $shop->name }} performed for your order.
                 </p>
                 @if(($shop->services ?? collect())->isNotEmpty())
                     <div class="mt-2 flex flex-wrap items-center gap-1.5">
@@ -196,9 +196,9 @@
             <span>Verified Review Guidelines</span>
         </h3>
         <ul class="space-y-1 text-[var(--muted-foreground)]">
-            <li>✓ Be specific about the repaired device and parts replaced</li>
-            <li>✓ Highlight technician communication, warranty adherence, and turnaround speed</li>
-            <li>✓ Keep feedback respectful and constructive for Dhaka gadget owners</li>
+            <li>✓ Specify the device model and exact parts or diagnostics completed</li>
+            <li>✓ Note technician communication, warranty coverage, and turnaround time</li>
+            <li>✓ Keep feedback accurate, respectful, and constructive for fellow customers</li>
         </ul>
     </div>
 </div>

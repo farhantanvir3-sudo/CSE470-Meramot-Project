@@ -76,13 +76,13 @@ const MeramotGeolocation = {
                     let message = 'Unable to get your location.';
                     switch (error.code) {
                         case error.PERMISSION_DENIED:
-                            message = 'Location permission denied. You can still click the map to pin your address.';
+                            message = 'Location access is disabled. Click anywhere on the map or search an area to set your address.';
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            message = 'Location information unavailable. Click the map to pin your address.';
+                            message = 'Current location is unavailable. Click anywhere on the map to set your pickup address.';
                             break;
                         case error.TIMEOUT:
-                            message = 'Location request timed out. Click the map to pin your address.';
+                            message = 'Location lookup timed out. Click anywhere on the map to pin your pickup address.';
                             break;
                     }
                     reject(new Error(message));
@@ -402,7 +402,45 @@ const MeramotLocationPicker = {
     },
 
     /**
-     * Save confirmed location to localStorage and notify all pages/components
+     * Synchronize saved location to Laravel session so Quick-Match & delivery radius always reflect current city/pin
+     */
+    async syncLocationWithServer(loc, reloadOnCartOrCatalog = false) {
+        if (!loc || typeof fetch === 'undefined') return;
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        const sig = JSON.stringify([
+            loc.city || '',
+            loc.area || '',
+            typeof loc.lat === 'number' ? Number(loc.lat).toFixed(4) : '',
+            typeof loc.lng === 'number' ? Number(loc.lng).toFixed(4) : ''
+        ]);
+        try {
+            sessionStorage.setItem('meramot.syncedLocationSig', sig);
+            const res = await fetch('/location/sync', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrf
+                },
+                body: JSON.stringify({
+                    lat: typeof loc.lat === 'number' ? loc.lat : null,
+                    lng: typeof loc.lng === 'number' ? loc.lng : null,
+                    city: loc.city || 'Dhaka',
+                    area: loc.area || '',
+                    address: loc.address || ''
+                })
+            });
+            if (res.ok && reloadOnCartOrCatalog) {
+                const path = window.location.pathname || '';
+                if (path === '/cart' || path === '/cart/checkout' || path.startsWith('/packages/catalog')) {
+                    window.location.reload();
+                }
+            }
+        } catch (e) {}
+    },
+
+    /**
+     * Save confirmed location to localStorage, notify components, and sync to server session
      */
     saveLocation(nextLocation) {
         const normalized = {
@@ -419,11 +457,12 @@ const MeramotLocationPicker = {
 
         localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(normalized));
         window.dispatchEvent(new CustomEvent('meramot-location-changed', { detail: normalized }));
+        this.syncLocationWithServer(normalized, true);
         return normalized;
     },
 
     /**
-     * Mount or refresh the interactive OpenStreetMap + Leaflet instance inside #meramot-leaflet-map
+     * Mount or refresh the interactive coverage map instance inside #meramot-leaflet-map
      */
     async initOrRefreshMap(containerId = 'meramot-leaflet-map', callbacks = {}) {
         this.callbacks = callbacks;
@@ -431,7 +470,7 @@ const MeramotLocationPicker = {
         try {
             await this.ensureLeafletLoaded();
         } catch (err) {
-            callbacks.onError?.('Map could not be loaded. Please check your internet connection.');
+            callbacks.onError?.('Unable to load the interactive map. Please check your internet connection.');
             return;
         }
 
@@ -625,6 +664,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const urlParams = new URLSearchParams(window.location.search);
     const stored = MeramotLocationPicker.parseStoredLocation();
+
+    if (stored) {
+        const sig = JSON.stringify([
+            stored.city || '',
+            stored.area || '',
+            typeof stored.lat === 'number' ? Number(stored.lat).toFixed(4) : '',
+            typeof stored.lng === 'number' ? Number(stored.lng).toFixed(4) : ''
+        ]);
+        if (sessionStorage.getItem('meramot.syncedLocationSig') !== sig) {
+            const path = window.location.pathname || '';
+            const shouldReload = path === '/cart' || path === '/cart/checkout' || path.startsWith('/packages/catalog');
+            MeramotLocationPicker.syncLocationWithServer(stored, shouldReload);
+        }
+    }
 
     if (urlParams.has('lat') && urlParams.has('lng')) {
         renderShopDistanceBadges(parseFloat(urlParams.get('lat')), parseFloat(urlParams.get('lng')));

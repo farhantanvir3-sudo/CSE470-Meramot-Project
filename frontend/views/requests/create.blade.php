@@ -24,7 +24,7 @@
                 Post an Electronic Device Repair Request
             </h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                Verified repair vendors across Dhaka will review your hardware symptoms and submit competitive itemized quotes.
+                Verified repair workshops across your city will review your hardware symptoms and submit competitive itemized estimates.
             </p>
         </div>
 
@@ -36,7 +36,7 @@
                 </div>
                 <div>
                     <h4 class="font-bold text-xs text-[var(--foreground)]">Unsure what is wrong with your device?</h4>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">Our FastAPI Python diagnostic model can analyze symptoms in real-time.</p>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Our AI fault diagnostics assistant can evaluate your symptoms and estimate expected repair costs in real time.</p>
                 </div>
             </div>
             <a href="/ai-consultant/chat" class="rounded-full bg-[var(--accent-dark)] text-white text-[11px] font-bold px-4 py-2 hover:opacity-90 transition shrink-0">
@@ -321,11 +321,11 @@
                         class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-4 py-2 text-[11px] font-bold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
                     >
                         <i class="fa-solid fa-map-location-dot"></i>
-                        <span>Pin on OpenStreetMap</span>
+                        <span>Pin on Interactive Map</span>
                     </button>
                 </div>
 
-                <!-- 3-Mode Selector Cards (Matches requests/new/page.tsx) -->
+                <!-- 3-Mode Selector Cards -->
                 <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <button
                         type="button"
@@ -337,7 +337,7 @@
                             <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
                             <span>Use map location</span>
                         </div>
-                        <div class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Pinned OpenStreetMap coordinates</div>
+                        <div class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Pinned map coordinates</div>
                     </button>
 
                     <button
@@ -374,7 +374,7 @@
                     <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
                             <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-                                Selected from OpenStreetMap
+                                Selected Map Location
                             </p>
                             <p class="mt-1 text-xs font-bold text-[var(--foreground)]" x-text="pinnedLocation.address"></p>
                             <p class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">

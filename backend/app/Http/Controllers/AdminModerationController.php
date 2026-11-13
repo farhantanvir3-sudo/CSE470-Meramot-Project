@@ -69,7 +69,7 @@ class AdminModerationController extends Controller
         $author = $review->customer;
         $banUser = $validated['action_type'] === 'delete_and_ban';
         $reason = trim((string) ($validated['reason'] ?? ''))
-            ?: 'Use of offensive / inappropriate words in workshop review violating Meramot Community Guidelines.';
+            ?: 'Use of offensive or inappropriate language in a workshop review, in violation of Meramot Community Guidelines.';
         $excerpt = Str::limit((string) $review->review_comment, 140);
         $admin = $request->user();
 
@@ -124,11 +124,11 @@ class AdminModerationController extends Controller
             if ($author) {
                 $shopLabel = $shop?->name ?: 'a Meramot workshop';
                 $notifTitle = $banUser
-                    ? 'Review Deleted & Account Ordering Restricted'
-                    : 'Your Review Was Removed by Moderation';
+                    ? 'Review Removed & Ordering Privileges Restricted'
+                    : 'Review Removed by Moderation';
                 $notifMsg = $banUser
-                    ? "Your review on {$shopLabel} was deleted and your account was restricted for offensive words ({$reason}). You can still view your ongoing and past orders, but new orders and repair requests are disabled."
-                    : "Your review on {$shopLabel} was deleted by an administrator ({$reason}).";
+                    ? "Your review on {$shopLabel} was removed and your account ordering privileges were restricted due to a policy violation ({$reason}). You may still view and track ongoing and past orders, while new bookings and repair requests remain disabled."
+                    : "Your review on {$shopLabel} was removed following moderation review ({$reason}).";
 
                 UserNotification::create([
                     'user_id' => $author->id,
@@ -173,8 +173,8 @@ class AdminModerationController extends Controller
         }
 
         $flash = $banUser
-            ? 'Offensive review deleted, user banned from new orders & requests, and email + bell notifications dispatched.'
-            : 'Review deleted, shop rating recalculated, and author notified via email + bell pop-up.';
+            ? 'The offending review has been deleted, ordering privileges for this account have been restricted, and email and in-app notifications have been sent.'
+            : 'The review has been deleted, the workshop rating has been recalculated, and the author has been notified via email and in-app alert.';
 
         $redirectTo = (string) ($validated['redirect_to'] ?? '');
         if ($redirectTo !== '' && str_starts_with($redirectTo, '/')) {
@@ -200,7 +200,7 @@ class AdminModerationController extends Controller
         }
 
         $reason = trim((string) ($validated['reason'] ?? ''))
-            ?: 'Account restricted due to abusive or offensive review language.';
+            ?: 'Account restricted due to abusive or offensive language in customer reviews.';
         $admin = $request->user();
 
         DB::transaction(function () use ($target, $reason, $admin, $request) {
@@ -232,7 +232,7 @@ class AdminModerationController extends Controller
             ]);
 
             $notifTitle = 'Account Ordering Privileges Restricted';
-            $notifMsg = "Your account was restricted for offensive words ({$reason}). You can still view your ongoing and past orders, but placing new service orders or repair requests is disabled.";
+            $notifMsg = "Your account has been restricted due to offensive language ({$reason}). You can continue viewing and tracking ongoing and past orders, while placing new service orders or repair requests is disabled.";
 
             UserNotification::create([
                 'user_id' => $target->id,
@@ -255,7 +255,7 @@ class AdminModerationController extends Controller
             );
         }
 
-        return back()->with('success', "User {$target->name} has been banned from new orders & requests and notified via email & bell alert.");
+        return back()->with('success', "Account {$target->name} has been restricted from new orders and requests, and notified via email and in-app alert.");
     }
 
     /**
@@ -299,7 +299,7 @@ class AdminModerationController extends Controller
                 'type' => 'ACCOUNT_UNBANNED',
                 'severity' => 'success',
                 'title' => 'Account Restrictions Lifted',
-                'message' => 'Your Meramot ordering and repair request privileges have been restored.',
+                'message' => 'Your Meramot service ordering and repair request privileges have been fully restored.',
                 'action_url' => '/requests',
                 'is_read' => false,
             ]);
@@ -309,7 +309,7 @@ class AdminModerationController extends Controller
             $gmailService->sendAccountUnbannedEmail($target->email, $target->name ?: 'Meramot User');
         }
 
-        return back()->with('success', "User {$target->name} has been unbanned and notified.");
+        return back()->with('success', "Account restrictions for {$target->name} have been lifted and the user has been notified.");
     }
 
     /**

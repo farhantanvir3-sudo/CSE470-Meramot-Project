@@ -433,7 +433,7 @@ class AdminDeliveryController extends Controller
         $request->session()->forget('delivery_status_pending_email');
         $request->session()->put('delivery_status_verified_agent_id', $agent->id);
 
-        return redirect('/delivery-agent/status')->with('success', 'Personal email verified! Showing your application status.');
+        return redirect('/delivery-agent/status')->with('success', 'Personal email verified. Displaying your current application status.');
     }
 
     public function resetStatusCheck(Request $request)
@@ -485,7 +485,7 @@ class AdminDeliveryController extends Controller
             ->with('credentials_emailed_popup', $recipientEmail)
             ->with(
                 'success',
-                "Your @meramotbd.com company email and password have been emailed again to {$recipientEmail}!"
+                "Your @meramotbd.com company email and password have been re-sent to {$recipientEmail}."
             );
     }
 
@@ -512,7 +512,7 @@ class AdminDeliveryController extends Controller
 
         if ($agent->registration_status === 'APPROVED') {
             return redirect('/delivery-agent/status')
-                ->with('warning', 'Your application is already APPROVED! Use your @meramotbd.com credentials to sign in.');
+                ->with('warning', 'Your application has already been approved. Please sign in using your @meramotbd.com company credentials.');
         }
 
         return view('delivery.edit', compact('agent'));

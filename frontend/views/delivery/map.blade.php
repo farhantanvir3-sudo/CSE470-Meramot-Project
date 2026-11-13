@@ -11,7 +11,7 @@
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
             <h1 class="text-xl font-extrabold text-[#163625]">Live Map</h1>
-            <p class="text-xs text-[#163625]/70">Real-time OpenStreetMap dispatch pins &amp; turn-by-turn road routing</p>
+            <p class="text-xs text-[#163625]/70">Real-time route dispatch pins and turn-by-turn courier navigation</p>
         </div>
         <button
             type="button"
@@ -70,7 +70,7 @@
         <div id="rider-live-leaflet-map" style="height: 460px; width: 100%;" class="rounded-xl z-10"></div>
 
         <div class="pointer-events-none absolute right-4 top-4 z-[400] rounded-lg bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-[#163625] shadow-sm border border-[#d9e5d5]">
-            OpenStreetMap + Leaflet
+            Interactive Route Map
         </div>
 
         <div class="pointer-events-none absolute left-4 bottom-4 z-[400] rounded-xl bg-white/95 px-3 py-2 text-[11px] font-semibold text-[#163625] shadow-sm border border-[#d9e5d5] flex flex-wrap gap-3">

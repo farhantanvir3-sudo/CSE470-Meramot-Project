@@ -29,7 +29,7 @@ Controller: RepairRequestController@index
             </span>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Track Your Repair Requests &amp; Orders</h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                Compare incoming Quote 1 marketplace bids, approve Quote 2 bench diagnostics, and monitor Direct-Order bookings.
+                Compare incoming workshop estimates, approve final bench diagnostics, and monitor scheduled doorstep orders.
             </p>
         </div>
         @php
@@ -56,8 +56,8 @@ Controller: RepairRequestController@index
     <div class="flex flex-wrap items-center gap-2 text-xs">
         @foreach([
             'ALL' => 'All Tickets',
-            'BIDDING' => 'Bidding Open (Quote 1)',
-            'DIRECT' => 'Direct-Order Cart',
+            'BIDDING' => 'Open for Estimates',
+            'DIRECT' => 'Direct Orders',
             'ACTIVE' => 'In Progress / Bench',
             'COMPLETED' => 'Past Orders (Completed)',
         ] as $filterKey => $filterLabel)
@@ -193,7 +193,7 @@ Controller: RepairRequestController@index
                     <i class="fa-solid fa-screwdriver-wrench text-xl"></i>
                 </div>
                 <h3 class="text-lg font-black text-[var(--foreground)]">No repair requests match this filter yet</h3>
-                <p class="mt-1 text-xs text-[var(--muted-foreground)]">Post a hardware issue to receive Quote 1 bids from verified workshops across Bangladesh.</p>
+                <p class="mt-1 text-xs text-[var(--muted-foreground)]">Publish a repair request to receive estimates from verified local workshops.</p>
                 @if(!$isBannedViewer)
                     <a href="/requests/create" class="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                         Post a Repair Request &rarr;

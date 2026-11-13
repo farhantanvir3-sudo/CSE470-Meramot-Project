@@ -32,12 +32,12 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
         <span class="text-[var(--foreground)] font-semibold">Escrow Payment Checkout</span>
     </div>
 
-    <!-- Sprint 2 Notice -->
+    <!-- Online Payment Notice -->
     <div class="rounded-[1.75rem] border border-amber-300 bg-amber-50/90 p-4 text-xs flex items-start gap-3">
         <i class="fa-solid fa-circle-info text-amber-800 mt-0.5"></i>
         <div>
-            <p class="font-black text-amber-950">SSLCommerz Online Gateway — Launching in Sprint 2</p>
-            <p class="text-amber-900 mt-0.5">Hosted card / bKash / Nagad checkout and automated PDF tax invoices are scheduled for Sprint 2. Cash / Escrow on Pickup is active right now for Sprint 1 orders.</p>
+            <p class="font-black text-amber-950">Online Card &amp; Mobile Banking Gateway — Upcoming Release</p>
+            <p class="text-amber-900 mt-0.5">Hosted card, bKash, and Nagad checkout along with downloadable PDF tax invoices are scheduled for an upcoming release. Cash and Escrow on Pickup are currently active.</p>
         </div>
     </div>
 
@@ -49,7 +49,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                 <p class="text-xs text-[var(--muted-foreground)] mt-1 dev-only-badge">Feature R17 | Assigned to: <strong class="text-[var(--accent-dark)]">Md. Nawshad Zaman Khan [23301622]</strong></p>
             </div>
             <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3.5 py-1.5 rounded-full border border-[var(--border)]">
-                <i class="fa-solid fa-shield-halved mr-1"></i> SSLCommerz Sandbox (Sprint 2)
+                <i class="fa-solid fa-shield-halved mr-1"></i> Escrow Buyer Protection
             </span>
         </div>
 

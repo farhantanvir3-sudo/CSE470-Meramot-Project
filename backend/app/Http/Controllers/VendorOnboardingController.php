@@ -692,7 +692,7 @@ class VendorOnboardingController extends Controller
 
         return redirect()
             ->route('vendor.dashboard')
-            ->with('success', "Shop setup completed! '{$validated['shop_name']}' is now live and publicly listed on Meramot.");
+            ->with('success', "Shop setup completed. '{$validated['shop_name']}' is now verified and active on the Meramot marketplace.");
     }
 
     /**
@@ -935,7 +935,7 @@ class VendorOnboardingController extends Controller
 
         return redirect()
             ->route('vendor.onboarding')
-            ->with('success', 'Vendor application submitted! Status is now PENDING administrative trade verification.');
+            ->with('success', 'Vendor application submitted. Status is currently PENDING administrative trade verification.');
     }
 
     /**

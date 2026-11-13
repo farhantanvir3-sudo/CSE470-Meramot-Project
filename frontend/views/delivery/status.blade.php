@@ -88,14 +88,14 @@
                 <div class="rounded-2xl border-2 border-emerald-300 bg-emerald-50/90 p-5 space-y-2">
                     <h3 class="text-sm font-black text-emerald-950 flex items-center gap-2">
                         <i class="fa-solid fa-id-badge text-emerald-700"></i>
-                        <span>Congratulations! Your Delivery Partner Account Is Approved</span>
+                        <span>Delivery Partner Application Approved</span>
                     </h3>
                     <p class="text-xs text-emerald-900 leading-relaxed">
                         Your assigned Meramot company login email is:
                         <code class="font-mono font-bold bg-white px-2 py-0.5 rounded border border-emerald-300">{{ $agent->company_email }}</code>
                     </p>
                     <p class="text-[11px] text-emerald-800">
-                        Your unique <code class="font-mono">@meramotbd.com</code> email and system-generated password were sent to <strong>{{ $agent->personal_email }}</strong>. Lost that email? Click <strong>Forgot Company Credentials</strong> below to email them again!
+                        Your <code class="font-mono">@meramotbd.com</code> company email and system-generated password were delivered to <strong>{{ $agent->personal_email }}</strong>. Use <strong>Forgot Company Credentials</strong> below if you need them re-sent.
                     </p>
                 </div>
             @else
@@ -240,7 +240,7 @@
                 <span class="text-[11px] font-bold uppercase tracking-wider text-[#214c34]">Step 1 of 2 &bull; Applicant Verification</span>
                 <h2 class="text-xl font-black text-[#163625] mt-1">Verify Your Personal Email</h2>
                 <p class="text-xs text-[#5e6d64] mt-1">
-                    Enter the personal email address you used when submitting your Delivery Agent application. We will send a one-time 6-digit verification code to confirm it's you.
+                    Enter the personal email address used when submitting your Delivery Agent application. A one-time 6-digit verification code will be sent to confirm your identity.
                 </p>
             </div>
 

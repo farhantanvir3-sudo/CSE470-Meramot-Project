@@ -15,8 +15,8 @@ Architectural Layer: View (Vendor/RequestDetails)
 <div class="mx-auto max-w-3xl px-4 py-6 md:px-6 space-y-5">
     <div class="rounded-[1.75rem] border border-amber-300 bg-amber-50/90 p-4 text-xs flex items-center justify-between gap-4">
         <div>
-            <p class="font-black text-amber-950">FastAPI Technician Fault Triage — Scheduled for Sprint 2</p>
-            <p class="text-amber-900 mt-0.5">Automated GROQ / Gemini motherboard symptom extraction launches in Sprint 2. Live Marketplace Bidding is active right now on the Vendor Dashboard.</p>
+            <p class="font-black text-amber-950">Automated Fault Triage — Upcoming Platform Release</p>
+            <p class="text-amber-900 mt-0.5">Automated motherboard symptom extraction is scheduled for an upcoming release. Live marketplace estimating is active now on the Vendor Dashboard.</p>
         </div>
         <a href="/vendor/dashboard" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 font-bold text-[var(--accent-foreground)] shrink-0">
             Vendor Dashboard &rarr;
@@ -30,7 +30,7 @@ Architectural Layer: View (Vendor/RequestDetails)
                 <p class="text-xs text-[var(--muted-foreground)] mt-1 dev-only-badge">Feature R13 | Assigned to: <strong class="text-[var(--accent-dark)]">Farhan Tanvir [22299179]</strong></p>
             </div>
             <span class="dev-only-badge text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3.5 py-1.5 rounded-full border border-[var(--border)]">
-                Sprint 2 Preview
+                Triage Preview
             </span>
         </div>
 
@@ -62,7 +62,7 @@ Architectural Layer: View (Vendor/RequestDetails)
 
             <div class="flex flex-wrap gap-3 pt-2">
                 <a href="/coming-soon/ai-request-triage" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
-                    Run Live FastAPI Summary (Sprint 2)
+                    View Triage Feature Roadmap
                 </a>
                 <a href="/vendor/bidding-board" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] px-5 py-2.5 font-bold text-[var(--foreground)] transition">
                     Back to Live Bidding Board

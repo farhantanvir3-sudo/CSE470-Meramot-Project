@@ -67,13 +67,13 @@
                 }
                 this.messages.push({
                     sender: 'ai',
-                    text: hint + `\n\n(Note: Live FastAPI LLM neural inference launches in Sprint 4 — you can post a live Repair Request right now using the button above!)`
+                    text: hint + `\n\nFor an exact component diagnosis and itemized repair pricing, submit a Repair Request above to receive estimates from verified local workshops.`
                 });
             }
         } catch (e) {
             this.messages.push({
                 sender: 'ai',
-                text: `Preliminary ${this.category} hardware triage: Symptom pattern suggests power-rail, display flex, or thermal degradation. Post a Marketplace Repair Request to receive itemized Quote 1 bids from verified workshops. (Live FastAPI LLM microservice scheduled for Sprint 4.)`
+                text: `Preliminary ${this.category} hardware triage: Symptom pattern suggests power-rail, display flex, or thermal degradation. Publish a Repair Request to receive itemized repair estimates from verified workshops.`
             });
         } finally {
             this.loading = false;
@@ -108,12 +108,12 @@
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R10 • Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Automated hardware symptom triage powered by the Meramot FastAPI microservice</span>
+                <span>Automated hardware symptom triage and preliminary repair guidance powered by Meramot Diagnostics.</span>
             </p>
         </div>
         <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-dark)] self-start flex items-center gap-2">
             <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
-            <span>FastAPI Triage Engine</span>
+            <span>AI Diagnostics Active</span>
         </span>
     </div>
 
@@ -158,7 +158,7 @@
                 <div x-show="loading" x-cloak class="flex justify-start">
                     <div class="bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] rounded-2xl rounded-tl-none px-4 py-2.5 text-xs italic flex items-center gap-2">
                         <i class="fa-solid fa-spinner fa-spin"></i>
-                        <span>Analyzing hardware symptom tree via FastAPI...</span>
+                        <span>Analyzing reported device symptoms...</span>
                     </div>
                 </div>
             </div>

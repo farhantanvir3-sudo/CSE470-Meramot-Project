@@ -262,8 +262,8 @@ class ReviewController extends Controller
         self::recalculateShopRating($shop);
 
         $msg = $isVerifiedRepair
-            ? 'Thank you! Your Verified Repair Review (with service details) has been posted.'
-            : 'Thank you! Your review has been posted. (Tip: Review from Past Orders to earn the Verified Repair badge.)';
+            ? 'Thank you. Your verified repair review has been published.'
+            : 'Thank you. Your review has been published. Submit reviews directly from completed orders to display the Verified Repair badge.';
 
         return redirect()->route('shops.show', $shop->slug)->with('success', $msg);
     }
@@ -370,7 +370,7 @@ class ReviewController extends Controller
 
         return redirect()
             ->route('shops.show', $shop->slug)
-            ->with('success', "Deleted {$deletedCount} of your review(s).");
+            ->with('success', "Removed {$deletedCount} " . ($deletedCount === 1 ? 'review' : 'reviews') . '.');
     }
 
     /**

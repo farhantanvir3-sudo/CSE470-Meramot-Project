@@ -196,10 +196,10 @@
         <section class="space-y-4">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                    Popular parts category
+                    Popular Service Categories
                 </p>
                 <h2 class="text-lg font-bold text-[var(--foreground)] md:text-2xl lg:text-3xl">
-                    What devices need repair the most right now
+                    Most requested device repairs
                 </h2>
             </div>
 
@@ -229,7 +229,7 @@
                     Recently viewed
                 </p>
                 <h2 class="text-lg font-bold text-[var(--foreground)] md:text-2xl lg:text-3xl">
-                    Jump back into previous repair searches
+                    Resume your recent repair searches
                 </h2>
             </div>
 

@@ -14,16 +14,16 @@ Controller: RiderLedgerController@index, requestPayout
 
 @section('content')
 <div class="space-y-6">
-    <!-- Sprint 3 Roadmap Notice -->
+    <!-- Payout Rollout Notice -->
     <div class="rounded-3xl border border-amber-300 bg-amber-50/90 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div class="flex items-start gap-3">
             <div class="h-10 w-10 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0">
                 <i class="fa-solid fa-wallet"></i>
             </div>
             <div>
-                <span class="text-[10px] font-black uppercase tracking-wider text-amber-900">Scheduled for Sprint 3 &bull; Coming Soon</span>
+                <span class="text-[10px] font-black uppercase tracking-wider text-amber-900">Upcoming Platform Expansion</span>
                 <h2 class="text-sm font-black text-amber-950">Automated Courier Wallet &amp; Mobile Banking Payouts</h2>
-                <p class="text-xs text-amber-900 mt-0.5">Instant bKash / Nagad rider payout withdrawals roll out in Sprint 3.</p>
+                <p class="text-xs text-amber-900 mt-0.5">Instant bKash and Nagad rider payout withdrawals are scheduled for an upcoming release.</p>
             </div>
         </div>
         <a href="/delivery" class="rounded-full bg-[#163625] px-4 py-2 text-xs font-bold text-[#E4FCD5] hover:opacity-90 transition shrink-0">
@@ -50,7 +50,7 @@ Controller: RiderLedgerController@index, requestPayout
         <div class="bg-white p-6 rounded-2xl border border-[#d9e5d5] shadow-sm flex items-center justify-between gap-3">
             <div>
                 <span class="text-xs text-[#163625]/65 block font-semibold">Payout Gateway</span>
-                <span class="text-xs font-bold text-[#163625] mt-1 block">bKash / Nagad (Sprint 3)</span>
+                <span class="text-xs font-bold text-[#163625] mt-1 block">bKash / Nagad (Upcoming)</span>
             </div>
             <form method="POST" action="/delivery/payout/request">
                 @csrf

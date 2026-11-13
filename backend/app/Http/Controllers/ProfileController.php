@@ -136,7 +136,7 @@ class ProfileController extends Controller
             ]);
         }
 
-        return redirect()->route('profile.show')->with('success', 'Profile updated successfully! Your phone and delivery address are saved for future orders.');
+        return redirect()->route('profile.show')->with('success', 'Profile updated successfully. Your phone number and delivery address have been saved for future orders.');
     }
 
     public function destroy(Request $request)

@@ -158,7 +158,7 @@
                     <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalCustomerInflow, 2) }}</span>
                 </div>
                 <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">10% Cut</span>
+                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Platform Commission (10%)</span>
                     <span class="mt-1 block text-xs sm:text-sm font-black text-teal-700 dark:text-teal-400 font-mono whitespace-nowrap">৳{{ number_format($totalCommissionRevenue, 2) }}</span>
                 </div>
                 <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
@@ -265,7 +265,7 @@
 
                 <div class="rounded-xl bg-[var(--mint-100)]/70 border border-[var(--border)] p-3 text-[11px] text-[var(--muted-foreground)]">
                     <i class="fa-solid fa-bolt text-amber-600 mr-1"></i>
-                    Converts unsettled <code class="font-mono font-bold text-[var(--foreground)]">VENDOR_EARNING</code> rows into disbursed <code class="font-mono font-bold text-[var(--foreground)]">VENDOR_PAYOUT</code> debit entries.
+                    Converts unsettled vendor earnings into disbursed payout debit entries in the ledger.
                 </div>
             </div>
 
@@ -284,7 +284,7 @@
                     <span>Refunds &amp; Post-Settlement Dispute Resolution</span>
                 </h3>
                 <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
-                    Orders flagged with vendor issues after settlement. Issuing a refund credits the customer, resolves the dispute, and logs a <code class="font-mono font-bold">REFUND</code> debit in the Double-Entry Ledger.
+                    Orders flagged with post-settlement issues. Issuing a refund credits the customer, resolves the dispute, and records a refund debit entry in the double-entry ledger.
                 </p>
             </div>
             <span class="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-[11px] font-bold text-rose-800">
@@ -752,7 +752,7 @@
                             <div>
                                 <div class="text-xs font-extrabold text-[var(--foreground)]">Delete Records Only</div>
                                 <p class="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
-                                    Hides the selected audit entries from the journal table while keeping their amounts intact in Total Volume, 10% Cut, Escrow Balance, and Fund Distribution.
+                                    Hides the selected audit entries from the journal table while preserving their cumulative amounts in Total Volume, Platform Commission, Escrow Balance, and Fund Distribution.
                                 </p>
                             </div>
                         </button>
@@ -769,7 +769,7 @@
                             <div>
                                 <div class="text-xs font-extrabold text-rose-700">Delete &amp; Undo Ledger Effects</div>
                                 <p class="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
-                                    Permanently removes the selected entries AND reverses their impact on Total Volume, 10% Commission, Vendor Escrow Balance, and Running Balances.
+                                    Permanently removes the selected entries and reverses their impact on Total Volume, Platform Commission, Vendor Escrow Balance, and Running Balances.
                                 </p>
                             </div>
                         </button>
