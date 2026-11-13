@@ -154,9 +154,22 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
         </div>
 
         @if($isEditMode)
-            <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs md:text-sm text-amber-900">
-                Update your previous vendor application and submit again. It will go back to pending admin review.
-            </div>
+            @if(($profile?->verification_status ?? '') === 'rejected')
+                <div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3.5 text-xs md:text-sm text-rose-900 space-y-1">
+                    <p class="font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+                        <span>Application Returned for Revision</span>
+                    </p>
+                    @if(!empty($profile->rejection_reason))
+                        <p class="text-rose-800"><strong>Admin Feedback:</strong> {{ $profile->rejection_reason }}</p>
+                    @endif
+                    <p class="text-[11px] text-rose-700">Update the details below and resubmit — your application will return to pending admin review.</p>
+                </div>
+            @else
+                <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs md:text-sm text-amber-900">
+                    Update your previous vendor application and submit again. It will go back to pending admin review.
+                </div>
+            @endif
         @endif
 
         @if($errors->any())
@@ -183,9 +196,11 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         logoName: '',
                         logoSize: '',
                         logoType: 'IMAGE',
+                        removeLogo: false,
                         draggingLogo: false,
                         pickLogo(file) {
                             if (!file) return;
+                            this.removeLogo = false;
                             this.logoName = file.name;
                             const kb = file.size / 1024;
                             this.logoSize = kb >= 1024 ? (kb / 1024).toFixed(2) + ' MB' : Math.round(kb) + ' KB';
@@ -205,6 +220,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                             logoPreview = '';
                             this.logoName = '';
                             this.logoSize = '';
+                            this.removeLogo = true;
                             $refs.logoInput.value = '';
                         }
                     }"
@@ -214,6 +230,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     :class="draggingLogo ? 'border-[#244229] bg-[#e4f3df] scale-[1.01]' : (logoPreview ? 'border-emerald-600/60 bg-white' : 'border-[#b9cfb2] bg-[var(--mint-50)]/60 hover:border-[#244229] hover:bg-white')"
                     class="relative rounded-2xl border-2 border-dashed p-4 transition-all duration-200 shadow-sm"
                 >
+                    <input type="hidden" name="remove_logo" :value="removeLogo ? '1' : '0'">
                     <input
                         x-ref="logoInput"
                         type="file"
@@ -239,7 +256,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 <i class="fa-solid fa-image text-base"></i>
                             </div>
                             <p class="text-xs font-bold text-[#203126]">Click to upload logo <span class="font-normal text-[#5e6d64]">or drag &amp; drop</span></p>
-                            <p class="mt-0.5 text-[10px] text-[#5e6d64]">Square PNG, JPG, WebP • Max 2MB</p>
+                            <p class="mt-0.5 text-[10px] text-[#5e6d64]">Square PNG, JPG, WebP • Auto-optimized up to 15MB</p>
                         </div>
                     </template>
 
