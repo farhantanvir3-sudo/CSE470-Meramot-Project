@@ -231,16 +231,16 @@
             max-height: none !important;
         }
 
-        /* Radial subtle darker-green outline disk + outward spread on hover & mobile press */
+        /* Radial darker-green outline disk + outward spread on hover & mobile press */
         .meramot-cart-btn {
             position: relative;
             isolation: isolate;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
-            box-shadow: 0 0 0 3px rgba(27, 67, 50, 0.22);
+            box-shadow: 0 0 0 3px rgba(22, 54, 37, 0.52);
         }
         .dark .meramot-cart-btn {
-            box-shadow: 0 0 0 3px rgba(181, 228, 168, 0.26);
+            box-shadow: 0 0 0 3px rgba(143, 212, 128, 0.55);
         }
         .meramot-cart-btn::before {
             content: "";
