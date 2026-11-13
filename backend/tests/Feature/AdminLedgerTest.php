@@ -157,6 +157,28 @@ class AdminLedgerTest extends TestCase
         $this->get('/admin/financial-overview')
             ->assertStatus(200)
             ->assertSee('100.00');
+
+        // 3. Automated order/system entries (with payment_id) CANNOT be deleted even via direct POST
+        $customer = \App\Models\User::factory()->create(['role' => 'customer']);
+        $payment = \App\Models\PaymentTransaction::create([
+            'user_id' => $customer->id,
+            'amount' => 500.00,
+            'currency' => 'BDT',
+            'payment_method' => 'BKASH',
+            'status' => 'PAID',
+            'transaction_reference' => 'TRX-IMMUTABLE-01',
+            'paid_at' => now(),
+        ]);
+        $autoRes = AdminLedgerController::settleOrderWithCommission(500.00, $shop->id, $payment->id);
+
+        $this->post('/admin/financial-overview/bulk-delete', [
+            'entry_ids' => [$autoRes['payment_entry']->id, $autoRes['commission_entry']->id],
+            'delete_mode' => 'undo_effects',
+        ])->assertRedirect('/admin/financial-overview')
+          ->assertSessionHas('warning');
+
+        $this->assertDatabaseHas('financial_ledgers', ['id' => $autoRes['payment_entry']->id, 'hidden_at' => null]);
+        $this->assertDatabaseHas('financial_ledgers', ['id' => $autoRes['commission_entry']->id, 'hidden_at' => null]);
     }
 
     /** @test */

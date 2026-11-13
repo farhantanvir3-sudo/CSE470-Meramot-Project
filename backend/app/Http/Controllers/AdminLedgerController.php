@@ -148,6 +148,7 @@ class AdminLedgerController extends Controller
         foreach ($allEntries as $entry) {
             $isAllocation = in_array($entry->entry_type, $allocationTypes, true);
             $entry->is_allocation = $isAllocation;
+            $entry->is_deletable_manual_audit = self::isManualAdjustedAudit($entry);
 
             if (!$isAllocation) {
                 if ($entry->direction === 'CREDIT') {
@@ -407,15 +408,37 @@ class AdminLedgerController extends Controller
         $ids = array_values(array_unique(array_map('intval', $validated['entry_ids'])));
         $mode = $validated['delete_mode'];
 
+        // Strictly allow deletion ONLY for manual adjusted settlement audits
+        $eligibleIds = FinancialLedger::whereIn('id', $ids)
+            ->where(function ($q) {
+                $q->where('entry_type', 'ADJUSTMENT')
+                  ->orWhere('description', 'ILIKE', '%[Manual Settlement]%')
+                  ->orWhere(function ($mq) {
+                      $mq->whereNull('payment_id')
+                         ->whereNull('invoice_id')
+                         ->where('description', 'ILIKE', '%Customer settlement payment received for repair order%');
+                  });
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (empty($eligibleIds)) {
+            return redirect()
+                ->route('admin.financial-overview')
+                ->with('warning', 'Only manual adjusted settlement audits can be deleted. Automated order, payout, and refund ledger entries remain immutable.');
+        }
+
+        $skippedCount = count($ids) - count($eligibleIds);
         $affectedCount = 0;
-        DB::transaction(function () use ($ids, $mode, &$affectedCount) {
+        DB::transaction(function () use ($eligibleIds, $mode, &$affectedCount) {
             if ($mode === 'undo_effects') {
                 $affectedCount = DB::table('financial_ledgers')
-                    ->whereIn('id', $ids)
+                    ->whereIn('id', $eligibleIds)
                     ->delete();
             } else {
                 $affectedCount = DB::table('financial_ledgers')
-                    ->whereIn('id', $ids)
+                    ->whereIn('id', $eligibleIds)
                     ->update(['hidden_at' => now()]);
             }
 
@@ -424,7 +447,7 @@ class AdminLedgerController extends Controller
                     'actor_id' => auth()->id(),
                     'action' => $mode === 'undo_effects' ? 'ledger_entries_undone' : 'ledger_records_hidden',
                     'target_resource' => 'financial_ledgers',
-                    'payload_before' => ['entry_ids' => $ids],
+                    'payload_before' => ['entry_ids' => $eligibleIds],
                     'payload_after' => ['mode' => $mode, 'affected_count' => $affectedCount],
                     'ip_address' => request()->ip() ?? '127.0.0.1',
                 ]);
@@ -432,12 +455,32 @@ class AdminLedgerController extends Controller
         });
 
         $msg = $mode === 'undo_effects'
-            ? "Deleted {$affectedCount} ledger record(s) and reversed their financial effects on totals and balances."
-            : "Removed {$affectedCount} audit record(s) from the journal view while preserving ledger totals.";
+            ? "Deleted {$affectedCount} manual audit record(s) and reversed their financial effects on totals and balances."
+            : "Removed {$affectedCount} manual audit record(s) from the journal view while preserving ledger totals.";
+
+        if ($skippedCount > 0) {
+            $msg .= " ({$skippedCount} immutable system ledger entry/entries skipped.)";
+        }
 
         return redirect()
             ->route('admin.financial-overview')
             ->with('success', $msg);
+    }
+
+    public static function isManualAdjustedAudit(FinancialLedger $entry): bool
+    {
+        if ($entry->entry_type === 'ADJUSTMENT') {
+            return true;
+        }
+
+        $desc = (string) ($entry->description ?? '');
+        if (stripos($desc, '[Manual Settlement]') !== false) {
+            return true;
+        }
+
+        return is_null($entry->payment_id)
+            && is_null($entry->invoice_id)
+            && stripos($desc, 'Customer settlement payment received for repair order') !== false;
     }
 
     /**

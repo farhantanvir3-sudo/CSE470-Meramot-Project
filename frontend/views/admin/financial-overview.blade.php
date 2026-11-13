@@ -451,7 +451,7 @@
     <div
         class="meramot-card overflow-hidden shadow-sm"
         x-data="{
-            pageIds: @js($entries->pluck('id')->map(fn ($id) => (int) $id)->values()),
+            pageIds: @js($entries->getCollection()->filter(fn ($e) => !empty($e->is_deletable_manual_audit))->pluck('id')->map(fn ($id) => (int) $id)->values()),
             selectedIds: [],
             deleteModalOpen: false,
             deleteMode: 'records_only',
@@ -531,10 +531,11 @@
                             <input
                                 type="checkbox"
                                 :checked="allPageSelected"
+                                :disabled="pageIds.length === 0"
                                 @change="toggleAllPage()"
-                                title="Select all on this page"
-                                aria-label="Select all audit entries on this page"
-                                class="h-4 w-4 rounded accent-[#214c34] cursor-pointer"
+                                title="Select all manual adjusted settlement audits on this page"
+                                aria-label="Select all manual adjusted settlement audits on this page"
+                                class="h-4 w-4 rounded accent-[#214c34] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                         </th>
                         <th class="px-5 py-3.5">Entry #</th>
@@ -554,15 +555,21 @@
                             class="hover:bg-[var(--mint-50)]/70 transition"
                             :class="selectedIds.includes({{ (int) $entry->id }}) ? 'bg-rose-50/40 dark:bg-rose-950/20' : ''"
                         >
-                            <!-- Multi-Select Checkbox -->
+                            <!-- Multi-Select Checkbox (Only Manual Adjusted Settlement Audits) -->
                             <td class="px-4 py-3.5 text-center">
-                                <input
-                                    type="checkbox"
-                                    :checked="selectedIds.includes({{ (int) $entry->id }})"
-                                    @change="toggleRow({{ (int) $entry->id }})"
-                                    aria-label="Select entry #{{ $entry->id }}"
-                                    class="h-4 w-4 rounded accent-[#214c34] cursor-pointer"
-                                >
+                                @if(!empty($entry->is_deletable_manual_audit))
+                                    <input
+                                        type="checkbox"
+                                        :checked="selectedIds.includes({{ (int) $entry->id }})"
+                                        @change="toggleRow({{ (int) $entry->id }})"
+                                        aria-label="Select manual audit entry #{{ $entry->id }}"
+                                        class="h-4 w-4 rounded accent-[#214c34] cursor-pointer"
+                                    >
+                                @else
+                                    <span class="inline-flex items-center justify-center text-slate-300 dark:text-slate-600" title="Immutable system ledger entry (cannot be deleted)">
+                                        <i class="fa-solid fa-lock text-[11px]"></i>
+                                    </span>
+                                @endif
                             </td>
 
                             <!-- Entry ID -->
@@ -634,16 +641,22 @@
                                 {{ $entry->description ?: '—' }}
                             </td>
 
-                            <!-- Single Delete Trigger -->
+                            <!-- Single Delete Trigger (Only Manual Adjusted Settlement Audits) -->
                             <td class="px-4 py-3.5 text-right whitespace-nowrap">
-                                <button
-                                    type="button"
-                                    @click="openSingleDeleteModal({{ (int) $entry->id }})"
-                                    title="Delete audit entry #{{ $entry->id }}"
-                                    class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition"
-                                >
-                                    <i class="fa-solid fa-trash-can text-[11px]"></i>
-                                </button>
+                                @if(!empty($entry->is_deletable_manual_audit))
+                                    <button
+                                        type="button"
+                                        @click="openSingleDeleteModal({{ (int) $entry->id }})"
+                                        title="Delete manual audit entry #{{ $entry->id }}"
+                                        class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition"
+                                    >
+                                        <i class="fa-solid fa-trash-can text-[11px]"></i>
+                                    </button>
+                                @else
+                                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-400" title="Immutable system entry">
+                                        <i class="fa-solid fa-shield-halved text-[11px]"></i>
+                                    </span>
+                                @endif
                             </td>
                         </tr>
                     @empty
