@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # ============================================================================
-# MERAMOT GIT HOOK: Block direct teammate commits to 'main'
+# MERAMOT GIT HOOK: Protect 'main' against direct non-admin commits
 # ============================================================================
 
 BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
@@ -9,7 +9,6 @@ if [ "$BRANCH" = "main" ]; then
     GIT_USER=$(git config user.name 2>/dev/null)
     GIT_EMAIL=$(git config user.email 2>/dev/null)
 
-    # Allow Team Lead (Farhan Tanvir) or explicit override ALLOW_MAIN_COMMIT=1
     case "$GIT_USER $GIT_EMAIL" in
         *farhantanvir*|*"Farhan Tanvir"*)
             exit 0
@@ -22,15 +21,14 @@ if [ "$BRANCH" = "main" ]; then
 
     echo ""
     echo "========================================================================"
-    echo "ERROR: Direct commits to 'main' are disabled!"
+    echo "ERROR: Direct commits to 'main' are blocked by branch protection rules."
     echo "========================================================================"
-    echo "Team Lead (Farhan Tanvir) is preparing 'main' for deployment and the"
-    echo "November 12 Sprint 1 Defense Demo."
+    echo "The 'main' branch is protected. Create a feature branch and open a Pull"
+    echo "Request on GitHub for review and approval:"
     echo ""
-    echo "Please create and switch to your own branch to commit your work:"
-    echo "   git checkout -b <your-name>-feature"
-    echo "   git commit -m \"your commit message\""
-    echo "   git push -u origin <your-name>-feature"
+    echo "   git checkout -b feature/<topic>"
+    echo "   git commit -m \"Describe your change\""
+    echo "   git push -u origin feature/<topic>"
     echo "========================================================================"
     echo ""
     exit 1
