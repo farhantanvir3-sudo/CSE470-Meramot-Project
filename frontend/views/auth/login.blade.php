@@ -3,7 +3,55 @@
 @section('title', 'Welcome back | Sign In — Meramot')
 
 @section('content')
-<div class="min-h-[80vh] flex items-center justify-center px-4 py-8">
+<div
+    class="min-h-[80vh] flex items-center justify-center px-4 py-8"
+    x-data="{
+        forgotModalOpen: {{ session('forgot_password_sent_email') ? 'true' : 'false' }},
+        forgotStep: '{{ session('forgot_password_sent_email') ? 'sent' : 'form' }}',
+        forgotEmail: @js(session('forgot_password_sent_email', '')),
+        forgotSending: false,
+        forgotError: '',
+        openForgotModal() {
+            const loginInput = document.querySelector('input[name=login]')?.value?.trim() || '';
+            this.forgotEmail = loginInput.includes('@') ? loginInput : '';
+            this.forgotError = '';
+            this.forgotSending = false;
+            this.forgotStep = 'form';
+            this.forgotModalOpen = true;
+        },
+        async submitForgotPassword() {
+            this.forgotError = '';
+            const email = (this.forgotEmail || '').trim();
+            if (!email || !email.includes('@')) {
+                this.forgotError = 'Please enter a valid email address.';
+                return;
+            }
+            this.forgotSending = true;
+            try {
+                const res = await fetch('/forgot-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.forgotError = data?.errors?.email?.[0] || data?.message || 'Unable to send recovery email right now.';
+                    return;
+                }
+                this.forgotEmail = data.email || email;
+                this.forgotStep = 'sent';
+            } catch (e) {
+                this.forgotError = 'Network error. Please try again.';
+            } finally {
+                this.forgotSending = false;
+            }
+        }
+    }"
+>
     <div class="flex w-full max-w-[440px] flex-col gap-6">
         
         <!-- Top Logo -->
@@ -112,7 +160,7 @@
                         <input type="checkbox" name="remember" class="rounded accent-[#214c34]" checked>
                         <span>Remember me</span>
                     </label>
-                    <a href="/forgot-password" class="hover:underline">Forgot password?</a>
+                    <a href="/forgot-password" @click.prevent="openForgotModal()" class="hover:underline font-medium text-[#214c34]">Forgot password?</a>
                 </div>
 
                 <button
@@ -175,6 +223,127 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+
+    <!-- ── Forgot Password Dialog & Email Sent Confirmation Pop-Up Tile ── -->
+    <div
+        x-show="forgotModalOpen"
+        x-cloak
+        @keydown.escape.window="if (forgotModalOpen && !forgotSending) forgotModalOpen = false"
+        class="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="forgot-password-modal-title"
+    >
+        <div
+            x-show="forgotModalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-sm"
+            @click="if (!forgotSending) forgotModalOpen = false"
+        ></div>
+
+        <div
+            x-show="forgotModalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+            class="relative z-[111] w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
+        >
+            <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-[#214c34] to-emerald-400"></div>
+
+            <!-- Step 1: Enter Email -->
+            <div x-show="forgotStep === 'form'" class="p-7 sm:p-8">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#214c34]">
+                            <i class="fa-solid fa-key text-base"></i>
+                        </div>
+                        <div>
+                            <h2 id="forgot-password-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Reset your password</h2>
+                            <p class="text-xs text-[var(--muted-foreground)]">Enter your account email to receive recovery instructions.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="forgotModalOpen = false" class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-200)] transition" aria-label="Close">✕</button>
+                </div>
+
+                <form @submit.prevent="submitForgotPassword()" class="mt-5 space-y-4">
+                    <template x-if="forgotError">
+                        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-800 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-exclamation text-red-600"></i>
+                            <span x-text="forgotError"></span>
+                        </div>
+                    </template>
+
+                    <div>
+                        <label class="mb-1.5 block text-xs font-semibold text-[var(--foreground)]">Email address</label>
+                        <input
+                            type="email"
+                            x-model="forgotEmail"
+                            required
+                            placeholder="name@example.com"
+                            class="w-full rounded-full border border-[#d7d7d7] bg-white px-5 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34]"
+                        />
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2.5 pt-1">
+                        <button
+                            type="button"
+                            @click="forgotModalOpen = false"
+                            :disabled="forgotSending"
+                            class="rounded-full border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="forgotSending"
+                            class="inline-flex items-center gap-2 rounded-full bg-[#163625] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
+                        >
+                            <i class="fa-solid" :class="forgotSending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+                            <span x-text="forgotSending ? 'Sending...' : 'Send Recovery Email'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Step 2: Email Sent Successfully Pop-Up Tile -->
+            <div x-show="forgotStep === 'sent'" class="p-7 sm:p-8 text-center">
+                <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-inner">
+                    <i class="fa-solid fa-envelope-circle-check text-2xl"></i>
+                </div>
+
+                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]">
+                    Email Sent Successfully
+                </h2>
+
+                <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                    <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+                    <span class="truncate" x-text="forgotEmail"></span>
+                </div>
+
+                <p class="mt-3.5 text-sm leading-relaxed text-[var(--muted-foreground)]">
+                    If an account is registered with this address, we've sent password recovery instructions to your inbox. Please check your spam folder if it doesn't arrive shortly.
+                </p>
+
+                <div class="mt-6">
+                    <button
+                        type="button"
+                        @click="forgotModalOpen = false"
+                        class="w-full rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
+                    >
+                        Done
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

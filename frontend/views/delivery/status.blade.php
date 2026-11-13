@@ -291,4 +291,52 @@
     @endif
 
 </div>
+
+@if(session('credentials_emailed_popup'))
+    <div
+        x-data="{ emailSentPopupOpen: true }"
+        x-show="emailSentPopupOpen"
+        x-cloak
+        @keydown.escape.window="emailSentPopupOpen = false"
+        class="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delivery-email-sent-title"
+    >
+        <div class="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-sm" @click="emailSentPopupOpen = false"></div>
+
+        <div class="relative z-[111] w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]">
+            <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-[#214c34] to-emerald-400"></div>
+
+            <div class="p-7 sm:p-8 text-center">
+                <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-inner">
+                    <i class="fa-solid fa-envelope-circle-check text-2xl"></i>
+                </div>
+
+                <h2 id="delivery-email-sent-title" class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]">
+                    Email Sent Successfully
+                </h2>
+
+                <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                    <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+                    <span class="truncate">{{ session('credentials_emailed_popup') }}</span>
+                </div>
+
+                <p class="mt-3.5 text-sm leading-relaxed text-[var(--muted-foreground)]">
+                    Your <code class="font-mono font-bold">@meramotbd.com</code> company login email and password have been sent to your personal inbox.
+                </p>
+
+                <div class="mt-6">
+                    <button
+                        type="button"
+                        @click="emailSentPopupOpen = false"
+                        class="w-full rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
+                    >
+                        Okay, Got It
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 @endsection

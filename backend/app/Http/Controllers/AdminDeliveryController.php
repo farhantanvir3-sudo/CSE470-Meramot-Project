@@ -481,10 +481,12 @@ class AdminDeliveryController extends Controller
             true
         );
 
-        return redirect('/delivery-agent/status')->with(
-            'success',
-            "Your @meramotbd.com company email and password have been emailed again to {$recipientEmail}!"
-        );
+        return redirect('/delivery-agent/status')
+            ->with('credentials_emailed_popup', $recipientEmail)
+            ->with(
+                'success',
+                "Your @meramotbd.com company email and password have been emailed again to {$recipientEmail}!"
+            );
     }
 
     /* ------------------------------------------------------------------------
