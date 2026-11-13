@@ -231,6 +231,41 @@
             max-height: none !important;
         }
 
+        /* Radial spreading circular disk on Cart hover & mobile press */
+        .meramot-cart-btn {
+            position: relative;
+            isolation: isolate;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .meramot-cart-btn::before {
+            content: "";
+            position: absolute;
+            inset: -10px;
+            z-index: -1;
+            border-radius: 9999px;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(22, 54, 37, 0.24) 0%, rgba(16, 185, 129, 0.16) 52%, rgba(16, 185, 129, 0) 74%);
+            opacity: 0;
+            transform: scale(0.62);
+            transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease;
+        }
+        .dark .meramot-cart-btn::before {
+            background: radial-gradient(circle, rgba(181, 228, 168, 0.34) 0%, rgba(110, 231, 183, 0.18) 52%, rgba(110, 231, 183, 0) 74%);
+        }
+        .meramot-cart-btn:hover::before,
+        .meramot-cart-btn:focus-visible::before {
+            opacity: 1;
+            transform: scale(1.16);
+        }
+        .meramot-cart-btn:active::before {
+            opacity: 1;
+            transform: scale(1.28);
+        }
+        .meramot-cart-btn:active {
+            transform: scale(0.96);
+        }
+
         /* Academic defense mode toggle (Hidden by default unless ?dev=1 or Ctrl+Shift+D) */
         @php
             if (request()->has('dev')) {
@@ -618,7 +653,7 @@
                     <!-- Mobile Quick Cart Icon (Visible on Mobile Header) -->
                     <a
                         href="/cart"
-                        class="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:bg-[var(--mint-300)] md:hidden"
+                        class="meramot-cart-btn relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition duration-200 hover:bg-[var(--mint-300)] md:hidden"
                         title="Direct-Order Cart"
                         aria-label="Direct-Order Cart"
                     >
@@ -829,7 +864,7 @@
                         <!-- Cart Button (Links directly to Unified Direct-Order Cart `/cart`) -->
                         <a
                             href="/cart"
-                            class="relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition hover:scale-105 hover:bg-[var(--mint-300)]"
+                            class="meramot-cart-btn relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition duration-200 hover:scale-105 hover:bg-[var(--mint-300)]"
                             title="Direct-Order Cart"
                             aria-label="Direct-Order Cart"
                         >
