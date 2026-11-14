@@ -203,17 +203,17 @@
                 </h2>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-3">
+            <div class="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
                 @foreach($popularCategories as $item)
-                    <a href="{{ $item['href'] }}" class="flex flex-col items-center justify-center gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md min-h-[120px] md:min-h-0 md:flex-row md:justify-start md:gap-4 md:rounded-[1.75rem] md:p-4 md:text-left">
-                        <div class="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-[var(--mint-200)] text-2xl shadow-inner md:h-16 md:w-16 md:rounded-2xl md:text-3xl">
+                    <a href="{{ $item['href'] }}" class="flex min-w-0 flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-2.5 sm:p-3 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md min-h-[112px] md:min-h-0 md:flex-row md:justify-start md:gap-4 md:rounded-[1.75rem] md:p-4 md:text-left">
+                        <div class="grid h-10 w-10 sm:h-12 sm:w-12 shrink-0 place-items-center rounded-xl bg-[var(--mint-200)] text-xl sm:text-2xl shadow-inner md:h-16 md:w-16 md:rounded-2xl md:text-3xl">
                             {{ $item['sprite'] }}
                         </div>
-                        <div>
-                            <h3 class="text-xs font-bold leading-tight text-[var(--foreground)] md:text-lg md:font-semibold">
+                        <div class="min-w-0 w-full">
+                            <h3 class="text-[11px] sm:text-xs font-bold leading-tight text-[var(--foreground)] break-words md:text-lg md:font-semibold">
                                 {{ $item['label'] }}
                             </h3>
-                            <p class="mt-1 line-clamp-2 text-[10px] leading-[1.3] text-[var(--muted-foreground)] md:mt-1 md:text-sm md:leading-tight">
+                            <p class="mt-1 line-clamp-2 text-[10px] leading-[1.25] text-[var(--muted-foreground)] md:mt-1 md:text-sm md:leading-tight">
                                 {{ $item['trend'] }}
                             </p>
                         </div>
