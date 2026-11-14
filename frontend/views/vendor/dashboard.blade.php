@@ -877,13 +877,23 @@
                                         @endif
                                     </p>
 
-                                    <!-- Saved Itemized Quote & Warranty Preview Strip -->
+                                    <!-- Saved Itemized Quote & Per-Part Warranty Preview Strip -->
+                                    @php
+                                        $resolvedJobWarrantySummary = \App\Models\Bid::formatPartsWarrantySummary($resolvedJobParts, $resolvedJobHasWarranty, $resolvedJobWarrantyDays);
+                                    @endphp
                                     <div class="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
                                         @foreach($resolvedJobParts as $pIdx => $pRow)
-                                            <span class="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--mint-100)]/60 px-2.5 py-0.5 text-[var(--foreground)]">
+                                            @php
+                                                $pRowDays = (int) ($pRow['warranty_days'] ?? 0);
+                                                $pRowWarranty = (bool) ($pRow['has_warranty'] ?? ($pRowDays > 0)) && $pRowDays > 0;
+                                            @endphp
+                                            <span class="inline-flex flex-wrap items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--mint-100)]/60 px-2.5 py-0.5 text-[var(--foreground)]">
                                                 <strong class="text-[var(--accent-dark)]">{{ $pIdx + 1 }}.</strong>
                                                 <span>{{ $pRow['name'] }}:</span>
                                                 <strong>৳{{ number_format($pRow['cost'], 2) }}</strong>
+                                                <span class="rounded-full px-1.5 py-0.5 text-[9px] font-bold {{ $pRowWarranty ? 'bg-emerald-100 text-emerald-900' : 'bg-[var(--card)] text-[var(--muted-foreground)]' }}">
+                                                    {{ $pRowWarranty ? "{$pRowDays}d warranty" : 'No warranty' }}
+                                                </span>
                                             </span>
                                         @endforeach
                                         <span class="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-0.5 text-[var(--foreground)]">
@@ -891,7 +901,7 @@
                                         </span>
                                         <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-bold {{ $resolvedJobHasWarranty ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--card)] text-[var(--muted-foreground)] border border-[var(--border)]' }}">
                                             <i class="{{ $resolvedJobHasWarranty ? 'fa-solid fa-shield-halved text-emerald-700' : 'fa-regular fa-circle-xmark' }}"></i>
-                                            {{ $resolvedJobHasWarranty ? "{$resolvedJobWarrantyDays}-Day Warranty" : 'No Extended Warranty' }}
+                                            {{ $resolvedJobWarrantySummary }}
                                         </span>
                                     </div>
                                 </div>

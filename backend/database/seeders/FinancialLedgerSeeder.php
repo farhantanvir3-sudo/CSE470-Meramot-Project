@@ -344,11 +344,21 @@ class FinancialLedgerSeeder extends Seeder
 
             $primaryPartCost = round($partsCost * 0.70, 2);
             $secondaryPartCost = round($partsCost - $primaryPartCost, 2);
-            $seededPartsItems = [
-                ['name' => "{$bp['brand']} {$bp['model']} — Primary Replacement Module", 'cost' => $primaryPartCost],
-                ['name' => 'OEM Mounting Seals, Flex & Connector Kit', 'cost' => $secondaryPartCost],
-            ];
             $warrantyDays = $pkg ? ($pkg->warranty_months * 30) : 90;
+            $seededPartsItems = [
+                [
+                    'name' => "{$bp['brand']} {$bp['model']} — Primary Replacement Module",
+                    'cost' => $primaryPartCost,
+                    'has_warranty' => $warrantyDays > 0,
+                    'warranty_days' => $warrantyDays,
+                ],
+                [
+                    'name' => 'OEM Mounting Seals, Flex & Connector Kit',
+                    'cost' => $secondaryPartCost,
+                    'has_warranty' => false,
+                    'warranty_days' => 0,
+                ],
+            ];
 
             // 4. Marketplace Bids (Accepted winning bid + 1 Declined competing bid)
             $acceptedBid = null;
@@ -364,8 +374,8 @@ class FinancialLedgerSeeder extends Seeder
                     'has_warranty' => $warrantyDays > 0,
                     'warranty_days' => $warrantyDays,
                     'line_items' => [
-                        ['item' => $seededPartsItems[0]['name'], 'cost' => $primaryPartCost, 'type' => 'part'],
-                        ['item' => $seededPartsItems[1]['name'], 'cost' => $secondaryPartCost, 'type' => 'part'],
+                        ['item' => $seededPartsItems[0]['name'], 'cost' => $primaryPartCost, 'type' => 'part', 'has_warranty' => $warrantyDays > 0, 'warranty_days' => $warrantyDays],
+                        ['item' => $seededPartsItems[1]['name'], 'cost' => $secondaryPartCost, 'type' => 'part', 'has_warranty' => false, 'warranty_days' => 0],
                         ['item' => 'Certified Bench Diagnostics & Labor', 'cost' => $laborCost, 'type' => 'labor'],
                     ],
                     'technician_note' => "Bench-tested replacement and calibration for {$bp['brand']} {$bp['model']}.",
@@ -387,8 +397,8 @@ class FinancialLedgerSeeder extends Seeder
                         'shop_id' => $competitor->id,
                         'parts_cost' => $partsCost + 300,
                         'parts_items' => [
-                            ['name' => "{$bp['brand']} {$bp['model']} — Replacement Assembly", 'cost' => $compPart1],
-                            ['name' => 'Gasket & Fastener Set', 'cost' => $compPart2],
+                            ['name' => "{$bp['brand']} {$bp['model']} — Replacement Assembly", 'cost' => $compPart1, 'has_warranty' => true, 'warranty_days' => 60],
+                            ['name' => 'Gasket & Fastener Set', 'cost' => $compPart2, 'has_warranty' => false, 'warranty_days' => 0],
                         ],
                         'labor_cost' => $laborCost + 150,
                         'proposed_cost' => $gross + 450,
@@ -396,8 +406,8 @@ class FinancialLedgerSeeder extends Seeder
                         'has_warranty' => true,
                         'warranty_days' => 60,
                         'line_items' => [
-                            ['item' => "{$bp['brand']} {$bp['model']} — Replacement Assembly", 'cost' => $compPart1, 'type' => 'part'],
-                            ['item' => 'Gasket & Fastener Set', 'cost' => $compPart2, 'type' => 'part'],
+                            ['item' => "{$bp['brand']} {$bp['model']} — Replacement Assembly", 'cost' => $compPart1, 'type' => 'part', 'has_warranty' => true, 'warranty_days' => 60],
+                            ['item' => 'Gasket & Fastener Set', 'cost' => $compPart2, 'type' => 'part', 'has_warranty' => false, 'warranty_days' => 0],
                             ['item' => 'Bench Diagnostics & Labor', 'cost' => $laborCost + 150, 'type' => 'labor'],
                         ],
                         'technician_note' => "Standard bench quote for {$bp['brand']} {$bp['model']}.",
@@ -422,8 +432,8 @@ class FinancialLedgerSeeder extends Seeder
                 'warranty_days' => $warrantyDays,
                 'final_quoted_amount' => $gross,
                 'final_quote_items' => [
-                    ['title' => $seededPartsItems[0]['name'], 'amount' => $primaryPartCost, 'type' => 'part'],
-                    ['title' => $seededPartsItems[1]['name'], 'amount' => $secondaryPartCost, 'type' => 'part'],
+                    ['title' => $seededPartsItems[0]['name'], 'amount' => $primaryPartCost, 'type' => 'part', 'has_warranty' => $warrantyDays > 0, 'warranty_days' => $warrantyDays],
+                    ['title' => $seededPartsItems[1]['name'], 'amount' => $secondaryPartCost, 'type' => 'part', 'has_warranty' => false, 'warranty_days' => 0],
                     ['title' => 'Certified Technician Labor & QC', 'amount' => $laborCost, 'type' => 'labor'],
                 ],
                 'customer_approved' => true,
@@ -472,7 +482,7 @@ class FinancialLedgerSeeder extends Seeder
                     'invoice_id' => $invoiceId,
                     'shop_service_id' => $primarySvcId,
                     'title' => $seededPartsItems[0]['name'],
-                    'description' => "Verified primary hardware part for {$bp['brand']} {$bp['model']}",
+                    'description' => "Verified primary hardware part for {$bp['brand']} {$bp['model']} ({$warrantyDays}-day part warranty)",
                     'quantity' => 1,
                     'unit_price' => $primaryPartCost,
                     'total_price' => $primaryPartCost,
@@ -483,7 +493,7 @@ class FinancialLedgerSeeder extends Seeder
                     'invoice_id' => $invoiceId,
                     'shop_service_id' => $primarySvcId,
                     'title' => $seededPartsItems[1]['name'],
-                    'description' => "OEM mounting seals & connectors for {$bp['brand']} {$bp['model']}",
+                    'description' => "OEM mounting seals & connectors for {$bp['brand']} {$bp['model']} (No extended consumable warranty)",
                     'quantity' => 1,
                     'unit_price' => $secondaryPartCost,
                     'total_price' => $secondaryPartCost,

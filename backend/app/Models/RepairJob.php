@@ -54,8 +54,11 @@ class RepairJob extends Model
      */
     public function resolvedPartsItems(): array
     {
+        $fallbackDays = $this->resolvedWarrantyDays();
+        $fallbackHas = $this->hasWarrantyCoverage();
+
         if (is_array($this->parts_items)) {
-            return Bid::normalizePartsList($this->parts_items);
+            return Bid::normalizePartsList($this->parts_items, false, $fallbackDays, $fallbackHas);
         }
 
         if ($this->acceptedBid) {
@@ -63,7 +66,7 @@ class RepairJob extends Model
         }
 
         if (is_array($this->final_quote_items)) {
-            $fromFinal = Bid::normalizePartsList($this->final_quote_items, skipLabor: true);
+            $fromFinal = Bid::normalizePartsList($this->final_quote_items, true, $fallbackDays, $fallbackHas);
             if (!empty($fromFinal)) {
                 return $fromFinal;
             }
@@ -71,7 +74,12 @@ class RepairJob extends Model
 
         $partsCost = round((float) ($this->parts_cost ?? 0), 2);
         return $partsCost > 0
-            ? [['name' => 'Replacement Hardware Components', 'cost' => $partsCost]]
+            ? [[
+                'name' => 'Replacement Hardware Components',
+                'cost' => $partsCost,
+                'has_warranty' => $fallbackHas,
+                'warranty_days' => $fallbackDays,
+            ]]
             : [];
     }
 

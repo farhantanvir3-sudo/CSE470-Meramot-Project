@@ -28,11 +28,20 @@
         }, 0));
     }
 
+    function defaultPartRow() {
+        return {
+            name: '',
+            cost: '',
+            has_warranty: true,
+            warranty_days: 90
+        };
+    }
+
     function removePartRow(parts, index) {
         if (parts.length > 1) {
             parts.splice(index, 1);
         } else {
-            parts[0] = { name: '', cost: '' };
+            parts[0] = defaultPartRow();
         }
     }
 
@@ -47,18 +56,63 @@
     function normalizeRows(rawList, minRows) {
         const rows = Array.isArray(rawList)
             ? rawList.map(function (item) {
+                const rawDays = item && item.warranty_days !== undefined ? Number(item.warranty_days) : NaN;
+                const hasWarranty = (item && item.has_warranty !== undefined)
+                    ? Boolean(item.has_warranty)
+                    : (Number.isFinite(rawDays) && rawDays > 0);
+                const warrantyDays = Number.isFinite(rawDays) && rawDays > 0 ? Math.min(730, Math.round(rawDays)) : 90;
+
                 return {
                     name: item && item.name ? String(item.name) : '',
-                    cost: formatInputNumber(item ? item.cost : '')
+                    cost: formatInputNumber(item ? item.cost : ''),
+                    has_warranty: hasWarranty,
+                    warranty_days: warrantyDays
                 };
             })
             : [];
 
         while (rows.length < (minRows || 1)) {
-            rows.push({ name: '', cost: '' });
+            rows.push(defaultPartRow());
         }
 
         return rows;
+    }
+
+    function summarizeWarranty(parts) {
+        const allRows = Array.isArray(parts) ? parts : [];
+        const activeRows = allRows.filter(function (item) {
+            return item && ((item.name && String(item.name).trim() !== '') || parseAmount(item.cost) > 0);
+        });
+        const targetRows = activeRows.length > 0 ? activeRows : allRows;
+
+        if (!targetRows.length) {
+            return 'No parts warrantied';
+        }
+
+        let warrantiedCount = 0;
+        let maxDays = 0;
+        let minDays = Infinity;
+
+        targetRows.forEach(function (item) {
+            const days = item && item.has_warranty ? Math.max(0, Math.min(730, Math.round(Number(item.warranty_days) || 0))) : 0;
+            if (days > 0) {
+                warrantiedCount += 1;
+                if (days > maxDays) maxDays = days;
+                if (days < minDays) minDays = days;
+            }
+        });
+
+        if (warrantiedCount === 0) {
+            return 'No parts warrantied';
+        }
+
+        if (warrantiedCount === targetRows.length && minDays === maxDays) {
+            return targetRows.length === 1
+                ? (maxDays + '-day part warranty')
+                : (maxDays + '-day warranty on all parts');
+        }
+
+        return warrantiedCount + '/' + targetRows.length + ' parts warrantied • up to ' + maxDays + 'd';
     }
 
     window.meramotBidQuoteForm = function (config) {
@@ -71,11 +125,9 @@
         return {
             selectedShopId: fallbackShopId,
             existingBidsByShop: bidsByShop,
-            parts: [{ name: '', cost: '' }],
+            parts: [defaultPartRow(), defaultPartRow()],
             laborCost: '',
             estimatedDays: 2,
-            hasWarranty: true,
-            warrantyDays: 90,
             technicianNote: '',
             editing: false,
 
@@ -84,7 +136,7 @@
             },
 
             addPart: function () {
-                this.parts.push({ name: '', cost: '' });
+                this.parts.push(defaultPartRow());
             },
 
             removePart: function (index) {
@@ -95,6 +147,10 @@
 
             get partsSubtotal() {
                 return sumParts(this.parts);
+            },
+
+            get warrantySummaryText() {
+                return summarizeWarranty(this.parts);
             },
 
             get existingBid() {
@@ -114,18 +170,14 @@
                     this.parts = normalizeRows(bid.parts_items, 1);
                     this.laborCost = formatInputNumber(bid.labor_cost);
                     this.estimatedDays = Number(bid.estimated_days) || 2;
-                    this.hasWarranty = Boolean(bid.has_warranty);
-                    this.warrantyDays = Number(bid.warranty_days) > 0 ? Number(bid.warranty_days) : 90;
                     this.technicianNote = bid.technician_note ? String(bid.technician_note) : '';
                     if (!keepEditing) {
                         this.editing = false;
                     }
                 } else {
-                    this.parts = [{ name: '', cost: '' }, { name: '', cost: '' }];
+                    this.parts = [defaultPartRow(), defaultPartRow()];
                     this.laborCost = '';
                     this.estimatedDays = 2;
-                    this.hasWarranty = true;
-                    this.warrantyDays = 90;
                     this.technicianNote = '';
                     this.editing = true;
                 }
@@ -152,12 +204,10 @@
             editingQuote: Boolean(cfg.openInitially),
             parts: normalizeRows(saved.parts_items, 1),
             laborCost: formatInputNumber(saved.labor_cost),
-            hasWarranty: saved.has_warranty !== undefined ? Boolean(saved.has_warranty) : true,
-            warrantyDays: Number(saved.warranty_days) > 0 ? Number(saved.warranty_days) : 90,
             diagnosisNotes: saved.diagnosis_notes ? String(saved.diagnosis_notes) : '',
 
             addPart: function () {
-                this.parts.push({ name: '', cost: '' });
+                this.parts.push(defaultPartRow());
             },
 
             removePart: function (index) {
@@ -168,6 +218,10 @@
 
             get partsSubtotal() {
                 return sumParts(this.parts);
+            },
+
+            get warrantySummaryText() {
+                return summarizeWarranty(this.parts);
             },
 
             get showQuoteBuilder() {
@@ -191,8 +245,6 @@
             resetToSaved: function () {
                 this.parts = normalizeRows(this.savedQuote.parts_items, 1);
                 this.laborCost = formatInputNumber(this.savedQuote.labor_cost);
-                this.hasWarranty = this.savedQuote.has_warranty !== undefined ? Boolean(this.savedQuote.has_warranty) : true;
-                this.warrantyDays = Number(this.savedQuote.warranty_days) > 0 ? Number(this.savedQuote.warranty_days) : 90;
                 this.diagnosisNotes = this.savedQuote.diagnosis_notes ? String(this.savedQuote.diagnosis_notes) : '';
             }
         };

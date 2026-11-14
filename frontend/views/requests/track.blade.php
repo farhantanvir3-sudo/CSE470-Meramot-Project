@@ -661,8 +661,19 @@
                                         <span class="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
                                             Labor: ৳{{ number_format($bid->labor_cost ?? 0, 2) }}
                                         </span>
+                                        @php
+                                            $partDaysList = collect($bidPartsItems)
+                                                ->map(fn ($p) => (bool) ($p['has_warranty'] ?? false) ? (int) ($p['warranty_days'] ?? 0) : 0);
+                                            $warrantiedPartsCount = $partDaysList->filter(fn ($d) => $d > 0)->count();
+                                            $allPartsSameDays = $warrantiedPartsCount > 0
+                                                && $warrantiedPartsCount === $partDaysList->count()
+                                                && $partDaysList->unique()->count() === 1;
+                                            $bidWarrantyPillText = ($bidHasWarranty && $bidWarrantyDays > 0)
+                                                ? ($allPartsSameDays ? "✓ Warranty: {$bidWarrantyDays} days" : "✓ Warranty: up to {$bidWarrantyDays} days")
+                                                : 'No parts warranty';
+                                        @endphp
                                         <span class="px-2.5 py-1 rounded-full {{ $bidHasWarranty ? 'bg-emerald-100 border border-emerald-300 text-emerald-900 font-semibold' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)]' }}">
-                                            {{ $bidHasWarranty ? "✓ Warranty: {$bidWarrantyDays} days" : 'No parts warranty' }}
+                                            {{ $bidWarrantyPillText }}
                                         </span>
                                     </div>
 

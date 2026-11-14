@@ -526,6 +526,9 @@ class VendorBranchController extends Controller
             'parts_items' => 'nullable|array|max:30',
             'parts_items.*.name' => 'nullable|string|max:160',
             'parts_items.*.cost' => 'nullable|numeric|min:0|max:1000000',
+            'parts_items.*.warranty_configured' => 'nullable',
+            'parts_items.*.has_warranty' => 'nullable|boolean',
+            'parts_items.*.warranty_days' => 'nullable|integer|min:0|max:730',
             'labor_cost' => 'nullable|numeric|min:0|max:1000000',
             'proposed_cost' => 'nullable|numeric|min:1|max:2000000',
             'estimated_days' => 'required|integer|min:1|max:60',
@@ -548,17 +551,43 @@ class VendorBranchController extends Controller
         }
 
         $laborCost = round((float) ($validated['labor_cost'] ?? 0), 2);
+        $topLevelWarranty = self::resolveWarrantyConfig($request, $validated, 90);
         $hasPartsArray = $request->has('parts_items') && is_array($request->input('parts_items'));
 
         if ($hasPartsArray) {
-            $normalizedParts = Bid::normalizePartsList($request->input('parts_items'));
+            $normalizedParts = Bid::normalizePartsList(
+                $request->input('parts_items'),
+                false,
+                $topLevelWarranty['warranty_days'],
+                $topLevelWarranty['has_warranty']
+            );
             $partsCost = count($normalizedParts) > 0
                 ? round((float) collect($normalizedParts)->sum('cost'), 2)
                 : round((float) ($validated['parts_cost'] ?? 0), 2);
             if (count($normalizedParts) === 0 && $partsCost > 0) {
-                $normalizedParts = [['name' => 'Component / Parts Estimate', 'cost' => $partsCost]];
+                $normalizedParts = [[
+                    'name' => 'Component / Parts Estimate',
+                    'cost' => $partsCost,
+                    'has_warranty' => $topLevelWarranty['has_warranty'],
+                    'warranty_days' => $topLevelWarranty['warranty_days'],
+                ]];
             }
             $proposedCost = round($partsCost + $laborCost, 2);
+
+            if (count($normalizedParts) > 0) {
+                $summary = Bid::summarizePartsWarranty($normalizedParts);
+                $warrantyConfig = [
+                    'has_warranty' => $summary['has_warranty'],
+                    'warranty_days' => $summary['warranty_days'],
+                ];
+            } else {
+                $hasExplicitTopWarranty = $request->has('warranty_configured')
+                    || $request->has('has_warranty')
+                    || $request->filled('warranty_days');
+                $warrantyConfig = $hasExplicitTopWarranty
+                    ? $topLevelWarranty
+                    : ['has_warranty' => false, 'warranty_days' => 0];
+            }
         } else {
             $partsCost = round((float) ($validated['parts_cost'] ?? 0), 2);
             $proposedCost = isset($validated['proposed_cost']) && (float) $validated['proposed_cost'] > 0
@@ -568,8 +597,14 @@ class VendorBranchController extends Controller
                 $partsCost = round($proposedCost * 0.65, 2);
                 $laborCost = round($proposedCost - $partsCost, 2);
             }
+            $warrantyConfig = $topLevelWarranty;
             $normalizedParts = $partsCost > 0
-                ? [['name' => 'Component / Parts Estimate', 'cost' => $partsCost]]
+                ? [[
+                    'name' => 'Component / Parts Estimate',
+                    'cost' => $partsCost,
+                    'has_warranty' => $warrantyConfig['has_warranty'],
+                    'warranty_days' => $warrantyConfig['warranty_days'],
+                ]]
                 : [];
         }
 
@@ -579,10 +614,14 @@ class VendorBranchController extends Controller
             ]);
         }
 
-        $warrantyConfig = self::resolveWarrantyConfig($request, $validated, 90);
-
         $lineItems = array_map(
-            fn (array $part) => ['item' => $part['name'], 'cost' => (float) $part['cost'], 'type' => 'part'],
+            fn (array $part) => [
+                'item' => $part['name'],
+                'cost' => (float) $part['cost'],
+                'type' => 'part',
+                'has_warranty' => (bool) $part['has_warranty'],
+                'warranty_days' => (int) $part['warranty_days'],
+            ],
             $normalizedParts
         );
         if ($laborCost > 0 || empty($lineItems)) {
@@ -662,6 +701,9 @@ class VendorBranchController extends Controller
             'parts_items' => 'nullable|array|max:30',
             'parts_items.*.name' => 'nullable|string|max:160',
             'parts_items.*.cost' => 'nullable|numeric|min:0|max:1000000',
+            'parts_items.*.warranty_configured' => 'nullable',
+            'parts_items.*.has_warranty' => 'nullable|boolean',
+            'parts_items.*.warranty_days' => 'nullable|integer|min:0|max:730',
             'labor_cost' => 'nullable|numeric|min:0|max:1000000',
             'has_warranty' => 'nullable|boolean',
             'warranty_configured' => 'nullable',
@@ -683,9 +725,19 @@ class VendorBranchController extends Controller
             }
         }
 
+        $hasTopWarranty = $request->has('warranty_configured') || $request->has('has_warranty') || $request->filled('warranty_days');
+        $topWarranty = $hasTopWarranty
+            ? self::resolveWarrantyConfig($request, $validated, $job->resolvedWarrantyDays() ?: 90)
+            : ['has_warranty' => $job->hasWarrantyCoverage(), 'warranty_days' => $job->resolvedWarrantyDays() ?: 90];
+
         $hasQuoteBreakdownInput = $request->has('parts_items') || $request->filled('labor_cost');
         if ($hasQuoteBreakdownInput) {
-            $normalizedParts = Bid::normalizePartsList($request->input('parts_items', []));
+            $normalizedParts = Bid::normalizePartsList(
+                $request->input('parts_items', []),
+                false,
+                $topWarranty['warranty_days'],
+                $topWarranty['has_warranty']
+            );
             $partsCost = round((float) collect($normalizedParts)->sum('cost'), 2);
             $laborCost = round((float) ($validated['labor_cost'] ?? 0), 2);
             $computedFinal = round($partsCost + $laborCost, 2);
@@ -697,7 +749,13 @@ class VendorBranchController extends Controller
             }
 
             $finalQuoteItems = array_map(
-                fn (array $p) => ['title' => $p['name'], 'amount' => (float) $p['cost'], 'type' => 'part'],
+                fn (array $p) => [
+                    'title' => $p['name'],
+                    'amount' => (float) $p['cost'],
+                    'type' => 'part',
+                    'has_warranty' => (bool) $p['has_warranty'],
+                    'warranty_days' => (int) $p['warranty_days'],
+                ],
                 $normalizedParts
             );
             if ($laborCost > 0 || empty($finalQuoteItems)) {
@@ -710,15 +768,25 @@ class VendorBranchController extends Controller
             $jobUpdates['final_quoted_amount'] = $computedFinal;
             $jobUpdates['final_quote_items'] = $finalQuoteItems;
             $updatedFinalQuote = $computedFinal;
+
+            if (count($normalizedParts) > 0) {
+                $summary = Bid::summarizePartsWarranty($normalizedParts);
+                $jobUpdates['has_warranty'] = $summary['has_warranty'];
+                $jobUpdates['warranty_days'] = $summary['warranty_days'];
+            } else {
+                $jobUpdates['has_warranty'] = $hasTopWarranty ? $topWarranty['has_warranty'] : false;
+                $jobUpdates['warranty_days'] = $hasTopWarranty ? $topWarranty['warranty_days'] : 0;
+            }
         } elseif (!empty($validated['final_quoted_amount'])) {
             $updatedFinalQuote = round((float) $validated['final_quoted_amount'], 2);
             $jobUpdates['final_quoted_amount'] = $updatedFinalQuote;
-        }
-
-        if ($request->has('warranty_configured') || $request->has('has_warranty') || $request->filled('warranty_days')) {
-            $warrantyConfig = self::resolveWarrantyConfig($request, $validated, $job->resolvedWarrantyDays() ?: 90);
-            $jobUpdates['has_warranty'] = $warrantyConfig['has_warranty'];
-            $jobUpdates['warranty_days'] = $warrantyConfig['warranty_days'];
+            if ($hasTopWarranty) {
+                $jobUpdates['has_warranty'] = $topWarranty['has_warranty'];
+                $jobUpdates['warranty_days'] = $topWarranty['warranty_days'];
+            }
+        } elseif ($hasTopWarranty) {
+            $jobUpdates['has_warranty'] = $topWarranty['has_warranty'];
+            $jobUpdates['warranty_days'] = $topWarranty['warranty_days'];
         }
 
         if ($newStatus === 'COMPLETED') {
@@ -859,11 +927,15 @@ class VendorBranchController extends Controller
                 if (!empty($partsItems) && abs(($partsSum + $laborAmount) - $gross) <= 0.02) {
                     foreach ($partsItems as $part) {
                         $cost = round((float) $part['cost'], 2);
+                        $partDays = (int) ($part['warranty_days'] ?? 0);
+                        $partDesc = (!empty($part['has_warranty']) && $partDays > 0)
+                            ? "Itemized replacement part • {$partDays}-day warranty included"
+                            : 'Itemized replacement part • No extended part warranty';
                         $invoiceLines[] = [
                             'invoice_id' => $invoiceId,
                             'shop_service_id' => $primarySvcId,
                             'title' => $part['name'],
-                            'description' => 'Itemized replacement part approved in workshop quote',
+                            'description' => $partDesc,
                             'quantity' => 1,
                             'unit_price' => $cost,
                             'total_price' => $cost,
@@ -909,15 +981,27 @@ class VendorBranchController extends Controller
         $hasWarranty = $job->hasWarrantyCoverage();
         $warrantyDays = $hasWarranty ? $job->resolvedWarrantyDays() : 0;
 
+        $warrantiedPartLabels = [];
+        foreach ($job->resolvedPartsItems() as $part) {
+            $partDays = (int) ($part['warranty_days'] ?? 0);
+            if (!empty($part['has_warranty']) && $partDays > 0) {
+                $warrantiedPartLabels[] = "{$part['name']} ({$partDays} days)";
+            }
+        }
+
+        $warrantyDetails = $hasWarranty
+            ? (!empty($warrantiedPartLabels)
+                ? 'Covered parts: ' . implode(', ', $warrantiedPartLabels) . '.'
+                : "Covers replaced hardware components and bench workmanship for {$warrantyDays} days from completion.")
+            : 'Completed without extended parts warranty coverage per accepted workshop quote.';
+
         DB::table('warranties')->updateOrInsert(
             ['repair_job_id' => $job->id],
             [
                 'title' => $hasWarranty
                     ? "{$warrantyDays}-Day Meramot Verified Repair Warranty"
                     : 'Standard Bench Sign-Off (No Extended Warranty)',
-                'details' => $hasWarranty
-                    ? "Covers replaced hardware components and bench workmanship for {$warrantyDays} days from completion."
-                    : 'Completed without extended parts warranty coverage per accepted workshop quote.',
+                'details' => $warrantyDetails,
                 'duration_days' => $warrantyDays,
                 'starts_at' => $now,
                 'ends_at' => $now->copy()->addDays($warrantyDays),

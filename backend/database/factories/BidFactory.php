@@ -28,8 +28,18 @@ class BidFactory extends Factory
             'shop_id' => RepairShop::factory(),
             'parts_cost' => $partsCost,
             'parts_items' => [
-                ['name' => 'Primary Replacement Module', 'cost' => $partPrimary],
-                ['name' => 'Connector & Seal Kit', 'cost' => $partSecondary],
+                [
+                    'name' => 'Primary Replacement Module',
+                    'cost' => $partPrimary,
+                    'has_warranty' => true,
+                    'warranty_days' => $warrantyDays,
+                ],
+                [
+                    'name' => 'Connector & Seal Kit',
+                    'cost' => $partSecondary,
+                    'has_warranty' => false,
+                    'warranty_days' => 0,
+                ],
             ],
             'labor_cost' => $laborCost,
             'proposed_cost' => round($partsCost + $laborCost, 2),
@@ -41,11 +51,15 @@ class BidFactory extends Factory
                     'item' => 'Primary Replacement Module',
                     'cost' => $partPrimary,
                     'type' => 'part',
+                    'has_warranty' => true,
+                    'warranty_days' => $warrantyDays,
                 ],
                 [
                     'item' => 'Connector & Seal Kit',
                     'cost' => $partSecondary,
                     'type' => 'part',
+                    'has_warranty' => false,
+                    'warranty_days' => 0,
                 ],
                 [
                     'item' => 'Labor & Service',

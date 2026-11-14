@@ -24,6 +24,8 @@ return new class extends Migration
                 ->get(['id', 'parts_cost', 'warranty_days', 'line_items']);
 
             foreach ($bids as $bid) {
+                $bidDays = max(0, (int) ($bid->warranty_days ?? 0));
+                $bidHasWarranty = $bidDays > 0;
                 $partsItems = [];
                 $decoded = is_string($bid->line_items)
                     ? json_decode($bid->line_items, true)
@@ -44,6 +46,8 @@ return new class extends Migration
                             $partsItems[] = [
                                 'name' => $label !== '' ? $label : 'Component / Parts Estimate',
                                 'cost' => max(0.0, $cost),
+                                'has_warranty' => $bidHasWarranty,
+                                'warranty_days' => $bidDays,
                             ];
                         }
                     }
@@ -52,7 +56,12 @@ return new class extends Migration
                 $partsCost = round((float) ($bid->parts_cost ?? 0), 2);
                 if (empty($partsItems) && $partsCost > 0) {
                     $partsItems = [
-                        ['name' => 'Replacement Hardware Components', 'cost' => $partsCost],
+                        [
+                            'name' => 'Replacement Hardware Components',
+                            'cost' => $partsCost,
+                            'has_warranty' => $bidHasWarranty,
+                            'warranty_days' => $bidDays,
+                        ],
                     ];
                 }
 
@@ -60,7 +69,7 @@ return new class extends Migration
                     ->where('id', $bid->id)
                     ->update([
                         'parts_items' => json_encode($partsItems),
-                        'has_warranty' => ((int) ($bid->warranty_days ?? 0)) > 0,
+                        'has_warranty' => $bidHasWarranty,
                     ]);
             }
         }

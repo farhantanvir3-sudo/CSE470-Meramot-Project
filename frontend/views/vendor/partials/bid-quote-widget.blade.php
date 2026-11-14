@@ -66,8 +66,17 @@
         <div class="rounded-xl border border-[var(--border)]/60 bg-[var(--card)] p-2.5 space-y-1.5">
             <span class="block text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">Parts Breakdown</span>
             <template x-for="(part, idx) in (existingBid ? existingBid.parts_items : [])" :key="idx">
-                <div class="flex items-center justify-between gap-2 text-[11px]">
-                    <span class="text-[var(--foreground)] min-w-0 truncate" x-text="(idx + 1) + '. ' + part.name"></span>
+                <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px]">
+                    <div class="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
+                        <span class="text-[var(--foreground)] break-words" x-text="(idx + 1) + '. ' + part.name"></span>
+                        <span
+                            class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0"
+                            :class="(part.has_warranty && Number(part.warranty_days) > 0) ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--mint-100)] text-[var(--muted-foreground)] border border-[var(--border)]'"
+                        >
+                            <i :class="(part.has_warranty && Number(part.warranty_days) > 0) ? 'fa-solid fa-shield-halved text-[9px] text-emerald-700' : 'fa-regular fa-circle-xmark text-[9px]'"></i>
+                            <span x-text="(part.has_warranty && Number(part.warranty_days) > 0) ? (part.warranty_days + 'd warranty') : 'No warranty'"></span>
+                        </span>
+                    </div>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳<span x-text="formatMoney(part.cost)">0.00</span></span>
                 </div>
             </template>
@@ -90,7 +99,7 @@
                 :class="(existingBid && existingBid.has_warranty) ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--card)] text-[var(--muted-foreground)] border border-[var(--border)]'"
             >
                 <i :class="(existingBid && existingBid.has_warranty) ? 'fa-solid fa-shield-halved text-emerald-700' : 'fa-regular fa-circle-xmark'"></i>
-                <span x-text="(existingBid && existingBid.has_warranty) ? (existingBid.warranty_days + '-Day Warranty Included') : 'No Extended Warranty'"></span>
+                <span x-text="existingBid ? (existingBid.warranty_summary || (existingBid.has_warranty ? (existingBid.warranty_days + '-Day Warranty Included') : 'No Parts Warranty')) : ''"></span>
             </span>
             <span x-show="existingBid && existingBid.technician_note" class="text-[var(--muted-foreground)] italic truncate max-w-full" x-text="existingBid ? existingBid.technician_note : ''"></span>
         </div>
