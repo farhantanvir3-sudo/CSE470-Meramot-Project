@@ -1,35 +1,35 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+<div class="mx-auto max-w-7xl px-3.5 py-4 sm:px-6 sm:py-8 lg:px-8 space-y-4 sm:space-y-8">
     @include('admin.partials.nav')
 
     {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
         <div>
             <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-rose-800">
                 <i class="fa-solid fa-shield-halved"></i> Trust &amp; Safety Governance
             </span>
-            <h1 class="mt-2 text-2xl sm:text-3xl font-black text-[var(--foreground)]">Content Moderation &amp; User Sanctions</h1>
-            <p class="mt-1 text-xs sm:text-sm text-[var(--muted-foreground)]">
+            <h1 class="mt-2 text-xl sm:text-2xl md:text-3xl font-black leading-tight text-[var(--foreground)]">Content Moderation &amp; User Sanctions</h1>
+            <p class="mt-1 text-[11px] sm:text-xs md:text-sm text-[var(--muted-foreground)] leading-relaxed">
                 Audit workshop reviews for policy violations, remove abusive feedback, restrict or restore user ordering privileges, and dispatch email and in-app alerts to affected accounts.
             </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3 shrink-0">
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/70 px-4 py-2.5 text-center">
-                <div class="text-lg font-black text-[var(--foreground)]">{{ $reviews->count() }}</div>
-                <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Active Reviews</div>
+        <div class="grid grid-cols-2 w-full md:w-auto md:flex items-center gap-2.5 sm:gap-3 shrink-0">
+            <div class="rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/70 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
+                <div class="text-base sm:text-lg font-black text-[var(--foreground)]">{{ $reviews->count() }}</div>
+                <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Active Reviews</div>
             </div>
-            <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-center">
-                <div class="text-lg font-black text-rose-700">{{ $bannedUsers->count() }}</div>
-                <div class="text-[10px] font-bold uppercase tracking-wider text-rose-800">Banned Users</div>
+            <div class="rounded-xl sm:rounded-2xl border border-rose-300 bg-rose-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
+                <div class="text-base sm:text-lg font-black text-rose-700">{{ $bannedUsers->count() }}</div>
+                <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-rose-800">Banned Users</div>
             </div>
         </div>
     </div>
 
     {{-- Section 1: Workshop Reviews Moderation Queue --}}
-    <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-5">
+    <section class="rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
                 <h2 class="text-lg font-black text-[var(--foreground)]">Workshop Reviews Moderation Queue</h2>
