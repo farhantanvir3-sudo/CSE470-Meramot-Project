@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\ServicePackage;
+use App\Models\ShopService;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -83,6 +84,14 @@ class ServicePackageTest extends TestCase
     public function it_adds_shop_service_to_cart()
     {
         $shop = RepairShop::factory()->create(['name' => 'ProTech Lab']);
+        ShopService::create([
+            'shop_id' => $shop->id,
+            'slug' => 'display-touchscreen-replacement',
+            'name' => 'Display & Touchscreen Replacement',
+            'pricing_type' => 'FIXED',
+            'base_price' => 1800,
+            'is_active' => true,
+        ]);
 
         $response = $this->postJson('/cart/add', [
             'shop_id' => $shop->id,
@@ -94,6 +103,54 @@ class ServicePackageTest extends TestCase
         $response->assertStatus(200);
         $response->assertJson(['success' => true]);
         $this->assertEquals(1, count(session('cart', [])));
+    }
+
+    /** @test */
+    public function it_charges_the_vendor_published_price_and_rejects_unpublished_shop_services()
+    {
+        $shop = RepairShop::factory()->create(['name' => 'Price Guard Lab']);
+        ShopService::create([
+            'shop_id' => $shop->id,
+            'slug' => 'battery-replacement',
+            'name' => 'Battery Replacement',
+            'pricing_type' => 'FIXED',
+            'base_price' => 1200,
+            'is_active' => true,
+        ]);
+        ShopService::create([
+            'shop_id' => $shop->id,
+            'slug' => 'board-diagnosis',
+            'name' => 'Board Diagnosis',
+            'pricing_type' => 'INSPECTION_REQUIRED',
+            'base_price' => null,
+            'is_active' => true,
+        ]);
+
+        // Tampered client price is ignored — the workshop's fixed price is charged.
+        $this->postJson('/cart/add', [
+            'shop_id' => $shop->id,
+            'service_name' => 'battery replacement',
+            'price' => 1,
+        ])->assertStatus(200)->assertJson(['success' => true]);
+
+        $item = collect(session('cart', []))->first();
+        $this->assertSame('Battery Replacement', $item['title']);
+        $this->assertEquals(1200.0, (float) $item['price']);
+
+        // Services the workshop never published (or that need inspection) cannot be added.
+        $this->postJson('/cart/add', [
+            'shop_id' => $shop->id,
+            'service_name' => 'Imaginary Service',
+            'price' => 10,
+        ])->assertStatus(422)->assertJson(['success' => false]);
+
+        $this->postJson('/cart/add', [
+            'shop_id' => $shop->id,
+            'service_name' => 'Board Diagnosis',
+            'price' => 10,
+        ])->assertStatus(422);
+
+        $this->assertCount(1, session('cart', []));
     }
 
     /** @test */

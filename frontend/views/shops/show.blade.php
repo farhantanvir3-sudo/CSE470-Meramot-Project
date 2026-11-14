@@ -303,48 +303,33 @@
                 </div>
 
                 @php
+                    // Only vendor-published services are listed — nothing is generated from specialty tags.
                     $dbServices = $shop->services ?? collect();
                     $displayServices = [];
-
-                    if ($dbServices->count() > 0) {
-                        foreach ($dbServices as $svc) {
-                            $displayServices[] = [
-                                'name' => $svc->name,
-                                'estimate' => (float) ($svc->base_price ?: 1500),
-                                'summary' => $svc->description ?: ($svc->short_description ?: 'Verified workshop repair service with full post-repair testing.'),
-                            ];
-                        }
-                    } else {
-                        $specialtiesList = $shop->specialties ?? [];
-                        if (empty($specialtiesList) || !is_array($specialtiesList)) {
-                            $specialtiesList = [
-                                'Display & Touchscreen Replacement',
-                                'Battery Diagnostics & Cell Replacement',
-                                'Logic Board & Ultrasonic Liquid Treatment',
-                                'Port, Jack & Keyboard Replacement',
-                            ];
-                        }
-
-                        $serviceCatalog = [
-                            'Display & Touchscreen Replacement' => ['estimate' => 1800, 'summary' => 'OEM panel check, precision digitizer fitting, calibration, and touch response testing.'],
-                            'Battery Diagnostics & Cell Replacement' => ['estimate' => 1200, 'summary' => 'Battery capacity diagnostics, OEM cell replacement, power rail check, and charging cycle test.'],
-                            'Logic Board & Ultrasonic Liquid Treatment' => ['estimate' => 2500, 'summary' => 'Micro-soldering, short-circuit detection with thermal camera, ultrasonic bath, and board rework.'],
-                            'Port, Jack & Keyboard Replacement' => ['estimate' => 950, 'summary' => 'Pin inspection, flex ribbon replacement, solder joint reflow, and full physical keystroke test.'],
+                    foreach ($dbServices as $svc) {
+                        $hasFixedPrice = $svc->base_price !== null && (float) $svc->base_price > 0;
+                        $displayServices[] = [
+                            'name' => $svc->name,
+                            'estimate' => $hasFixedPrice ? (float) $svc->base_price : null,
+                            'summary' => $svc->short_description ?: ($svc->description ?: ($hasFixedPrice
+                                ? 'Fixed-price service set by the workshop.'
+                                : 'Priced after diagnosis — request a quote from the workshop.')),
                         ];
-
-                        foreach ($specialtiesList as $spec) {
-                            $meta = $serviceCatalog[$spec] ?? [
-                                'estimate' => $shop->base_labor_fee ? ($shop->base_labor_fee + 500) : 1500,
-                                'summary' => 'Comprehensive hardware inspection, genuine replacement components, certified bench labor, and functional warranty.',
-                            ];
-                            $displayServices[] = [
-                                'name' => $spec,
-                                'estimate' => (float) $meta['estimate'],
-                                'summary' => $meta['summary'],
-                            ];
-                        }
                     }
                 @endphp
+
+                @if(empty($displayServices))
+                    <div class="rounded-[1.5rem] border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center">
+                        <i class="fa-solid fa-box-open text-2xl text-[var(--muted-foreground)]"></i>
+                        <p class="mt-3 text-sm font-semibold text-[var(--foreground)]">This workshop hasn't published fixed-price services yet.</p>
+                        <p class="mt-1 text-xs text-[var(--muted-foreground)]">You can still describe your issue and request a custom quote.</p>
+                        @if($isOperational && $canCustomerBookOrReview)
+                            <a href="/requests/create?shop_id={{ $shop->id }}" class="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition">
+                                Request a Custom Quote
+                            </a>
+                        @endif
+                    </div>
+                @endif
 
                 <div class="space-y-4">
                     @foreach($displayServices as $svcItem)
@@ -357,17 +342,22 @@
                                     </div>
 
                                     <div class="shrink-0 text-right">
-                                        <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
-                                            ৳{{ number_format($svcItem['estimate']) }}
-                                        </div>
-                                        <div class="text-[10px] text-[var(--muted-foreground)]">direct service</div>
+                                        @if($svcItem['estimate'] !== null)
+                                            <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
+                                                ৳{{ number_format($svcItem['estimate']) }}
+                                            </div>
+                                            <div class="text-[10px] text-[var(--muted-foreground)]">fixed price</div>
+                                        @else
+                                            <div class="text-sm font-bold text-[var(--accent-dark)]">Quote on inspection</div>
+                                            <div class="text-[10px] text-[var(--muted-foreground)]">price after diagnosis</div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
 
                             <div class="flex flex-wrap items-center gap-2 w-full md:w-auto md:pl-4">
                                 @if($isOperational && $canCustomerBookOrReview)
-                                    @if($shop->accepts_direct_orders)
+                                    @if($shop->accepts_direct_orders && $svcItem['estimate'] !== null)
                                         <button
                                             type="button"
                                             onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"

@@ -10,6 +10,7 @@ use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
 use App\Services\GmailApiService;
 use App\Services\MediaUploadService;
+use App\Services\ServiceSuggestionCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -466,10 +467,37 @@ class VendorOnboardingController extends Controller
 
         $primaryShop = $profile->shops->sortBy('id')->first();
         if ($primaryShop) {
-            $primaryShop->load('services');
+            $primaryShop->load(['services' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')]);
         }
 
-        return view('vendor.setup-shop', compact('profile', 'primaryShop', 'user'));
+        $onboardingTags = self::onboardingSpecialtyTags($profile);
+        $serviceSuggestions = ServiceSuggestionCatalog::forTags($onboardingTags);
+
+        return view('vendor.setup-shop', compact('profile', 'primaryShop', 'user', 'onboardingTags', 'serviceSuggestions'));
+    }
+
+    /**
+     * Specialty tags the vendor selected during onboarding (independent of the
+     * fixed-price services they later publish).
+     *
+     * @return array<int, string>
+     */
+    private static function onboardingSpecialtyTags(VendorProfile $profile): array
+    {
+        $raw = $profile->categories;
+        if (empty($raw) || !is_array($raw)) {
+            $raw = $profile->specialties;
+        }
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : explode(',', $raw);
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map(fn ($t) => trim((string) $t), (array) $raw),
+            // Skip service-mode flags such as COURIER_PICKUP / IN_SHOP_REPAIR
+            fn ($t) => $t !== '' && !preg_match('/^[A-Z_]+$/', $t)
+        )));
     }
 
     /**
@@ -506,13 +534,13 @@ class VendorOnboardingController extends Controller
             'base_labor_fee' => 'required|numeric|min:0',
             'pickup_fee' => 'nullable|numeric|min:0',
             'express_fee' => 'nullable|numeric|min:0',
-            'skill_tags' => 'required|array|min:1',
-            'skill_tags.*' => 'string|max:180',
+            // Fixed-price services & packages are optional: new vendors start with an empty list.
+            'skill_tags' => 'nullable|array|max:50',
+            'skill_tags.*' => 'nullable|string|max:600',
             'logo' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
             'banner' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
         ], [
-            'skill_tags.required' => 'Please add at least one available service / skill tag.',
-            'skill_tags.min' => 'Please add at least one available service / skill tag.',
+            'skill_tags.max' => 'You can publish up to 50 fixed-price services and packages.',
         ]);
 
         $cleanPhone = str_replace([' ', '-'], '', trim($validated['phone']));
@@ -567,12 +595,64 @@ class VendorOnboardingController extends Controller
         $logoUrl = MediaUploadService::fromRequest($request, 'logo', $primaryShop?->logo_url ?: $profile->logo_url, 1000, 84);
         $bannerUrl = MediaUploadService::fromRequest($request, 'banner', $primaryShop?->banner_url, 1400, 82);
 
-        $skillTags = array_values(array_filter(array_map('trim', $validated['skill_tags'])));
+        $skillTags = array_values(array_filter(array_map(fn ($t) => trim((string) $t), $validated['skill_tags'] ?? [])));
+        $onboardingTags = self::onboardingSpecialtyTags($profile);
+
+        // Parse vendor-defined fixed-price services & packages.
+        // Accepted formats: "Name|price|description", "Name|price", "Name (৳price)", or "Name".
+        $parsedServices = [];
+        foreach ($skillTags as $rawTag) {
+            $svcName = $rawTag;
+            $svcPrice = null;
+            $svcDescription = null;
+
+            if (str_contains($svcName, '|')) {
+                $parts = explode('|', $svcName, 3);
+                $svcName = trim($parts[0]);
+                $rawPrice = preg_replace('/[^\d.]/', '', trim($parts[1] ?? ''));
+                if ($rawPrice !== '' && is_numeric($rawPrice)) {
+                    $svcPrice = (float) $rawPrice;
+                }
+                $svcDescription = isset($parts[2]) && trim($parts[2]) !== '' ? Str::limit(trim($parts[2]), 400, '') : null;
+            } elseif (preg_match('/^(.*?)\s*\(\s*(?:৳|BDT|Tk\.?)?\s*([\d,]+(?:\.\d+)?)\s*\)\s*$/iu', $svcName, $matches)) {
+                $svcName = trim($matches[1]);
+                $rawPrice = str_replace(',', '', $matches[2]);
+                if (is_numeric($rawPrice)) {
+                    $svcPrice = (float) $rawPrice;
+                }
+            }
+
+            $svcName = Str::limit($svcName, 150, '');
+            if ($svcName === '' || in_array(strtolower($svcName), self::NON_SERVICE_TAG_WORDS, true)) {
+                continue;
+            }
+            $key = strtolower($svcName);
+            if (isset($parsedServices[$key])) {
+                continue;
+            }
+            $parsedServices[$key] = ['name' => $svcName, 'price' => $svcPrice, 'description' => $svcDescription];
+        }
+        $parsedServices = array_values($parsedServices);
+
+        // Shop specialties = onboarding tags + published service names (used for search & discovery).
+        $shopSpecialties = [];
+        foreach (array_merge($onboardingTags, array_column($parsedServices, 'name')) as $spec) {
+            $exists = false;
+            foreach ($shopSpecialties as $existing) {
+                if (strcasecmp($existing, $spec) === 0) {
+                    $exists = true;
+                    break;
+                }
+            }
+            if (!$exists) {
+                $shopSpecialties[] = $spec;
+            }
+        }
 
         DB::transaction(function () use (
             $user, $profile, $primaryShop, $validated, $cleanPhone, $address, $gpsAddress, $sameAsGps,
             $city, $area, $lat, $lng, $courierPickup, $inShopRepair, $spareParts, $serviceCategories,
-            $skillTags, $logoUrl, $bannerUrl
+            $skillTags, $logoUrl, $bannerUrl, $parsedServices, $shopSpecialties
         ) {
             $user->update([
                 'phone' => $cleanPhone,
@@ -591,7 +671,6 @@ class VendorOnboardingController extends Controller
                 'area' => $area,
                 'shop_latitude' => $lat,
                 'shop_longitude' => $lng,
-                'specialties' => $skillTags,
                 'courier_pickup' => $courierPickup,
                 'in_shop_repair' => $inShopRepair,
                 'spare_parts' => $spareParts,
@@ -614,7 +693,7 @@ class VendorOnboardingController extends Controller
                 'latitude' => $lat,
                 'longitude' => $lng,
                 'categories' => $serviceCategories,
-                'specialties' => $skillTags,
+                'specialties' => $shopSpecialties,
                 'supports_pickup' => $courierPickup,
                 'inspection_fee' => (float) $validated['inspection_fee'],
                 'base_labor_fee' => (float) $validated['base_labor_fee'],
@@ -642,40 +721,23 @@ class VendorOnboardingController extends Controller
                 ]));
             }
 
-            // Sync vendor-configured services into `shop_services` and normalize clean specialty labels
-            $normalizedSpecialtyNames = [];
-            foreach ($skillTags as $idx => $rawTag) {
-                $svcName = trim((string) $rawTag);
-                $svcPrice = null;
-
-                if (str_contains($svcName, '|')) {
-                    $parts = explode('|', $svcName, 2);
-                    $svcName = trim($parts[0]);
-                    $rawPrice = preg_replace('/[^\d.]/', '', trim($parts[1] ?? ''));
-                    if ($rawPrice !== '' && is_numeric($rawPrice)) {
-                        $svcPrice = (float) $rawPrice;
-                    }
-                } elseif (preg_match('/^(.*?)\s*\(\s*(?:৳|BDT|Tk\.?)?\s*([\d,]+(?:\.\d+)?)\s*\)\s*$/iu', $svcName, $matches)) {
-                    $svcName = trim($matches[1]);
-                    $rawPrice = str_replace(',', '', $matches[2]);
-                    if (is_numeric($rawPrice)) {
-                        $svcPrice = (float) $rawPrice;
-                    }
-                }
-
-                if ($svcName === '' || in_array(strtolower($svcName), self::NON_SERVICE_TAG_WORDS, true)) {
+            // Sync vendor-defined fixed-price services & packages into `shop_services`.
+            // Items removed by the vendor are deactivated (not deleted) to preserve order history.
+            $keptSlugs = [];
+            foreach ($parsedServices as $idx => $svc) {
+                $svcSlug = Str::slug($svc['name']) ?: ('service-' . ($idx + 1));
+                if (in_array($svcSlug, $keptSlugs, true)) {
                     continue;
                 }
+                $keptSlugs[] = $svcSlug;
 
-                $normalizedSpecialtyNames[] = $svcName;
-
-                $svcSlug = Str::slug($svcName) ?: ('service-' . ($idx + 1));
                 ShopService::updateOrCreate(
-                    ['shop_id' => $shop->id, 'name' => $svcName],
+                    ['shop_id' => $shop->id, 'slug' => $svcSlug],
                     [
-                        'slug' => $svcSlug,
-                        'pricing_type' => $svcPrice !== null ? 'STARTING_FROM' : 'INSPECTION_REQUIRED',
-                        'base_price' => $svcPrice,
+                        'name' => $svc['name'],
+                        'short_description' => $svc['description'],
+                        'pricing_type' => $svc['price'] !== null ? 'FIXED' : 'INSPECTION_REQUIRED',
+                        'base_price' => $svc['price'],
                         'includes_pickup' => $courierPickup,
                         'sort_order' => $idx,
                         'is_active' => true,
@@ -683,11 +745,9 @@ class VendorOnboardingController extends Controller
                 );
             }
 
-            if (!empty($normalizedSpecialtyNames)) {
-                $uniqueSpecs = array_values(array_unique($normalizedSpecialtyNames));
-                $profile->update(['specialties' => $uniqueSpecs]);
-                $shop->update(['specialties' => $uniqueSpecs]);
-            }
+            ShopService::where('shop_id', $shop->id)
+                ->when(!empty($keptSlugs), fn ($q) => $q->whereNotIn('slug', $keptSlugs))
+                ->update(['is_active' => false]);
         });
 
         return redirect()
