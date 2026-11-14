@@ -15,14 +15,14 @@
      ========================================================================== --}}
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8">
+<div class="mx-auto max-w-7xl px-3.5 py-4 sm:px-4 sm:py-6 md:px-6 space-y-4 sm:space-y-8">
 
     @include('admin.partials.nav')
 
     <!-- Header with Student & Feature Badge (Nawshad [23301622] — Commit 4742c9c) -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[var(--border)] pb-5">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 border-b border-[var(--border)] pb-4 sm:pb-5">
         <div>
-            <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">Analytics & Accounting</p>
+            <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">Analytics & Accounting</p>
             <div class="dev-only-badge flex flex-wrap items-center gap-2 mt-1">
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
                     <i class="fa-solid fa-code-commit mr-1 text-[10px]"></i> Feature R16
@@ -34,11 +34,11 @@
                     Double-Entry GAAP Accounting
                 </span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-black text-[var(--foreground)] mt-2 tracking-tight flex items-center gap-2">
-                <i class="fa-solid fa-scale-balanced text-emerald-600 dark:text-emerald-400"></i>
-                Financial Business Intelligence & Double-Entry Ledger
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-black text-[var(--foreground)] mt-1 sm:mt-2 tracking-tight flex items-start sm:items-center gap-2 leading-tight">
+                <i class="fa-solid fa-scale-balanced text-emerald-600 dark:text-emerald-400 mt-1 sm:mt-0 shrink-0"></i>
+                <span>Financial Business Intelligence & Double-Entry Ledger</span>
             </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-1">
+            <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
                 Real-time tracking of platform revenue, 10% commission flow, escrow reserves, and vendor payout distributions.
             </p>
             <p class="dev-only-badge text-xs text-[var(--muted-foreground)] mt-1">
@@ -48,7 +48,7 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <span class="inline-flex items-center text-xs font-semibold text-[var(--foreground)] bg-[var(--card)] border border-[var(--border)] px-3.5 py-1.5 rounded-full shadow-sm">
+            <span class="inline-flex items-center text-[11px] sm:text-xs font-semibold text-[var(--foreground)] bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full shadow-sm">
                 <i class="fa-solid fa-shield-halved text-emerald-600 dark:text-emerald-400 mr-2"></i> Immutable Ledger Active
             </span>
         </div>
@@ -63,118 +63,143 @@
     @endif
 
     {{-- ======================================================================
-         RELOCATED BLOCK 1: Cumulative Financial Cards (Double-Entry Balance)
-         Original Author: Md. Nawshad Zaman Khan [23301622] (Commit 4742c9c)
+         RELOCATED BLOCK 1: Cumulative Financial Cards (2x2 on Mobile, 4-up Desktop)
          ====================================================================== --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 sm:gap-y-5">
 
         <!-- Cumulative Credits -->
-        <div class="meramot-card p-5 shadow-sm transition hover:scale-[1.01]">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Cumulative Inflow (Credits)</span>
-                <div class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 border border-emerald-300/40 dark:border-emerald-800 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shadow-sm">
-                    <i class="fa-solid fa-arrow-down-left text-sm"></i>
+        <div class="meramot-card rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
+            <div class="flex items-start justify-between gap-1.5">
+                <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
+                    <span class="sm:hidden">Inflow (Credits)</span>
+                    <span class="hidden sm:inline">Cumulative Inflow (Credits)</span>
+                </span>
+                <div class="w-7 h-7 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 border border-emerald-300/40 dark:border-emerald-800 flex items-center justify-center text-emerald-700 dark:text-emerald-300 shadow-sm">
+                    <i class="fa-solid fa-arrow-down text-xs sm:text-sm"></i>
                 </div>
             </div>
-            <p class="text-2xl sm:text-3xl font-black text-emerald-700 dark:text-emerald-400 mt-3 font-mono">
-                ৳{{ number_format($totalCredits, 2) }}
-            </p>
-            <p class="text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center">
-                <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 mr-1.5 text-[10px]"></i> Customer payments & fees
-            </p>
+            <div>
+                <p class="text-sm sm:text-2xl xl:text-3xl font-black text-emerald-700 dark:text-emerald-400 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
+                    ৳{{ number_format($totalCredits, 2) }}
+                </p>
+                <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center leading-snug">
+                    <i class="fa-solid fa-circle-check text-emerald-600 dark:text-emerald-400 mr-1 text-[10px] shrink-0"></i>
+                    <span class="sm:hidden">Payments &amp; fees</span>
+                    <span class="hidden sm:inline">Customer payments &amp; fees</span>
+                </p>
+            </div>
         </div>
 
         <!-- Cumulative Debits -->
-        <div class="meramot-card p-5 shadow-sm transition hover:scale-[1.01]">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Cumulative Outflow (Debits)</span>
-                <div class="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950/70 border border-rose-300/40 dark:border-rose-800 flex items-center justify-center text-rose-700 dark:text-rose-300 shadow-sm">
-                    <i class="fa-solid fa-arrow-up-right text-sm"></i>
+        <div class="meramot-card rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
+            <div class="flex items-start justify-between gap-1.5">
+                <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
+                    <span class="sm:hidden">Outflow (Debits)</span>
+                    <span class="hidden sm:inline">Cumulative Outflow (Debits)</span>
+                </span>
+                <div class="w-7 h-7 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-rose-100 dark:bg-rose-950/70 border border-rose-300/40 dark:border-rose-800 flex items-center justify-center text-rose-700 dark:text-rose-300 shadow-sm">
+                    <i class="fa-solid fa-arrow-up text-xs sm:text-sm"></i>
                 </div>
             </div>
-            <p class="text-2xl sm:text-3xl font-black text-rose-700 dark:text-rose-400 mt-3 font-mono">
-                ৳{{ number_format($totalDebits, 2) }}
-            </p>
-            <p class="text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center">
-                <i class="fa-solid fa-money-bill-transfer text-rose-600 dark:text-rose-400 mr-1.5 text-[10px]"></i> Vendor payouts, riders & refunds
-            </p>
+            <div>
+                <p class="text-sm sm:text-2xl xl:text-3xl font-black text-rose-700 dark:text-rose-400 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
+                    ৳{{ number_format($totalDebits, 2) }}
+                </p>
+                <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center leading-snug">
+                    <i class="fa-solid fa-money-bill-transfer text-rose-600 dark:text-rose-400 mr-1 text-[10px] shrink-0"></i>
+                    <span class="sm:hidden">Payouts &amp; refunds</span>
+                    <span class="hidden sm:inline">Vendor payouts, riders &amp; refunds</span>
+                </p>
+            </div>
         </div>
 
         <!-- 10% Platform Commission Revenue -->
-        <div class="meramot-card p-5 shadow-sm transition hover:scale-[1.01]">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">10% Platform Commission</span>
-                <div class="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-950/70 border border-teal-300/40 dark:border-teal-800 flex items-center justify-center text-teal-700 dark:text-teal-300 shadow-sm">
-                    <i class="fa-solid fa-percent text-sm"></i>
+        <div class="meramot-card rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
+            <div class="flex items-start justify-between gap-1.5">
+                <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
+                    <span class="sm:hidden">10% Commission</span>
+                    <span class="hidden sm:inline">10% Platform Commission</span>
+                </span>
+                <div class="w-7 h-7 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-teal-100 dark:bg-teal-950/70 border border-teal-300/40 dark:border-teal-800 flex items-center justify-center text-teal-700 dark:text-teal-300 shadow-sm">
+                    <i class="fa-solid fa-percent text-xs sm:text-sm"></i>
                 </div>
             </div>
-            <p class="text-2xl sm:text-3xl font-black text-teal-700 dark:text-teal-400 mt-3 font-mono">
-                ৳{{ number_format($totalCommissionRevenue, 2) }}
-            </p>
-            <p class="text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center">
-                <i class="fa-solid fa-receipt text-teal-600 dark:text-teal-400 mr-1.5 text-[10px]"></i> Net service fee retained (10%)
-            </p>
+            <div>
+                <p class="text-sm sm:text-2xl xl:text-3xl font-black text-teal-700 dark:text-teal-400 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
+                    ৳{{ number_format($totalCommissionRevenue, 2) }}
+                </p>
+                <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center leading-snug">
+                    <i class="fa-solid fa-receipt text-teal-600 dark:text-teal-400 mr-1 text-[10px] shrink-0"></i>
+                    <span class="sm:hidden">Retained 10% fee</span>
+                    <span class="hidden sm:inline">Net service fee retained (10%)</span>
+                </p>
+            </div>
         </div>
 
         <!-- Net Platform Reserve -->
-        <div class="rounded-3xl p-5 shadow-sm border border-[var(--border)] bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 dark:from-[#0d1611] dark:via-[#14231b] dark:to-[#1b3125] text-white transition hover:scale-[1.01]">
-            <div class="flex items-center justify-between">
-                <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Net Platform Reserve</span>
-                <div class="w-9 h-9 rounded-xl bg-white/10 dark:bg-emerald-400/10 flex items-center justify-center text-emerald-400">
-                    <i class="fa-solid fa-vault text-sm"></i>
+        <div class="rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm border border-[var(--border)] bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 dark:from-[#0d1611] dark:via-[#14231b] dark:to-[#1b3125] text-white transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
+            <div class="flex items-start justify-between gap-1.5">
+                <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider leading-tight text-emerald-300">
+                    <span class="sm:hidden">Net Reserve</span>
+                    <span class="hidden sm:inline">Net Platform Reserve</span>
+                </span>
+                <div class="w-7 h-7 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-white/10 dark:bg-emerald-400/10 flex items-center justify-center text-emerald-400">
+                    <i class="fa-solid fa-vault text-xs sm:text-sm"></i>
                 </div>
             </div>
-            <p class="text-2xl sm:text-3xl font-black text-emerald-300 mt-3 font-mono">
-                ৳{{ number_format($netPlatformBalance, 2) }}
-            </p>
-            <p class="text-[11px] text-slate-300 mt-1 flex items-center">
-                <i class="fa-solid fa-scale-balanced mr-1.5 text-[10px] text-emerald-400"></i> Balance after debits & credits
-            </p>
+            <div>
+                <p class="text-sm sm:text-2xl xl:text-3xl font-black text-emerald-300 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
+                    ৳{{ number_format($netPlatformBalance, 2) }}
+                </p>
+                <p class="text-[10px] sm:text-[11px] text-slate-300 mt-1 flex items-center leading-snug">
+                    <i class="fa-solid fa-scale-balanced mr-1 text-[10px] text-emerald-400 shrink-0"></i>
+                    <span class="sm:hidden">Credits minus debits</span>
+                    <span class="hidden sm:inline">Balance after debits &amp; credits</span>
+                </p>
+            </div>
         </div>
     </div>
 
     {{-- ======================================================================
          RELOCATED BLOCK 2: 10% Platform Commission Accounting Breakdown
-         Original Author: Md. Nawshad Zaman Khan [23301622] (Commit 4742c9c)
-         Merged with Original Meramot `AdminFinancePage` 6 BI Metrics
          ====================================================================== --}}
-    <div class="meramot-card p-6 shadow-sm bg-[var(--mint-100)] border border-[var(--border)] space-y-5">
-        <div class="space-y-4">
+    <div class="meramot-card rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 shadow-sm bg-[var(--mint-100)] border border-[var(--border)] space-y-4 sm:space-y-5">
+        <div class="space-y-3 sm:space-y-4">
             <div class="max-w-3xl">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="px-2.5 py-0.5 text-[10px] font-black uppercase rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] tracking-wide">
                         10% Rule Engine
                     </span>
-                    <h3 class="text-sm font-black text-[var(--foreground)]">Automated Platform Commission &amp; Escrow Accounting</h3>
+                    <h3 class="text-xs sm:text-sm font-black text-[var(--foreground)]">Automated Platform Commission &amp; Escrow Accounting</h3>
                 </div>
-                <p class="text-xs text-[var(--muted-foreground)] mt-2 leading-relaxed">
+                <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1.5 sm:mt-2 leading-relaxed">
                     Meramot enforces an automated <strong>10% platform commission</strong> deduction on gross electronic repair tickets. The remaining <strong>90%</strong> is credited to vendor escrow accounts for banking/bKash settlement.
                 </p>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
-                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Total Volume</span>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 text-center">
+                <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Total Volume</span>
                     <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalCustomerInflow, 2) }}</span>
                 </div>
-                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Platform Commission (10%)</span>
+                <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Commission (10%)</span>
                     <span class="mt-1 block text-xs sm:text-sm font-black text-teal-700 dark:text-teal-400 font-mono whitespace-nowrap">৳{{ number_format($totalCommissionRevenue, 2) }}</span>
                 </div>
-                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Vendor Payouts</span>
+                <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Vendor Payouts</span>
                     <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalVendorDisbursed ?? 0, 2) }}</span>
                 </div>
-                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Refunds Issued</span>
+                <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Refunds Issued</span>
                     <span class="mt-1 block text-xs sm:text-sm font-black text-rose-700 dark:text-rose-400 font-mono whitespace-nowrap">৳{{ number_format($totalRefunds ?? 0, 2) }}</span>
                 </div>
-                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Escrow Balance</span>
+                <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Escrow Balance</span>
                     <span class="mt-1 block text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 font-mono whitespace-nowrap">৳{{ number_format($pendingEscrowReserve, 2) }}</span>
                 </div>
-                <div class="meramot-card px-4 py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
-                    <span class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Open Settlements</span>
+                <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
+                    <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Open Settlements</span>
                     <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--accent-dark)] font-mono whitespace-nowrap">{{ $pendingSettlementCount ?? 0 }}</span>
                 </div>
             </div>

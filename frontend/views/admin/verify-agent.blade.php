@@ -15,16 +15,16 @@
      ========================================================================== --}}
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-6 md:px-6 space-y-8" x-data="{ inspectAgent: null, lightboxDoc: null }">
+<div class="mx-auto max-w-7xl px-3.5 py-4 sm:px-4 sm:py-6 md:px-6 space-y-4 sm:space-y-8" x-data="{ inspectAgent: null, lightboxDoc: null }">
 
     @include('admin.partials.nav')
 
     <!-- Page Header -->
-    <div class="flex items-start justify-between gap-4">
-        <div>
-            <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Delivery Operations</p>
-            <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Delivery Partner Management &amp; Verification</h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-1">
+    <div class="flex items-start justify-between gap-3 sm:gap-4">
+        <div class="min-w-0">
+            <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Delivery Operations</p>
+            <h1 class="text-xl sm:text-2xl md:text-3xl font-black leading-tight text-[var(--foreground)]">Delivery Partner Management &amp; Verification</h1>
+            <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
                 Review applicant identity details, NID, driving license, and uploaded verification scans. Approving a partner automatically provisions and emails a unique <code class="font-mono font-bold text-[var(--accent-dark)]">@meramotbd.com</code> account credential to the applicant's email address.
             </p>
             <span class="dev-only-badge text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mt-1.5">
@@ -35,9 +35,9 @@
             href="/admin/delivery-agents/pending"
             title="Refresh Desk"
             aria-label="Refresh Desk"
-            class="group mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
+            class="group mt-1 inline-flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
         >
-            <i class="fa-solid fa-rotate-right text-sm transition-transform duration-300 group-hover:rotate-180"></i>
+            <i class="fa-solid fa-rotate-right text-xs sm:text-sm transition-transform duration-300 group-hover:rotate-180"></i>
         </a>
     </div>
 
@@ -47,32 +47,50 @@
         </div>
     @enderror
 
-    <!-- 6 Operations KPI StatCards -->
+    <!-- 6 Operations KPI StatCards (2x3 Matrix on Phone, 6-up on Desktop) -->
     @if(isset($stats))
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div class="rounded-2xl border border-amber-500/40 bg-[var(--card)] p-5 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Pending Approvals</p>
-                <p class="mt-2 text-3xl font-black text-[var(--foreground)]">{{ $stats['pendingRegistrations'] ?? 0 }}</p>
+        <div class="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3.5">
+            <div class="rounded-xl sm:rounded-2xl border border-amber-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+                <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
+                    <span class="sm:hidden">Pending</span>
+                    <span class="hidden sm:inline">Pending Approvals</span>
+                </p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['pendingRegistrations'] ?? 0 }}</p>
             </div>
-            <div class="rounded-2xl border border-emerald-500/40 bg-[var(--card)] p-5 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Active Approved Partners</p>
-                <p class="mt-2 text-3xl font-black text-[var(--foreground)]">{{ $stats['activeApprovedPartners'] ?? 0 }}</p>
+            <div class="rounded-xl sm:rounded-2xl border border-emerald-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+                <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
+                    <span class="sm:hidden">Approved</span>
+                    <span class="hidden sm:inline">Active Approved Partners</span>
+                </p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['activeApprovedPartners'] ?? 0 }}</p>
             </div>
-            <div class="rounded-2xl border border-sky-500/40 bg-[var(--card)] p-5 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Completed Deliveries (All Time)</p>
-                <p class="mt-2 text-3xl font-black text-[var(--foreground)]">{{ $stats['completedDeliveriesTotal'] ?? 0 }}</p>
+            <div class="rounded-xl sm:rounded-2xl border border-sky-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+                <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
+                    <span class="sm:hidden">Deliveries</span>
+                    <span class="hidden sm:inline">Completed Deliveries (All Time)</span>
+                </p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['completedDeliveriesTotal'] ?? 0 }}</p>
             </div>
-            <div class="rounded-2xl border border-violet-500/40 bg-[var(--card)] p-5 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Partners With &ge;1 Completed Job</p>
-                <p class="mt-2 text-3xl font-black text-[var(--foreground)]">{{ $stats['partnersWithCompletedDeliveries'] ?? 0 }}</p>
+            <div class="rounded-xl sm:rounded-2xl border border-violet-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+                <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
+                    <span class="sm:hidden">Active &ge;1</span>
+                    <span class="hidden sm:inline">Partners With &ge;1 Completed Job</span>
+                </p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['partnersWithCompletedDeliveries'] ?? 0 }}</p>
             </div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Total Partner Profiles</p>
-                <p class="mt-2 text-3xl font-black text-[var(--foreground)]">{{ $stats['totalPartners'] ?? 0 }}</p>
+            <div class="rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+                <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
+                    <span class="sm:hidden">Total</span>
+                    <span class="hidden sm:inline">Total Partner Profiles</span>
+                </p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['totalPartners'] ?? 0 }}</p>
             </div>
-            <div class="rounded-2xl border border-rose-500/40 bg-[var(--card)] p-5 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Rejected Registrations</p>
-                <p class="mt-2 text-3xl font-black text-[var(--foreground)]">{{ $stats['rejectedPartners'] ?? 0 }}</p>
+            <div class="rounded-xl sm:rounded-2xl border border-rose-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+                <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
+                    <span class="sm:hidden">Rejected</span>
+                    <span class="hidden sm:inline">Rejected Registrations</span>
+                </p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['rejectedPartners'] ?? 0 }}</p>
             </div>
         </div>
     @endif
@@ -80,7 +98,7 @@
     {{-- ======================================================================
          BLOCK 1: Pending Registration Approvals Table
          ====================================================================== --}}
-    <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
+    <section class="rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
         <div class="px-4 sm:px-6 py-4 border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2 bg-[var(--mint-100)]/60">
             <h2 class="text-sm font-black text-[var(--foreground)] flex items-center gap-2">
                 <i class="fa-solid fa-id-card-clip text-[var(--accent-dark)]"></i>
