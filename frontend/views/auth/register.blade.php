@@ -122,6 +122,9 @@
                     <input
                         type="tel"
                         name="phone"
+                        autocomplete="tel"
+                        inputmode="tel"
+                        maxlength="14"
                         value="{{ old('phone') }}"
                         class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="01XXXXXXXXX"
@@ -137,6 +140,9 @@
                         name="password"
                         x-model="password"
                         @focus="focused = true"
+                        @blur="focused = false"
+                        autocomplete="new-password"
+                        minlength="8"
                         required
                         class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="Enter your password"
@@ -151,6 +157,7 @@
                         type="password"
                         name="password_confirmation"
                         x-model="confirm"
+                        autocomplete="new-password"
                         required
                         class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="Re-enter your password"
@@ -160,17 +167,12 @@
                     </p>
                 </div>
 
-                <!-- Password strength checklist -->
-                <div x-show="focused || password.length > 0" class="rounded-2xl bg-[#f6faf4] px-4 py-3 text-xs text-[#58725f]">
-                    <p class="font-bold mb-1">Password must include:</p>
-                    <ul class="space-y-1">
-                        <li :class="hasLength ? 'text-emerald-700 font-semibold' : ''"><span x-text="hasLength ? '✓' : '•'"></span> At least 8 characters</li>
-                        <li :class="hasUpper ? 'text-emerald-700 font-semibold' : ''"><span x-text="hasUpper ? '✓' : '•'"></span> An uppercase letter</li>
-                        <li :class="hasLower ? 'text-emerald-700 font-semibold' : ''"><span x-text="hasLower ? '✓' : '•'"></span> A lowercase letter</li>
-                        <li :class="hasNumber ? 'text-emerald-700 font-semibold' : ''"><span x-text="hasNumber ? '✓' : '•'"></span> A number</li>
-                        <li :class="hasSpecial ? 'text-emerald-700 font-semibold' : ''"><span x-text="hasSpecial ? '✓' : '•'"></span> A special character</li>
-                    </ul>
-                </div>
+                @include('partials.password-strength-meter', [
+                    'passwordExpr' => 'password',
+                    'confirmExpr' => 'confirm',
+                    'focusedExpr' => 'focused',
+                    'evalVar' => 'regPwEval',
+                ])
 
                 <button
                     type="submit"

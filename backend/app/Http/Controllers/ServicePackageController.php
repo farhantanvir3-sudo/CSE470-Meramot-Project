@@ -13,11 +13,13 @@ use App\Models\ShopService;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Services\GeolocationService;
+use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * ============================================================================
@@ -1055,6 +1057,13 @@ class ServicePackageController extends Controller
             return back()->withErrors(['scheduled_at' => 'Please choose a pickup date and time for scheduled bookings.'])->withInput();
         }
 
+        $cleanPhone = InputSanitizer::sanitizePhone($validated['phone']);
+        if (!InputSanitizer::isValidBdPhone($cleanPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+
         $customerLocation = $this->resolveCustomerLocation($request);
         $shop = $this->resolveTargetShop(isset($validated['shop_id']) ? (int) $validated['shop_id'] : null, $request);
         if (!$shop) {
@@ -1066,8 +1075,8 @@ class ServicePackageController extends Controller
         $user = $request->user() ?? User::where('role', 'customer')->firstOrFail();
         if ($request->user()) {
             $syncProfile = [];
-            if (empty($request->user()->phone) && !empty($validated['phone'])) {
-                $syncProfile['phone'] = trim($validated['phone']);
+            if (empty($request->user()->phone) && $cleanPhone !== null) {
+                $syncProfile['phone'] = $cleanPhone;
             }
             if (empty($request->user()->address) && !empty($validated['address'])) {
                 $syncProfile['address'] = trim($validated['address']);
@@ -1107,7 +1116,7 @@ class ServicePackageController extends Controller
         }
 
         $repairRequest = DB::transaction(function () use (
-            $user, $shop, $cart, $firstItem, $validated, $title, $serviceLines, $scheduleLabel,
+            $user, $shop, $cart, $firstItem, $validated, $cleanPhone, $title, $serviceLines, $scheduleLabel,
             $subtotal, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress, $customerCity
         ) {
             $requestedServiceId = is_numeric($firstItem['id'] ?? null) ? (int) $firstItem['id'] : null;
@@ -1137,7 +1146,7 @@ class ServicePackageController extends Controller
                 'preferred_pickup' => true,
                 'preferred_service_type' => 'pickup_dropoff',
                 'delivery_type' => $validated['delivery_type'],
-                'contact_phone' => $validated['phone'],
+                'contact_phone' => $cleanPhone ?? $validated['phone'],
                 'pickup_address' => $fullAddress,
                 'dropoff_address' => $shop->public_address ?: ($shop->address ?? trim(implode(', ', array_filter([$shop->area, $shop->city ?: $customerCity])))),
                 'checkup_fee' => $serviceCharge,

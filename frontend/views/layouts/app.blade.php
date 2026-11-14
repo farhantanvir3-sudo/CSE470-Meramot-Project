@@ -47,13 +47,55 @@
     <!-- OpenStreetMap + Leaflet Open-Source Map Styles & Script (No API Key Required) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Shared UI Helpers (Must load BEFORE Alpine initializes x-data components) -->
+    <script>
+        window.meramotEvaluatePassword = function (password) {
+            const p = String(password || '');
+            const checks = {
+                length: p.length >= 8,
+                upper: /[A-Z]/.test(p),
+                lower: /[a-z]/.test(p),
+                number: /[0-9]/.test(p),
+                special: /[^A-Za-z0-9]/.test(p)
+            };
+            const passed = Object.values(checks).filter(Boolean).length;
+            let score = 0;
+            let label = 'Weak';
+            let color = 'text-red-600';
+            let barColor = 'bg-red-500';
+            if (p.length > 0) {
+                if (!checks.length || passed <= 2) {
+                    score = 1;
+                    label = 'Weak';
+                    color = 'text-red-600';
+                    barColor = 'bg-red-500';
+                } else if (passed === 3) {
+                    score = 2;
+                    label = 'Fair';
+                    color = 'text-amber-600';
+                    barColor = 'bg-amber-500';
+                } else if (passed === 4) {
+                    score = 3;
+                    label = 'Good';
+                    color = 'text-emerald-600';
+                    barColor = 'bg-emerald-500';
+                } else {
+                    score = 4;
+                    label = 'Strong';
+                    color = 'text-[#1b5e36]';
+                    barColor = 'bg-[#214c34]';
+                }
+            }
+            return { checks, passed, score, label, color, barColor };
+        };
+    </script>
     <!-- Standalone Client Modules (Served from root `frontend/js/` with cache-busting version) -->
     @php
         $jsAssetVer = @filemtime(base_path('../frontend/js/geolocation-helper.js')) ?: time();
     @endphp
     <script defer src="/js/geolocation-helper.js?v={{ $jsAssetVer }}"></script>
     <script defer src="/js/marketplace-client.js?v={{ $jsAssetVer }}"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
         /* Exact CSS variables from commit 8e44218 (globals.css & mobile.css) */
@@ -324,6 +366,12 @@
     locationSaving: false,
     locationError: '',
     mapSearchQuery: '',
+    mapDistrictFilter: 'Dhaka',
+    mapAreaSelect: '',
+    mapSuggestions: [],
+    mapSuggestionsOpen: false,
+    mapHighlightIdx: -1,
+    mapDebounceTimer: null,
     toastVisible: false,
     toastMessage: '',
     toastType: 'success',
@@ -368,6 +416,11 @@
         if (window.MeramotLocationPicker) {
             window.MeramotLocationPicker.draftLocation = this.draftLocation;
         }
+        this.mapDistrictFilter = (window.MeramotLocationCatalog && this.draftLocation?.city)
+            ? window.MeramotLocationCatalog.findDistrict(this.draftLocation.city)
+            : (this.draftLocation?.city || 'Dhaka');
+        this.mapAreaSelect = this.draftLocation?.area || '';
+        this.mapSuggestionsOpen = false;
         this.locationModalOpen = true;
         setTimeout(() => {
             if (window.MeramotLocationPicker) {
@@ -402,8 +455,71 @@
             this.locationLoading = false;
         }
     },
+    get mapDistrictOptions() {
+        return window.MeramotLocationCatalog ? window.MeramotLocationCatalog.getDistricts() : ['Dhaka', 'Chattogram', 'Sylhet'];
+    },
+    get mapAreaOptions() {
+        if (!window.MeramotLocationCatalog) return [];
+        return window.MeramotLocationCatalog.getPlacesByCity(this.mapDistrictFilter || 'Dhaka', this.draftLocation?.area || '');
+    },
+    onMapQueryInput() {
+        const q = String(this.mapSearchQuery || '').trim();
+        if (!window.MeramotLocationCatalog) return;
+        this.mapSuggestions = window.MeramotLocationCatalog.search(q, this.mapDistrictFilter, 10);
+        this.mapSuggestionsOpen = this.mapSuggestions.length > 0;
+        this.mapHighlightIdx = this.mapSuggestions.length > 0 ? 0 : -1;
+        clearTimeout(this.mapDebounceTimer);
+        if (q.length >= 2 && window.MeramotLocationPicker?.searchPlaces) {
+            this.mapDebounceTimer = setTimeout(async () => {
+                const enriched = await window.MeramotLocationPicker.searchPlaces(q, this.mapDistrictFilter);
+                if (Array.isArray(enriched) && enriched.length > 0 && this.mapSearchQuery.trim() === q) {
+                    this.mapSuggestions = enriched;
+                    this.mapSuggestionsOpen = true;
+                }
+            }, 260);
+        }
+    },
+    pickMapSuggestion(item) {
+        if (!item) return;
+        this.mapSearchQuery = [item.area, item.city].filter(Boolean).join(', ');
+        this.mapDistrictFilter = window.MeramotLocationCatalog ? window.MeramotLocationCatalog.findDistrict(item.city) : (item.city || 'Dhaka');
+        this.mapAreaSelect = item.area || '';
+        this.mapSuggestionsOpen = false;
+        this.selectQuickHub(item);
+    },
+    onMapDistrictChange() {
+        const places = this.mapAreaOptions;
+        if (places.length > 0) {
+            this.mapAreaSelect = places[0].area;
+            this.selectQuickHub(places[0]);
+        } else if (window.MeramotLocationCatalog) {
+            const center = window.MeramotLocationCatalog.getDistrictCoords(this.mapDistrictFilter);
+            this.selectQuickHub({
+                area: center.city + ' Sadar',
+                city: center.city,
+                lat: center.lat,
+                lng: center.lng,
+                address: center.city + ' Sadar, Bangladesh'
+            });
+        }
+    },
+    onMapAreaChange() {
+        const match = this.mapAreaOptions.find((p) => p.area === this.mapAreaSelect);
+        if (match) {
+            this.selectQuickHub(match);
+        }
+    },
     async searchMapAddress() {
         if (!this.mapSearchQuery.trim() || !window.MeramotLocationPicker) return;
+        if (this.mapSuggestionsOpen && this.mapHighlightIdx >= 0 && this.mapSuggestions[this.mapHighlightIdx]) {
+            this.pickMapSuggestion(this.mapSuggestions[this.mapHighlightIdx]);
+            return;
+        }
+        const instant = window.MeramotLocationCatalog ? window.MeramotLocationCatalog.search(this.mapSearchQuery, this.mapDistrictFilter, 1) : [];
+        if (instant.length > 0) {
+            this.pickMapSuggestion(instant[0]);
+            return;
+        }
         this.locationLoading = true;
         this.locationError = '';
         try {
@@ -412,6 +528,8 @@
                 this.locationError = 'Unable to locate that address automatically. Please pin your location on the map or select a service hub.';
             } else {
                 this.draftLocation = found;
+                this.mapDistrictFilter = window.MeramotLocationCatalog ? window.MeramotLocationCatalog.findDistrict(found.city) : (found.city || 'Dhaka');
+                this.mapAreaSelect = found.area || '';
                 window.MeramotLocationPicker.draftLocation = found;
                 window.MeramotLocationPicker.flyToLocation(found.lat, found.lng, 15);
             }
@@ -423,18 +541,23 @@
     },
     selectQuickHub(hub) {
         this.locationError = '';
+        const canonicalCity = (window.MeramotLocationCatalog && hub.city)
+            ? window.MeramotLocationCatalog.findDistrict(hub.city)
+            : (hub.city || 'Dhaka');
         const next = {
             address: hub.address,
-            city: hub.city || 'Dhaka',
+            city: canonicalCity,
             area: hub.area,
-            lat: hub.lat,
-            lng: hub.lng,
+            lat: Number(hub.lat),
+            lng: Number(hub.lng),
             source: 'map'
         };
+        this.mapDistrictFilter = canonicalCity;
+        this.mapAreaSelect = hub.area || '';
         this.draftLocation = next;
         if (window.MeramotLocationPicker) {
             window.MeramotLocationPicker.draftLocation = next;
-            window.MeramotLocationPicker.flyToLocation(hub.lat, hub.lng, 14);
+            window.MeramotLocationPicker.flyToLocation(next.lat, next.lng, 14);
         }
     },
     confirmMapLocation() {
@@ -1252,15 +1375,44 @@
             <div class="grid min-h-0 flex-1 gap-4 overflow-y-auto p-5 lg:grid-cols-[1fr_290px]">
                 <!-- Left Column: Address Search + Interactive OpenStreetMap + Leaflet Canvas -->
                 <div class="flex flex-col gap-3">
-                    <form @submit.prevent="searchMapAddress()" class="flex items-center gap-2">
+                    <form @submit.prevent="searchMapAddress()" class="relative flex items-center gap-2 z-[500]">
                         <div class="relative flex-1">
                             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]"></i>
                             <input
                                 type="text"
                                 x-model="mapSearchQuery"
-                                placeholder="Search road, area, or city in Bangladesh (e.g. Banani, Hatirpool, Agrabad, Sylhet)..."
+                                @input="onMapQueryInput()"
+                                @focus="if (mapSearchQuery.trim().length > 0 || mapSuggestions.length > 0) onMapQueryInput()"
+                                @keydown.arrow-down.prevent="if (mapSuggestions.length) mapHighlightIdx = (mapHighlightIdx + 1) % mapSuggestions.length"
+                                @keydown.arrow-up.prevent="if (mapSuggestions.length) mapHighlightIdx = (mapHighlightIdx - 1 + mapSuggestions.length) % mapSuggestions.length"
+                                @keydown.escape="mapSuggestionsOpen = false"
+                                @blur="setTimeout(() => { mapSuggestionsOpen = false; }, 180)"
+                                autocomplete="off"
+                                data-map-search-input
+                                placeholder="Type area, sector, plaza, or city (e.g. Uttara Sector 7, Multiplan, Zindabazar)..."
                                 class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] pl-9 pr-4 py-2.5 text-xs font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                             />
+                            <div
+                                x-show="mapSuggestionsOpen && mapSuggestions.length > 0"
+                                x-cloak
+                                data-map-search-suggestions
+                                class="absolute left-0 right-0 top-full mt-1.5 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--card)] p-1.5 shadow-xl z-[900]"
+                            >
+                                <template x-for="(item, idx) in mapSuggestions" :key="item.city + '-' + item.area + '-' + idx">
+                                    <button
+                                        type="button"
+                                        @mousedown.prevent="pickMapSuggestion(item)"
+                                        :class="mapHighlightIdx === idx ? 'bg-[var(--mint-100)] text-[var(--accent-dark)]' : 'hover:bg-[var(--mint-50)] text-[var(--foreground)]'"
+                                        class="flex w-full items-start justify-between gap-2 rounded-xl px-3 py-2 text-left transition"
+                                    >
+                                        <div class="min-w-0">
+                                            <p class="truncate text-xs font-bold" x-text="item.area"></p>
+                                            <p class="truncate text-[11px] text-[var(--muted-foreground)]" x-text="item.address"></p>
+                                        </div>
+                                        <span class="shrink-0 rounded-full bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]" x-text="item.city"></span>
+                                    </button>
+                                </template>
+                            </div>
                         </div>
                         <button
                             type="submit"
@@ -1303,6 +1455,46 @@
                         <template x-if="draftLocation && typeof draftLocation.lat === 'number' && typeof draftLocation.lng === 'number'">
                             <p class="mt-1 font-mono text-[11px] text-[var(--muted-foreground)]" x-text="draftLocation.lat.toFixed(5) + ', ' + draftLocation.lng.toFixed(5)"></p>
                         </template>
+                    </div>
+
+                    <!-- Narrowed-Down District & Neighborhood Selector -->
+                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 space-y-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                                Select narrowed-down location
+                            </p>
+                            <span class="text-[10px] font-semibold text-[var(--accent-dark)]" x-text="mapAreaOptions.length + ' hubs in ' + mapDistrictFilter"></span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-1">District (64)</label>
+                                <select
+                                    x-model="mapDistrictFilter"
+                                    @change="onMapDistrictChange()"
+                                    x-effect="$nextTick(() => { $el.value = mapDistrictFilter; })"
+                                    data-map-district-select
+                                    class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-50)] px-2.5 py-1.5 text-xs font-semibold text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                                >
+                                    @foreach(array_column(\App\Services\BangladeshLocationResolver::DISTRICTS, 'city') as $distOption)
+                                        <option value="{{ $distOption }}">{{ $distOption }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-1">Narrowed-Down Area / Hub</label>
+                                <select
+                                    x-model="mapAreaSelect"
+                                    @change="onMapAreaChange()"
+                                    x-effect="const _opts = mapAreaOptions; $nextTick(() => { if (_opts.length) $el.value = mapAreaSelect; })"
+                                    data-map-area-select
+                                    class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-50)] px-2.5 py-1.5 text-xs font-semibold text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                                >
+                                    <template x-for="place in mapAreaOptions" :key="'map-place-' + place.city + '-' + place.area">
+                                        <option :value="place.area" x-text="place.area"></option>
+                                    </template>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Quick Jump Bangladesh & Dhaka Hubs -->
@@ -1892,6 +2084,280 @@
                     active.blur();
                 }
             }, { capture: true, passive: true });
+        })();
+
+        // Strict Input Sanitizer & Phone-Paste Isolation Guard
+        (function () {
+            if (window.MeramotInputGuard) return;
+
+            const INVISIBLE_RE = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
+            const BN_MAP = { '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9' };
+            const PURE_PHONE_FRAGMENT_RE = /^\s*(?:\+?880?1?|01\d{2,}|\+?\d{4,})[\d\s\-()]*$/;
+
+            let lastPhonePasteTs = 0;
+
+            function cleanUnicodeDigits(str) {
+                return String(str || '')
+                    .replace(INVISIBLE_RE, '')
+                    .replace(/[০-৯]/g, (d) => BN_MAP[d] || d);
+            }
+
+            function syncInputValue(el, nextValue) {
+                if (!el || el.value === nextValue) return;
+                el._meramotSanitizing = true;
+                el.value = nextValue;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el._meramotSanitizing = false;
+            }
+
+            function isPhoneInput(el) {
+                if (!el || el.tagName !== 'INPUT') return false;
+                const name = (el.getAttribute('name') || '').toLowerCase();
+                return el.type === 'tel' || name === 'phone' || name === 'contact_phone' || name === 'owner_phone';
+            }
+
+            function isStrictDigitsInput(el) {
+                if (!el || el.tagName !== 'INPUT') return false;
+                const name = (el.getAttribute('name') || '').toLowerCase();
+                return el.hasAttribute('data-digits-only') || name === 'nid_number' || name === 'otp' || name === 'year';
+            }
+
+            function isStrictNumberInput(el) {
+                return Boolean(el && el.tagName === 'INPUT' && (el.type === 'number' || el.hasAttribute('data-strict-numeric')));
+            }
+
+            function isIntegerOnlyNumber(el) {
+                const mode = el.dataset.numericMode || '';
+                const step = el.getAttribute('step');
+                const name = (el.getAttribute('name') || '').toLowerCase();
+                return mode === 'integer'
+                    || step === '1'
+                    || name === 'estimated_days'
+                    || name === 'warranty_days'
+                    || name.endsWith('[warranty_days]')
+                    || name === 'limit'
+                    || name === 'estimated_budget';
+            }
+
+            function allowsNegativeNumber(el) {
+                const minAttr = el.getAttribute('min');
+                const name = (el.getAttribute('name') || '').toLowerCase();
+                return (minAttr !== null && parseFloat(minAttr) < 0) || name === 'latitude' || name === 'longitude';
+            }
+
+            function sanitizePhoneString(raw) {
+                let text = cleanUnicodeDigits(raw).trim();
+                if (!text) return '';
+
+                // Extract a Bangladeshi mobile token if the user pasted text with labels or an address.
+                const bdToken = text.match(/(?:\+?880|00880)?[\s.\-()]*0?(1[3-9](?:[\s.\-()]*\d){8})/);
+                if (bdToken && bdToken[1]) {
+                    const subscriber = bdToken[1].replace(/\D/g, '');
+                    const hasCountry = /^(?:\+?880|00880)/.test(bdToken[0].replace(/[\s.\-()]/g, ''));
+                    return hasCountry ? ('+880' + subscriber) : ('0' + subscriber);
+                }
+
+                // Fallback for partial typing/pasting
+                if (text.startsWith('00880')) {
+                    text = '+' + text.slice(2);
+                }
+                const hasLeadingPlus = text.startsWith('+');
+                const digitsOnly = text.replace(/\D/g, '');
+                if (!digitsOnly) return hasLeadingPlus ? '+' : '';
+                const combined = (hasLeadingPlus ? '+' : '') + digitsOnly;
+                return combined.slice(0, hasLeadingPlus ? 14 : 13);
+            }
+
+            function sanitizeNumericString(raw, allowNeg, intOnly) {
+                const cleaned = cleanUnicodeDigits(raw)
+                    .replace(/[,৳$€£]/g, '')
+                    .replace(/\b(?:bdt|tk)\b/gi, '')
+                    .trim();
+                const match = cleaned.match(allowNeg ? /-?\d+(?:\.\d+)?/ : /\d+(?:\.\d+)?/);
+                if (!match) return '';
+                let token = match[0];
+                if (!allowNeg && token.startsWith('-')) {
+                    token = token.replace(/^-+/, '');
+                }
+                if (intOnly && token.includes('.')) {
+                    token = token.split('.')[0];
+                }
+                return token;
+            }
+
+            function applyFieldAttributes(root = document) {
+                root.querySelectorAll('input[type="tel"], input[name="phone"], input[name="contact_phone"], input[name="owner_phone"]').forEach((el) => {
+                    if (!el.getAttribute('autocomplete')) el.setAttribute('autocomplete', 'tel');
+                    if (!el.getAttribute('inputmode')) el.setAttribute('inputmode', 'tel');
+                    if (!el.getAttribute('maxlength')) el.setAttribute('maxlength', '14');
+                });
+                root.querySelectorAll('input[name="area"]').forEach((el) => {
+                    if (!el.getAttribute('autocomplete')) el.setAttribute('autocomplete', 'address-level3');
+                    if (el.dataset.lastValidArea === undefined) el.dataset.lastValidArea = el.value || '';
+                });
+                root.querySelectorAll('input[name="city"], select[name="city"]').forEach((el) => {
+                    if (!el.getAttribute('autocomplete')) el.setAttribute('autocomplete', 'address-level2');
+                });
+                root.querySelectorAll('input[name="address"], input[name="pickup_address"], input[name="gps_address"], input[name="shop_address"]').forEach((el) => {
+                    if (!el.getAttribute('autocomplete')) el.setAttribute('autocomplete', 'street-address');
+                });
+                root.querySelectorAll('input[name="nid_number"], input[name="otp"], input[name="year"], input[data-digits-only]').forEach((el) => {
+                    if (!el.getAttribute('inputmode')) el.setAttribute('inputmode', 'numeric');
+                    if (!el.getAttribute('pattern')) el.setAttribute('pattern', '[0-9]*');
+                    const name = (el.getAttribute('name') || '').toLowerCase();
+                    if (!el.getAttribute('maxlength')) {
+                        if (name === 'nid_number') el.setAttribute('maxlength', '17');
+                        else if (name === 'otp') el.setAttribute('maxlength', '6');
+                        else if (name === 'year') el.setAttribute('maxlength', '4');
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', function (e) {
+                const el = e.target;
+                if (!el || el.tagName !== 'INPUT') return;
+                if (e.ctrlKey || e.metaKey || e.altKey) return;
+                const navKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+                if (navKeys.includes(e.key)) return;
+
+                if (isPhoneInput(el)) {
+                    const isDigit = /^[0-9০-৯]$/.test(e.key);
+                    if (isDigit) return;
+                    if (e.key === '+') {
+                        const selStart = el.selectionStart ?? 0;
+                        const alreadyHasPlus = el.value.includes('+') && !(selStart === 0 && (el.selectionEnd ?? 0) > 0);
+                        if (selStart === 0 && !alreadyHasPlus) return;
+                    }
+                    e.preventDefault();
+                    return;
+                }
+
+                if (isStrictDigitsInput(el)) {
+                    if (!/^[0-9০-৯]$/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                    return;
+                }
+
+                if (isStrictNumberInput(el)) {
+                    if (['e', 'E', '+', ','].includes(e.key)) {
+                        e.preventDefault();
+                        return;
+                    }
+                    if (e.key === '-') {
+                        if (!allowsNegativeNumber(el)) e.preventDefault();
+                        return;
+                    }
+                    if (e.key === '.') {
+                        if (isIntegerOnlyNumber(el) || String(el.value || '').includes('.')) {
+                            e.preventDefault();
+                        }
+                        return;
+                    }
+                    if (e.key.length === 1 && !/^[0-9০-৯]$/.test(e.key)) {
+                        e.preventDefault();
+                    }
+                }
+            }, { capture: true });
+
+            document.addEventListener('paste', function (e) {
+                const el = e.target;
+                if (!el || el.tagName !== 'INPUT') return;
+                const rawClip = e.clipboardData ? e.clipboardData.getData('text/plain') : '';
+
+                if (isPhoneInput(el)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    lastPhonePasteTs = Date.now();
+                    const cleaned = sanitizePhoneString(rawClip);
+                    syncInputValue(el, cleaned);
+                    return;
+                }
+
+                if (isStrictDigitsInput(el)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const maxLen = parseInt(el.getAttribute('maxlength') || '32', 10);
+                    let digits = cleanUnicodeDigits(rawClip).replace(/\D/g, '');
+                    if (!Number.isNaN(maxLen) && maxLen > 0) digits = digits.slice(0, maxLen);
+                    syncInputValue(el, digits);
+                    return;
+                }
+
+                if (isStrictNumberInput(el)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const cleanedNum = sanitizeNumericString(rawClip, allowsNegativeNumber(el), isIntegerOnlyNumber(el));
+                    if (cleanedNum !== '') {
+                        syncInputValue(el, cleanedNum);
+                    }
+                }
+            }, { capture: true });
+
+            document.addEventListener('input', function (e) {
+                const el = e.target;
+                if (!el || el.tagName !== 'INPUT' || el._meramotSanitizing) return;
+
+                if (isPhoneInput(el)) {
+                    const cleaned = sanitizePhoneString(el.value);
+                    if (cleaned !== el.value) {
+                        syncInputValue(el, cleaned);
+                    }
+                    return;
+                }
+
+                if (isStrictDigitsInput(el)) {
+                    const maxLen = parseInt(el.getAttribute('maxlength') || '32', 10);
+                    let digits = cleanUnicodeDigits(el.value).replace(/\D/g, '');
+                    if (!Number.isNaN(maxLen) && maxLen > 0) digits = digits.slice(0, maxLen);
+                    if (digits !== el.value) {
+                        syncInputValue(el, digits);
+                    }
+                    return;
+                }
+
+                if (el.getAttribute('name') === 'area') {
+                    const isAutomatedSplit = e.inputType === 'insertReplacementText'
+                        || e.inputType === 'insertFromPaste'
+                        || (Date.now() - lastPhonePasteTs) < 120;
+                    if (isAutomatedSplit && PURE_PHONE_FRAGMENT_RE.test(el.value)) {
+                        syncInputValue(el, el.dataset.lastValidArea || '');
+                        return;
+                    }
+                    el.dataset.lastValidArea = el.value;
+                    return;
+                }
+
+                if (isStrictNumberInput(el)) {
+                    if (!allowsNegativeNumber(el) && String(el.value).includes('-')) {
+                        syncInputValue(el, String(el.value).replace(/-/g, ''));
+                    }
+                }
+            }, { capture: true });
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => applyFieldAttributes(document));
+            } else {
+                applyFieldAttributes(document);
+            }
+
+            if (typeof MutationObserver !== 'undefined') {
+                new MutationObserver((mutations) => {
+                    for (const m of mutations) {
+                        if (m.addedNodes && m.addedNodes.length > 0) {
+                            applyFieldAttributes(document);
+                            break;
+                        }
+                    }
+                }).observe(document.documentElement, { childList: true, subtree: true });
+            }
+
+            window.MeramotInputGuard = {
+                sanitizePhoneString,
+                sanitizeNumericString,
+                cleanUnicodeDigits,
+                applyFieldAttributes
+            };
         })();
     </script>
 </body>

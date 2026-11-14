@@ -58,7 +58,7 @@
         address: @js(old('address', $primaryShop->address ?? $profile->shop_address ?? '')),
         gpsAddress: @js(old('gps_address', $primaryShop->gps_address ?? $profile->gps_address ?? '')),
         sameAsGps: {{ old('same_as_gps_location', $primaryShop->same_as_gps_location ?? $profile->same_as_gps_location ?? false) ? 'true' : 'false' }},
-        city: @js(old('city', $primaryShop->city ?? $profile->city ?? 'Dhaka')),
+        city: @js(old('city', $primaryShop->city ?? $profile->city ?? 'Dhaka') ?: 'Dhaka'),
         area: @js(old('area', $primaryShop->area ?? $profile->area ?? '')),
         lat: @js(old('latitude', $primaryShop->latitude ?? $profile->shop_latitude ?? '')),
         lng: @js(old('longitude', $primaryShop->longitude ?? $profile->shop_longitude ?? '')),
@@ -86,7 +86,11 @@
             this.gpsAddress = loc.address || this.gpsAddress;
             this.lat = typeof loc.lat === 'number' ? loc.lat.toFixed(6) : this.lat;
             this.lng = typeof loc.lng === 'number' ? loc.lng.toFixed(6) : this.lng;
-            if (loc.city) this.city = loc.city;
+            if (loc.city) {
+                this.city = window.MeramotLocationCatalog
+                    ? window.MeramotLocationCatalog.findDistrict(loc.city)
+                    : loc.city;
+            }
             if (loc.area) this.area = loc.area;
             if (!this.address || this.sameAsGps) {
                 this.address = loc.address || this.address;
@@ -271,6 +275,9 @@
                             type="tel"
                             name="phone"
                             x-model="phone"
+                            autocomplete="tel"
+                            inputmode="tel"
+                            maxlength="14"
                             required
                             placeholder="01XXXXXXXXX"
                             class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
@@ -327,27 +334,18 @@
                         >
                     </div>
 
-                    <label class="block">
-                        <span class="mb-1.5 block text-sm font-medium text-slate-700">City</span>
-                        <input
-                            type="text"
-                            name="city"
-                            x-model="city"
-                            placeholder="Dhaka"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
-                        >
-                    </label>
-
-                    <label class="block">
-                        <span class="mb-1.5 block text-sm font-medium text-slate-700">Area</span>
-                        <input
-                            type="text"
-                            name="area"
-                            x-model="area"
-                            placeholder="Banani / Dhanmondi / Uttara"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
-                        >
-                    </label>
+                    <div class="md:col-span-2">
+                        @include('vendor.partials.branch-location-picker-fields', [
+                            'cityExpr' => 'city',
+                            'areaExpr' => 'area',
+                            'latExpr' => 'lat',
+                            'lngExpr' => 'lng',
+                            'gpsAddressExpr' => 'gpsAddress',
+                            'addressExpr' => 'address',
+                            'sameAsGpsExpr' => 'sameAsGps',
+                            'contextKey' => 'setup-shop',
+                        ])
+                    </div>
                 </div>
             </section>
 

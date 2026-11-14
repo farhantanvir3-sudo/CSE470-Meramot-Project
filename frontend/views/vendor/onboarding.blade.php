@@ -17,7 +17,7 @@ Models Touched: User, VendorProfile, RepairShop
 @php
     $authUser = auth()->user();
     $vStatus = strtolower($profile->verification_status ?? 'pending');
-    $primaryShop = optional($profile?->shops)->sortBy('id')->first();
+    $primaryShop = $profile ? $profile->shops->sortBy('id')->first() : null;
     $setupComplete = (bool) ($primaryShop->setup_complete ?? false);
     $isPublicShop = (bool) ($primaryShop->is_public ?? false);
     $emailVerified = (bool) ($authUser->is_email_verified ?? false);
@@ -33,8 +33,11 @@ Models Touched: User, VendorProfile, RepairShop
         sameAsGps: {{ old('same_as_gps_location', $profile->same_as_gps_location ?? false) ? 'true' : 'false' }},
         shopLat: @js(old('shop_latitude', $profile->shop_latitude ?? '')),
         shopLng: @js(old('shop_longitude', $profile->shop_longitude ?? '')),
-        city: @js(old('city', $profile->city ?? 'Dhaka')),
+        city: @js(old('city', $profile->city ?? 'Dhaka') ?: 'Dhaka'),
         area: @js(old('area', $profile->area ?? 'Banani')),
+        ownerPassword: '',
+        ownerPassFocused: false,
+        showOwnerPass: false,
         isBranched: {{ old('is_branched', $profile->is_branched ?? false) ? 'true' : 'false' }},
         branchName: @js(old('branch_name', $primaryShop->branch_name ?? '')),
         otpModalOpen: false,
@@ -50,7 +53,11 @@ Models Touched: User, VendorProfile, RepairShop
             this.gpsAddress = loc.address || '';
             this.shopLat = typeof loc.lat === 'number' ? loc.lat.toFixed(6) : '';
             this.shopLng = typeof loc.lng === 'number' ? loc.lng.toFixed(6) : '';
-            if (loc.city) this.city = loc.city;
+            if (loc.city) {
+                this.city = window.MeramotLocationCatalog
+                    ? window.MeramotLocationCatalog.findDistrict(loc.city)
+                    : loc.city;
+            }
             if (loc.area) this.area = loc.area;
             if (this.sameAsGps) {
                 this.shopAddress = this.gpsAddress;
@@ -421,21 +428,39 @@ Models Touched: User, VendorProfile, RepairShop
                             <input
                                 type="tel"
                                 name="owner_phone"
+                                autocomplete="tel"
+                                inputmode="tel"
+                                maxlength="14"
                                 value="{{ old('owner_phone') }}"
                                 placeholder="+88017XXXXXXXX"
                                 class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs outline-none"
                                 required
                             >
                         </div>
-                        <div>
+                        <div class="sm:col-span-2">
                             <label class="block font-bold text-[var(--foreground)] mb-1">Account Password *</label>
-                            <input
-                                type="password"
-                                name="owner_password"
-                                placeholder="Min. 6 characters"
-                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2.5 text-xs outline-none"
-                                required
-                            >
+                            <div class="relative">
+                                <input
+                                    :type="showOwnerPass ? 'text' : 'password'"
+                                    name="owner_password"
+                                    x-model="ownerPassword"
+                                    @focus="ownerPassFocused = true"
+                                    @blur="ownerPassFocused = false"
+                                    autocomplete="new-password"
+                                    minlength="8"
+                                    placeholder="Min. 8 characters"
+                                    class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] pl-3 pr-14 py-2.5 text-xs outline-none"
+                                    required
+                                >
+                                <button type="button" @click="showOwnerPass = !showOwnerPass" class="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[var(--muted-foreground)]">
+                                    <span x-text="showOwnerPass ? 'Hide' : 'Show'">Show</span>
+                                </button>
+                            </div>
+                            @include('partials.password-strength-meter', [
+                                'passwordExpr' => 'ownerPassword',
+                                'focusedExpr' => 'ownerPassFocused',
+                                'evalVar' => 'onboardPwEval',
+                            ])
                         </div>
                     </div>
                 </div>
@@ -470,6 +495,10 @@ Models Touched: User, VendorProfile, RepairShop
                     <input
                         type="text"
                         name="nid_number"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        maxlength="17"
+                        data-digits-only
                         value="{{ old('nid_number', $profile->nid_number ?? '') }}"
                         placeholder="199219293120"
                         class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] p-3 text-xs outline-none"
@@ -754,27 +783,17 @@ Models Touched: User, VendorProfile, RepairShop
                         required
                     >
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div>
-                            <label class="block text-[11px] font-bold text-[var(--muted-foreground)] mb-1">District / City</label>
-                            <input
-                                type="text"
-                                name="city"
-                                x-model="city"
-                                placeholder="Dhaka, Chattogram, Sylhet..."
-                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs outline-none"
-                            >
-                        </div>
-                        <div>
-                            <label class="block text-[11px] font-bold text-[var(--muted-foreground)] mb-1">Area / Neighborhood</label>
-                            <input
-                                type="text"
-                                name="area"
-                                x-model="area"
-                                placeholder="Banani, Hatirpool, Agrabad..."
-                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs outline-none"
-                            >
-                        </div>
+                    <div class="pt-1">
+                        @include('vendor.partials.branch-location-picker-fields', [
+                            'cityExpr' => 'city',
+                            'areaExpr' => 'area',
+                            'latExpr' => 'shopLat',
+                            'lngExpr' => 'shopLng',
+                            'gpsAddressExpr' => 'gpsAddress',
+                            'addressExpr' => 'shopAddress',
+                            'sameAsGpsExpr' => 'sameAsGps',
+                            'contextKey' => 'vendor-onboarding',
+                        ])
                     </div>
                 </div>
             </div>
@@ -879,6 +898,9 @@ Models Touched: User, VendorProfile, RepairShop
                     <label class="block text-xs font-bold text-[var(--foreground)] mb-1">Enter 6-digit code</label>
                     <input
                         type="text"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        data-digits-only
                         maxlength="6"
                         x-model="otpCode"
                         placeholder="000000"

@@ -42,7 +42,11 @@
                 this.newBranch.gpsAddress = loc.address || '';
                 this.newBranch.lat = typeof loc.lat === 'number' ? loc.lat.toFixed(6) : this.newBranch.lat;
                 this.newBranch.lng = typeof loc.lng === 'number' ? loc.lng.toFixed(6) : this.newBranch.lng;
-                if (loc.city) this.newBranch.city = loc.city;
+                if (loc.city) {
+                    this.newBranch.city = window.MeramotLocationCatalog
+                        ? window.MeramotLocationCatalog.findDistrict(loc.city)
+                        : loc.city;
+                }
                 if (loc.area) this.newBranch.area = loc.area;
                 if (this.newBranch.sameAsGps) {
                     this.newBranch.vendorAddress = this.newBranch.gpsAddress;
@@ -388,7 +392,11 @@
                                 this.gpsAddr = loc.address || '';
                                 this.lat = typeof loc.lat === 'number' ? loc.lat.toFixed(6) : this.lat;
                                 this.lng = typeof loc.lng === 'number' ? loc.lng.toFixed(6) : this.lng;
-                                if (loc.city) this.city = loc.city;
+                                if (loc.city) {
+                                    this.city = window.MeramotLocationCatalog
+                                        ? window.MeramotLocationCatalog.findDistrict(loc.city)
+                                        : loc.city;
+                                }
                                 if (loc.area) this.area = loc.area;
                                 if (this.sameGps) this.pubAddr = this.gpsAddr;
                             });
@@ -528,18 +536,32 @@
                                 >
                             </div>
 
-                            <div class="grid grid-cols-3 gap-2">
+                            <div class="space-y-3">
+                                @include('vendor.partials.branch-location-picker-fields', [
+                                    'cityExpr' => 'city',
+                                    'areaExpr' => 'area',
+                                    'latExpr' => 'lat',
+                                    'lngExpr' => 'lng',
+                                    'gpsAddressExpr' => 'gpsAddr',
+                                    'addressExpr' => 'pubAddr',
+                                    'sameAsGpsExpr' => 'sameGps',
+                                    'contextKey' => 'edit-branch-' . $branch->id,
+                                    'cityLabel' => 'District / City',
+                                    'areaSelectLabel' => 'Narrowed-Down Location',
+                                    'areaInputLabel' => 'Area / Place Name',
+                                ])
                                 <div>
-                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">District / City</label>
-                                    <input type="text" name="city" x-model="city" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1.5 text-xs">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Area</label>
-                                    <input type="text" name="area" x-model="area" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1.5 text-xs">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Phone</label>
-                                    <input type="text" name="phone" x-model="phone" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1.5 text-xs">
+                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-1">Phone</label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        x-model="phone"
+                                        autocomplete="tel"
+                                        inputmode="tel"
+                                        maxlength="14"
+                                        placeholder="01XXXXXXXXX"
+                                        class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs outline-none focus:border-[var(--accent-dark)]"
+                                    >
                                 </div>
                             </div>
 
@@ -629,27 +651,27 @@
                             required
                             class="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 text-xs outline-none"
                         >
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-2.5">
-                            <div>
-                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-0.5">GPS Latitude *</label>
-                                <input type="number" step="any" name="latitude" x-model="newBranch.lat" required class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-xs font-mono">
+                        <div class="mt-2.5 space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-0.5">GPS Latitude *</label>
+                                    <input type="number" step="any" min="-90" max="90" name="latitude" x-model="newBranch.lat" required class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-xs font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-0.5">GPS Longitude *</label>
+                                    <input type="number" step="any" min="-180" max="180" name="longitude" x-model="newBranch.lng" required class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-xs font-mono">
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-0.5">GPS Longitude *</label>
-                                <input type="number" step="any" name="longitude" x-model="newBranch.lng" required class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-xs font-mono">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-0.5">District / City</label>
-                                <select name="city" x-model="newBranch.city" class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-xs font-semibold">
-                                    @foreach($bangladeshDistricts ?? ['Dhaka', 'Chattogram', 'Sylhet', 'Rajshahi', 'Khulna', 'Bogura', 'Gazipur', 'Narayanganj'] as $distName)
-                                        <option value="{{ $distName }}">{{ $distName }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-0.5">Area / Hub</label>
-                                <input type="text" name="area" x-model="newBranch.area" placeholder="e.g. Zindabazar" class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-xs">
-                            </div>
+                            @include('vendor.partials.branch-location-picker-fields', [
+                                'cityExpr' => 'newBranch.city',
+                                'areaExpr' => 'newBranch.area',
+                                'latExpr' => 'newBranch.lat',
+                                'lngExpr' => 'newBranch.lng',
+                                'gpsAddressExpr' => 'newBranch.gpsAddress',
+                                'addressExpr' => 'newBranch.vendorAddress',
+                                'sameAsGpsExpr' => 'newBranch.sameAsGps',
+                                'contextKey' => 'new-branch',
+                            ])
                         </div>
                     </div>
 
@@ -685,15 +707,15 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Branch Contact Phone</label>
-                        <input type="text" name="phone" placeholder="+88017XXXXXXXX" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] p-2.5 text-xs">
+                        <input type="tel" name="phone" autocomplete="tel" inputmode="tel" maxlength="14" placeholder="+88017XXXXXXXX" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] p-2.5 text-xs">
                     </div>
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Inspection Fee (৳)</label>
-                        <input type="number" name="inspection_fee" value="250" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] p-2.5 text-xs">
+                        <input type="number" min="0" step="0.01" name="inspection_fee" value="250" onwheel="this.blur()" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] p-2.5 text-xs">
                     </div>
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Base Labor Fee (৳)</label>
-                        <input type="number" name="base_labor_fee" value="500" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] p-2.5 text-xs">
+                        <input type="number" min="0" step="0.01" name="base_labor_fee" value="500" onwheel="this.blur()" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] p-2.5 text-xs">
                     </div>
                 </div>
 
@@ -962,6 +984,7 @@
                                                 min="0"
                                                 name="labor_cost"
                                                 x-model="laborCost"
+                                                onwheel="this.blur()"
                                                 placeholder="900"
                                                 class="w-full rounded-xl border border-amber-400/70 bg-white dark:bg-[var(--mint-300)] px-3 py-2 text-xs font-bold text-[var(--foreground)] outline-none"
                                             >

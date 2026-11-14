@@ -14,6 +14,7 @@ use App\Models\UserNotification;
 use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
 use App\Services\DeliveryLifecycleService;
+use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -246,6 +247,13 @@ class VendorBranchController extends Controller
         }
 
         // Enforce Dual-Address Coherence
+        $cleanPhone = InputSanitizer::sanitizePhone($validated['phone'] ?? null);
+        if ($cleanPhone !== null && !InputSanitizer::isValidBdPhone($cleanPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+
         $sameAsGps = $request->boolean('same_as_gps_location');
         $gpsAddress = trim($validated['gps_address']);
         $vendorAddress = $sameAsGps ? $gpsAddress : trim((string) ($validated['address'] ?? ''));
@@ -353,7 +361,7 @@ class VendorBranchController extends Controller
             'setup_complete' => $isApprovedVendor,
             'accepts_direct_orders' => $isApprovedVendor,
             'supports_pickup' => in_array('COURIER_PICKUP', $categories, true),
-            'phone' => !empty($validated['phone']) ? trim($validated['phone']) : ($templateShop->phone ?? $vendorProfile->phone ?? '+8801711000001'),
+            'phone' => $cleanPhone ?? ($templateShop->phone ?? $vendorProfile->phone ?? '+8801711000001'),
             'email' => Str::limit($slug, 40, '') . '@meramot.local',
             'opening_hours_text' => $templateShop->opening_hours_text ?? 'Sat – Thu: 10:00 AM – 8:30 PM',
             'categories' => $categories,
@@ -455,6 +463,13 @@ class VendorBranchController extends Controller
             }
         }
 
+        $cleanPhone = InputSanitizer::sanitizePhone($validated['phone'] ?? null);
+        if ($cleanPhone !== null && !InputSanitizer::isValidBdPhone($cleanPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+
         $sameAsGps = $request->boolean('same_as_gps_location');
         $gpsAddress = trim($validated['gps_address']);
         $vendorAddress = $sameAsGps ? $gpsAddress : trim((string) ($validated['address'] ?? ''));
@@ -485,7 +500,7 @@ class VendorBranchController extends Controller
             'same_as_gps_location' => ($vendorAddress === $gpsAddress) && $sameAsGps,
             'city' => $city,
             'area' => $area,
-            'phone' => !empty($validated['phone']) ? trim($validated['phone']) : $shop->phone,
+            'phone' => $cleanPhone ?? $shop->phone,
         ]);
 
         if ($request->expectsJson() || $request->is('api/*')) {

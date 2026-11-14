@@ -255,7 +255,7 @@
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Gross Amount (৳) *</label>
-                        <input type="number" step="0.01" min="50" name="gross_amount" placeholder="e.g. 4500" required
+                        <input type="number" step="0.01" min="50" onwheel="this.blur()" name="gross_amount" placeholder="e.g. 4500" required
                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs text-[var(--foreground)] outline-none">
                     </div>
                     <div>
@@ -284,7 +284,7 @@
 
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Batch Settlement Limit</label>
-                    <input type="number" name="limit" value="20" min="1" max="50"
+                    <input type="number" name="limit" value="20" min="1" max="50" step="1" inputmode="numeric" data-numeric-mode="integer" onwheel="this.blur()"
                            class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
                 </div>
 
@@ -352,7 +352,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
                             <div>
                                 <label class="block text-[10px] font-bold text-[var(--muted-foreground)] uppercase mb-1">Refund Amount (৳)</label>
-                                <input type="number" step="0.01" min="1" max="{{ $dispute->paid_amount }}" name="refund_amount" value="{{ $dispute->paid_amount }}" required
+                                <input type="number" step="0.01" min="1" max="{{ $dispute->paid_amount }}" onwheel="this.blur()" name="refund_amount" value="{{ $dispute->paid_amount }}" required
                                        class="w-full rounded-xl border border-[var(--border)] bg-white dark:bg-[var(--card)] px-3 py-2 text-xs font-mono font-bold text-[var(--foreground)] outline-none">
                             </div>
                             <div class="sm:col-span-2">

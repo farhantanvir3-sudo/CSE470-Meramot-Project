@@ -70,8 +70,9 @@ Route::post('/verify-email-otp', [AuthController::class, 'verifyOtp'])->name('au
 Route::post('/verify-email-otp/send', [AuthController::class, 'sendVerificationOtp'])->name('auth.verify-otp.send');
 Route::post('/api/verification/send-otp', [AuthController::class, 'sendVerificationOtp']);
 Route::post('/api/verification/verify-otp', [AuthController::class, 'verifyOtp']);
-Route::get('/forgot-password', fn (Request $r) => app(ComingSoonController::class)->show($r, 'password-recovery'))->name('password.request');
+Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
 Route::post('/forgot-password', [AuthController::class, 'sendForgotPasswordEmail'])->name('password.email');
+Route::post('/forgot-password/reset', [AuthController::class, 'resetPasswordWithOtp'])->name('password.update');
 
 // -------------------------------------------------------------
 // MODULE: Delivery & Rider Logistics (Assigned: Md. Nafiul Islam [22299035])
@@ -79,6 +80,7 @@ Route::post('/forgot-password', [AuthController::class, 'sendForgotPasswordEmail
 Route::prefix('delivery')->group(function () {
     Route::get('/login', [DeliveryPortalController::class, 'showLogin'])->name('delivery.login');       // R1 Company Login
     Route::post('/login', [DeliveryPortalController::class, 'login'])->name('delivery.login.submit');   // R1 Company Login
+    Route::post('/forgot-credentials', [DeliveryPortalController::class, 'sendForgotCredentials'])->name('delivery.forgot-credentials');
     Route::post('/logout', [DeliveryPortalController::class, 'logout'])->name('delivery.logout');       // R1 Sign Out
     Route::get('/', [DeliveryPortalController::class, 'dashboard'])->name('delivery.dashboard');        // R1/R2 Rider Dashboard
     Route::get('/map', [DeliveryPortalController::class, 'map'])->name('delivery.map');                 // R4 Live Rider Map
@@ -222,6 +224,7 @@ Route::match(['get', 'post'], '/coming-soon/{feature?}', [ComingSoonController::
 Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
 Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
 Route::patch('/profile', [ProfileController::class, 'update']);
+Route::match(['post', 'put'], '/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
 Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 Route::get('/settings', [ProfileController::class, 'show'])->name('settings.show');
 Route::get('/api/profile', [ProfileController::class, 'show']);

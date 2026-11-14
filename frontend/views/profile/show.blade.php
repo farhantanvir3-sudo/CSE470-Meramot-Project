@@ -345,6 +345,9 @@
                             type="tel"
                             name="phone"
                             x-model="draft.phone"
+                            autocomplete="tel"
+                            inputmode="tel"
+                            maxlength="14"
                             placeholder="01XXXXXXXXX"
                             class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
@@ -469,6 +472,7 @@
                             type="text"
                             name="city"
                             x-model="draft.city"
+                            autocomplete="address-level2"
                             placeholder="Dhaka"
                             class="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
@@ -482,6 +486,7 @@
                             type="text"
                             name="area"
                             x-model="draft.area"
+                            autocomplete="address-level3"
                             placeholder="Banani, Dhanmondi, Mirpur, Uttara..."
                             class="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
@@ -569,6 +574,143 @@
         </div>
     </form>
 
+    @php
+        $hasPassword = !empty($user->password);
+    @endphp
+    <section
+        data-profile-password-card
+        class="mt-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm"
+    >
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
+            <div>
+                <h2 class="text-lg font-extrabold text-[var(--foreground)] flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-[var(--accent-dark)]"></i>
+                    <span>Password &amp; Security</span>
+                </h2>
+                <p class="mt-1 text-xs text-[var(--muted-foreground)]">
+                    {{ $hasPassword ? 'Update your account password anytime. Use a strong mix of letters, numbers, and symbols.' : 'Your account was signed up with Google. Set a password if you also want to sign in with email & password.' }}
+                </p>
+            </div>
+            <span class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
+                {{ $hasPassword ? 'Password Active' : 'Google OAuth Only' }}
+            </span>
+        </div>
+
+        @if($errors->has('current_password') || $errors->has('password'))
+            <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 space-y-1">
+                @foreach(['current_password', 'password'] as $pwField)
+                    @if($errors->has($pwField))
+                        <p>{{ $errors->first($pwField) }}</p>
+                    @endif
+                @endforeach
+            </div>
+        @endif
+
+        <form
+            method="POST"
+            action="{{ route('profile.password.update') }}"
+            class="space-y-4"
+            x-data="{
+                currentPassword: '',
+                newPassword: '',
+                newPasswordConfirm: '',
+                newPassFocused: false,
+                showCurrent: false,
+                showNew: false,
+                showConfirm: false
+            }"
+        >
+            @csrf
+
+            @if($hasPassword)
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.15em] text-[var(--muted-foreground)] mb-1.5">
+                        Current Password *
+                    </label>
+                    <div class="relative">
+                        <input
+                            :type="showCurrent ? 'text' : 'password'"
+                            name="current_password"
+                            x-model="currentPassword"
+                            autocomplete="current-password"
+                            required
+                            placeholder="Enter current password"
+                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] pl-4 pr-16 py-3 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                        >
+                        <button type="button" @click="showCurrent = !showCurrent" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--muted-foreground)]">
+                            <span x-text="showCurrent ? 'Hide' : 'Show'">Show</span>
+                        </button>
+                    </div>
+                    <a href="/forgot-password?email={{ urlencode($user->email) }}" class="mt-1.5 inline-block text-[11px] font-semibold text-[#214c34] hover:underline">
+                        Forgot your current password? Reset via email code &rarr;
+                    </a>
+                </div>
+            @endif
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.15em] text-[var(--muted-foreground)] mb-1.5">
+                        {{ $hasPassword ? 'New Password *' : 'Create Password *' }}
+                    </label>
+                    <div class="relative">
+                        <input
+                            :type="showNew ? 'text' : 'password'"
+                            name="password"
+                            x-model="newPassword"
+                            @focus="newPassFocused = true"
+                            @blur="newPassFocused = false"
+                            autocomplete="new-password"
+                            minlength="8"
+                            required
+                            placeholder="Min. 8 characters"
+                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] pl-4 pr-16 py-3 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                        >
+                        <button type="button" @click="showNew = !showNew" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--muted-foreground)]">
+                            <span x-text="showNew ? 'Hide' : 'Show'">Show</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-[0.15em] text-[var(--muted-foreground)] mb-1.5">
+                        {{ $hasPassword ? 'Confirm New Password *' : 'Confirm Password *' }}
+                    </label>
+                    <div class="relative">
+                        <input
+                            :type="showConfirm ? 'text' : 'password'"
+                            name="password_confirmation"
+                            x-model="newPasswordConfirm"
+                            autocomplete="new-password"
+                            minlength="8"
+                            required
+                            placeholder="Re-enter new password"
+                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] pl-4 pr-16 py-3 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                        >
+                        <button type="button" @click="showConfirm = !showConfirm" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--muted-foreground)]">
+                            <span x-text="showConfirm ? 'Hide' : 'Show'">Show</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            @include('partials.password-strength-meter', [
+                'passwordExpr' => 'newPassword',
+                'confirmExpr' => 'newPasswordConfirm',
+                'focusedExpr' => 'newPassFocused',
+                'evalVar' => 'profilePwEval',
+            ])
+
+            <div class="pt-1 flex flex-wrap items-center justify-end gap-3">
+                <button
+                    type="submit"
+                    class="rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
+                >
+                    {{ $hasPassword ? 'Update Password' : 'Set Account Password' }}
+                </button>
+            </div>
+        </form>
+    </section>
+
     <!-- Delete Profile Confirmation Modal -->
     <div x-show="showDeleteConfirm" x-cloak class="fixed inset-0 z-[120] flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/35 backdrop-blur-sm" @click="showDeleteConfirm = false"></div>
@@ -643,6 +785,10 @@
                         <p class="mb-3 text-center text-sm text-slate-600">Enter the 6-digit OTP code</p>
                         <input
                             type="text"
+                            name="otp"
+                            inputmode="numeric"
+                            pattern="[0-9]*"
+                            data-digits-only
                             x-model="otpCode"
                             maxlength="6"
                             placeholder="123456"

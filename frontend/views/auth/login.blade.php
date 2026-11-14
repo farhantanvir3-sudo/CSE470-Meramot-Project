@@ -9,11 +9,12 @@
         forgotModalOpen: {{ session('forgot_password_sent_email') ? 'true' : 'false' }},
         forgotStep: '{{ session('forgot_password_sent_email') ? 'sent' : 'form' }}',
         forgotEmail: @js(session('forgot_password_sent_email', '')),
+        forgotResetUrl: @js(session('forgot_password_sent_email') ? '/forgot-password?step=reset&email=' . urlencode((string) session('forgot_password_sent_email')) : '/forgot-password?step=reset'),
         forgotSending: false,
         forgotError: '',
         openForgotModal() {
-            const loginInput = document.querySelector('input[name=login]')?.value?.trim() || '';
-            this.forgotEmail = loginInput.includes('@') ? loginInput : '';
+            const loginInput = document.querySelector('input[name=identifier]')?.value?.trim() || '';
+            this.forgotEmail = loginInput;
             this.forgotError = '';
             this.forgotSending = false;
             this.forgotStep = 'form';
@@ -21,9 +22,13 @@
         },
         async submitForgotPassword() {
             this.forgotError = '';
-            const email = (this.forgotEmail || '').trim();
-            if (!email || !email.includes('@')) {
-                this.forgotError = 'Please enter a valid email address.';
+            const identifier = (this.forgotEmail || '').trim();
+            if (!identifier) {
+                this.forgotError = 'Please enter your email address or username.';
+                return;
+            }
+            if (identifier.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
+                this.forgotError = 'Please enter a valid email address or username.';
                 return;
             }
             this.forgotSending = true;
@@ -35,14 +40,15 @@
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}'
                     },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ identifier, email: identifier })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
-                    this.forgotError = data?.errors?.email?.[0] || data?.message || 'Unable to send recovery email right now.';
+                    this.forgotError = data?.errors?.email?.[0] || data?.errors?.identifier?.[0] || data?.message || 'Unable to send recovery code right now.';
                     return;
                 }
-                this.forgotEmail = data.email || email;
+                this.forgotEmail = data.email || identifier;
+                this.forgotResetUrl = data.reset_url || ('/forgot-password?step=reset&email=' + encodeURIComponent(data.lookup || identifier));
                 this.forgotStep = 'sent';
             } catch (e) {
                 this.forgotError = 'Network error. Please try again.';
@@ -160,7 +166,6 @@
                         <input type="checkbox" name="remember" class="rounded accent-[#214c34]" checked>
                         <span>Remember me</span>
                     </label>
-                    <a href="/forgot-password" @click.prevent="openForgotModal()" class="hover:underline font-medium text-[#214c34]">Forgot password?</a>
                 </div>
 
                 <button
@@ -169,6 +174,18 @@
                 >
                     Sign In
                 </button>
+
+                <div class="pt-1 text-center">
+                    <a
+                        href="/forgot-password"
+                        @click.prevent="openForgotModal()"
+                        data-forgot-credentials-trigger="main"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#c8dac2] bg-[#f8fbf6] px-4 py-2.5 text-xs font-bold text-[#214c34] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:bg-[#eef5ea]"
+                    >
+                        <i class="fa-solid fa-key text-[11px]"></i>
+                        <span>Forgot password or account credentials?</span>
+                    </a>
+                </div>
             </form>
 
             <div class="mt-5 text-center text-xs text-[#5e6d64] space-y-2.5 border-t border-[var(--border)]/40 pt-4">
@@ -268,8 +285,8 @@
                             <i class="fa-solid fa-key text-base"></i>
                         </div>
                         <div>
-                            <h2 id="forgot-password-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Reset your password</h2>
-                            <p class="text-xs text-[var(--muted-foreground)]">Enter your account email to receive recovery instructions.</p>
+                            <h2 id="forgot-password-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Recover password &amp; credentials</h2>
+                            <p class="text-xs text-[var(--muted-foreground)]">Receive your username reminder &amp; 6-digit password reset code.</p>
                         </div>
                     </div>
                     <button type="button" @click="forgotModalOpen = false" class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-200)] transition" aria-label="Close">✕</button>
@@ -284,15 +301,21 @@
                     </template>
 
                     <div>
-                        <label class="mb-1.5 block text-xs font-semibold text-[var(--foreground)]">Email address</label>
+                        <label class="mb-1.5 block text-xs font-semibold text-[var(--foreground)]">Email address or Username</label>
                         <input
-                            type="email"
+                            type="text"
                             x-model="forgotEmail"
                             required
-                            placeholder="name@example.com"
+                            autocomplete="username"
+                            placeholder="name@example.com or username"
                             class="w-full rounded-full border border-[#d7d7d7] bg-white px-5 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34]"
                         />
                     </div>
+
+                    <p class="text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+                        Delivery partner with <code class="font-mono font-semibold text-[#214c34]">@meramotbd.com</code>?
+                        <a href="/delivery/login?recover=1" class="font-bold text-[#214c34] hover:underline">Recover company credentials &rarr;</a>
+                    </p>
 
                     <div class="flex items-center justify-end gap-2.5 pt-1">
                         <button
@@ -309,7 +332,7 @@
                             class="inline-flex items-center gap-2 rounded-full bg-[#163625] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
                         >
                             <i class="fa-solid" :class="forgotSending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
-                            <span x-text="forgotSending ? 'Sending...' : 'Send Recovery Email'"></span>
+                            <span x-text="forgotSending ? 'Sending...' : 'Send Recovery Code'"></span>
                         </button>
                     </div>
                 </form>
@@ -322,7 +345,7 @@
                 </div>
 
                 <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]">
-                    Email Sent Successfully
+                    Recovery Code Sent
                 </h2>
 
                 <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
@@ -331,16 +354,22 @@
                 </div>
 
                 <p class="mt-3.5 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                    If an account is registered with this address, we've sent password recovery instructions to your inbox. Please check your spam folder if it doesn't arrive shortly.
+                    If an account matches this email or username, we sent your username reminder and 6-digit password reset code to that inbox.
                 </p>
 
-                <div class="mt-6">
+                <div class="mt-6 space-y-2.5">
+                    <a
+                        :href="forgotResetUrl || ('/forgot-password?step=reset&email=' + encodeURIComponent(forgotEmail))"
+                        class="block w-full rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
+                    >
+                        Enter 6-Digit Code &amp; Reset Password &rarr;
+                    </a>
                     <button
                         type="button"
                         @click="forgotModalOpen = false"
-                        class="w-full rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
+                        class="w-full rounded-full border border-[var(--border)] bg-[var(--background)] px-6 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
                     >
-                        Done
+                        Close
                     </button>
                 </div>
             </div>

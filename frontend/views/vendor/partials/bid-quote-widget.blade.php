@@ -126,6 +126,7 @@
                     min="0"
                     name="labor_cost"
                     x-model="laborCost"
+                    onwheel="this.blur()"
                     placeholder="900"
                     class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] px-3 py-2 text-xs font-bold text-[var(--foreground)] outline-none"
                 >
@@ -136,6 +137,10 @@
                     type="number"
                     name="estimated_days"
                     x-model="estimatedDays"
+                    step="1"
+                    inputmode="numeric"
+                    data-numeric-mode="integer"
+                    onwheel="this.blur()"
                     min="1"
                     max="60"
                     class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] px-3 py-2 text-xs font-bold text-[var(--foreground)] outline-none"

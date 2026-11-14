@@ -290,6 +290,7 @@ Controller: DeliveryJobController@index, claimJob, updateMilestone
                                                 name="otp"
                                                 inputmode="numeric"
                                                 pattern="[0-9]{4}"
+                                                data-digits-only
                                                 maxlength="4"
                                                 required
                                                 placeholder="4-digit OTP"

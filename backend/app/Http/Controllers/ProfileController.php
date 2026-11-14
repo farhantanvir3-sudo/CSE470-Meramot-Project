@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\UserNotification;
 use App\Services\MediaUploadService;
+use App\Support\InputSanitizer;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -79,18 +81,14 @@ class ProfileController extends Controller
             'avatar_url' => 'nullable|string',
         ]);
 
-        $phone = isset($validated['phone']) ? trim($validated['phone']) : null;
-        if ($phone === '') {
-            $phone = null;
-        }
+        $normalizedPhone = InputSanitizer::sanitizePhone($validated['phone'] ?? null);
 
-        if ($phone !== null && !preg_match('/^(?:\+?8801|01)[3-9]\d{8}$/', str_replace([' ', '-'], '', $phone))) {
+        if ($normalizedPhone !== null && !InputSanitizer::isValidBdPhone($normalizedPhone)) {
             throw ValidationException::withMessages([
                 'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678 or +8801712345678).',
             ]);
         }
 
-        $normalizedPhone = $phone !== null ? str_replace([' ', '-'], '', $phone) : null;
         $phoneChanged = $normalizedPhone !== $user->phone;
 
         $avatarUrl = $user->avatar_url;
@@ -137,6 +135,59 @@ class ProfileController extends Controller
         }
 
         return redirect()->route('profile.show')->with('success', 'Profile updated successfully. Your phone number and delivery address have been saved for future orders.');
+    }
+
+    /**
+     * Set up an initial password (for passwordless OAuth users) or change an existing password.
+     * Route: POST/PUT /profile/password
+     */
+    public function updatePassword(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Unauthorized'], 401)
+                : redirect()->route('login');
+        }
+
+        if (in_array($user->role, ['delivery_agent', 'delivery'], true)) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Delivery partner company credentials are managed by Meramot Operations.'], 403)
+                : redirect('/delivery/profile')->with('warning', 'Delivery partner company credentials are managed by Meramot Operations.');
+        }
+
+        $hasExistingPassword = !empty($user->password);
+
+        $validated = $request->validate([
+            'current_password' => $hasExistingPassword ? 'required|string' : 'nullable|string',
+            'password' => 'required|string|min:8|max:128|confirmed',
+        ], [
+            'password.min' => 'Password must be at least 8 characters long.',
+            'password.confirmed' => 'New password confirmation does not match.',
+        ]);
+
+        if ($hasExistingPassword && !Hash::check((string) ($validated['current_password'] ?? ''), $user->password)) {
+            throw ValidationException::withMessages([
+                'current_password' => 'Your current password does not match our records.',
+            ]);
+        }
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        $message = $hasExistingPassword
+            ? 'Your account password has been updated.'
+            : 'Password created! You can now sign in with email and password as well.';
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'message' => $message,
+                'hasPassword' => true,
+            ]);
+        }
+
+        return redirect()->route('profile.show')->with('success', $message);
     }
 
     public function destroy(Request $request)

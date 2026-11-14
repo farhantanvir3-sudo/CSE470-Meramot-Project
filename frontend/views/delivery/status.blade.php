@@ -194,6 +194,9 @@
                     <input
                         type="text"
                         name="otp"
+                        inputmode="numeric"
+                        pattern="[0-9]{6}"
+                        data-digits-only
                         maxlength="6"
                         required
                         autofocus

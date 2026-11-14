@@ -41,6 +41,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
         shopName: @js(old('shop_name', $profile->shop_name ?? '')),
         password: '',
         confirmPassword: '',
+        passFocused: false,
         showPass: false,
         showConfirmPass: false,
         gpsAddress: @js(old('gps_address', $profile->gps_address ?? '')),
@@ -48,7 +49,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
         sameAsGps: {{ old('same_as_gps_location', $profile->same_as_gps_location ?? false) ? 'true' : 'false' }},
         shopLat: @js(old('shop_latitude', $profile->shop_latitude ?? '')),
         shopLng: @js(old('shop_longitude', $profile->shop_longitude ?? '')),
-        city: @js(old('city', $profile->city ?? '')),
+        city: @js(old('city', $profile->city ?? 'Dhaka') ?: 'Dhaka'),
         area: @js(old('area', $profile->area ?? '')),
         isBranched: {{ old('is_branched', $profile->is_branched ?? false) ? 'true' : 'false' }},
         branchName: @js(old('branch_name', optional(optional($profile)->shops)->first()->branch_name ?? '')),
@@ -94,7 +95,11 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
             this.gpsAddress = loc.address || '';
             this.shopLat = typeof loc.lat === 'number' ? loc.lat.toFixed(6) : '';
             this.shopLng = typeof loc.lng === 'number' ? loc.lng.toFixed(6) : '';
-            if (loc.city) this.city = loc.city;
+            if (loc.city) {
+                this.city = window.MeramotLocationCatalog
+                    ? window.MeramotLocationCatalog.findDistrict(loc.city)
+                    : loc.city;
+            }
             if (loc.area) this.area = loc.area;
             if (this.sameAsGps && this.gpsAddress) {
                 this.shopAddress = this.gpsAddress;
@@ -436,6 +441,9 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         type="tel"
                         name="phone"
                         x-model="phone"
+                        autocomplete="tel"
+                        inputmode="tel"
+                        maxlength="14"
                         required
                         placeholder="01XXXXXXXXX"
                         :class="phoneInvalid ? 'border-red-400' : 'border-[var(--border)]'"
@@ -466,6 +474,9 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 :type="showPass ? 'text' : 'password'"
                                 name="password"
                                 x-model="password"
+                                @focus="passFocused = true"
+                                @blur="passFocused = false"
+                                autocomplete="new-password"
                                 required
                                 minlength="8"
                                 placeholder="Min. 8 characters"
@@ -475,12 +486,12 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 <span x-text="showPass ? 'Hide' : 'Show'">Show</span>
                             </button>
                         </div>
-                        <div x-show="password.length > 0" x-cloak class="mt-1 flex flex-wrap gap-2 pl-1 text-[10px]">
-                            <span :class="hasLength ? 'text-emerald-700 font-bold' : 'text-slate-400'">• 8+ chars</span>
-                            <span :class="hasUpper ? 'text-emerald-700 font-bold' : 'text-slate-400'">• Uppercase</span>
-                            <span :class="hasLower ? 'text-emerald-700 font-bold' : 'text-slate-400'">• Lowercase</span>
-                            <span :class="hasNumber ? 'text-emerald-700 font-bold' : 'text-slate-400'">• Number</span>
-                        </div>
+                        @include('partials.password-strength-meter', [
+                            'passwordExpr' => 'password',
+                            'confirmExpr' => 'confirmPassword',
+                            'focusedExpr' => 'passFocused',
+                            'evalVar' => 'applyPwEval',
+                        ])
                     </div>
 
                     <div class="flex flex-col gap-1">
@@ -490,6 +501,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 :type="showConfirmPass ? 'text' : 'password'"
                                 name="password_confirmation"
                                 x-model="confirmPassword"
+                                autocomplete="new-password"
                                 required
                                 placeholder="Confirm password"
                                 class="w-full rounded-2xl border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
@@ -518,8 +530,12 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     <input
                         type="text"
                         name="nid_number"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        maxlength="17"
+                        data-digits-only
                         value="{{ old('nid_number', $profile->nid_number ?? '') }}"
-                        placeholder="Owner NID number"
+                        placeholder="Owner NID number (10, 13, or 17 digits)"
                         class="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                     >
                 </div>
@@ -590,26 +606,17 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     >
                 </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-xs font-semibold text-slate-700 pl-1">City</label>
-                    <input
-                        type="text"
-                        name="city"
-                        x-model="city"
-                        placeholder="Dhaka"
-                        class="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
-                    >
-                </div>
-
-                <div class="flex flex-col gap-1">
-                    <label class="text-xs font-semibold text-slate-700 pl-1">Area</label>
-                    <input
-                        type="text"
-                        name="area"
-                        x-model="area"
-                        placeholder="Banani, Mirpur, Agrabad..."
-                        class="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
-                    >
+                <div class="md:col-span-2">
+                    @include('vendor.partials.branch-location-picker-fields', [
+                        'cityExpr' => 'city',
+                        'areaExpr' => 'area',
+                        'latExpr' => 'shopLat',
+                        'lngExpr' => 'shopLng',
+                        'gpsAddressExpr' => 'gpsAddress',
+                        'addressExpr' => 'shopAddress',
+                        'sameAsGpsExpr' => 'sameAsGps',
+                        'contextKey' => 'vendor-apply',
+                    ])
                 </div>
             </div>
 

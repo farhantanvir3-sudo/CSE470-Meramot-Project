@@ -7,9 +7,12 @@ use App\Models\DeliveryJob;
 use App\Models\LocationLog;
 use App\Models\RiderChatMessage;
 use App\Services\DeliveryLifecycleService;
+use App\Services\GmailApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 /**
  * ============================================================================
@@ -517,5 +520,83 @@ class DeliveryPortalController extends Controller
         $user = $agent->user;
 
         return view('delivery.profile', compact('user', 'agent'));
+    }
+
+    /**
+     * Re-send approved `@meramotbd.com` company email & system-generated password
+     * from the Delivery Partner Login page (`POST /delivery/forgot-credentials`).
+     */
+    public function sendForgotCredentials(Request $request, GmailApiService $gmailService)
+    {
+        $validated = $request->validate([
+            'lookup_email' => 'required|email|max:180',
+        ], [
+            'lookup_email.required' => 'Please enter your registered personal email or @meramotbd.com company email.',
+            'lookup_email.email' => 'Please enter a valid email address.',
+        ]);
+
+        $lookup = strtolower(trim($validated['lookup_email']));
+
+        $agent = DeliveryAgent::with('user')
+            ->where(function ($query) use ($lookup) {
+                $query->whereRaw('LOWER(personal_email) = ?', [$lookup])
+                    ->orWhereRaw('LOWER(company_email) = ?', [$lookup])
+                    ->orWhereHas('user', function ($q) use ($lookup) {
+                        $q->whereRaw('LOWER(email) = ?', [$lookup])
+                            ->whereIn('role', ['delivery_agent', 'delivery']);
+                    });
+            })
+            ->first();
+
+        if ($agent && strtoupper((string) $agent->registration_status) !== 'APPROVED') {
+            $statusLabel = strtoupper((string) $agent->registration_status);
+            throw ValidationException::withMessages([
+                'lookup_email' => "Your delivery partner application is currently {$statusLabel}. Company @meramotbd.com credentials are issued once Admin approves your application — use Check Application Status below.",
+            ]);
+        }
+
+        $maskedDestination = $lookup;
+
+        if ($agent && strtoupper((string) $agent->registration_status) === 'APPROVED' && !empty($agent->company_email) && !empty($agent->company_password_vault)) {
+            $recipientEmail = $agent->personal_email ?: ($agent->user?->email ?? '');
+            $applicantName = $agent->applicant_name ?: ($agent->user?->name ?? 'Delivery Partner');
+
+            try {
+                $plainPassword = Crypt::decryptString($agent->company_password_vault);
+                if ($recipientEmail !== '') {
+                    $gmailService->sendDeliveryApprovalCredentials(
+                        $recipientEmail,
+                        $applicantName,
+                        $agent->company_email,
+                        $plainPassword,
+                        true
+                    );
+                }
+            } catch (\Throwable $e) {
+                // Keep non-enumerating response consistent if decryption/mail transport fails
+            }
+
+            if ($recipientEmail !== '' && strtolower($recipientEmail) !== $lookup && str_contains($recipientEmail, '@')) {
+                [$local, $domain] = explode('@', $recipientEmail, 2);
+                $prefix = substr($local, 0, min(2, strlen($local)));
+                $maskedDestination = $prefix . '***@' . $domain;
+            } elseif ($recipientEmail !== '') {
+                $maskedDestination = $recipientEmail;
+            }
+        }
+
+        $message = "If an approved delivery partner account matches {$lookup}, your @meramotbd.com company email and password have been re-sent to your registered personal email.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'destination' => $maskedDestination,
+                'message' => $message,
+            ]);
+        }
+
+        return redirect('/delivery/login')
+            ->with('delivery_credentials_sent', $maskedDestination)
+            ->with('success', $message);
     }
 }

@@ -6,11 +6,13 @@ use App\Models\User;
 use App\Models\VendorProfile;
 use App\Services\GmailApiService;
 use App\Services\SmsService;
+use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -181,9 +183,16 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'username' => 'nullable|string|max:50|unique:users,username',
             'email' => 'required|email|max:255|unique:users,email',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:30',
             'password' => 'required|string|min:8|confirmed',
         ]);
+
+        $cleanPhone = InputSanitizer::sanitizePhone($validated['phone'] ?? null);
+        if ($cleanPhone !== null && !InputSanitizer::isValidBdPhone($cleanPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
 
         $otp = (string) random_int(100000, 999999);
         $email = strtolower(trim($validated['email']));
@@ -196,7 +205,7 @@ class AuthController extends Controller
             'username' => $username,
             'email' => $email,
             'auth_provider' => 'local',
-            'phone' => !empty($validated['phone']) ? trim($validated['phone']) : null,
+            'phone' => $cleanPhone,
             'password' => Hash::make($validated['password']),
             'role' => 'customer',
             'is_email_verified' => false,
@@ -315,12 +324,17 @@ class AuthController extends Controller
         }
 
         $validated = $request->validate([
-            'otp' => 'required|string|max:10',
+            'otp' => 'required|string|max:12',
             'channel' => 'nullable|in:email,phone',
         ]);
 
-        $otp = trim($validated['otp']);
+        $otp = InputSanitizer::sanitizeDigits($validated['otp']) ?? '';
         $channel = $validated['channel'] ?? 'email';
+        if (!preg_match('/^\d{6}$/', $otp)) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'OTP must be a 6-digit number.'], 422)
+                : back()->withErrors(['otp' => 'OTP code must be a 6-digit number.'])->withInput();
+        }
 
         if ($channel === 'email') {
             if (!$user->email_otp_code || $user->email_otp_code !== $otp) {
@@ -662,58 +676,205 @@ class AuthController extends Controller
     }
 
     /**
-     * Send password recovery email from the Forgot Password dialog.
+     * Show the Dedicated Password & Credentials Recovery View (`GET /forgot-password`).
+     */
+    public function showForgotPassword(Request $request)
+    {
+        $step = ($request->query('step') === 'reset' || session()->has('recovery_email') || $request->old('otp') !== null || $request->old('email') !== null)
+            ? 'reset'
+            : 'request';
+        $email = trim((string) old('email', $request->query('email', session('recovery_email', ''))));
+
+        return view('auth.forgot-password', compact('step', 'email'));
+    }
+
+    /**
+     * Mask local-part of an email address before displaying in unauthenticated responses.
+     */
+    private function maskRecoveryEmail(string $email): string
+    {
+        if (!str_contains($email, '@')) {
+            return $email;
+        }
+
+        [$local, $domain] = explode('@', $email, 2);
+        $prefix = substr($local, 0, min(2, strlen($local)));
+
+        return $prefix . '***@' . $domain;
+    }
+
+    /**
+     * Send password recovery OTP & account credentials email (`POST /forgot-password`).
      */
     public function sendForgotPasswordEmail(Request $request, GmailApiService $gmailService)
     {
-        $validated = $request->validate([
-            'email' => 'required|email|max:255',
-        ]);
+        $raw = trim((string) ($request->input('identifier') ?: $request->input('email', '')));
 
-        $email = strtolower(trim($validated['email']));
-        $user = User::where('email', $email)->first();
+        if ($raw === '') {
+            throw ValidationException::withMessages([
+                'email' => 'Please enter your registered email address or username.',
+            ]);
+        }
 
-        if ($user && $user->status !== 'deleted') {
+        if (mb_strlen($raw) > 255) {
+            throw ValidationException::withMessages([
+                'email' => 'Please enter a shorter email address or username.',
+            ]);
+        }
+
+        if (str_contains($raw, '@') && !filter_var($raw, FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withMessages([
+                'email' => 'Please enter a valid email address or username.',
+            ]);
+        }
+
+        $lookup = strtolower($raw);
+
+        if (str_ends_with($lookup, '@meramotbd.com')) {
+            throw ValidationException::withMessages([
+                'email' => 'Delivery partner @meramotbd.com credentials are recovered on the Delivery Partner Login page (/delivery/login).',
+            ]);
+        }
+
+        $user = User::where(function ($query) use ($lookup) {
+            $query->whereRaw('LOWER(email) = ?', [$lookup])
+                ->orWhereRaw('LOWER(username) = ?', [$lookup]);
+        })->first();
+
+        $eligibleUser = $user
+            && $user->status !== 'deleted'
+            && !in_array($user->role, ['delivery', 'delivery_agent'], true);
+
+        if ($eligibleUser) {
+            $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $user->update([
+                'email_otp_code' => $otp,
+                'email_otp_expires_at' => now()->addMinutes(15),
+            ]);
+
             $safeName = htmlspecialchars($user->name ?: 'Meramot User', ENT_QUOTES, 'UTF-8');
-            $safeEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
-            $loginUrl = url('/login');
+            $safeEmail = htmlspecialchars($user->email, ENT_QUOTES, 'UTF-8');
+            $safeUsername = htmlspecialchars($user->username ?: '—', ENT_QUOTES, 'UTF-8');
+            $safeOtp = htmlspecialchars($otp, ENT_QUOTES, 'UTF-8');
+            $resetPageUrl = url('/forgot-password?step=reset&email=' . urlencode($user->email));
 
             $html = "
                 <div style=\"font-family: Arial, sans-serif; color: #173626; line-height: 1.65; max-width: 560px; margin: 0 auto; padding: 26px; border: 1px solid #d9e5d5; border-radius: 16px; background: #ffffff;\">
-                    <h2 style=\"color: #214c34; margin-top: 0;\">Password Recovery Request</h2>
+                    <h2 style=\"color: #214c34; margin-top: 0;\">Account Credentials &amp; Password Reset</h2>
                     <p style=\"font-size: 14px;\">Hello <strong>{$safeName}</strong>,</p>
                     <p style=\"font-size: 14px;\">
-                        We received a password recovery request for the Meramot account associated with <strong>{$safeEmail}</strong>.
-                        If you did not initiate this request, you may safely disregard this message and no changes will be made.
+                        We received an account recovery request for your Meramot account. Here are your registered sign-in credentials and one-time verification code:
                     </p>
-                    <div style=\"margin: 24px 0; text-align: center;\">
-                        <a href=\"{$loginUrl}\" style=\"display: inline-block; background: #214c34; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 999px; font-weight: bold; font-size: 13px;\">
-                            Return to Meramot Sign In
+                    <div style=\"margin: 18px 0; padding: 14px 16px; border-radius: 12px; background: #f8fbf6; border: 1px solid #d9e5d5; font-size: 13px;\">
+                        <div><strong>Username:</strong> {$safeUsername}</div>
+                        <div><strong>Email:</strong> {$safeEmail}</div>
+                    </div>
+                    <div style=\"margin: 20px 0; text-align: center;\">
+                        <div style=\"font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: #5e6d64; margin-bottom: 6px;\">6-Digit Password Reset Code (Expires in 15 Minutes)</div>
+                        <div style=\"display: inline-block; padding: 12px 26px; border-radius: 14px; background: #eef5ea; border: 2px solid #214c34; font-family: monospace; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #163625;\">{$safeOtp}</div>
+                    </div>
+                    <div style=\"margin: 22px 0; text-align: center;\">
+                        <a href=\"{$resetPageUrl}\" style=\"display: inline-block; background: #214c34; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 999px; font-weight: bold; font-size: 13px;\">
+                            Enter Code &amp; Reset Password
                         </a>
                     </div>
                     <p style=\"font-size: 13px; color: #214c34;\">Sincerely,<br/><strong>Meramot Trust &amp; Security</strong></p>
-                    <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">This is an automated operational message from Meramot. Please do not reply directly unless instructed.</p>
+                    <p style=\"margin-top: 18px; font-size: 11px; color: #7a8a80; border-top: 1px solid #e5ede2; padding-top: 12px;\">If you did not initiate this request, you may safely disregard this message.</p>
                 </div>
             ";
 
             try {
-                $gmailService->sendEmail($email, 'Meramot — Password Recovery Instructions', $html);
+                $gmailService->sendEmail($user->email, 'Meramot — Account Credentials & Password Reset Code', $html);
             } catch (\Throwable $e) {
                 // Keep response uniform and non-enumerating
             }
         }
 
-        $message = "If an account is registered under {$email}, password recovery instructions have been sent to that inbox.";
+        $displayTarget = str_contains($lookup, '@')
+            ? $lookup
+            : ($eligibleUser && !empty($user->email) ? $this->maskRecoveryEmail($user->email) : $raw);
+        $resetLookup = str_contains($lookup, '@') ? $lookup : $raw;
+        $resetUrl = '/forgot-password?step=reset&email=' . urlencode($resetLookup);
+        $message = "If an account is registered under {$raw}, we sent your username reminder and 6-digit password reset code to {$displayTarget}.";
 
         if ($request->expectsJson()) {
             return response()->json([
                 'ok' => true,
-                'email' => $email,
+                'email' => $displayTarget,
+                'lookup' => $resetLookup,
+                'reset_url' => $resetUrl,
                 'message' => $message,
             ]);
         }
 
-        return redirect('/login')->with('forgot_password_sent_email', $email)->with('success', $message);
+        return redirect($resetUrl)
+            ->with('recovery_email', $resetLookup)
+            ->with('success', $message);
+    }
+
+    /**
+     * Verify 6-digit email OTP and reset the account password (`POST /forgot-password/reset`).
+     */
+    public function resetPasswordWithOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|string|max:255',
+            'otp' => 'required|string|max:12',
+            'password' => 'required|string|min:8|max:128|confirmed',
+        ], [
+            'password.min' => 'Password must be at least 8 characters long.',
+            'password.confirmed' => 'New password confirmation does not match.',
+        ]);
+
+        $otp = InputSanitizer::sanitizeDigits($validated['otp']) ?? '';
+        if (strlen($otp) !== 6) {
+            throw ValidationException::withMessages([
+                'otp' => 'Please enter the 6-digit recovery code sent to your email.',
+            ]);
+        }
+
+        $lookup = strtolower(trim($validated['email']));
+
+        $user = User::where(function ($query) use ($lookup) {
+            $query->whereRaw('LOWER(email) = ?', [$lookup])
+                ->orWhereRaw('LOWER(username) = ?', [$lookup]);
+        })->first();
+
+        if ($user && in_array($user->role, ['delivery', 'delivery_agent'], true)) {
+            throw ValidationException::withMessages([
+                'email' => 'Delivery partner company credentials are managed via Delivery Partner Login.',
+            ]);
+        }
+
+        $otpValid = $user
+            && $user->status !== 'deleted'
+            && !empty($user->email_otp_code)
+            && hash_equals((string) $user->email_otp_code, $otp)
+            && (!$user->email_otp_expires_at || $user->email_otp_expires_at->isFuture());
+
+        if (!$otpValid) {
+            throw ValidationException::withMessages([
+                'otp' => 'Invalid or expired 6-digit recovery code. Please request a new code.',
+            ]);
+        }
+
+        $user->update([
+            'password' => Hash::make($validated['password']),
+            'email_otp_code' => null,
+            'email_otp_expires_at' => null,
+            'is_email_verified' => true,
+        ]);
+
+        $message = 'Your password has been reset successfully. Sign in below with your new password.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => $message,
+            ]);
+        }
+
+        return redirect('/login')->with('success', $message);
     }
 
     /**

@@ -424,6 +424,9 @@
                             <input
                                 type="tel"
                                 name="phone"
+                                autocomplete="tel"
+                                inputmode="tel"
+                                maxlength="14"
                                 value="{{ old('phone', auth()->user()->phone ?? '01712345678') }}"
                                 required
                                 placeholder="017XXXXXXXX"
@@ -436,6 +439,7 @@
                                 id="cart-pickup-area"
                                 type="text"
                                 name="area"
+                                autocomplete="address-level3"
                                 x-model="selectedArea"
                                 list="meramot-area-suggestions"
                                 placeholder="e.g. Panthapath, Banani, Agrabad"

@@ -108,7 +108,7 @@
                 </div>
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Release / Purchase Year</label>
-                    <input type="text" name="year" value="{{ old('year') }}" placeholder="e.g. 2021, 2023" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                    <input type="text" name="year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-digits-only value="{{ old('year') }}" placeholder="e.g. 2023" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                 </div>
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Screen Size / Chipset</label>
@@ -408,6 +408,7 @@
                         <input
                             type="text"
                             name="area"
+                            autocomplete="address-level3"
                             list="meramot-bangladesh-areas"
                             x-model="selectedArea"
                             placeholder="Banani, Hatirpool, Agrabad, Zindabazar..."
@@ -448,6 +449,9 @@
                         <input
                             type="tel"
                             name="contact_phone"
+                            autocomplete="tel"
+                            inputmode="tel"
+                            maxlength="14"
                             value="{{ old('contact_phone', auth()->user()->phone ?? '') }}"
                             placeholder="01XXXXXXXXX"
                             @auth required @endauth
@@ -456,11 +460,11 @@
                     </div>
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Full Pickup / Delivery Address</label>
-                        <input type="text" name="pickup_address" x-model="pickupAddress" placeholder="House #, Road #, Block/Sector, Landmarks" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                        <input type="text" name="pickup_address" autocomplete="street-address" x-model="pickupAddress" placeholder="House #, Road #, Block/Sector, Landmarks" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                     </div>
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Estimated Budget (৳)</label>
-                        <input type="number" name="estimated_budget" value="{{ old('estimated_budget') }}" placeholder="e.g. 2500" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                        <input type="number" min="0" max="1000000" step="1" data-numeric-mode="integer" onwheel="this.blur()" name="estimated_budget" value="{{ old('estimated_budget') }}" placeholder="e.g. 2500" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                     </div>
                 </div>
             </div>

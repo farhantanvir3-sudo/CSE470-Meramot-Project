@@ -54,6 +54,7 @@
                         maxlength="6"
                         inputmode="numeric"
                         pattern="[0-9]{6}"
+                        data-digits-only
                         required
                         autofocus
                         class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3.5 text-center text-2xl font-bold tracking-[0.45em] text-[#214c34] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"

@@ -8,6 +8,7 @@ use App\Models\DeliveryJob;
 use App\Models\User;
 use App\Services\GmailApiService;
 use App\Services\MediaUploadService;
+use App\Support\InputSanitizer;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
@@ -215,7 +216,25 @@ class AdminDeliveryController extends Controller
         $cvDocUrl = $this->encodeUploadedDocument($request, 'cv_document', $validated['cv_document_url'] ?? null);
 
         $applicantName = trim((string) ($validated['name'] ?? ($isJsonApi ? ($request->user()?->name ?? 'Delivery Applicant') : 'Delivery Applicant')));
-        $applicantPhone = trim((string) ($validated['phone'] ?? ($isJsonApi ? ($request->user()?->phone ?? '+8801700000000') : '')));
+        $applicantPhone = InputSanitizer::sanitizePhone($validated['phone'] ?? ($isJsonApi ? ($request->user()?->phone ?? null) : null));
+        if (!$isJsonApi && !InputSanitizer::isValidBdPhone($applicantPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+        if ($isJsonApi && $applicantPhone !== null && !InputSanitizer::isValidBdPhone($applicantPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+
+        $cleanNid = InputSanitizer::sanitizeDigits($validated['nid_number']);
+        if (!InputSanitizer::isValidNid($cleanNid)) {
+            throw ValidationException::withMessages([
+                'nid_number' => 'National ID must be 10, 13, or 17 digits (numbers only).',
+            ]);
+        }
+
         $vehicleType = $validated['vehicle_type'] === 'car' ? 'van' : $validated['vehicle_type'];
 
         try {
@@ -223,6 +242,7 @@ class AdminDeliveryController extends Controller
                 $request,
                 $isJsonApi,
                 $validated,
+                $cleanNid,
                 $personalEmail,
                 $applicantName,
                 $applicantPhone,
@@ -242,7 +262,7 @@ class AdminDeliveryController extends Controller
                         'name' => $applicantName,
                         'username' => 'pending_rider_' . strtolower(Str::random(8)),
                         'email' => $placeholderEmail,
-                        'phone' => $applicantPhone !== '' ? $applicantPhone : null,
+                        'phone' => $applicantPhone,
                         'password' => null,
                         'role' => 'delivery_agent',
                         'status' => 'suspended',
@@ -255,9 +275,9 @@ class AdminDeliveryController extends Controller
                     ['user_id' => $user->id],
                     [
                         'applicant_name' => $applicantName,
-                        'applicant_phone' => $applicantPhone !== '' ? $applicantPhone : null,
+                        'applicant_phone' => $applicantPhone,
                         'personal_email' => $personalEmail,
-                        'nid_number' => trim($validated['nid_number']),
+                        'nid_number' => $cleanNid,
                         'vehicle_type' => $vehicleType,
                         'license_number' => trim($validated['license_number']),
                         'profile_picture_url' => $profilePicUrl,
@@ -553,7 +573,20 @@ class AdminDeliveryController extends Controller
 
         $previousStatus = $agent->registration_status;
         $applicantName = trim($validated['name']);
-        $applicantPhone = trim($validated['phone']);
+        $applicantPhone = InputSanitizer::sanitizePhone($validated['phone']);
+        if (!InputSanitizer::isValidBdPhone($applicantPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+
+        $cleanNid = InputSanitizer::sanitizeDigits($validated['nid_number']);
+        if (!InputSanitizer::isValidNid($cleanNid)) {
+            throw ValidationException::withMessages([
+                'nid_number' => 'National ID must be 10, 13, or 17 digits (numbers only).',
+            ]);
+        }
+
         $vehicleType = $validated['vehicle_type'] === 'car' ? 'van' : $validated['vehicle_type'];
 
         $profilePicUrl = $this->encodeUploadedDocument($request, 'profile_picture', $agent->profile_picture_url);
@@ -567,6 +600,7 @@ class AdminDeliveryController extends Controller
                 $agent,
                 $applicantName,
                 $applicantPhone,
+                $cleanNid,
                 $validated,
                 $vehicleType,
                 $profilePicUrl,
@@ -579,7 +613,7 @@ class AdminDeliveryController extends Controller
                 $agent->update([
                     'applicant_name' => $applicantName,
                     'applicant_phone' => $applicantPhone,
-                    'nid_number' => trim($validated['nid_number']),
+                    'nid_number' => $cleanNid,
                     'vehicle_type' => $vehicleType,
                     'license_number' => trim($validated['license_number']),
                     'profile_picture_url' => $profilePicUrl,

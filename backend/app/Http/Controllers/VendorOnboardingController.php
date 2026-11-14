@@ -11,6 +11,7 @@ use App\Services\BangladeshLocationResolver;
 use App\Services\GmailApiService;
 use App\Services\MediaUploadService;
 use App\Services\ServiceSuggestionCatalog;
+use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -157,10 +158,17 @@ class VendorOnboardingController extends Controller
             'shop_longitude.required' => 'Please pick your shop location on the OpenStreetMap picker.',
         ]);
 
-        $cleanPhone = str_replace([' ', '-'], '', trim($validated['phone']));
-        if (!preg_match('/^(?:\+?8801|01)[3-9]\d{8}$/', $cleanPhone)) {
+        $cleanPhone = InputSanitizer::sanitizePhone($validated['phone']);
+        if (!InputSanitizer::isValidBdPhone($cleanPhone)) {
             throw ValidationException::withMessages([
                 'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+
+        $cleanNid = InputSanitizer::sanitizeDigits($validated['nid_number'] ?? null);
+        if ($cleanNid !== null && !InputSanitizer::isValidNid($cleanNid)) {
+            throw ValidationException::withMessages([
+                'nid_number' => 'National ID must be 10, 13, or 17 digits (numbers only).',
             ]);
         }
 
@@ -248,7 +256,7 @@ class VendorOnboardingController extends Controller
         }
 
         $profile = DB::transaction(function () use (
-            $isEditMode, $authUser, $existingProfile, $validated, $email, $cleanPhone,
+            $isEditMode, $authUser, $existingProfile, $validated, $email, $cleanPhone, $cleanNid,
             $lat, $lng, $city, $area, $gpsAddress, $vendorAddress, $sameAsGps,
             $isBranched, $branchName, $specialties, $courierPickup, $inShopRepair, $spareParts,
             $serviceCategories, $logoUrl, $documentsPath
@@ -296,7 +304,7 @@ class VendorOnboardingController extends Controller
                 'brand_name' => trim($validated['shop_name']),
                 'is_branched' => $isBranched,
                 'business_license_no' => !empty($validated['business_license_no']) ? trim($validated['business_license_no']) : null,
-                'nid_number' => !empty($validated['nid_number']) ? trim($validated['nid_number']) : null,
+                'nid_number' => $cleanNid,
                 'shop_address' => $vendorAddress !== '' ? $vendorAddress : null,
                 'gps_address' => $gpsAddress,
                 'same_as_gps_location' => ($vendorAddress !== '' && $vendorAddress === $gpsAddress) && $sameAsGps,
@@ -552,8 +560,8 @@ class VendorOnboardingController extends Controller
             'skill_tags.max' => 'You can publish up to 50 fixed-price services and packages.',
         ]);
 
-        $cleanPhone = str_replace([' ', '-'], '', trim($validated['phone']));
-        if (!preg_match('/^(?:\+?8801|01)[3-9]\d{8}$/', $cleanPhone)) {
+        $cleanPhone = InputSanitizer::sanitizePhone($validated['phone']);
+        if (!InputSanitizer::isValidBdPhone($cleanPhone)) {
             throw ValidationException::withMessages([
                 'phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
             ]);
@@ -845,7 +853,7 @@ class VendorOnboardingController extends Controller
             'owner_name' => 'nullable|string|max:150',
             'owner_email' => 'nullable|email|max:180',
             'owner_phone' => 'nullable|string|max:30',
-            'owner_password' => 'nullable|string|min:6|max:100',
+            'owner_password' => 'nullable|string|min:8|max:100',
             'shop_name' => 'required|string|max:255',
             'business_license_no' => 'required|string|max:100',
             'nid_number' => 'required|string|max:30',
@@ -862,6 +870,20 @@ class VendorOnboardingController extends Controller
             'logo' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
             'verification_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
         ]);
+
+        $cleanOwnerPhone = InputSanitizer::sanitizePhone($validated['owner_phone'] ?? null);
+        if ($cleanOwnerPhone !== null && !InputSanitizer::isValidBdPhone($cleanOwnerPhone)) {
+            throw ValidationException::withMessages([
+                'owner_phone' => 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).',
+            ]);
+        }
+
+        $cleanNid = InputSanitizer::sanitizeDigits($validated['nid_number']);
+        if (!InputSanitizer::isValidNid($cleanNid)) {
+            throw ValidationException::withMessages([
+                'nid_number' => 'National ID must be 10, 13, or 17 digits (numbers only).',
+            ]);
+        }
 
         $sameAsGps = $request->boolean('same_as_gps_location');
         $gpsAddress = trim((string) ($validated['gps_address'] ?? ''));
@@ -914,7 +936,7 @@ class VendorOnboardingController extends Controller
                 [
                     'name' => trim($validated['owner_name'] ?? ($validated['shop_name'] . ' Owner')),
                     'username' => 'vendor_' . strtolower(Str::random(8)),
-                    'phone' => trim($validated['owner_phone'] ?? '+8801700000000'),
+                    'phone' => $cleanOwnerPhone ?? '+8801700000000',
                     'password' => Hash::make($validated['owner_password'] ?? 'password123'),
                     'role' => 'vendor',
                     'is_active' => true,
@@ -942,7 +964,7 @@ class VendorOnboardingController extends Controller
                 'brand_name' => $validated['shop_name'],
                 'is_branched' => $isBranched,
                 'business_license_no' => $validated['business_license_no'],
-                'nid_number' => $validated['nid_number'],
+                'nid_number' => $cleanNid,
                 'shop_address' => $vendorAddress,
                 'gps_address' => $gpsAddress,
                 'same_as_gps_location' => ($vendorAddress === $gpsAddress) && $sameAsGps,

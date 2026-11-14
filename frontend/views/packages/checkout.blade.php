@@ -122,6 +122,9 @@
                         <input
                             type="tel"
                             name="phone"
+                            autocomplete="tel"
+                            inputmode="tel"
+                            maxlength="14"
                             required
                             placeholder="01XXXXXXXXX"
                             value="{{ old('phone', auth()->check() ? (auth()->user()->phone ?? '') : '01712345678') }}"
@@ -133,6 +136,7 @@
                         <input
                             type="text"
                             name="area"
+                            autocomplete="address-level3"
                             x-model="checkoutArea"
                             placeholder="e.g. Banani, Panthapath"
                             class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"

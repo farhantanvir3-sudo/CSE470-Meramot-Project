@@ -65,7 +65,7 @@
                 </div>
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Mobile Phone *</label>
-                    <input type="text" name="phone" value="{{ old('phone', $applicantPhone) }}" required
+                    <input type="tel" name="phone" autocomplete="tel" inputmode="tel" maxlength="14" value="{{ old('phone', $applicantPhone) }}" required
                            class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-[var(--foreground)] outline-none">
                 </div>
                 <div class="sm:col-span-2">
@@ -84,7 +84,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
                     <label class="block font-bold text-[var(--foreground)] mb-1">NID Number *</label>
-                    <input type="text" name="nid_number" value="{{ old('nid_number', $agent->nid_number) }}" required
+                    <input type="text" name="nid_number" inputmode="numeric" pattern="[0-9]*" maxlength="17" data-digits-only value="{{ old('nid_number', $agent->nid_number) }}" required
                            class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-3 text-[var(--foreground)] outline-none">
                 </div>
 

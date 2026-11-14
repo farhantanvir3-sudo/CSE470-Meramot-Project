@@ -19,7 +19,53 @@
 @endphp
 <div
     class="min-h-[80vh] flex items-center justify-center px-4 py-8"
-    x-data="{ showSubmittedModal: {{ $submittedPopup ? 'true' : 'false' }} }"
+    x-data="{
+        showSubmittedModal: {{ $submittedPopup ? 'true' : 'false' }},
+        recoverModalOpen: {{ (request()->query('recover') || session('delivery_credentials_sent')) ? 'true' : 'false' }},
+        recoverStep: '{{ session('delivery_credentials_sent') ? 'sent' : 'form' }}',
+        recoverEmail: @js(session('delivery_credentials_sent', old('lookup_email', ''))),
+        recoverSending: false,
+        recoverError: '',
+        openRecoverModal() {
+            const typedEmail = document.querySelector('input[name=company_email]')?.value?.trim() || '';
+            this.recoverEmail = typedEmail;
+            this.recoverError = '';
+            this.recoverSending = false;
+            this.recoverStep = 'form';
+            this.recoverModalOpen = true;
+        },
+        async submitRecoverCredentials() {
+            this.recoverError = '';
+            const email = (this.recoverEmail || '').trim();
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                this.recoverError = 'Please enter your valid personal email or @meramotbd.com company email.';
+                return;
+            }
+            this.recoverSending = true;
+            try {
+                const res = await fetch('/delivery/forgot-credentials', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ lookup_email: email })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    this.recoverError = data?.errors?.lookup_email?.[0] || data?.message || 'Unable to re-send credentials right now.';
+                    return;
+                }
+                this.recoverEmail = data.destination || email;
+                this.recoverStep = 'sent';
+            } catch (e) {
+                this.recoverError = 'Network error. Please try again.';
+            } finally {
+                this.recoverSending = false;
+            }
+        }
+    }"
 >
     @if($submittedPopup)
         <div
@@ -182,6 +228,18 @@
                     <span>Sign in as Delivery Partner</span>
                     <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
                 </button>
+
+                <div class="pt-1 text-center">
+                    <button
+                        type="button"
+                        @click="openRecoverModal()"
+                        data-forgot-credentials-trigger="delivery"
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#c8dac2] bg-white px-4 py-2.5 text-xs font-bold text-[#214c34] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:bg-[#eef5ea]"
+                    >
+                        <i class="fa-solid fa-key text-[11px]"></i>
+                        <span>Forgot password or company credentials?</span>
+                    </button>
+                </div>
             </form>
 
             <!-- ── 2 Required Onboarding & Verification Tiles Below Form Box ── -->
@@ -224,6 +282,142 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- ── Recover Delivery Partner Credentials Dialog & Sent Confirmation Modal ── -->
+    <div
+        x-show="recoverModalOpen"
+        x-cloak
+        @keydown.escape.window="if (recoverModalOpen && !recoverSending) recoverModalOpen = false"
+        class="fixed inset-0 z-[110] flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delivery-recover-modal-title"
+    >
+        <div
+            x-show="recoverModalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-sm"
+            @click="if (!recoverSending) recoverModalOpen = false"
+        ></div>
+
+        <div
+            x-show="recoverModalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-95 translate-y-2"
+            class="relative z-[111] w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
+        >
+            <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-[#214c34] to-emerald-400"></div>
+
+            <!-- Step 1: Lookup Personal or Company Email -->
+            <div x-show="recoverStep === 'form'" class="p-7 sm:p-8">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#214c34]">
+                            <i class="fa-solid fa-key text-base"></i>
+                        </div>
+                        <div>
+                            <h2 id="delivery-recover-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Recover Company Credentials</h2>
+                            <p class="text-xs text-[var(--muted-foreground)]">Re-send your <code class="font-mono font-bold">@meramotbd.com</code> login &amp; password.</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="recoverModalOpen = false" class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-200)] transition" aria-label="Close">✕</button>
+                </div>
+
+                <form @submit.prevent="submitRecoverCredentials()" class="mt-5 space-y-4">
+                    <template x-if="recoverError">
+                        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-800 space-y-1.5">
+                            <div class="flex items-start gap-2">
+                                <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0 text-red-600"></i>
+                                <span x-text="recoverError"></span>
+                            </div>
+                            <a href="/delivery-agent/status" class="inline-block font-bold text-[#214c34] underline">Open Check Application Status &rarr;</a>
+                        </div>
+                    </template>
+
+                    <div>
+                        <label class="mb-1.5 block text-xs font-semibold text-[var(--foreground)]">Personal Email or <code class="font-mono">@meramotbd.com</code> Email</label>
+                        <input
+                            type="email"
+                            x-model="recoverEmail"
+                            required
+                            autocomplete="email"
+                            placeholder="rahim@gmail.com or yourname@meramotbd.com"
+                            class="w-full rounded-full border border-[#d7d7d7] bg-white px-5 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34]"
+                        />
+                    </div>
+
+                    <p class="text-[11px] leading-relaxed text-[var(--muted-foreground)]">
+                        Want to inspect application status or edit documents too?
+                        <a href="/delivery-agent/status" class="font-bold text-[#214c34] hover:underline">Verify personal email via OTP on Check Application Status &rarr;</a>
+                    </p>
+
+                    <div class="flex items-center justify-end gap-2.5 pt-1">
+                        <button
+                            type="button"
+                            @click="recoverModalOpen = false"
+                            :disabled="recoverSending"
+                            class="rounded-full border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            :disabled="recoverSending"
+                            class="inline-flex items-center gap-2 rounded-full bg-[#163625] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
+                        >
+                            <i class="fa-solid" :class="recoverSending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
+                            <span x-text="recoverSending ? 'Sending...' : 'Re-send Credentials'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Step 2: Sent Confirmation -->
+            <div x-show="recoverStep === 'sent'" class="p-7 sm:p-8 text-center">
+                <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-inner">
+                    <i class="fa-solid fa-envelope-circle-check text-2xl"></i>
+                </div>
+
+                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]">
+                    Company Credentials Re-Sent
+                </h2>
+
+                <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                    <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+                    <span class="truncate" x-text="recoverEmail"></span>
+                </div>
+
+                <p class="mt-3.5 text-sm leading-relaxed text-[var(--muted-foreground)]">
+                    If an approved delivery partner account matches your entry, we sent your <code class="font-mono font-bold">@meramotbd.com</code> company email and system password to your personal inbox.
+                </p>
+
+                <div class="mt-6 space-y-2.5">
+                    <button
+                        type="button"
+                        @click="recoverModalOpen = false"
+                        class="w-full rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
+                    >
+                        Back to Delivery Login
+                    </button>
+                    <a
+                        href="/delivery-agent/status"
+                        class="block w-full rounded-full border border-[var(--border)] bg-[var(--background)] px-6 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
+                    >
+                        Check Application Status
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 <script>

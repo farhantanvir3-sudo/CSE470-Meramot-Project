@@ -6,7 +6,9 @@ use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\User;
 use App\Services\MediaUploadService;
+use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 /**
  * ============================================================================
@@ -177,10 +179,16 @@ class RepairRequestController extends Controller
                 : ($areaName . ', ' . $cityName);
         }
 
-        // Preserve optional hardware metadata cleanly in description
+        // Preserve optional hardware metadata cleanly in description and validate strict fields together
+        $customErrors = [];
         $extraMeta = [];
-        if (!empty($validated['year'])) {
-            $extraMeta[] = 'Year: ' . trim($validated['year']);
+        $cleanYear = InputSanitizer::sanitizeDigits($validated['year'] ?? null);
+        if ($cleanYear !== null) {
+            if (!ctype_digit($cleanYear) || (int) $cleanYear < 1980 || (int) $cleanYear > ((int) date('Y') + 1)) {
+                $customErrors['year'] = 'Please enter a valid 4-digit purchase year between 1980 and ' . ((int) date('Y') + 1) . '.';
+            } else {
+                $extraMeta[] = 'Year: ' . $cleanYear;
+            }
         }
         if (!empty($validated['specs'])) {
             $extraMeta[] = 'Specs: ' . trim($validated['specs']);
@@ -195,12 +203,16 @@ class RepairRequestController extends Controller
         }
 
         $authUser = $request->user();
-        $contactPhone = trim((string) ($validated['contact_phone'] ?? $authUser?->phone ?? ''));
+        $contactPhone = InputSanitizer::sanitizePhone($validated['contact_phone'] ?? $authUser?->phone ?? null) ?? '';
 
         if ($authUser && $contactPhone === '') {
-            return back()
-                ->withInput()
-                ->withErrors(['contact_phone' => 'Please enter your contact phone number (or save it in your Profile Dashboard) so workshops and riders can reach you.']);
+            $customErrors['contact_phone'] = 'Please enter your contact phone number (or save it in your Profile Dashboard) so workshops and riders can reach you.';
+        } elseif ($contactPhone !== '' && !InputSanitizer::isValidBdPhone($contactPhone)) {
+            $customErrors['contact_phone'] = 'Please enter a valid Bangladeshi mobile number (e.g. 01712345678).';
+        }
+
+        if (!empty($customErrors)) {
+            throw ValidationException::withMessages($customErrors);
         }
 
         if ($authUser) {
