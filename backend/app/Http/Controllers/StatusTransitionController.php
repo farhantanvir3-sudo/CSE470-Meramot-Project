@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\DeliveryJob;
 use App\Models\RepairJob;
 use App\Models\RepairRequest;
+use App\Models\UserNotification;
 use App\Models\VendorProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * ============================================================================
@@ -225,7 +227,19 @@ class StatusTransitionController extends Controller
                 $this->ensureCourierDeliveryJob($repairRequest->fresh(), $job, 'TO_SHOP');
             }
 
-            return back()->with('success', "Direct Order #{$repairRequest->id} has been accepted and scheduled for courier pickup.");
+            if ($repairRequest->customer_id && Schema::hasTable('user_notifications')) {
+                UserNotification::create([
+                    'user_id' => $repairRequest->customer_id,
+                    'type' => 'direct_order_accepted',
+                    'severity' => 'info',
+                    'title' => "Direct Order #{$repairRequest->id} Confirmed",
+                    'message' => ($repairRequest->requestedShop?->name ?? 'The workshop') . ' accepted your booking and queued doorstep courier pickup.',
+                    'action_url' => '/requests/' . $repairRequest->id . '/track',
+                    'is_read' => false,
+                ]);
+            }
+
+            return back()->with('success', "Direct Order #{$repairRequest->id} confirmed and queued for courier pickup.");
         }
 
         // Vendor declined: transition PENDING -> REJECTED & auto-refund paid/authorized transactions
@@ -241,7 +255,23 @@ class StatusTransitionController extends Controller
             ->whereNotIn('status', ['DELIVERED', 'CANCELLED'])
             ->update(['status' => 'CANCELLED', 'cancellation_reason' => 'Declined by workshop']);
 
-        return back()->with('success', "Direct Order #{$repairRequest->id} has been declined. Any authorized payment has been refunded.");
+        if ($repairRequest->customer_id && Schema::hasTable('user_notifications')) {
+            $reasonSuffix = !empty($validated['reason'])
+                ? ' Reason: ' . trim((string) $validated['reason']) . '.'
+                : '';
+
+            UserNotification::create([
+                'user_id' => $repairRequest->customer_id,
+                'type' => 'direct_order_declined',
+                'severity' => 'warning',
+                'title' => "Direct Order #{$repairRequest->id} Declined",
+                'message' => ($repairRequest->requestedShop?->name ?? 'The workshop') . " could not accept this booking.{$reasonSuffix} Any payment hold has been refunded.",
+                'action_url' => '/requests/' . $repairRequest->id . '/track',
+                'is_read' => false,
+            ]);
+        }
+
+        return back()->with('success', "Direct Order #{$repairRequest->id} declined and any payment hold refunded.");
     }
 
     /**

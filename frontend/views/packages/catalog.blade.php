@@ -14,20 +14,20 @@
 
     <!-- Header -->
     <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
+        <div class="min-w-0">
             <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
                 <a href="/" class="hover:underline">Home</a>
                 <span>›</span>
                 <span class="text-[var(--foreground)] font-semibold">Service Packages</span>
             </div>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">
-                Fixed-Price Service Packages &amp; Quick-Match
+                Fixed-Price Repair Packages
             </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-1 flex flex-wrap items-center gap-2">
+            <p class="text-xs text-[var(--muted-foreground)] mt-1 flex flex-wrap items-center gap-2 leading-relaxed">
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R8 • Lead: Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Standardized upfront repair pricing — automatically matched with the nearest top-rated workshop in {{ $customerLocation['city'] ?? 'your city' }}, or choose your preferred local shop.</span>
+                <span>Upfront repair pricing with warranty protection — auto-matched to a top-rated workshop in {{ $customerLocation['city'] ?? 'your city' }} or your chosen local shop.</span>
             </p>
         </div>
 
@@ -36,38 +36,52 @@
             $isBannedCatalogUser = $catalogUser && $catalogUser->isBanned();
             $isNonCustomerCatalogUser = $catalogUser && $catalogUser->role !== 'customer';
         @endphp
-        <div class="flex flex-wrap items-center gap-3">
-            <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3.5 py-2 rounded-full border border-[var(--border)]">
-                <i class="fa-solid fa-shield-halved text-emerald-700 mr-1"></i> Meramot Warranty Guaranteed
+        <div class="flex flex-wrap items-center gap-3 shrink-0">
+            <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3.5 py-2 rounded-full border border-[var(--border)] whitespace-nowrap">
+                <i class="fa-solid fa-shield-halved text-emerald-700 mr-1"></i> Warranty Protected
             </span>
             @if(!$isBannedCatalogUser && !$isNonCustomerCatalogUser)
-                <a href="{{ route('cart.view') }}" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
-                <i class="fa-solid fa-cart-shopping"></i>
-                <span>Direct-Order Cart</span>
-                <span data-cart-badge class="{{ ($cartCount ?? 0) > 0 ? '' : 'hidden' }} inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--mint-100)] px-1.5 text-[11px] font-black text-[#203126]">
-                    {{ $cartCount ?? 0 }}
-                </span>
-            </a>
+                <a href="{{ route('cart.view') }}" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition whitespace-nowrap">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>Direct Cart</span>
+                    <span data-cart-badge class="{{ ($cartCount ?? 0) > 0 ? '' : 'hidden' }} inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--mint-100)] px-1.5 text-[11px] font-black text-[#203126]">
+                        {{ $cartCount ?? 0 }}
+                    </span>
+                </a>
             @endif
         </div>
     </div>
 
+    @if(session('success'))
+        <div class="mb-5 rounded-2xl border border-emerald-400 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-circle-check text-emerald-700 shrink-0"></i>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="mb-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-circle-exclamation text-rose-700 shrink-0"></i>
+            <span>{{ session('error') }}</span>
+        </div>
+    @endif
+
     <!-- Search & Multi-Parameter Filter Bar (Merged from Shanid R8 + Meramot Mint Tokens) -->
     <div class="mb-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 md:p-5 shadow-sm">
-        <form method="GET" action="{{ route('packages.catalog') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.6fr)_1fr_1fr_1fr_auto] gap-3 items-center text-xs">
-            <div class="relative">
+        <form method="GET" action="{{ route('packages.catalog') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-3 items-center text-xs">
+            <div class="relative sm:col-span-2 lg:col-span-1">
                 <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]"></i>
                 <input
                     type="text"
                     name="q"
                     value="{{ request('q') }}"
-                    placeholder="Search iPhone screen, battery, thermal paste, micro-soldering..."
+                    placeholder="Search screen, battery, thermal clean, port fix..."
                     class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] pl-10 pr-4 py-2.5 text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none transition"
                 >
             </div>
 
             <select name="category" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
-                <option value="">All Device Categories</option>
+                <option value="">All Categories</option>
                 @foreach($categories ?? [] as $cat)
                     <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                 @endforeach
@@ -87,12 +101,12 @@
                 <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Price: High to Low</option>
             </select>
 
-            <div class="flex items-center gap-2">
+            <div class="sm:col-span-2 lg:col-span-1 flex items-center gap-2">
                 <button type="submit" class="flex-1 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition whitespace-nowrap">
                     Apply Filters
                 </button>
                 @if(request()->hasAny(['q', 'category', 'max_price', 'sort']))
-                    <a href="{{ route('packages.catalog') }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2.5 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition" title="Reset filters">
+                    <a href="{{ route('packages.catalog') }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2.5 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition shrink-0" title="Reset filters">
                         ✕
                     </a>
                 @endif
@@ -107,12 +121,12 @@
                 <div>
                     <!-- Category & Popularity Pill -->
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] font-extrabold uppercase px-3 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]">
+                        <span class="text-[10px] font-extrabold uppercase px-3 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] whitespace-nowrap">
                             {{ $pkg->device_category }}
                         </span>
                         @if($pkg->is_popular)
-                            <span class="text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                                <i class="fa-solid fa-star text-[9px] text-amber-600"></i> Most Popular
+                            <span class="text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 whitespace-nowrap">
+                                <i class="fa-solid fa-star text-[9px] text-amber-600"></i> Popular
                             </span>
                         @endif
                     </div>
@@ -128,30 +142,30 @@
                     @endif
 
                     <!-- Fixed Price -->
-                    <div class="mt-3 flex items-baseline gap-2">
+                    <div class="mt-3 flex flex-wrap items-baseline gap-2">
                         <span class="text-3xl font-black text-[var(--accent-dark)]">
                             ৳{{ number_format($pkg->fixed_price) }}
                         </span>
-                        <span class="text-xs text-[var(--muted-foreground)]">Standard Fixed-Price Service</span>
+                        <span class="text-xs text-[var(--muted-foreground)] whitespace-nowrap">Fixed price</span>
                     </div>
 
                     <!-- Turnaround & Warranty Specs -->
-                    <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-[var(--muted-foreground)] py-2.5 border-y border-[var(--border)]">
-                        <span class="flex items-center gap-1.5 font-semibold text-[var(--foreground)]">
+                    <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--muted-foreground)] py-2.5 border-y border-[var(--border)]">
+                        <span class="flex items-center gap-1.5 font-semibold text-[var(--foreground)] whitespace-nowrap">
                             <i class="fa-solid fa-clock text-[var(--accent-dark)]"></i>
-                            {{ $pkg->estimated_turnaround_hours }}h Turnaround
+                            {{ $pkg->estimated_turnaround_hours }}h turnaround
                         </span>
                         <span>•</span>
-                        <span class="flex items-center gap-1.5 font-semibold text-[var(--foreground)]">
+                        <span class="flex items-center gap-1.5 font-semibold text-[var(--foreground)] whitespace-nowrap">
                             <i class="fa-solid fa-shield-halved text-emerald-700"></i>
-                            {{ $pkg->warranty_months }} Mo Warranty
+                            {{ $pkg->warranty_months }}-mo warranty
                         </span>
                     </div>
 
                     <!-- Package Inclusions -->
                     @if(!empty($pkg->inclusions))
                         <div class="mt-4">
-                            <h5 class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Included in Service:</h5>
+                            <h5 class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Included in Package:</h5>
                             <ul class="space-y-1.5 text-xs text-[var(--foreground)]">
                                 @foreach($pkg->inclusions as $inc)
                                     <li class="flex items-start gap-2">
@@ -168,13 +182,13 @@
                 <div class="mt-6 pt-4 border-t border-[var(--border)] space-y-2.5 min-w-0">
                     <div class="min-w-0">
                         <label for="shop-select-{{ $pkg->id }}" class="block text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
-                            Assigned Workshop (Quick-Match or Manual Selection)
+                            Workshop Assignment
                         </label>
                         <select
                             id="shop-select-{{ $pkg->id }}"
                             class="w-full min-w-0 max-w-full truncate rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] outline-none"
                         >
-                            <option value="">Auto-Match Nearest Top-Rated Local Shop</option>
+                            <option value="">Auto-match nearest top-rated shop</option>
                             @foreach($verifiedShops ?? [] as $vShop)
                                 <option value="{{ $vShop->id }}" {{ session('cart_shop_id') == $vShop->id ? 'selected' : '' }}>
                                     {{ \Illuminate\Support\Str::limit($vShop->name, 26) }}{{ $vShop->display_branch_tag ? ' [' . \Illuminate\Support\Str::limit($vShop->display_branch_tag, 18) . ']' : ' (' . \Illuminate\Support\Str::limit($vShop->area ?: $vShop->city, 18) . ')' }} • ★{{ number_format($vShop->rating, 1) }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
@@ -197,10 +211,10 @@
                         <button
                             type="button"
                             onclick="addToCart({{ $pkg->id }}, this)"
-                            class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] py-2.5 px-4 text-xs font-bold shadow-sm transition flex items-center justify-center gap-2"
+                            class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] py-2.5 px-4 text-xs font-bold shadow-sm transition flex items-center justify-center gap-2 whitespace-nowrap"
                         >
                             <i class="fa-solid fa-cart-plus"></i>
-                            <span>Add Service to Direct Cart</span>
+                            <span>Add to Cart</span>
                         </button>
                     @endif
                 </div>
@@ -208,9 +222,9 @@
         @empty
             <div class="col-span-full text-center py-14 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-8">
                 <i class="fa-solid fa-box-open text-3xl text-[var(--muted-foreground)] mb-3"></i>
-                <p class="text-sm font-bold text-[var(--foreground)]">No service packages matched your filter criteria.</p>
+                <p class="text-sm font-bold text-[var(--foreground)]">No service packages match your filters.</p>
                 <a href="{{ route('packages.catalog') }}" class="mt-4 inline-flex rounded-full bg-[var(--accent-dark)] px-5 py-2 text-xs font-bold text-[var(--accent-foreground)]">
-                    View All Fixed Packages
+                    View All Packages
                 </a>
             </div>
         @endforelse

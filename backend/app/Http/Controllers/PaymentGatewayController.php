@@ -31,7 +31,7 @@ class PaymentGatewayController extends Controller
      */
     public function showCheckout(Request $request, $requestId)
     {
-        $repairRequest = RepairRequest::with(['bids', 'requestedShop'])->find($requestId);
+        $repairRequest = RepairRequest::with(['bids', 'requestedShop', 'repairJob'])->find($requestId);
         if (!$repairRequest) {
             return app(ComingSoonController::class)->show($request, 'sslcommerz-payment');
         }

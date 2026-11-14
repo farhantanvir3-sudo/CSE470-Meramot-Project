@@ -96,35 +96,104 @@
             <!-- Direct-Order Workshop Banner (Path B: Cart Direct Order) -->
             @if(($repairRequest->source ?? '') === 'DIRECT_SERVICE' && $repairRequest->requestedShop)
                 <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div class="flex items-center gap-3.5">
+                    <div class="flex items-center gap-3.5 min-w-0">
                         <div class="h-12 w-12 rounded-2xl bg-[var(--accent-dark)] text-[var(--accent-foreground)] flex items-center justify-center font-black text-lg shrink-0">
                             <i class="fa-solid fa-store"></i>
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">
-                                Direct-Order Cart Dispatch
+                                Direct Service Order
                             </span>
-                            <h3 class="text-base font-black text-[var(--foreground)]">{{ $repairRequest->requestedShop->name }}</h3>
+                            <h3 class="text-base font-black text-[var(--foreground)] break-words">{{ $repairRequest->requestedShop->name }}</h3>
                             <p class="text-xs text-[var(--muted-foreground)]">
                                 @if($currentStatus === 'PENDING')
-                                    Sent to workshop's <strong>Direct Orders</strong> queue — awaiting merchant acceptance.
+                                    Sent to workshop's <strong>Direct Orders</strong> queue — awaiting confirmation.
                                 @elseif($currentStatus === 'REJECTED')
-                                    Declined by workshop — escrow authorization automatically refunded.
+                                    Declined by workshop — any payment hold has been refunded.
                                 @else
-                                    Accepted by workshop — courier & bench workflow active.
+                                    Confirmed by workshop — courier and bench workflow active.
                                 @endif
                             </p>
                         </div>
                     </div>
                     @if($ownsRequestedShop || $viewerRole === 'admin')
-                        <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
-                            Open Vendor Dashboard &rarr;
+                        <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap shrink-0">
+                            Vendor Dashboard &rarr;
                         </a>
                     @else
-                        <a href="{{ route('shops.show', $repairRequest->requestedShop->slug) }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
+                        <a href="{{ route('shops.show', $repairRequest->requestedShop->slug) }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap shrink-0">
                             View Workshop &rarr;
                         </a>
                     @endif
+                </div>
+            @endif
+
+            @php
+                $bookedItems = ($repairRequest->source ?? '') === 'DIRECT_SERVICE' && is_array($repairRequest->repairJob?->final_quote_items)
+                    ? $repairRequest->repairJob->final_quote_items
+                    : [];
+            @endphp
+            @if(!empty($bookedItems))
+                @php
+                    $bookedSubtotal = collect($bookedItems)->sum(fn ($it) => ((float) ($it['price'] ?? 0)) * ((int) ($it['quantity'] ?? 1)));
+                    $bookedCourierFee = ($repairRequest->delivery_type === 'EXPRESS') ? 150 : 80;
+                    $bookedEscrowFee = (float) ($repairRequest->checkup_fee ?? 0);
+                @endphp
+                <div class="meramot-card p-5 sm:p-6 shadow-sm space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                            Booked Service Packages
+                        </h2>
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-[11px] font-bold text-[var(--accent-dark)] whitespace-nowrap">
+                            {{ count($bookedItems) }} {{ \Illuminate\Support\Str::plural('Service', count($bookedItems)) }}
+                        </span>
+                    </div>
+
+                    <div class="space-y-2.5">
+                        @foreach($bookedItems as $bItem)
+                            @php
+                                $bQty = (int) ($bItem['quantity'] ?? 1);
+                                $bUnit = (float) ($bItem['price'] ?? 0);
+                            @endphp
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/55 px-4 py-3 text-xs">
+                                <div class="min-w-0">
+                                    <p class="font-bold text-[var(--foreground)] break-words">{{ $bItem['title'] ?? 'Repair Service' }}</p>
+                                    <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[var(--muted-foreground)]">
+                                        @if(!empty($bItem['category']))
+                                            <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                                                {{ $bItem['category'] }}
+                                            </span>
+                                        @endif
+                                        @if(!empty($bItem['duration']))
+                                            <span><i class="fa-regular fa-clock mr-1"></i>{{ $bItem['duration'] }}h est.</span>
+                                        @endif
+                                        @if(!empty($bItem['warranty_months']))
+                                            <span class="text-emerald-700 font-semibold"><i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i>{{ $bItem['warranty_months'] }}-mo warranty</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="text-left sm:text-right shrink-0">
+                                    <p class="font-black text-sm text-[var(--accent-dark)]">৳{{ number_format($bUnit * $bQty, 2) }}</p>
+                                    <p class="text-[11px] text-[var(--muted-foreground)]">৳{{ number_format($bUnit, 0) }} × {{ $bQty }}</p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)]/80 px-4 py-3 text-xs space-y-1.5">
+                        <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
+                            <span>Services Subtotal</span>
+                            <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedSubtotal, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
+                            <span>Escrow Protection Fee (5%)</span>
+                            <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedEscrowFee, 2) }}</span>
+                        </div>
+                        <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
+                            <span>Two-Way Courier ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }})</span>
+                            <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedCourierFee, 2) }}</span>
+                        </div>
+                    </div>
                 </div>
             @endif
 
@@ -200,7 +269,8 @@
                     $progressSteps = ($repairRequest->source ?? '') === 'DIRECT_SERVICE'
                         ? ['PENDING', 'ASSIGNED', 'AT_SHOP', 'DIAGNOSING', 'REPAIRING', 'COMPLETED']
                         : ['PENDING', 'BIDDING', 'ASSIGNED', 'AT_SHOP', 'REPAIRING', 'COMPLETED'];
-                    $currentIndex = array_search($currentStatus, $progressSteps, true);
+                    $exactStepIndex = array_search($currentStatus, $progressSteps, true);
+                    $currentIndex = $exactStepIndex;
                     if ($currentIndex === false) {
                         if (in_array($currentStatus, ['PICKUP_SCHEDULED', 'PICKED_UP'], true)) {
                             $currentIndex = array_search('ASSIGNED', $progressSteps, true);
@@ -286,7 +356,8 @@
                     @foreach($progressSteps as $index => $step)
                         @php
                             $stepInfo = $statuses[$step];
-                            $isCompleted = $index < $currentIndex || $currentStatus === 'COMPLETED';
+                            $isCompleted = $currentStatus === 'COMPLETED'
+                                || ($currentIndex !== false && $currentIndex >= 0 && ($index < $currentIndex || ($exactStepIndex === false && $index <= $currentIndex)));
                             $isCurrent = $step === $currentStatus;
                         @endphp
                         <div class="flex items-center gap-3">

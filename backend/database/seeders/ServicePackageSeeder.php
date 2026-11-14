@@ -17,6 +17,7 @@ class ServicePackageSeeder extends Seeder
         $packages = [
             [
                 'title' => 'Original Display Panel Replacement',
+                'description' => 'Factory-grade OLED or IPS screen assembly fitted in a dust-free bench environment.',
                 'device_category' => 'Smartphone',
                 'fixed_price' => 2800.00,
                 'estimated_turnaround_hours' => 2,
@@ -31,6 +32,7 @@ class ServicePackageSeeder extends Seeder
             ],
             [
                 'title' => 'Laptop High-Capacity Battery Replacement',
+                'description' => 'Certified Grade-A lithium-polymer battery swap with power controller calibration.',
                 'device_category' => 'Laptop',
                 'fixed_price' => 3200.00,
                 'estimated_turnaround_hours' => 3,
@@ -45,6 +47,7 @@ class ServicePackageSeeder extends Seeder
             ],
             [
                 'title' => 'Motherboard Micro-Soldering & IC Diagnostic',
+                'description' => 'Component-level short-circuit tracing, SMD replacement, and thermal load verification.',
                 'device_category' => 'Laptop',
                 'fixed_price' => 4500.00,
                 'estimated_turnaround_hours' => 24,
@@ -59,6 +62,7 @@ class ServicePackageSeeder extends Seeder
             ],
             [
                 'title' => 'Gaming Console Thermal Overhaul & Fan Deep Clean',
+                'description' => 'Full internal dust extraction, heatsink wash, and high-conductivity thermal repasting.',
                 'device_category' => 'Gaming Console',
                 'fixed_price' => 1800.00,
                 'estimated_turnaround_hours' => 4,
@@ -73,6 +77,7 @@ class ServicePackageSeeder extends Seeder
             ],
             [
                 'title' => 'Mechanical & Chiclet Keyboard Replacement',
+                'description' => 'OEM laptop keyboard unit installation with ribbon check and full key-actuation testing.',
                 'device_category' => 'Laptop',
                 'fixed_price' => 2200.00,
                 'estimated_turnaround_hours' => 3,
@@ -87,6 +92,7 @@ class ServicePackageSeeder extends Seeder
             ],
             [
                 'title' => 'Type-C / Lightning Port Microsoldering Fix',
+                'description' => 'Precision charging port replacement with fast-charge PD and data transfer verification.',
                 'device_category' => 'Smartphone',
                 'fixed_price' => 1200.00,
                 'estimated_turnaround_hours' => 1,
