@@ -9,6 +9,7 @@ use App\Models\RepairJob;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\ServicePackage;
+use App\Models\ShopService;
 use App\Models\User;
 use App\Services\GeolocationService;
 use Illuminate\Http\Request;
@@ -725,6 +726,28 @@ class ServicePackageController extends Controller
         $shop = $this->resolveTargetShop($explicitShopId, $request);
         $cart = session()->get('cart', []);
 
+        // Server-side price authority: only vendor-published fixed-price services can be
+        // added, and always at the price the workshop set (never the client-supplied price).
+        $publishedService = null;
+        if (empty($validated['package_id'])) {
+            $publishedService = $shop
+                ? ShopService::where('shop_id', $shop->id)
+                    ->where('is_active', true)
+                    ->whereNotNull('base_price')
+                    ->where('base_price', '>', 0)
+                    ->whereRaw('LOWER(name) = ?', [mb_strtolower(trim((string) $validated['service_name']))])
+                    ->first()
+                : null;
+
+            if (!$publishedService) {
+                $msg = 'This service is not offered at a fixed price by this workshop. Please request a custom quote instead.';
+                if (!$request->expectsJson()) {
+                    return back()->withErrors(['cart' => $msg]);
+                }
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+        }
+
         // If user explicitly added from a different shop profile, scope cart to that shop
         if ($explicitShopId && session('cart_shop_id') && (int) session('cart_shop_id') !== $explicitShopId && empty($validated['package_id'])) {
             $cart = [];
@@ -763,17 +786,18 @@ class ServicePackageController extends Controller
                 ];
             }
         } else {
-            $serviceTitle = trim($validated['service_name']);
+            $serviceTitle = $publishedService->name;
             $itemKey = 'svc_' . md5(($shop?->id ?? 0) . '_' . strtolower($serviceTitle));
 
             if (isset($cart[$itemKey])) {
                 $cart[$itemKey]['quantity'] = min(10, $cart[$itemKey]['quantity'] + $quantity);
+                $cart[$itemKey]['price'] = (float) $publishedService->base_price;
             } else {
                 $cart[$itemKey] = [
                     'id' => $itemKey,
                     'title' => $serviceTitle,
-                    'description' => $validated['description'] ?? 'Verified workshop repair service',
-                    'price' => (float) $validated['price'],
+                    'description' => $publishedService->short_description ?: ($publishedService->description ?: 'Fixed-price workshop service'),
+                    'price' => (float) $publishedService->base_price,
                     'category' => 'Shop Direct Service',
                     'duration' => $shop ? max(2, (int) round(($shop->eta_minutes ?: 120) / 60)) : 4,
                     'warranty_months' => 3,

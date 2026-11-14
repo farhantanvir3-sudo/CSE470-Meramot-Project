@@ -355,22 +355,31 @@ class VendorBranchController extends Controller
             'specialties' => $specialties,
         ]);
 
-        // Seed bookable Direct-Order services for the new branch
-        foreach (array_slice((array) $specialties, 0, 3) as $idx => $specName) {
+        // Mirror the vendor's own published fixed-price services onto the new branch.
+        // Nothing is auto-generated: a vendor with no services gets a branch with an empty list.
+        $templateServices = $templateShop
+            ? ShopService::where('shop_id', $templateShop->id)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get()
+            : collect();
+        foreach ($templateServices as $tplSvc) {
             ShopService::updateOrCreate(
-                ['shop_id' => $newBranch->id, 'slug' => Str::slug($specName) ?: ('service-' . ($idx + 1))],
+                ['shop_id' => $newBranch->id, 'slug' => $tplSvc->slug],
                 [
-                    'name' => ucfirst((string) $specName),
-                    'short_description' => "Certified {$brandName} ({$branchName}) bench service with warranty.",
-                    'device_type' => 'Electronics',
-                    'issue_category' => ucfirst((string) $specName),
-                    'pricing_type' => 'STARTING_FROM',
-                    'base_price' => $baseLaborFee + ($idx * 250),
-                    'estimated_days_min' => 1,
-                    'estimated_days_max' => 3,
+                    'name' => $tplSvc->name,
+                    'short_description' => $tplSvc->short_description,
+                    'description' => $tplSvc->description,
+                    'device_type' => $tplSvc->device_type,
+                    'issue_category' => $tplSvc->issue_category,
+                    'pricing_type' => $tplSvc->pricing_type,
+                    'base_price' => $tplSvc->base_price,
+                    'price_max' => $tplSvc->price_max,
+                    'estimated_days_min' => $tplSvc->estimated_days_min,
+                    'estimated_days_max' => $tplSvc->estimated_days_max,
                     'includes_pickup' => in_array('COURIER_PICKUP', $categories, true),
-                    'sort_order' => $idx,
-                    'is_featured' => $idx === 0,
+                    'sort_order' => $tplSvc->sort_order,
+                    'is_featured' => (bool) $tplSvc->is_featured,
                     'is_active' => true,
                 ]
             );

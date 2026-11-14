@@ -162,11 +162,11 @@ class SprintOneEndToEndAuditTest extends TestCase
         ], $shop->specialties);
 
         $oledService = ShopService::where('shop_id', $shop->id)->where('name', 'OLED Display Assembly')->firstOrFail();
-        $this->assertSame('STARTING_FROM', $oledService->pricing_type);
+        $this->assertSame('FIXED', $oledService->pricing_type);
         $this->assertEquals(4500.00, (float) $oledService->base_price);
 
         $icService = ShopService::where('shop_id', $shop->id)->where('name', 'Motherboard IC Microsoldering')->firstOrFail();
-        $this->assertSame('STARTING_FROM', $icService->pricing_type);
+        $this->assertSame('FIXED', $icService->pricing_type);
         $this->assertEquals(3200.00, (float) $icService->base_price);
 
         $diagService = ShopService::where('shop_id', $shop->id)->where('name', 'Diagnostics & Thermal Servicing')->firstOrFail();

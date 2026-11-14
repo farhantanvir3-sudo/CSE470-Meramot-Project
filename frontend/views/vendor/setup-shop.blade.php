@@ -5,52 +5,32 @@
 @section('content')
 @php
     $isEditMode = (bool) optional($primaryShop)->setup_complete;
-    $rawSpecs = old('skill_tags', optional($primaryShop)->specialties ?? $profile->specialties ?? []);
-    if (!is_array($rawSpecs)) {
-        $rawSpecs = [];
-    }
+    $onboardingTags = $onboardingTags ?? [];
+    $serviceSuggestions = $serviceSuggestions ?? [];
+
+    // Fixed-price services & packages start EMPTY for a new vendor. They are only
+    // pre-filled from items the vendor has already published (or a failed submit).
     $initialServices = [];
-    if (old('skill_tags')) {
+    if (is_array(old('skill_tags'))) {
         foreach ((array) old('skill_tags') as $item) {
             $trimmed = trim((string) $item);
             if ($trimmed === '') continue;
-            if (str_contains($trimmed, '|')) {
-                [$sName, $sPrice] = explode('|', $trimmed, 2);
-                $initialServices[] = ['name' => trim($sName), 'price' => trim($sPrice)];
-            } elseif (preg_match('/^(.*?)\s*\(\s*(?:৳|BDT|Tk\.?)?\s*([\d,]+(?:\.\d+)?)\s*\)\s*$/iu', $trimmed, $m)) {
-                $initialServices[] = ['name' => trim($m[1]), 'price' => str_replace(',', '', $m[2])];
-            } else {
-                $initialServices[] = ['name' => $trimmed, 'price' => ''];
-            }
+            $parts = explode('|', $trimmed, 3);
+            $initialServices[] = [
+                'name' => trim($parts[0]),
+                'price' => trim($parts[1] ?? ''),
+                'description' => trim($parts[2] ?? ''),
+            ];
         }
-    } elseif ($primaryShop && $primaryShop->relationLoaded('services') && $primaryShop->services->isNotEmpty()) {
+    } elseif ($primaryShop && $primaryShop->relationLoaded('services')) {
         foreach ($primaryShop->services->sortBy('sort_order') as $svc) {
             $initialServices[] = [
                 'name' => $svc->name,
                 'price' => $svc->base_price !== null ? (string) (float) $svc->base_price : '',
+                'description' => (string) ($svc->short_description ?? ''),
             ];
         }
-    } else {
-        foreach ($rawSpecs as $item) {
-            $trimmed = trim((string) $item);
-            if ($trimmed === '') continue;
-            if (str_contains($trimmed, '|')) {
-                [$sName, $sPrice] = explode('|', $trimmed, 2);
-                $initialServices[] = ['name' => trim($sName), 'price' => trim($sPrice)];
-            } elseif (preg_match('/^(.*?)\s*\(\s*(?:৳|BDT|Tk\.?)?\s*([\d,]+(?:\.\d+)?)\s*\)\s*$/iu', $trimmed, $m)) {
-                $initialServices[] = ['name' => trim($m[1]), 'price' => str_replace(',', '', $m[2])];
-            } else {
-                $initialServices[] = ['name' => $trimmed, 'price' => ''];
-            }
-        }
     }
-
-    $presetSuggestions = [
-        'Apple products', 'Android phones', 'Laptop motherboard', 'Gaming PC',
-        'Printer repair', 'Phone screen', 'MacBook repair', 'Desktop servicing',
-        'Custom build PC', 'Battery replacement', 'Logic board repair',
-        'Screen replacement', 'Water damage micro-soldering', 'Data recovery',
-    ];
 @endphp
 
 <div
@@ -71,7 +51,11 @@
         services: @js($initialServices),
         serviceName: '',
         servicePrice: '',
-        suggestions: @js($presetSuggestions),
+        serviceDescription: '',
+        priceHint: '',
+        serviceError: '',
+        editingIndex: null,
+        suggestions: @js($serviceSuggestions),
         showSuggestions: false,
         handleLogoFile(event) {
             const file = event.target.files?.[0];
@@ -95,23 +79,66 @@
             }
         },
         addService() {
-            const name = this.serviceName.trim();
-            if (!name) return;
-            if (!this.services.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-                this.services.push({ name, price: this.servicePrice.toString().trim() });
+            const name = this.serviceName.trim().replace(/\|/g, '/');
+            const price = this.servicePrice.toString().trim();
+            const description = this.serviceDescription.trim().replace(/\|/g, '/');
+            this.serviceError = '';
+            if (!name) { this.serviceError = 'Enter a service or package name.'; return; }
+            if (price === '' || isNaN(Number(price)) || Number(price) <= 0) {
+                this.serviceError = 'Set a fixed price (৳) greater than 0.';
+                return;
             }
+            const duplicateIdx = this.services.findIndex(s => s.name.toLowerCase() === name.toLowerCase());
+            if (this.editingIndex !== null) {
+                if (duplicateIdx !== -1 && duplicateIdx !== this.editingIndex) {
+                    this.serviceError = 'This service is already in your list.';
+                    return;
+                }
+                this.services.splice(this.editingIndex, 1, { name, price, description });
+            } else {
+                if (duplicateIdx !== -1) { this.serviceError = 'This service is already in your list.'; return; }
+                this.services.push({ name, price, description });
+            }
+            this.resetServiceForm();
+        },
+        resetServiceForm() {
             this.serviceName = '';
             this.servicePrice = '';
+            this.serviceDescription = '';
+            this.priceHint = '';
+            this.serviceError = '';
+            this.editingIndex = null;
             this.showSuggestions = false;
         },
-        removeService(name) {
-            this.services = this.services.filter(s => s.name !== name);
+        useSuggestion(sug) {
+            this.editingIndex = null;
+            this.serviceName = sug.name;
+            this.priceHint = sug.hint ? Number(sug.hint).toLocaleString() : '';
+            this.serviceError = '';
+            this.showSuggestions = false;
+            this.$nextTick(() => this.$refs.servicePriceInput?.focus());
+        },
+        editService(index) {
+            const svc = this.services[index];
+            if (!svc) return;
+            this.editingIndex = index;
+            this.serviceName = svc.name;
+            this.servicePrice = svc.price;
+            this.serviceDescription = svc.description || '';
+            this.serviceError = '';
+            this.$nextTick(() => this.$refs.serviceNameInput?.focus());
+        },
+        removeService(index) {
+            this.services.splice(index, 1);
+            if (this.editingIndex === index) this.resetServiceForm();
+        },
+        isAdded(name) {
+            return this.services.some(s => s.name.toLowerCase() === name.toLowerCase());
         },
         filteredSuggestions() {
             const q = this.serviceName.toLowerCase().trim();
             return this.suggestions.filter(s =>
-                (!q || s.toLowerCase().includes(q)) &&
-                !this.services.some(ex => ex.name.toLowerCase() === s.toLowerCase())
+                (!q || s.name.toLowerCase().includes(q)) && !this.isAdded(s.name)
             );
         }
     }"
@@ -368,67 +395,157 @@
                 </div>
             </section>
 
-            <!-- 5. Available Services & Skill Tags -->
+            <!-- 5. Fixed-Price Services & Packages -->
             <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
-                <h2 class="text-lg font-semibold text-[#244229]">Available services</h2>
-                <p class="mt-1 text-xs md:text-sm text-slate-600">
-                    List the services your shop provides and optionally set a base starting estimate (৳) for each.
-                </p>
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <h2 class="text-lg font-semibold text-[#244229]">Fixed-price services &amp; packages</h2>
+                        <p class="mt-1 text-xs md:text-sm text-slate-600">
+                            Publish services customers can book instantly at a set price. This is optional — without fixed-price items, customers can still request custom quotes.
+                        </p>
+                    </div>
+                    <span class="shrink-0 rounded-full border border-[var(--border)] bg-white px-3 py-1 text-xs font-bold text-[#244229]" x-text="services.length + (services.length === 1 ? ' item' : ' items')"></span>
+                </div>
 
-                <div class="mt-4 flex flex-col gap-3 md:flex-row md:items-start">
-                    <div class="relative flex-1">
-                        <input
-                            type="text"
-                            x-model="serviceName"
-                            @focus="showSuggestions = true"
-                            @blur="setTimeout(() => showSuggestions = false, 180)"
-                            @keydown.enter.prevent="addService()"
-                            placeholder="e.g. Logic board repair, Screen replacement..."
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
-                        >
+                <!-- Suggestions derived from onboarding specialty tags -->
+                <div class="mt-4 rounded-2xl border border-dashed border-[#b9d3b6] bg-white/70 p-4" x-show="suggestions.length > 0">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-[#58725f]">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>
+                        Suggested for your specialties
+                    </p>
+                    @if(!empty($onboardingTags))
+                        <p class="mt-1 text-xs text-slate-500 break-words">
+                            Based on the tags you selected during onboarding: {{ implode(', ', array_slice($onboardingTags, 0, 6)) }}{{ count($onboardingTags) > 6 ? '…' : '' }}
+                        </p>
+                    @else
+                        <p class="mt-1 text-xs text-slate-500">Common services to get you started.</p>
+                    @endif
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <template x-for="sug in suggestions" :key="sug.name">
+                            <button
+                                type="button"
+                                x-show="!isAdded(sug.name)"
+                                @click="useSuggestion(sug)"
+                                class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--border)] bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:border-[#244229] hover:bg-[var(--mint-100)]"
+                                :title="'Typical market price around ৳' + Number(sug.hint).toLocaleString()"
+                            >
+                                <i class="fa-solid fa-plus text-[10px] text-[#244229]"></i>
+                                <span class="break-words" x-text="sug.name"></span>
+                            </button>
+                        </template>
+                        <span x-show="suggestions.every(s => isAdded(s.name))" class="text-xs italic text-slate-400">All suggestions have been added.</span>
+                    </div>
+                </div>
 
-                        <div x-show="showSuggestions && filteredSuggestions().length > 0" x-cloak class="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[var(--border)] bg-white p-1 shadow-lg">
-                            <template x-for="sug in filteredSuggestions()" :key="sug">
-                                <button
-                                    type="button"
-                                    @mousedown.prevent="serviceName = sug; showSuggestions = false"
-                                    class="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-[var(--mint-100)]"
-                                    x-text="sug"
-                                ></button>
-                            </template>
+                <!-- Add / edit form -->
+                <div class="mt-4 rounded-2xl border border-[var(--border)] bg-white p-4">
+                    <p class="text-sm font-semibold text-slate-800" x-text="editingIndex !== null ? 'Edit service' : 'Add a service or package'"></p>
+                    <div class="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_10rem]">
+                        <div class="relative min-w-0">
+                            <label class="mb-1 block text-xs font-medium text-slate-600">Name *</label>
+                            <input
+                                type="text"
+                                x-ref="serviceNameInput"
+                                x-model="serviceName"
+                                maxlength="150"
+                                @focus="showSuggestions = true"
+                                @blur="setTimeout(() => showSuggestions = false, 180)"
+                                @keydown.enter.prevent="addService()"
+                                placeholder="e.g. iPhone 13 Screen Replacement"
+                                class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            >
+                            <div x-show="showSuggestions && serviceName.trim() !== '' && filteredSuggestions().length > 0" x-cloak class="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[var(--border)] bg-white p-1 shadow-lg">
+                                <template x-for="sug in filteredSuggestions()" :key="'dd-' + sug.name">
+                                    <button
+                                        type="button"
+                                        @mousedown.prevent="useSuggestion(sug)"
+                                        class="w-full rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-[var(--mint-100)]"
+                                        x-text="sug.name"
+                                    ></button>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="min-w-0">
+                            <label class="mb-1 block text-xs font-medium text-slate-600">Fixed price (৳) *</label>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">৳</span>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    x-ref="servicePriceInput"
+                                    x-model="servicePrice"
+                                    @keydown.enter.prevent="addService()"
+                                    :placeholder="priceHint ? ('e.g. ' + priceHint) : 'Price'"
+                                    class="w-full rounded-2xl border border-[var(--border)] bg-white py-3 pl-8 pr-3 text-sm outline-none focus:border-[#244229]"
+                                >
+                            </div>
                         </div>
                     </div>
 
-                    <div class="relative w-full md:w-36 shrink-0">
-                        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">৳</span>
+                    <label class="mt-3 block">
+                        <span class="mb-1 block text-xs font-medium text-slate-600">What's included (optional)</span>
                         <input
-                            type="number"
-                            min="0"
-                            x-model="servicePrice"
+                            type="text"
+                            x-model="serviceDescription"
+                            maxlength="400"
                             @keydown.enter.prevent="addService()"
-                            placeholder="Price"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white py-3 pl-8 pr-4 text-sm outline-none focus:border-[#244229]"
+                            placeholder="e.g. Genuine part, 90-day warranty, same-day service"
+                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
-                    </div>
+                    </label>
 
-                    <button
-                        type="button"
-                        @click="addService()"
-                        class="flex h-12 px-5 shrink-0 items-center justify-center rounded-2xl bg-[#244229] text-white font-bold transition hover:opacity-95"
-                    >
-                        + Add
-                    </button>
+                    <p x-show="serviceError" x-cloak class="mt-2 text-xs font-medium text-rose-600" x-text="serviceError"></p>
+                    <p x-show="priceHint && !serviceError" x-cloak class="mt-2 text-xs text-slate-500">
+                        Typical market price is around ৳<span x-text="priceHint"></span>. Set the price you actually charge.
+                    </p>
+
+                    <div class="mt-3 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                        <button
+                            type="button"
+                            x-show="editingIndex !== null || serviceName || servicePrice || serviceDescription"
+                            @click="resetServiceForm()"
+                            class="h-11 rounded-2xl border border-[var(--border)] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[var(--mint-100)]"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            @click="addService()"
+                            class="h-11 rounded-2xl bg-[#244229] px-5 text-sm font-bold text-white transition hover:opacity-95"
+                            x-text="editingIndex !== null ? 'Save changes' : '+ Add to list'"
+                        ></button>
+                    </div>
+                </div>
+
+                <!-- Published list -->
+                <div x-show="services.length === 0" class="mt-4 rounded-2xl border border-dashed border-[var(--border)] bg-white/60 px-4 py-6 text-center">
+                    <i class="fa-solid fa-box-open text-xl text-slate-300"></i>
+                    <p class="mt-2 text-sm font-medium text-slate-600">No fixed-price services yet</p>
+                    <p class="mt-1 text-xs text-slate-500">Pick a suggestion above or add your own to start receiving direct orders.</p>
                 </div>
 
                 <div x-show="services.length > 0" class="mt-4 space-y-2">
-                    <template x-for="svc in services" :key="svc.name">
-                        <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)] bg-white px-4 py-3 shadow-sm">
-                            <input type="hidden" name="skill_tags[]" :value="svc.price ? (svc.name + '|' + svc.price) : svc.name">
-                            <span class="min-w-0 break-words text-sm font-medium text-slate-800" x-text="svc.name"></span>
-                            <div class="flex items-center gap-3 sm:gap-4 shrink-0">
+                    <template x-for="(svc, index) in services" :key="svc.name">
+                        <div class="flex flex-col gap-2 rounded-xl border bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                             :class="editingIndex === index ? 'border-[#244229] ring-1 ring-[#244229]' : 'border-[var(--border)]'">
+                            <input type="hidden" name="skill_tags[]" :value="svc.name + '|' + (svc.price || '') + (svc.description ? ('|' + svc.description) : '')">
+                            <div class="min-w-0 flex-1">
+                                <p class="break-words text-sm font-semibold text-slate-800" x-text="svc.name"></p>
+                                <p x-show="svc.description" class="mt-0.5 break-words text-xs text-slate-500" x-text="svc.description"></p>
+                            </div>
+                            <div class="flex shrink-0 items-center justify-between gap-3 sm:justify-end sm:gap-4">
                                 <span x-show="svc.price" class="text-sm font-bold text-[#244229]" x-text="'৳' + Number(svc.price).toLocaleString()"></span>
-                                <span x-show="!svc.price" class="text-xs italic text-slate-400">Inspection quote</span>
-                                <button type="button" @click="removeService(svc.name)" class="text-slate-400 hover:text-red-600 font-bold">✕</button>
+                                <span x-show="!svc.price" class="text-xs font-medium text-amber-700">Price required — edit to set</span>
+                                <div class="flex items-center gap-1">
+                                    <button type="button" @click="editService(index)" class="rounded-lg px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-[var(--mint-100)]" aria-label="Edit service">
+                                        <i class="fa-solid fa-pen text-[11px]"></i> Edit
+                                    </button>
+                                    <button type="button" @click="removeService(index)" class="rounded-lg px-2 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50" aria-label="Remove service">
+                                        <i class="fa-solid fa-trash text-[11px]"></i> Remove
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </template>
