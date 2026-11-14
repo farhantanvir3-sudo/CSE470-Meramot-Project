@@ -418,7 +418,7 @@
 
                                     <div class="shrink-0 text-right">
                                         <div class="text-base font-black leading-tight text-[var(--accent-dark)] md:text-lg">
-                                            ৳{{ number_format($shop->inspection_fee ?: 200) }}
+                                            ৳{{ number_format($shop->inspection_fee ?? 200) }}
                                         </div>
                                         <div class="eta-display text-[10px] font-semibold text-[var(--muted-foreground)]">
                                             {{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}
@@ -432,11 +432,11 @@
                         <div class="mt-2.5 grid grid-cols-3 items-center rounded-xl bg-[var(--mint-50)] px-2.5 py-1.5 md:mt-3 text-center min-w-0">
                             <div>
                                 <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Inspection</span>
-                                <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->inspection_fee ?: 200) }}</div>
+                                <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->inspection_fee ?? 200) }}</div>
                             </div>
                             <div class="border-x border-[var(--border)]/50 px-1">
                                 <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Labor</span>
-                                <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->base_labor_fee ?: 400) }}</div>
+                                <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->base_labor_fee ?? 400) }}</div>
                             </div>
                             <div>
                                 <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">ETA</span>

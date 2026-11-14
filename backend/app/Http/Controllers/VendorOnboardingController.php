@@ -465,7 +465,14 @@ class VendorOnboardingController extends Controller
                 ->withErrors(['setup' => 'Your vendor application must be approved by an admin before completing shop setup.']);
         }
 
-        $primaryShop = $profile->shops->sortBy('id')->first();
+        $branches = $profile->shops->sortBy('id')->values();
+        $requestedShopId = $request->query('shop_id');
+        if ($requestedShopId !== null && ctype_digit((string) $requestedShopId)) {
+            $primaryShop = $branches->firstWhere('id', (int) $requestedShopId) ?? $branches->first();
+        } else {
+            $primaryShop = $branches->first();
+        }
+
         if ($primaryShop) {
             $primaryShop->load(['services' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')]);
         }
@@ -473,7 +480,7 @@ class VendorOnboardingController extends Controller
         $onboardingTags = self::onboardingSpecialtyTags($profile);
         $serviceSuggestions = ServiceSuggestionCatalog::forTags($onboardingTags);
 
-        return view('vendor.setup-shop', compact('profile', 'primaryShop', 'user', 'onboardingTags', 'serviceSuggestions'));
+        return view('vendor.setup-shop', compact('profile', 'primaryShop', 'branches', 'user', 'onboardingTags', 'serviceSuggestions'));
     }
 
     /**
@@ -517,6 +524,8 @@ class VendorOnboardingController extends Controller
         }
 
         $validated = $request->validate([
+            'shop_id' => 'nullable|integer',
+            'sync_pricing_all_branches' => 'nullable|boolean',
             'shop_name' => 'required|string|max:255',
             'phone' => 'required|string|max:30',
             'description' => 'nullable|string|max:2000',
@@ -566,7 +575,12 @@ class VendorOnboardingController extends Controller
             $spareParts ? 'SPARE_PARTS' : null,
         ]));
 
-        $primaryShop = $profile->shops->sortBy('id')->first();
+        $firstShop = $profile->shops->sortBy('id')->first();
+        $requestedShopId = !empty($validated['shop_id']) ? (int) $validated['shop_id'] : null;
+        $primaryShop = $requestedShopId
+            ? ($profile->shops->firstWhere('id', $requestedShopId) ?? $firstShop)
+            : $firstShop;
+        $isEditingFirstShop = !$primaryShop || !$firstShop || (int) $primaryShop->id === (int) $firstShop->id;
 
         $lat = isset($validated['latitude']) && $validated['latitude'] !== ''
             ? (float) $validated['latitude']
@@ -649,10 +663,13 @@ class VendorOnboardingController extends Controller
             }
         }
 
+        $shop = null;
+
         DB::transaction(function () use (
-            $user, $profile, $primaryShop, $validated, $cleanPhone, $address, $gpsAddress, $sameAsGps,
-            $city, $area, $lat, $lng, $courierPickup, $inShopRepair, $spareParts, $serviceCategories,
-            $skillTags, $logoUrl, $bannerUrl, $parsedServices, $shopSpecialties
+            $user, $profile, $primaryShop, $isEditingFirstShop, $request, $validated, $cleanPhone,
+            $address, $gpsAddress, $sameAsGps, $city, $area, $lat, $lng, $courierPickup,
+            $inShopRepair, $spareParts, $serviceCategories, $skillTags, $logoUrl, $bannerUrl,
+            $parsedServices, $shopSpecialties, &$shop
         ) {
             $user->update([
                 'phone' => $cleanPhone,
@@ -660,23 +677,31 @@ class VendorOnboardingController extends Controller
                 'is_active' => true,
             ]);
 
-            $profile->update([
-                'shop_name' => trim($validated['shop_name']),
-                'brand_name' => trim($validated['shop_name']),
-                'phone' => $cleanPhone,
-                'shop_address' => $address,
-                'gps_address' => $gpsAddress,
-                'same_as_gps_location' => ($address === $gpsAddress) && $sameAsGps,
-                'city' => $city,
-                'area' => $area,
-                'shop_latitude' => $lat,
-                'shop_longitude' => $lng,
-                'courier_pickup' => $courierPickup,
-                'in_shop_repair' => $inShopRepair,
-                'spare_parts' => $spareParts,
-                'notes' => !empty($validated['description']) ? trim($validated['description']) : $profile->notes,
-                'logo_url' => $logoUrl,
-            ]);
+            if ($isEditingFirstShop) {
+                $profile->update([
+                    'shop_name' => trim($validated['shop_name']),
+                    'brand_name' => trim($validated['shop_name']),
+                    'phone' => $cleanPhone,
+                    'shop_address' => $address,
+                    'gps_address' => $gpsAddress,
+                    'same_as_gps_location' => ($address === $gpsAddress) && $sameAsGps,
+                    'city' => $city,
+                    'area' => $area,
+                    'shop_latitude' => $lat,
+                    'shop_longitude' => $lng,
+                    'courier_pickup' => $courierPickup,
+                    'in_shop_repair' => $inShopRepair,
+                    'spare_parts' => $spareParts,
+                    'notes' => !empty($validated['description']) ? trim($validated['description']) : $profile->notes,
+                    'logo_url' => $logoUrl,
+                ]);
+            } else {
+                $profile->update([
+                    'courier_pickup' => $courierPickup,
+                    'in_shop_repair' => $inShopRepair,
+                    'spare_parts' => $spareParts,
+                ]);
+            }
 
             $shopData = [
                 'name' => trim($validated['shop_name']),
@@ -704,6 +729,10 @@ class VendorOnboardingController extends Controller
                 'setup_complete' => true,
                 'accepts_direct_orders' => true,
             ];
+
+            if ($primaryShop === null || $primaryShop->offer_summary === null || str_starts_with((string) $primaryShop->offer_summary, 'Inspection ৳')) {
+                $shopData['offer_summary'] = 'Inspection ৳' . (int) round((float) $validated['inspection_fee']);
+            }
 
             if ($primaryShop) {
                 $primaryShop->update($shopData);
@@ -748,7 +777,29 @@ class VendorOnboardingController extends Controller
             ShopService::where('shop_id', $shop->id)
                 ->when(!empty($keptSlugs), fn ($q) => $q->whereNotIn('slug', $keptSlugs))
                 ->update(['is_active' => false]);
+
+            if ($request->boolean('sync_pricing_all_branches') && $profile->shops->count() > 1) {
+                $sharedRates = [
+                    'inspection_fee' => (float) $validated['inspection_fee'],
+                    'base_labor_fee' => (float) $validated['base_labor_fee'],
+                    'pickup_fee' => isset($validated['pickup_fee']) && $validated['pickup_fee'] !== '' ? (float) $validated['pickup_fee'] : null,
+                    'express_fee' => isset($validated['express_fee']) && $validated['express_fee'] !== '' ? (float) $validated['express_fee'] : null,
+                ];
+                $otherBranches = $profile->shops()->where('id', '!=', $shop->id)->get();
+                foreach ($otherBranches as $otherBranch) {
+                    $branchUpdate = $sharedRates;
+                    if ($otherBranch->offer_summary === null || str_starts_with((string) $otherBranch->offer_summary, 'Inspection ৳')) {
+                        $branchUpdate['offer_summary'] = 'Inspection ৳' . (int) round((float) $validated['inspection_fee']);
+                    }
+                    $otherBranch->update($branchUpdate);
+                }
+            }
         });
+
+        if (!$isEditingFirstShop && $shop) {
+            return redirect('/vendor/dashboard?shop_id=' . $shop->id)
+                ->with('success', "Branch pricing and setup updated for '{$shop->name}" . ($shop->display_branch_tag ? " [{$shop->display_branch_tag}]" : '') . "'.");
+        }
 
         return redirect()
             ->route('vendor.dashboard')

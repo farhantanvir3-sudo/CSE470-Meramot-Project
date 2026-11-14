@@ -1881,6 +1881,17 @@
                     }
                 });
             });
+            document.addEventListener('wheel', function (e) {
+                const active = document.activeElement;
+                if (
+                    active &&
+                    active.tagName === 'INPUT' &&
+                    active.type === 'number' &&
+                    (e.target === active || active.contains(e.target))
+                ) {
+                    active.blur();
+                }
+            }, { capture: true, passive: true });
         })();
     </script>
 </body>

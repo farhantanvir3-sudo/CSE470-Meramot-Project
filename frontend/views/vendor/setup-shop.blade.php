@@ -4,9 +4,23 @@
 
 @section('content')
 @php
+    $branches = collect($branches ?? ($primaryShop ? [$primaryShop] : []));
     $isEditMode = (bool) optional($primaryShop)->setup_complete;
     $onboardingTags = $onboardingTags ?? [];
     $serviceSuggestions = $serviceSuggestions ?? [];
+
+    $formatRateInput = static function ($val): string {
+        if ($val === null || $val === '') {
+            return '';
+        }
+        if (!is_numeric($val)) {
+            return (string) $val;
+        }
+        $num = round((float) $val, 2);
+        return fmod($num, 1.0) == 0.0
+            ? (string) (int) $num
+            : number_format($num, 2, '.', '');
+    };
 
     // Fixed-price services & packages start EMPTY for a new vendor. They are only
     // pre-filled from items the vendor has already published (or a failed submit).
@@ -157,6 +171,30 @@
                 : 'Complete your workshop profile before accepting marketplace orders. Your listing becomes publicly visible once pricing, services, and business details are confirmed.' }}
         </p>
 
+        @if($branches->count() > 1)
+            <div class="mt-5 flex flex-col gap-2 rounded-2xl border border-[var(--border)] bg-[#f6faf4] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0">
+                    <span class="block text-xs font-bold uppercase tracking-wider text-[#244229]">
+                        <i class="fa-solid fa-code-branch mr-1"></i> Active Branch Configuration
+                    </span>
+                    <span class="block text-xs text-slate-600">
+                        Select which workshop branch's pricing &amp; details to configure
+                    </span>
+                </div>
+                <select
+                    aria-label="Select workshop branch"
+                    onchange="window.location.href='{{ route('vendor.setup-shop') }}?shop_id=' + encodeURIComponent(this.value)"
+                    class="rounded-xl border border-[var(--border)] bg-white px-3.5 py-2 text-xs font-semibold text-[#244229] outline-none focus:border-[#244229]"
+                >
+                    @foreach($branches as $b)
+                        <option value="{{ $b->id }}" {{ (int) ($primaryShop->id ?? 0) === (int) $b->id ? 'selected' : '' }}>
+                            {{ $b->name }}{{ $b->display_branch_tag ? ' [' . $b->display_branch_tag . ']' : ($b->area ? ' (' . $b->area . ')' : '') }} — Inspection ৳{{ $formatRateInput($b->inspection_fee ?? 0) }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        @endif
+
         @if($errors->any())
             <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs md:text-sm text-rose-700 space-y-1">
                 @foreach($errors->all() as $error)
@@ -167,6 +205,7 @@
 
         <form method="POST" action="{{ route('vendor.setup-shop.store') }}" enctype="multipart/form-data" class="mt-8 space-y-7">
             @csrf
+            <input type="hidden" name="shop_id" value="{{ $primaryShop->id ?? '' }}">
 
             <!-- 1. Shop Identity -->
             <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
@@ -344,9 +383,10 @@
                         <input
                             type="number"
                             min="0"
-                            step="1"
+                            step="0.01"
                             name="inspection_fee"
-                            value="{{ old('inspection_fee', $primaryShop->inspection_fee ?? '') }}"
+                            value="{{ $formatRateInput(old('inspection_fee', $primaryShop->inspection_fee ?? '')) }}"
+                            onwheel="this.blur()"
                             required
                             placeholder="e.g. 300"
                             class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
@@ -358,9 +398,10 @@
                         <input
                             type="number"
                             min="0"
-                            step="1"
+                            step="0.01"
                             name="base_labor_fee"
-                            value="{{ old('base_labor_fee', $primaryShop->base_labor_fee ?? '') }}"
+                            value="{{ $formatRateInput(old('base_labor_fee', $primaryShop->base_labor_fee ?? '')) }}"
+                            onwheel="this.blur()"
                             required
                             placeholder="e.g. 500"
                             class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
@@ -372,9 +413,10 @@
                         <input
                             type="number"
                             min="0"
-                            step="1"
+                            step="0.01"
                             name="pickup_fee"
-                            value="{{ old('pickup_fee', $primaryShop->pickup_fee ?? '') }}"
+                            value="{{ $formatRateInput(old('pickup_fee', $primaryShop->pickup_fee ?? '')) }}"
+                            onwheel="this.blur()"
                             placeholder="e.g. 120"
                             class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
@@ -385,14 +427,28 @@
                         <input
                             type="number"
                             min="0"
-                            step="1"
+                            step="0.01"
                             name="express_fee"
-                            value="{{ old('express_fee', $primaryShop->express_fee ?? '') }}"
+                            value="{{ $formatRateInput(old('express_fee', $primaryShop->express_fee ?? '')) }}"
+                            onwheel="this.blur()"
                             placeholder="e.g. 250"
                             class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
                 </div>
+
+                @if($branches->count() > 1)
+                    <label class="mt-4 flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-xs sm:text-sm font-medium text-slate-700 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            name="sync_pricing_all_branches"
+                            value="1"
+                            {{ old('sync_pricing_all_branches') ? 'checked' : '' }}
+                            class="h-4 w-4 accent-[#244229] shrink-0"
+                        >
+                        <span>Apply these standard rates (inspection, labor, pickup &amp; express fees) across all {{ $branches->count() }} branches</span>
+                    </label>
+                @endif
             </section>
 
             <!-- 5. Fixed-Price Services & Packages -->
@@ -476,6 +532,7 @@
                                     step="1"
                                     x-ref="servicePriceInput"
                                     x-model="servicePrice"
+                                    onwheel="this.blur()"
                                     @keydown.enter.prevent="addService()"
                                     :placeholder="priceHint ? ('e.g. ' + priceHint) : 'Price'"
                                     class="w-full rounded-2xl border border-[var(--border)] bg-white py-3 pl-8 pr-3 text-sm outline-none focus:border-[#244229]"

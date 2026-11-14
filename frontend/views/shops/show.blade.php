@@ -204,20 +204,20 @@
                 <div class="min-w-0">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Starting Inspection</span>
                     <div class="text-2xl font-black text-[var(--accent-dark)]">
-                        ৳{{ number_format($shop->inspection_fee ?: 200) }}
+                        ৳{{ number_format($shop->inspection_fee ?? 200) }}
                     </div>
                     <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
-                        Base Labor: ৳{{ number_format($shop->base_labor_fee ?: 400) }} · ETA: <span class="eta-display font-semibold text-[var(--foreground)]">{{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}</span>
+                        Base Labor: ৳{{ number_format($shop->base_labor_fee ?? 400) }} · ETA: <span class="eta-display font-semibold text-[var(--foreground)]">{{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}</span>
                     </div>
                 </div>
 
                 <div class="space-y-2">
                     @if($isShopOwner)
-                        <a href="{{ $isOperational ? '/vendor/dashboard' : ($verificationStatus === 'approved' ? '/vendor/setup-shop' : '/vendor/onboarding') }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                        <a href="{{ $isOperational ? '/vendor/dashboard?shop_id=' . $shop->id : ($verificationStatus === 'approved' ? '/vendor/setup-shop?shop_id=' . $shop->id : '/vendor/onboarding') }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
                             <i class="fa-solid fa-gauge-high mr-1.5"></i> {{ $isOperational ? 'Manage in Vendor Dashboard' : ($verificationStatus === 'approved' ? 'Complete Shop Setup' : 'View Application Status') }}
                         </a>
                         @if($verificationStatus === 'approved')
-                            <a href="/vendor/setup-shop" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <a href="/vendor/setup-shop?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                                 <i class="fa-solid fa-sliders mr-1.5"></i> Edit Pricing &amp; Services
                             </a>
                         @endif
@@ -997,7 +997,7 @@
                                     @endif
                                 </div>
                                 <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
-                                    Inspection: ৳{{ number_format($rel->inspection_fee ?: 200) }} · Labor: ৳{{ number_format($rel->base_labor_fee ?: 400) }}
+                                    Inspection: ৳{{ number_format($rel->inspection_fee ?? 200) }} · Labor: ৳{{ number_format($rel->base_labor_fee ?? 400) }}
                                 </div>
                             </a>
                         @endforeach

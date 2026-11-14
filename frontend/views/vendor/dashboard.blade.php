@@ -97,7 +97,7 @@
                 <i class="fa-solid fa-code-branch"></i>
                 <span>Manage Branches</span>
             </button>
-            <a href="/vendor/setup-shop" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+            <a href="{{ $activeBranch ? '/vendor/setup-shop?shop_id=' . $activeBranch->id : '/vendor/setup-shop' }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                 <i class="fa-solid fa-sliders mr-1"></i> Pricing &amp; Services
             </a>
             @if($publicPreviewShop)
@@ -307,7 +307,7 @@
                         </div>
                         <div class="flex justify-between items-center pt-1">
                             <span class="text-[var(--muted-foreground)]">Inspection / Labor:</span>
-                            <span class="font-bold text-[var(--accent-dark)]">৳{{ number_format($publicPreviewShop->inspection_fee ?: 300) }} / ৳{{ number_format($publicPreviewShop->base_labor_fee ?: 500) }}</span>
+                            <span class="font-bold text-[var(--accent-dark)]">৳{{ number_format($publicPreviewShop->inspection_fee ?? 300) }} / ৳{{ number_format($publicPreviewShop->base_labor_fee ?? 500) }}</span>
                         </div>
                     </div>
                 @endif

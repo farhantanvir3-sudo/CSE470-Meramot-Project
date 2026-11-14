@@ -83,10 +83,10 @@
 
                                             <div class="flex shrink-0 flex-col items-end pl-2 text-right">
                                                 <span class="font-semibold text-[var(--muted-foreground)] uppercase tracking-wider text-[10px] md:text-[11px]">
-                                                    {{ $shop->inspection_fee ? 'Starting from' : 'From' }}
+                                                    {{ $shop->inspection_fee !== null ? 'Starting from' : 'From' }}
                                                 </span>
                                                 <span class="font-extrabold tracking-tight text-[var(--accent-dark)] leading-tight text-base md:text-xl">
-                                                    ৳{{ number_format($shop->inspection_fee ?: ($shop->base_labor_fee ?: 350)) }}
+                                                    ৳{{ number_format($shop->inspection_fee ?? ($shop->base_labor_fee ?? 350)) }}
                                                 </span>
                                             </div>
                                         </div>
@@ -160,7 +160,7 @@
                                     Starting from
                                 </span>
                                 <div class="text-sm font-black tracking-tight text-[var(--accent-dark)] leading-none mt-1.5 truncate">
-                                    ৳{{ number_format($shop->inspection_fee ?: ($shop->base_labor_fee ?: 350)) }}
+                                    ৳{{ number_format($shop->inspection_fee ?? ($shop->base_labor_fee ?? 350)) }}
                                 </div>
                             </div>
                             
