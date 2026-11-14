@@ -30,7 +30,7 @@
 
     <div class="space-y-6">
         @forelse($openRequests ?? [] as $req)
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
+            <div id="ticket-{{ $req->id }}" class="grid grid-cols-1 lg:grid-cols-3 gap-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
                 <!-- Left: Active Request Card -->
                 <div class="flex flex-col justify-between">
                     <div>
@@ -62,63 +62,22 @@
                     </div>
                 </div>
 
-                <!-- Right: Submit Diagnostic Estimate Form -->
+                <!-- Right: Submit / Edit Itemized Diagnostic Estimate -->
                 <div class="lg:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 sm:p-5">
                     <h4 class="font-bold text-sm text-[var(--foreground)] mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-file-invoice-dollar text-[var(--accent-dark)]"></i>
-                        Submit Verified Estimate on Ticket #{{ $req->id }}
+                        Itemized Estimate on Ticket #{{ $req->id }}
                     </h4>
 
-                    <form method="POST" action="{{ route('vendor.requests.bid', $req->id) }}" class="space-y-3.5 text-xs">
-                        @csrf
-                        @if(isset($vendorShops) && count($vendorShops) > 1)
-                            <div>
-                                <label class="block font-bold text-[var(--foreground)] mb-1">Bidding Storefront / Branch</label>
-                                <select name="shop_id" class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-2.5 text-xs font-semibold outline-none">
-                                    @foreach($vendorShops as $vShop)
-                                        <option value="{{ $vShop->id }}">
-                                            {{ $vShop->name }}{{ $vShop->display_branch_tag ? ' [' . $vShop->display_branch_tag . ']' : '' }} — {{ $vShop->area }}, {{ $vShop->city }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        @elseif(isset($vendorShops) && count($vendorShops) === 1)
-                            <input type="hidden" name="shop_id" value="{{ $vendorShops->first()->id }}">
-                        @endif
+                    @include('vendor.partials.bid-quote-widget', [
+                        'req' => $req,
+                        'shopOptions' => $vendorShops ?? collect(),
+                        'lockedShopId' => null,
+                    ])
 
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div>
-                                <label class="block font-bold text-[var(--foreground)] mb-1">Parts (৳) *</label>
-                                <input type="number" name="parts_cost" placeholder="1800" min="0" class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] text-xs p-2.5 outline-none" required>
-                            </div>
-                            <div>
-                                <label class="block font-bold text-[var(--foreground)] mb-1">Labor (৳) *</label>
-                                <input type="number" name="labor_cost" placeholder="1200" min="0" class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] text-xs p-2.5 outline-none" required>
-                            </div>
-                            <div>
-                                <label class="block font-bold text-[var(--foreground)] mb-1">Days *</label>
-                                <input type="number" name="estimated_days" value="2" min="1" max="30" class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] text-xs p-2.5 outline-none" required>
-                            </div>
-                            <div>
-                                <label class="block font-bold text-[var(--foreground)] mb-1">Warranty (Days)</label>
-                                <input type="number" name="warranty_days" value="90" min="0" class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] text-xs p-2.5 outline-none">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block font-bold text-[var(--foreground)] mb-1">Technician Diagnostic Note</label>
-                            <textarea name="technician_note" rows="2" placeholder="Includes ultrasonic motherboard cleaning, OEM replacement parts, and bench stress testing." class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] text-xs p-2.5 leading-relaxed outline-none"></textarea>
-                        </div>
-
-                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
-                            <span class="text-[11px] text-[var(--muted-foreground)]">
-                                10.00% Platform Escrow Commission automatically accounted on completion
-                            </span>
-                            <button type="submit" class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-bold px-6 py-2.5 shadow hover:opacity-90 transition">
-                                Submit Estimate &rarr;
-                            </button>
-                        </div>
-                    </form>
+                    <p class="mt-3 text-[11px] text-[var(--muted-foreground)]">
+                        10.00% Platform Escrow Commission automatically accounted on completion.
+                    </p>
                 </div>
             </div>
         @empty

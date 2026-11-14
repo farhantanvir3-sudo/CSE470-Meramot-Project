@@ -197,8 +197,39 @@
                 </div>
             @endif
 
+            @if($repairRequest->repairJob && ($repairRequest->source ?? 'MARKETPLACE') !== 'DIRECT_SERVICE' && !in_array($currentStatus, ['PENDING', 'BIDDING', 'WAITING_APPROVAL'], true))
+                @php
+                    $activeJob = $repairRequest->repairJob;
+                @endphp
+                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--mint-100)]/70 p-5 sm:p-6 shadow-sm space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
+                                Verified Workshop Quote &amp; Warranty Terms
+                            </span>
+                            <h3 class="text-base font-black text-[var(--foreground)]">
+                                Itemized Repair Breakdown
+                            </h3>
+                        </div>
+                        <span class="text-lg font-black text-[var(--accent-dark)] shrink-0">
+                            ৳{{ number_format($activeJob->final_quoted_amount ?? $repairRequest->quoted_final_amount ?? 0, 2) }}
+                        </span>
+                    </div>
+                    @include('requests.partials.quote-breakdown-list', [
+                        'partsItems' => $activeJob->resolvedPartsItems(),
+                        'partsCost' => $activeJob->resolvedPartsCost(),
+                        'laborCost' => $activeJob->resolvedLaborCost(),
+                        'hasWarranty' => $activeJob->hasWarrantyCoverage(),
+                        'warrantyDays' => $activeJob->resolvedWarrantyDays(),
+                    ])
+                </div>
+            @endif
+
             <!-- Quote 2: Final Physical Diagnosis Approval Card (WAITING_APPROVAL) -->
             @if($currentStatus === 'WAITING_APPROVAL')
+                @php
+                    $pendingQuoteJob = $repairRequest->repairJob;
+                @endphp
                 <div class="rounded-[2rem] border-2 border-amber-400 bg-amber-50/90 p-5 sm:p-6 shadow-sm space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div>
@@ -207,16 +238,27 @@
                             </span>
                             <h3 class="mt-1 text-lg font-black text-[#203126]">Bench Inspection Complete — Approve Final Quote</h3>
                             <p class="mt-1 text-xs text-amber-950/80 leading-relaxed">
-                                {{ $repairRequest->repairJob->diagnosis_notes ?? 'Physical bench inspection is complete. Review the itemized final parts and labor quote below before repair work begins.' }}
+                                {{ $pendingQuoteJob->diagnosis_notes ?? 'Physical bench inspection is complete. Review the itemized final parts and labor quote below before repair work begins.' }}
                             </p>
                         </div>
                         <div class="text-right shrink-0">
                             <span class="text-[10px] uppercase font-bold text-amber-900 block">Final Quote</span>
                             <span class="text-2xl font-black text-[#244229]">
-                                ৳{{ number_format($repairRequest->repairJob->final_quoted_amount ?? $repairRequest->quoted_final_amount ?? 0, 2) }}
+                                ৳{{ number_format($pendingQuoteJob->final_quoted_amount ?? $repairRequest->quoted_final_amount ?? 0, 2) }}
                             </span>
                         </div>
                     </div>
+
+                    @if($pendingQuoteJob)
+                        @include('requests.partials.quote-breakdown-list', [
+                            'partsItems' => $pendingQuoteJob->resolvedPartsItems(),
+                            'partsCost' => $pendingQuoteJob->resolvedPartsCost(),
+                            'laborCost' => $pendingQuoteJob->resolvedLaborCost(),
+                            'hasWarranty' => $pendingQuoteJob->hasWarrantyCoverage(),
+                            'warrantyDays' => $pendingQuoteJob->resolvedWarrantyDays(),
+                            'theme' => 'amber',
+                        ])
+                    @endif
 
                     @if($canActAsCustomer)
                         <div class="flex flex-wrap items-center gap-3 pt-2">
@@ -565,6 +607,15 @@
                 @if($repairRequest->bids->count() > 0)
                     <div class="space-y-3">
                         @foreach($repairRequest->bids as $bid)
+                            @php
+                                $bidPartsItems = $bid->resolvedPartsItems();
+                                $bidHasWarranty = $bid->hasWarrantyCoverage();
+                                $bidWarrantyDays = $bid->resolvedWarrantyDays();
+                                $authOwnsBidShop = auth()->check()
+                                    && auth()->user()->role === 'vendor'
+                                    && auth()->user()->vendorProfile
+                                    && (int) ($bid->shop?->vendor_profile_id ?? 0) === (int) auth()->user()->vendorProfile->id;
+                            @endphp
                             <div class="p-4 rounded-2xl border border-[var(--border)] {{ $bid->id === $repairRequest->selected_bid_id ? 'bg-[var(--mint-100)] border-emerald-600' : 'bg-[var(--mint-100)]/40' }}">
                                 <div class="flex items-start justify-between gap-3 mb-3">
                                     <div class="flex-1 min-w-0">
@@ -591,16 +642,35 @@
                                 </p>
                                 @endif
 
-                                <div class="flex flex-wrap items-center gap-2 text-xs">
-                                    <span class="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
-                                        Parts: ৳{{ number_format($bid->parts_cost ?? 0, 2) }}
-                                    </span>
-                                    <span class="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
-                                        Labor: ৳{{ number_format($bid->labor_cost ?? 0, 2) }}
-                                    </span>
-                                    <span class="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
-                                        Warranty: {{ $bid->warranty_days ?? 30 }} days
-                                    </span>
+                                <div class="mb-3">
+                                    @include('requests.partials.quote-breakdown-list', [
+                                        'partsItems' => $bidPartsItems,
+                                        'partsCost' => $bid->parts_cost ?? 0,
+                                        'laborCost' => $bid->labor_cost ?? 0,
+                                        'hasWarranty' => $bidHasWarranty,
+                                        'warrantyDays' => $bidWarrantyDays,
+                                        'compact' => true,
+                                    ])
+                                </div>
+
+                                <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
+                                            Parts: ৳{{ number_format($bid->parts_cost ?? 0, 2) }}
+                                        </span>
+                                        <span class="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
+                                            Labor: ৳{{ number_format($bid->labor_cost ?? 0, 2) }}
+                                        </span>
+                                        <span class="px-2.5 py-1 rounded-full {{ $bidHasWarranty ? 'bg-emerald-100 border border-emerald-300 text-emerald-900 font-semibold' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)]' }}">
+                                            {{ $bidHasWarranty ? "✓ Warranty: {$bidWarrantyDays} days" : 'No parts warranty' }}
+                                        </span>
+                                    </div>
+
+                                    @if($currentStatus === 'BIDDING' && $authOwnsBidShop)
+                                        <a href="{{ route('vendor.bidding-board') }}#ticket-{{ $repairRequest->id }}" class="font-bold text-[var(--accent-dark)] hover:underline">
+                                            Edit Estimate &rarr;
+                                        </a>
+                                    @endif
                                 </div>
 
                                 @if($bid->id === $repairRequest->selected_bid_id)

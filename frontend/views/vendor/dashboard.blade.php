@@ -721,15 +721,15 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
             @forelse($marketplaceRequests ?? [] as $mReq)
-                <div class="meramot-card p-6 shadow-sm flex flex-col justify-between">
+                <div class="meramot-card p-5 sm:p-6 shadow-sm flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-2 gap-2">
                             <span class="text-[10px] font-black uppercase tracking-wider bg-emerald-800 text-white px-2.5 py-0.5 rounded-full">
                                 Bidding Open • #{{ $mReq->id }} ({{ $mReq->bids->count() }} {{ Str::plural('bid', $mReq->bids->count()) }})
                             </span>
-                            <a href="{{ route('requests.track', $mReq->id) }}" class="text-[11px] font-bold text-[var(--accent-dark)] hover:underline">
+                            <a href="{{ route('requests.track', $mReq->id) }}" class="text-[11px] font-bold text-[var(--accent-dark)] hover:underline shrink-0">
                                 Customer View &rarr;
                             </a>
                         </div>
@@ -745,55 +745,16 @@
                     </div>
 
                     <div class="mt-5 pt-4 border-t border-[var(--border)]">
-                        <form method="POST" action="{{ route('vendor.requests.bid', $mReq->id) }}" class="space-y-2.5 text-xs">
-                            @csrf
-                            @if($activeBranch)
-                                <input type="hidden" name="shop_id" value="{{ $activeBranch->id }}">
-                            @elseif(count($branches) > 1)
-                                <div>
-                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-1">Bid From Branch</label>
-                                    <select name="shop_id" class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] p-2 text-xs font-semibold outline-none">
-                                        @foreach($branches as $bShop)
-                                            <option value="{{ $bShop->id }}">{{ $bShop->name }}{{ $bShop->display_branch_tag ? ' [' . $bShop->display_branch_tag . ']' : '' }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            @elseif(count($branches) === 1)
-                                <input type="hidden" name="shop_id" value="{{ $branches->first()->id }}">
-                            @endif
-
-                            <div class="grid grid-cols-3 gap-2">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Parts (৳) *</label>
-                                    <input type="number" name="parts_cost" placeholder="1800" min="0" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 outline-none" required>
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Labor (৳) *</label>
-                                    <input type="number" name="labor_cost" placeholder="900" min="0" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 outline-none" required>
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-[var(--muted-foreground)]">Days *</label>
-                                    <input type="number" name="estimated_days" value="2" min="1" max="30" class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 outline-none" required>
-                                </div>
-                            </div>
-
-                            <input
-                                type="text"
-                                name="technician_note"
-                                placeholder="Technician note (e.g. Genuine OEM spare part + 90-day warranty)"
-                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs outline-none"
-                            >
-
-                            <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] py-2.5 font-bold text-white shadow hover:opacity-90 transition">
-                                Submit Itemized Estimate &rarr;
-                            </button>
-                        </form>
+                        @include('vendor.partials.bid-quote-widget', [
+                            'req' => $mReq,
+                            'shopOptions' => $branches,
+                            'lockedShopId' => $activeBranch?->id,
+                        ])
                     </div>
                 </div>
             @empty
-                <div class="md:col-span-2 meramot-card p-8 text-center text-xs text-[var(--muted-foreground)]">
+                <div class="lg:col-span-2 meramot-card p-8 text-center text-xs text-[var(--muted-foreground)]">
                     No open marketplace tickets awaiting estimates at this time.
-                </div>
                 </div>
             @endforelse
         </div>
@@ -862,71 +823,154 @@
                 </div>
             </div>
             <div class="divide-y divide-[var(--border)] text-xs">
+                @include('vendor.partials.quote-builder-script')
                 @forelse($activeJobs ?? [] as $job)
                     @php
                         $initialSelectStatus = $job->status === 'READY_TO_RETURN' ? 'RETURN_SCHEDULED' : $job->status;
                         $jobDeliveries = $job->repairRequest?->deliveryJobs?->sortBy('id') ?? collect();
+                        $resolvedJobParts = $job->resolvedPartsItems();
+                        $resolvedJobPartsCost = $job->resolvedPartsCost();
+                        $resolvedJobLaborCost = $job->resolvedLaborCost();
+                        $resolvedJobHasWarranty = $job->hasWarrantyCoverage();
+                        $resolvedJobWarrantyDays = $job->resolvedWarrantyDays();
+                        $savedQuotePayload = [
+                            'parts_items' => $resolvedJobParts,
+                            'parts_cost' => $resolvedJobPartsCost,
+                            'labor_cost' => $resolvedJobLaborCost,
+                            'final_quoted_amount' => round((float) ($job->final_quoted_amount ?? $job->repairRequest?->quoted_final_amount ?? ($resolvedJobPartsCost + $resolvedJobLaborCost)), 2),
+                            'has_warranty' => $resolvedJobHasWarranty,
+                            'warranty_days' => $resolvedJobWarrantyDays,
+                            'diagnosis_notes' => (string) ($job->diagnosis_notes ?? ''),
+                        ];
                     @endphp
-                    <div class="py-4 space-y-3" x-data="{ chosenStatus: @js($initialSelectStatus) }">
-                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2 mb-1">
-                                    <span class="break-words font-bold text-sm text-[var(--foreground)]">
-                                        Job #{{ $job->id }}: {{ $job->repairRequest?->brand }} {{ $job->repairRequest?->model_name }} — {{ $job->repairRequest?->title ?? 'Hardware Service' }}
-                                    </span>
-                                    <span class="rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] font-bold text-[10px] px-2.5 py-0.5">
-                                        {{ $job->status }}
-                                    </span>
-                                    @if($job->shop?->display_branch_tag)
-                                        <span class="rounded-full bg-emerald-800 text-white font-bold text-[10px] px-2 py-0.5">
-                                            {{ $job->shop->display_branch_tag }}
+                    <div
+                        class="py-4 space-y-3"
+                        x-data="window.meramotJobQuoteForm({
+                            initialStatus: @js($initialSelectStatus),
+                            openInitially: @js($initialSelectStatus === 'WAITING_APPROVAL'),
+                            savedQuote: @js($savedQuotePayload)
+                        })"
+                    >
+                        <form method="POST" action="{{ route('vendor.jobs.status', $job->id) }}" class="space-y-3">
+                            @csrf
+                            <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                                <div class="min-w-0 flex-1 space-y-1.5">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="break-words font-bold text-sm text-[var(--foreground)]">
+                                            Job #{{ $job->id }}: {{ $job->repairRequest?->brand }} {{ $job->repairRequest?->model_name }} — {{ $job->repairRequest?->title ?? 'Hardware Service' }}
                                         </span>
-                                    @endif
+                                        <span class="rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] font-bold text-[10px] px-2.5 py-0.5">
+                                            {{ $job->status }}
+                                        </span>
+                                        @if($job->shop?->display_branch_tag)
+                                            <span class="rounded-full bg-emerald-800 text-white font-bold text-[10px] px-2 py-0.5">
+                                                {{ $job->shop->display_branch_tag }}
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <p class="text-xs text-[var(--muted-foreground)] break-words">
+                                        Customer: {{ $job->repairRequest?->customer?->name ?? 'Meramot Customer' }}
+                                        • Quoted: <strong>৳{{ number_format($savedQuotePayload['final_quoted_amount'], 2) }}</strong>
+                                        @if($job->repairRequest)
+                                            • <a href="{{ route('requests.track', $job->repairRequest->id) }}" class="font-bold text-[var(--accent-dark)] hover:underline">Track Ticket #{{ $job->repairRequest->id }} &rarr;</a>
+                                        @endif
+                                    </p>
+
+                                    <!-- Saved Itemized Quote & Warranty Preview Strip -->
+                                    <div class="flex flex-wrap items-center gap-1.5 pt-0.5 text-[11px]">
+                                        @foreach($resolvedJobParts as $pIdx => $pRow)
+                                            <span class="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--mint-100)]/60 px-2.5 py-0.5 text-[var(--foreground)]">
+                                                <strong class="text-[var(--accent-dark)]">{{ $pIdx + 1 }}.</strong>
+                                                <span>{{ $pRow['name'] }}:</span>
+                                                <strong>৳{{ number_format($pRow['cost'], 2) }}</strong>
+                                            </span>
+                                        @endforeach
+                                        <span class="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-0.5 text-[var(--foreground)]">
+                                            Labor: <strong>৳{{ number_format($resolvedJobLaborCost, 2) }}</strong>
+                                        </span>
+                                        <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-bold {{ $resolvedJobHasWarranty ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--card)] text-[var(--muted-foreground)] border border-[var(--border)]' }}">
+                                            <i class="{{ $resolvedJobHasWarranty ? 'fa-solid fa-shield-halved text-emerald-700' : 'fa-regular fa-circle-xmark' }}"></i>
+                                            {{ $resolvedJobHasWarranty ? "{$resolvedJobWarrantyDays}-Day Warranty" : 'No Extended Warranty' }}
+                                        </span>
+                                    </div>
                                 </div>
-                                <p class="text-[var(--muted-foreground)] break-words">
-                                    Customer: {{ $job->repairRequest?->customer?->name ?? 'Meramot Customer' }}
-                                    • Quoted: <strong>৳{{ number_format($job->final_quoted_amount ?? $job->repairRequest?->quoted_final_amount ?? 0, 2) }}</strong>
-                                    @if($job->repairRequest)
-                                        • <a href="{{ route('requests.track', $job->repairRequest->id) }}" class="font-bold text-[var(--accent-dark)] hover:underline">Track Ticket #{{ $job->repairRequest->id }} &rarr;</a>
-                                    @endif
-                                </p>
+
+                                <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full lg:w-auto shrink-0">
+                                    <select name="status" x-model="chosenStatus" class="w-full sm:w-auto min-w-0 max-w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
+                                        <option value="AT_SHOP">At Shop (Received)</option>
+                                        <option value="DIAGNOSING">Diagnosing Bench</option>
+                                        <option value="WAITING_APPROVAL">Send Final Quote (Await Approval)</option>
+                                        <option value="REPAIRING">Repairing / Servicing</option>
+                                        <option value="RETURN_SCHEDULED">Ready for Return Delivery (Dispatch Courier)</option>
+                                        <option value="COMPLETED">Completed (Settle Ledger)</option>
+                                    </select>
+
+                                    <button
+                                        type="button"
+                                        x-show="chosenStatus !== 'WAITING_APPROVAL'"
+                                        @click="toggleQuoteEditor()"
+                                        class="w-full sm:w-auto rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition shrink-0"
+                                        x-text="editingQuote ? 'Hide Quote Editor' : 'Edit Final Quote'"
+                                    ></button>
+
+                                    <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition shrink-0">
+                                        Save Status
+                                    </button>
+                                </div>
                             </div>
 
-                            <form method="POST" action="{{ route('vendor.jobs.status', $job->id) }}" class="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto shrink-0">
-                                @csrf
-                                <select name="status" x-model="chosenStatus" class="w-full sm:w-auto min-w-0 max-w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
-                                    <option value="AT_SHOP">At Shop (Received)</option>
-                                    <option value="DIAGNOSING">Diagnosing Bench</option>
-                                    <option value="WAITING_APPROVAL">Send Final Quote (Await Approval)</option>
-                                    <option value="REPAIRING">Repairing / Servicing</option>
-                                    <option value="RETURN_SCHEDULED">Ready for Return Delivery (Dispatch Courier)</option>
-                                    <option value="COMPLETED">Completed (Settle Ledger)</option>
-                                </select>
-
-                                <template x-if="chosenStatus === 'WAITING_APPROVAL'">
-                                    <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-                                        <input
-                                            type="number"
-                                            name="final_quoted_amount"
-                                            value="{{ (float) ($job->final_quoted_amount ?? $job->repairRequest?->quoted_final_amount ?? 3200) }}"
-                                            placeholder="Final Quote (৳)"
-                                            class="w-full sm:w-28 rounded-xl border border-amber-400 bg-white px-2.5 py-2 text-xs font-bold outline-none"
-                                            required
-                                        >
-                                        <input
-                                            type="text"
-                                            name="diagnosis_notes"
-                                            placeholder="Bench findings note..."
-                                            class="w-full sm:w-48 rounded-xl border border-amber-400 bg-white px-2.5 py-2 text-xs outline-none"
-                                        >
+                            <!-- Collapsible Bench Quote 2 Builder (Parts Breakdown + Warranty Tick & Days) -->
+                            <template x-if="showQuoteBuilder">
+                                <div class="rounded-2xl border border-amber-400/80 bg-amber-50/70 dark:bg-[var(--mint-100)]/10 p-3.5 sm:p-4 space-y-3 text-xs">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <div>
+                                            <span class="text-[10px] font-black uppercase tracking-wider text-amber-900 dark:text-amber-300">
+                                                Bench Diagnosis — Final Quote Breakdown
+                                            </span>
+                                            <p class="text-[11px] text-[var(--muted-foreground)]">
+                                                Update itemized replacement parts, bench labor, and customer warranty terms before saving.
+                                            </p>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="block text-[10px] font-bold uppercase text-[var(--muted-foreground)]">Final Bench Total</span>
+                                            <span class="text-base font-black text-[var(--accent-dark)]">৳<span x-text="formatMoney(totalQuote)">0.00</span></span>
+                                        </div>
                                     </div>
-                                </template>
 
-                                <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] px-4 py-2 font-bold text-white hover:opacity-90 transition shrink-0">
-                                    Save Status
-                                </button>
-                            </form>
-                        </div>
+                                    @include('vendor.partials.parts-and-warranty-fields', [
+                                        'containerBg' => 'bg-white/80 dark:bg-[var(--card)]',
+                                        'partFieldBg' => 'bg-[var(--mint-100)]/40 dark:bg-[var(--mint-300)]/20',
+                                    ])
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-1">Bench Labor (৳)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                name="labor_cost"
+                                                x-model="laborCost"
+                                                placeholder="900"
+                                                class="w-full rounded-xl border border-amber-400/70 bg-white dark:bg-[var(--mint-300)] px-3 py-2 text-xs font-bold text-[var(--foreground)] outline-none"
+                                            >
+                                        </div>
+                                        <div class="sm:col-span-2">
+                                            <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-1">Diagnosis Notes</label>
+                                            <input
+                                                type="text"
+                                                name="diagnosis_notes"
+                                                x-model="diagnosisNotes"
+                                                placeholder="Bench findings & component health summary..."
+                                                class="w-full rounded-xl border border-amber-400/70 bg-white dark:bg-[var(--mint-300)] px-3 py-2 text-xs text-[var(--foreground)] outline-none"
+                                            >
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="final_quoted_amount" :value="totalQuote.toFixed(2)">
+                                </div>
+                            </template>
+                        </form>
 
                         @if($jobDeliveries->isNotEmpty())
                             <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/55 p-3 space-y-2">

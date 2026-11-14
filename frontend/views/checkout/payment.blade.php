@@ -105,6 +105,41 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($deliveryFee, 2) }}</span>
                 </div>
             @else
+                @php
+                    $quoteSourceJob = $repairRequest->repairJob;
+                    $quoteSourceBid = $repairRequest->bids->firstWhere('id', $repairRequest->selected_bid_id)
+                        ?? $quoteSourceJob?->acceptedBid
+                        ?? $repairRequest->bids->sortBy('proposed_cost')->first();
+                    $checkoutPartsItems = $quoteSourceJob
+                        ? $quoteSourceJob->resolvedPartsItems()
+                        : ($quoteSourceBid ? $quoteSourceBid->resolvedPartsItems() : []);
+                    $checkoutPartsCost = $quoteSourceJob
+                        ? $quoteSourceJob->resolvedPartsCost()
+                        : (float) ($quoteSourceBid->parts_cost ?? 0);
+                    $checkoutLaborCost = $quoteSourceJob
+                        ? $quoteSourceJob->resolvedLaborCost()
+                        : (float) ($quoteSourceBid->labor_cost ?? 0);
+                    $checkoutHasWarranty = $quoteSourceJob
+                        ? $quoteSourceJob->hasWarrantyCoverage()
+                        : ($quoteSourceBid ? $quoteSourceBid->hasWarrantyCoverage() : false);
+                    $checkoutWarrantyDays = $quoteSourceJob
+                        ? $quoteSourceJob->resolvedWarrantyDays()
+                        : ($quoteSourceBid ? $quoteSourceBid->resolvedWarrantyDays() : 0);
+                @endphp
+
+                @if(count($checkoutPartsItems) > 0 || $checkoutLaborCost > 0)
+                    <div class="pb-1">
+                        @include('requests.partials.quote-breakdown-list', [
+                            'partsItems' => $checkoutPartsItems,
+                            'partsCost' => $checkoutPartsCost,
+                            'laborCost' => $checkoutLaborCost,
+                            'hasWarranty' => $checkoutHasWarranty,
+                            'warrantyDays' => $checkoutWarrantyDays,
+                            'compact' => true,
+                        ])
+                    </div>
+                @endif
+
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
                     <span>Repair Quote / Order Subtotal:</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($acceptedBidCost, 2) }}</span>

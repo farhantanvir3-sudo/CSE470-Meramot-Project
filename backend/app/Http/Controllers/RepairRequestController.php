@@ -266,6 +266,7 @@ class RepairRequestController extends Controller
             'customer',
             'requestedShop',
             'repairJob.shop',
+            'repairJob.acceptedBid',
             'deliveryJobs.deliveryAgent.user',
             'payments',
             'review',

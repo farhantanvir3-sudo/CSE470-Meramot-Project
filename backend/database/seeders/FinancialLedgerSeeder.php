@@ -342,6 +342,14 @@ class FinancialLedgerSeeder extends Seeder
                 'updated_at' => $tPaid,
             ]);
 
+            $primaryPartCost = round($partsCost * 0.70, 2);
+            $secondaryPartCost = round($partsCost - $primaryPartCost, 2);
+            $seededPartsItems = [
+                ['name' => "{$bp['brand']} {$bp['model']} — Primary Replacement Module", 'cost' => $primaryPartCost],
+                ['name' => 'OEM Mounting Seals, Flex & Connector Kit', 'cost' => $secondaryPartCost],
+            ];
+            $warrantyDays = $pkg ? ($pkg->warranty_months * 30) : 90;
+
             // 4. Marketplace Bids (Accepted winning bid + 1 Declined competing bid)
             $acceptedBid = null;
             if ($bp['source'] === 'MARKETPLACE') {
@@ -349,13 +357,16 @@ class FinancialLedgerSeeder extends Seeder
                     'repair_request_id' => $repairRequest->id,
                     'shop_id' => $shop->id,
                     'parts_cost' => $partsCost,
+                    'parts_items' => $seededPartsItems,
                     'labor_cost' => $laborCost,
                     'proposed_cost' => $gross,
                     'estimated_days' => 1,
-                    'warranty_days' => 90,
+                    'has_warranty' => $warrantyDays > 0,
+                    'warranty_days' => $warrantyDays,
                     'line_items' => [
-                        ['item' => 'Replacement Hardware Components', 'cost' => $partsCost],
-                        ['item' => 'Certified Bench Diagnostics & Labor', 'cost' => $laborCost],
+                        ['item' => $seededPartsItems[0]['name'], 'cost' => $primaryPartCost, 'type' => 'part'],
+                        ['item' => $seededPartsItems[1]['name'], 'cost' => $secondaryPartCost, 'type' => 'part'],
+                        ['item' => 'Certified Bench Diagnostics & Labor', 'cost' => $laborCost, 'type' => 'labor'],
                     ],
                     'technician_note' => "Bench-tested replacement and calibration for {$bp['brand']} {$bp['model']}.",
                     'status' => 'ACCEPTED',
@@ -369,14 +380,26 @@ class FinancialLedgerSeeder extends Seeder
                     ?? $publicShops->first(fn ($s) => $s->id !== $shop->id);
 
                 if ($competitor) {
+                    $compPart1 = round(($partsCost + 300) * 0.70, 2);
+                    $compPart2 = round(($partsCost + 300) - $compPart1, 2);
                     Bid::create([
                         'repair_request_id' => $repairRequest->id,
                         'shop_id' => $competitor->id,
                         'parts_cost' => $partsCost + 300,
+                        'parts_items' => [
+                            ['name' => "{$bp['brand']} {$bp['model']} — Replacement Assembly", 'cost' => $compPart1],
+                            ['name' => 'Gasket & Fastener Set', 'cost' => $compPart2],
+                        ],
                         'labor_cost' => $laborCost + 150,
                         'proposed_cost' => $gross + 450,
                         'estimated_days' => 2,
+                        'has_warranty' => true,
                         'warranty_days' => 60,
+                        'line_items' => [
+                            ['item' => "{$bp['brand']} {$bp['model']} — Replacement Assembly", 'cost' => $compPart1, 'type' => 'part'],
+                            ['item' => 'Gasket & Fastener Set', 'cost' => $compPart2, 'type' => 'part'],
+                            ['item' => 'Bench Diagnostics & Labor', 'cost' => $laborCost + 150, 'type' => 'labor'],
+                        ],
                         'technician_note' => "Standard bench quote for {$bp['brand']} {$bp['model']}.",
                         'status' => 'DECLINED',
                         'created_at' => (clone $tApproved)->subMinutes(25),
@@ -385,17 +408,23 @@ class FinancialLedgerSeeder extends Seeder
                 }
             }
 
-            // 5. Create COMPLETED RepairJob + 1:1 90-Day Warranty
+            // 5. Create COMPLETED RepairJob + 1:1 Verified Warranty
             $repairJob = RepairJob::create([
                 'repair_request_id' => $repairRequest->id,
                 'shop_id' => $shop->id,
                 'accepted_bid_id' => $acceptedBid?->id,
                 'status' => 'COMPLETED',
                 'diagnosis_notes' => "Completed {$bp['title']} and passed 12-point post-repair QC verification.",
+                'parts_cost' => $partsCost,
+                'labor_cost' => $laborCost,
+                'parts_items' => $seededPartsItems,
+                'has_warranty' => $warrantyDays > 0,
+                'warranty_days' => $warrantyDays,
                 'final_quoted_amount' => $gross,
                 'final_quote_items' => [
-                    ['title' => 'OEM Replacement Components', 'amount' => $partsCost],
-                    ['title' => 'Certified Technician Labor & QC', 'amount' => $laborCost],
+                    ['title' => $seededPartsItems[0]['name'], 'amount' => $primaryPartCost, 'type' => 'part'],
+                    ['title' => $seededPartsItems[1]['name'], 'amount' => $secondaryPartCost, 'type' => 'part'],
+                    ['title' => 'Certified Technician Labor & QC', 'amount' => $laborCost, 'type' => 'labor'],
                 ],
                 'customer_approved' => true,
                 'started_at' => $tStarted,
@@ -404,7 +433,6 @@ class FinancialLedgerSeeder extends Seeder
                 'updated_at' => $tCompleted,
             ]);
 
-            $warrantyDays = $pkg ? ($pkg->warranty_months * 30) : 90;
             DB::table('warranties')->insert([
                 'repair_job_id' => $repairJob->id,
                 'title' => "{$warrantyDays}-Day Meramot Verified Repair Warranty",
@@ -443,11 +471,22 @@ class FinancialLedgerSeeder extends Seeder
                 [
                     'invoice_id' => $invoiceId,
                     'shop_service_id' => $primarySvcId,
-                    'title' => "{$bp['title']} — Replacement Components",
-                    'description' => "Verified hardware parts for {$bp['brand']} {$bp['model']}",
+                    'title' => $seededPartsItems[0]['name'],
+                    'description' => "Verified primary hardware part for {$bp['brand']} {$bp['model']}",
                     'quantity' => 1,
-                    'unit_price' => $partsCost,
-                    'total_price' => $partsCost,
+                    'unit_price' => $primaryPartCost,
+                    'total_price' => $primaryPartCost,
+                    'created_at' => $tCompleted,
+                    'updated_at' => $tCompleted,
+                ],
+                [
+                    'invoice_id' => $invoiceId,
+                    'shop_service_id' => $primarySvcId,
+                    'title' => $seededPartsItems[1]['name'],
+                    'description' => "OEM mounting seals & connectors for {$bp['brand']} {$bp['model']}",
+                    'quantity' => 1,
+                    'unit_price' => $secondaryPartCost,
+                    'total_price' => $secondaryPartCost,
                     'created_at' => $tCompleted,
                     'updated_at' => $tCompleted,
                 ],

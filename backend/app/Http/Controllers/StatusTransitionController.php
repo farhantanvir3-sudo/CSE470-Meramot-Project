@@ -166,7 +166,13 @@ class StatusTransitionController extends Controller
                     'shop_id' => $bid->shop_id,
                     'accepted_bid_id' => $bid->id,
                     'status' => 'CREATED',
+                    'parts_cost' => $bid->parts_cost,
+                    'labor_cost' => $bid->labor_cost,
+                    'parts_items' => $bid->resolvedPartsItems(),
+                    'has_warranty' => $bid->hasWarrantyCoverage(),
+                    'warranty_days' => $bid->resolvedWarrantyDays(),
                     'final_quoted_amount' => $bid->proposed_cost,
+                    'final_quote_items' => $bid->buildFinalQuoteItems(),
                 ]
             );
 

@@ -405,13 +405,19 @@ class SprintOneDemoSeeder extends Seeder
                 ],
                 [
                     'parts_cost' => 3200.00,
+                    'parts_items' => [
+                        ['name' => 'LP8550 Backlight Driver IC', 'cost' => 2200.00],
+                        ['name' => 'WLED Backlight Fuse & Filter Capacitors', 'cost' => 1000.00],
+                    ],
                     'labor_cost' => 1400.00,
                     'proposed_cost' => 4600.00,
                     'estimated_days' => 2,
+                    'has_warranty' => true,
                     'warranty_days' => 90,
                     'line_items' => [
-                        ['item' => 'LP8550 Backlight Driver IC & Fuse', 'cost' => 3200],
-                        ['item' => 'Ultrasonic Board Cleaning & Labor', 'cost' => 1400],
+                        ['item' => 'LP8550 Backlight Driver IC', 'cost' => 2200, 'type' => 'part'],
+                        ['item' => 'WLED Backlight Fuse & Filter Capacitors', 'cost' => 1000, 'type' => 'part'],
+                        ['item' => 'Ultrasonic Board Cleaning & Labor', 'cost' => 1400, 'type' => 'labor'],
                     ],
                     'technician_note' => 'Ultrasonic board bath + LP8550 backlight driver IC & fuse replacement under stereo microscope.',
                     'status' => 'ACTIVE',
@@ -427,15 +433,76 @@ class SprintOneDemoSeeder extends Seeder
                 ],
                 [
                     'parts_cost' => 3800.00,
+                    'parts_items' => [
+                        ['name' => 'Genuine Display Backlight Flex Cable', 'cost' => 2600.00],
+                        ['name' => 'PPBUS_G3H Filter Rail Kit', 'cost' => 1200.00],
+                    ],
                     'labor_cost' => 1500.00,
                     'proposed_cost' => 5300.00,
                     'estimated_days' => 1,
+                    'has_warranty' => true,
                     'warranty_days' => 120,
                     'line_items' => [
-                        ['item' => 'Display Backlight Flex & Filter Rail', 'cost' => 3800],
-                        ['item' => 'Same-Day Express Ultrasonic Restoration', 'cost' => 1500],
+                        ['item' => 'Genuine Display Backlight Flex Cable', 'cost' => 2600, 'type' => 'part'],
+                        ['item' => 'PPBUS_G3H Filter Rail Kit', 'cost' => 1200, 'type' => 'part'],
+                        ['item' => 'Same-Day Express Ultrasonic Restoration', 'cost' => 1500, 'type' => 'labor'],
                     ],
                     'technician_note' => 'Same-day express ultrasonic cleaning + genuine Apple display flex & backlight rail restoration.',
+                    'status' => 'ACTIVE',
+                ]
+            );
+        }
+
+        // 2A-2. Second Open Ticket with Pre-Submitted 3-Part Quote from ProTech Solutions (View & Edit showcase)
+        if ($protechMain) {
+            $openEditDemoReq = RepairRequest::updateOrCreate(
+                [
+                    'customer_id' => $nusratCustomer->id,
+                    'title' => 'ASUS TUF Gaming A15 — GPU Fan Grinding & VRM Overheating',
+                ],
+                [
+                    'source' => 'MARKETPLACE',
+                    'device_type' => 'Laptop',
+                    'brand' => 'ASUS',
+                    'model_name' => 'TUF Gaming A15 (FA507)',
+                    'issue_category' => 'Thermal / Cooling',
+                    'description' => 'Right GPU cooling fan rattles loudly under load and laptop throttles above 95°C during renders.',
+                    'problem' => "Right GPU cooling fan rattles loudly under load and laptop throttles above 95°C during renders.\n\n[Location: Dhanmondi, Dhaka]\n[Specs: Ryzen 7 7735HS • RTX 4060 • 16GB RAM]",
+                    'mode' => 'CHECKUP_AND_REPAIR',
+                    'status' => 'BIDDING',
+                    'preferred_pickup' => true,
+                    'preferred_service_type' => 'pickup_dropoff',
+                    'delivery_type' => 'REGULAR',
+                    'contact_phone' => $nusratCustomer->phone ?? '+8801714100201',
+                    'pickup_address' => 'House 19, Road 8, Dhanmondi, Dhaka 1209',
+                    'dropoff_address' => 'House 19, Road 8, Dhanmondi, Dhaka 1209',
+                ]
+            );
+
+            Bid::updateOrCreate(
+                [
+                    'repair_request_id' => $openEditDemoReq->id,
+                    'shop_id' => $protechMain->id,
+                ],
+                [
+                    'parts_cost' => 2400.00,
+                    'parts_items' => [
+                        ['name' => 'Dual 12V Hydraulic GPU & CPU Fan Pair', 'cost' => 1650.00],
+                        ['name' => 'Phase-Change Thermal Pad & Paste Kit', 'cost' => 550.00],
+                        ['name' => 'Heatsink Copper Fin Descaling Solution', 'cost' => 200.00],
+                    ],
+                    'labor_cost' => 800.00,
+                    'proposed_cost' => 3200.00,
+                    'estimated_days' => 2,
+                    'has_warranty' => true,
+                    'warranty_days' => 90,
+                    'line_items' => [
+                        ['item' => 'Dual 12V Hydraulic GPU & CPU Fan Pair', 'cost' => 1650, 'type' => 'part'],
+                        ['item' => 'Phase-Change Thermal Pad & Paste Kit', 'cost' => 550, 'type' => 'part'],
+                        ['item' => 'Heatsink Copper Fin Descaling Solution', 'cost' => 200, 'type' => 'part'],
+                        ['item' => 'Bench Diagnostics & Thermal Stress Test', 'cost' => 800, 'type' => 'labor'],
+                    ],
+                    'technician_note' => 'OEM hydraulic cooling fans + Honeywell PTM7950 thermal pad application with 30-minute FurMark stress verification.',
                     'status' => 'ACTIVE',
                 ]
             );
@@ -496,13 +563,19 @@ class SprintOneDemoSeeder extends Seeder
                 ],
                 [
                     'parts_cost' => 7000.00,
+                    'parts_items' => [
+                        ['name' => 'AMOLED Flex Bonding Ribbon', 'cost' => 5200.00],
+                        ['name' => 'Display Connector & Waterproof Gasket', 'cost' => 1800.00],
+                    ],
                     'labor_cost' => 1500.00,
                     'proposed_cost' => 8500.00,
                     'estimated_days' => 2,
+                    'has_warranty' => true,
                     'warranty_days' => 90,
                     'line_items' => [
-                        ['item' => 'AMOLED Flex Bonding Estimate', 'cost' => 7000],
-                        ['item' => 'Cleanroom Diagnostics & Labor', 'cost' => 1500],
+                        ['item' => 'AMOLED Flex Bonding Ribbon', 'cost' => 5200, 'type' => 'part'],
+                        ['item' => 'Display Connector & Waterproof Gasket', 'cost' => 1800, 'type' => 'part'],
+                        ['item' => 'Cleanroom Diagnostics & Labor', 'cost' => 1500, 'type' => 'labor'],
                     ],
                     'technician_note' => 'Initial Quote 1 for AMOLED flex bonding & display assembly check.',
                     'status' => 'ACCEPTED',
@@ -518,10 +591,19 @@ class SprintOneDemoSeeder extends Seeder
                     'accepted_bid_id' => $acceptedBid->id,
                     'status' => 'WAITING_APPROVAL',
                     'diagnosis_notes' => 'Bench microscope inspection confirmed AMOLED flex trace burn + PMIC display rail filter damage. Final itemized Quote 2 includes flex laser bonding + filter IC.',
+                    'parts_cost' => 7400.00,
+                    'labor_cost' => 1500.00,
+                    'parts_items' => [
+                        ['name' => 'AMOLED Flex Laser Bonding Ribbon', 'cost' => 5200.00],
+                        ['name' => 'PMIC Display Rail Filter IC & Waterproof Seal', 'cost' => 2200.00],
+                    ],
+                    'has_warranty' => true,
+                    'warranty_days' => 90,
                     'final_quoted_amount' => 8900.00,
                     'final_quote_items' => [
-                        ['title' => 'AMOLED Flex Laser Bonding & Filter IC', 'amount' => 7400],
-                        ['title' => 'Cleanroom Calibration & Waterproof Reseal', 'amount' => 1500],
+                        ['title' => 'AMOLED Flex Laser Bonding Ribbon', 'amount' => 5200, 'type' => 'part'],
+                        ['title' => 'PMIC Display Rail Filter IC & Waterproof Seal', 'amount' => 2200, 'type' => 'part'],
+                        ['title' => 'Cleanroom Calibration & Waterproof Reseal', 'amount' => 1500, 'type' => 'labor'],
                     ],
                     'customer_approved' => null,
                     'started_at' => $now->copy()->subHours(5),
@@ -803,13 +885,19 @@ class SprintOneDemoSeeder extends Seeder
                 ],
                 [
                     'parts_cost' => 4100.00,
+                    'parts_items' => [
+                        ['name' => 'iPad Pro 11 M2 Front Glass Digitizer', 'cost' => 3200.00],
+                        ['name' => 'Optical Clear Adhesive (OCA) Lamination Film', 'cost' => 900.00],
+                    ],
                     'labor_cost' => 1300.00,
                     'proposed_cost' => 5400.00,
                     'estimated_days' => 1,
+                    'has_warranty' => true,
                     'warranty_days' => 90,
                     'line_items' => [
-                        ['item' => 'iPad Pro 11 M2 Digitizer & OCA Lamination', 'cost' => 4100],
-                        ['item' => 'ProMotion Touch Calibration & Labor', 'cost' => 1300],
+                        ['item' => 'iPad Pro 11 M2 Front Glass Digitizer', 'cost' => 3200, 'type' => 'part'],
+                        ['item' => 'Optical Clear Adhesive (OCA) Lamination Film', 'cost' => 900, 'type' => 'part'],
+                        ['item' => 'ProMotion Touch Calibration & Labor', 'cost' => 1300, 'type' => 'labor'],
                     ],
                     'technician_note' => 'Cleanroom OCA vacuum lamination preserving original Liquid Retina panel.',
                     'status' => 'ACCEPTED',
@@ -824,7 +912,13 @@ class SprintOneDemoSeeder extends Seeder
                     'shop_id' => $dhakaDoctors->id,
                     'accepted_bid_id' => $transitBid->id,
                     'status' => 'PICKED_UP',
+                    'parts_cost' => 4100.00,
+                    'labor_cost' => 1300.00,
+                    'parts_items' => $transitBid->parts_items,
+                    'has_warranty' => true,
+                    'warranty_days' => 90,
                     'final_quoted_amount' => 5400.00,
+                    'final_quote_items' => $transitBid->buildFinalQuoteItems(),
                     'customer_approved' => null,
                 ]
             );
@@ -1012,7 +1106,20 @@ class SprintOneDemoSeeder extends Seeder
                     [
                         'shop_id' => $targetShop->id,
                         'status' => $isDelivered ? 'IN_PROGRESS' : 'CREATED',
+                        'parts_cost' => 2500.00,
+                        'labor_cost' => 1000.00,
+                        'parts_items' => [
+                            ['name' => $item['device_type'] . ' OEM Replacement Component (' . $item['issue_category'] . ')', 'cost' => 2100.00],
+                            ['name' => 'Gasket Sealant, Thermal Pads & Bench Hardware Kit', 'cost' => 400.00],
+                        ],
+                        'has_warranty' => true,
+                        'warranty_days' => 90,
                         'final_quoted_amount' => 3500.00,
+                        'final_quote_items' => [
+                            ['label' => $item['device_type'] . ' OEM Replacement Component (' . $item['issue_category'] . ')', 'amount' => 2100.00],
+                            ['label' => 'Gasket Sealant, Thermal Pads & Bench Hardware Kit', 'amount' => 400.00],
+                            ['label' => 'Bench Labor & QA Diagnostics', 'amount' => 1000.00],
+                        ],
                         'completed_at' => null,
                     ]
                 );
@@ -1136,7 +1243,20 @@ class SprintOneDemoSeeder extends Seeder
                     [
                         'shop_id' => $targetShop->id,
                         'status' => $task['job_status'],
+                        'parts_cost' => 3200.00,
+                        'labor_cost' => 1300.00,
+                        'parts_items' => [
+                            ['name' => $task['brand'] . ' ' . $task['model_name'] . ' OEM Assembly', 'cost' => 2800.00],
+                            ['name' => 'Ultrasonic Flux, Adhesive Strips & Calibration Consumables', 'cost' => 400.00],
+                        ],
+                        'has_warranty' => true,
+                        'warranty_days' => 90,
                         'final_quoted_amount' => 4500.00,
+                        'final_quote_items' => [
+                            ['label' => $task['brand'] . ' ' . $task['model_name'] . ' OEM Assembly', 'amount' => 2800.00],
+                            ['label' => 'Ultrasonic Flux, Adhesive Strips & Calibration Consumables', 'amount' => 400.00],
+                            ['label' => 'Senior Technician Bench Labor', 'amount' => 1300.00],
+                        ],
                     ]
                 );
 

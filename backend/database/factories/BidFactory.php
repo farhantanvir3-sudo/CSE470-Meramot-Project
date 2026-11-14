@@ -19,27 +19,38 @@ class BidFactory extends Factory
     {
         $partsCost = $this->faker->randomFloat(2, 500, 5000);
         $laborCost = $this->faker->randomFloat(2, 300, 2000);
+        $partPrimary = round($partsCost * 0.65, 2);
+        $partSecondary = round($partsCost - $partPrimary, 2);
+        $warrantyDays = $this->faker->randomElement([30, 60, 90, 180, 365]);
 
         return [
             'repair_request_id' => RepairRequest::factory(),
             'shop_id' => RepairShop::factory(),
             'parts_cost' => $partsCost,
+            'parts_items' => [
+                ['name' => 'Primary Replacement Module', 'cost' => $partPrimary],
+                ['name' => 'Connector & Seal Kit', 'cost' => $partSecondary],
+            ],
             'labor_cost' => $laborCost,
-            'proposed_cost' => $partsCost + $laborCost,
+            'proposed_cost' => round($partsCost + $laborCost, 2),
             'estimated_days' => $this->faker->numberBetween(1, 7),
-            'warranty_days' => $this->faker->randomElement([30, 60, 90, 180, 365]),
+            'has_warranty' => true,
+            'warranty_days' => $warrantyDays,
             'line_items' => [
                 [
-                    'item' => 'Diagnostic Inspection',
-                    'cost' => 200,
+                    'item' => 'Primary Replacement Module',
+                    'cost' => $partPrimary,
+                    'type' => 'part',
                 ],
                 [
-                    'item' => 'Parts Replacement',
-                    'cost' => $partsCost,
+                    'item' => 'Connector & Seal Kit',
+                    'cost' => $partSecondary,
+                    'type' => 'part',
                 ],
                 [
                     'item' => 'Labor & Service',
                     'cost' => $laborCost,
+                    'type' => 'labor',
                 ],
             ],
             'technician_note' => $this->faker->optional(0.7)->sentence(12),

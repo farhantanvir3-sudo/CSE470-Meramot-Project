@@ -105,12 +105,15 @@ class VendorBranchController extends Controller
         $directOrders = $directOrdersQuery->latest()->get();
 
         $marketplaceRequests = RepairRequest::with(['customer', 'bids.shop'])
-            ->where('status', 'BIDDING')
+            ->whereIn('status', ['PENDING', 'BIDDING'])
+            ->where(function ($q) {
+                $q->whereNull('source')->orWhere('source', '!=', 'DIRECT_SERVICE');
+            })
             ->latest()
             ->take(8)
             ->get();
 
-        $activeJobs = RepairJob::with(['repairRequest.customer', 'repairRequest.deliveryJobs.deliveryAgent.user', 'shop'])
+        $activeJobs = RepairJob::with(['repairRequest.customer', 'repairRequest.deliveryJobs.deliveryAgent.user', 'acceptedBid', 'shop'])
             ->whereIn('shop_id', $scopedShopIds)
             ->where('status', '!=', 'CANCELLED')
             ->orderByRaw("CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END")
@@ -520,9 +523,14 @@ class VendorBranchController extends Controller
         $validated = $request->validate([
             'shop_id' => 'nullable|integer|exists:repair_shops,id',
             'parts_cost' => 'nullable|numeric|min:0|max:1000000',
+            'parts_items' => 'nullable|array|max:30',
+            'parts_items.*.name' => 'nullable|string|max:160',
+            'parts_items.*.cost' => 'nullable|numeric|min:0|max:1000000',
             'labor_cost' => 'nullable|numeric|min:0|max:1000000',
             'proposed_cost' => 'nullable|numeric|min:1|max:2000000',
             'estimated_days' => 'required|integer|min:1|max:60',
+            'has_warranty' => 'nullable|boolean',
+            'warranty_configured' => 'nullable',
             'warranty_days' => 'nullable|integer|min:0|max:730',
             'technician_note' => 'nullable|string|max:1000',
         ]);
@@ -539,22 +547,51 @@ class VendorBranchController extends Controller
             }
         }
 
-        $partsCost = (float) ($validated['parts_cost'] ?? 0);
-        $laborCost = (float) ($validated['labor_cost'] ?? 0);
-        $proposedCost = isset($validated['proposed_cost']) && (float) $validated['proposed_cost'] > 0
-            ? (float) $validated['proposed_cost']
-            : ($partsCost + $laborCost);
+        $laborCost = round((float) ($validated['labor_cost'] ?? 0), 2);
+        $hasPartsArray = $request->has('parts_items') && is_array($request->input('parts_items'));
+
+        if ($hasPartsArray) {
+            $normalizedParts = Bid::normalizePartsList($request->input('parts_items'));
+            $partsCost = count($normalizedParts) > 0
+                ? round((float) collect($normalizedParts)->sum('cost'), 2)
+                : round((float) ($validated['parts_cost'] ?? 0), 2);
+            if (count($normalizedParts) === 0 && $partsCost > 0) {
+                $normalizedParts = [['name' => 'Component / Parts Estimate', 'cost' => $partsCost]];
+            }
+            $proposedCost = round($partsCost + $laborCost, 2);
+        } else {
+            $partsCost = round((float) ($validated['parts_cost'] ?? 0), 2);
+            $proposedCost = isset($validated['proposed_cost']) && (float) $validated['proposed_cost'] > 0
+                ? round((float) $validated['proposed_cost'], 2)
+                : round($partsCost + $laborCost, 2);
+            if ($partsCost == 0.0 && $laborCost == 0.0 && $proposedCost > 0) {
+                $partsCost = round($proposedCost * 0.65, 2);
+                $laborCost = round($proposedCost - $partsCost, 2);
+            }
+            $normalizedParts = $partsCost > 0
+                ? [['name' => 'Component / Parts Estimate', 'cost' => $partsCost]]
+                : [];
+        }
 
         if ($proposedCost <= 0) {
             throw ValidationException::withMessages([
-                'parts_cost' => 'Please enter a valid Parts + Labor quote amount greater than ৳0.',
+                'parts_cost' => 'Please enter at least one priced part or a valid labor fee greater than ৳0.',
             ]);
         }
 
-        if ($partsCost == 0.0 && $laborCost == 0.0) {
-            $partsCost = round($proposedCost * 0.65, 2);
-            $laborCost = round($proposedCost - $partsCost, 2);
+        $warrantyConfig = self::resolveWarrantyConfig($request, $validated, 90);
+
+        $lineItems = array_map(
+            fn (array $part) => ['item' => $part['name'], 'cost' => (float) $part['cost'], 'type' => 'part'],
+            $normalizedParts
+        );
+        if ($laborCost > 0 || empty($lineItems)) {
+            $lineItems[] = ['item' => 'Bench Diagnostics & Labor', 'cost' => $laborCost, 'type' => 'labor'];
         }
+
+        $wasUpdate = Bid::where('repair_request_id', $repairRequest->id)
+            ->where('shop_id', $shop->id)
+            ->exists();
 
         $bid = Bid::updateOrCreate(
             [
@@ -563,15 +600,16 @@ class VendorBranchController extends Controller
             ],
             [
                 'parts_cost' => $partsCost,
+                'parts_items' => $normalizedParts,
                 'labor_cost' => $laborCost,
                 'proposed_cost' => $proposedCost,
                 'estimated_days' => (int) $validated['estimated_days'],
-                'warranty_days' => (int) ($validated['warranty_days'] ?? 90),
-                'line_items' => [
-                    ['item' => 'Component / Parts Estimate', 'cost' => $partsCost],
-                    ['item' => 'Bench Diagnostics & Labor', 'cost' => $laborCost],
-                ],
-                'technician_note' => $validated['technician_note'] ?? "Verified {$shop->name} bench quote with warranty.",
+                'has_warranty' => $warrantyConfig['has_warranty'],
+                'warranty_days' => $warrantyConfig['warranty_days'],
+                'line_items' => $lineItems,
+                'technician_note' => !empty($validated['technician_note'])
+                    ? $validated['technician_note']
+                    : "Verified {$shop->name} bench quote" . ($warrantyConfig['has_warranty'] ? " with {$warrantyConfig['warranty_days']}-day warranty." : '.'),
                 'status' => 'ACTIVE',
             ]
         );
@@ -583,18 +621,19 @@ class VendorBranchController extends Controller
         if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([
                 'status' => 'success',
-                'message' => 'Diagnostic quote submitted successfully.',
+                'message' => $wasUpdate ? 'Diagnostic quote updated successfully.' : 'Diagnostic quote submitted successfully.',
                 'data' => $bid->load('shop'),
-            ], 201);
+            ], $wasUpdate ? 200 : 201);
         }
 
         $branchLabel = $shop->display_branch_tag ? " [{$shop->display_branch_tag}]" : '';
+        $verb = $wasUpdate ? 'updated to' : 'submitted at';
 
         return redirect()
             ->back()
             ->with(
                 'success',
-                "Quote 1 bid of ৳" . number_format($proposedCost, 2) . " submitted by {$shop->name}{$branchLabel} on Request #{$repairRequest->id}!"
+                "Quote 1 bid {$verb} ৳" . number_format($proposedCost, 2) . " by {$shop->name}{$branchLabel} on Request #{$repairRequest->id}!"
             );
     }
 
@@ -620,21 +659,68 @@ class VendorBranchController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:AT_SHOP,DIAGNOSING,WAITING_APPROVAL,REPAIRING,RETURN_SCHEDULED,COMPLETED',
             'final_quoted_amount' => 'nullable|numeric|min:50|max:2000000',
+            'parts_items' => 'nullable|array|max:30',
+            'parts_items.*.name' => 'nullable|string|max:160',
+            'parts_items.*.cost' => 'nullable|numeric|min:0|max:1000000',
+            'labor_cost' => 'nullable|numeric|min:0|max:1000000',
+            'has_warranty' => 'nullable|boolean',
+            'warranty_configured' => 'nullable',
+            'warranty_days' => 'nullable|integer|min:0|max:730',
             'diagnosis_notes' => 'nullable|string|max:1000',
         ]);
 
         $newStatus = $validated['status'];
         $jobUpdates = ['status' => $newStatus === 'RETURN_SCHEDULED' ? 'READY_TO_RETURN' : $newStatus];
+        $updatedFinalQuote = null;
 
         if ($newStatus === 'REPAIRING' && !$job->started_at) {
             $jobUpdates['started_at'] = now();
         }
-        if (!empty($validated['diagnosis_notes'])) {
-            $jobUpdates['diagnosis_notes'] = trim($validated['diagnosis_notes']);
+        if ($request->has('diagnosis_notes')) {
+            $trimmedNotes = trim((string) ($validated['diagnosis_notes'] ?? ''));
+            if ($trimmedNotes !== '') {
+                $jobUpdates['diagnosis_notes'] = $trimmedNotes;
+            }
         }
-        if (!empty($validated['final_quoted_amount'])) {
-            $jobUpdates['final_quoted_amount'] = (float) $validated['final_quoted_amount'];
+
+        $hasQuoteBreakdownInput = $request->has('parts_items') || $request->filled('labor_cost');
+        if ($hasQuoteBreakdownInput) {
+            $normalizedParts = Bid::normalizePartsList($request->input('parts_items', []));
+            $partsCost = round((float) collect($normalizedParts)->sum('cost'), 2);
+            $laborCost = round((float) ($validated['labor_cost'] ?? 0), 2);
+            $computedFinal = round($partsCost + $laborCost, 2);
+
+            if ($computedFinal <= 0) {
+                throw ValidationException::withMessages([
+                    'labor_cost' => 'Please enter at least one priced part or a bench labor fee greater than ৳0.',
+                ]);
+            }
+
+            $finalQuoteItems = array_map(
+                fn (array $p) => ['title' => $p['name'], 'amount' => (float) $p['cost'], 'type' => 'part'],
+                $normalizedParts
+            );
+            if ($laborCost > 0 || empty($finalQuoteItems)) {
+                $finalQuoteItems[] = ['title' => 'Technician Labor & Calibration', 'amount' => $laborCost, 'type' => 'labor'];
+            }
+
+            $jobUpdates['parts_items'] = $normalizedParts;
+            $jobUpdates['parts_cost'] = $partsCost;
+            $jobUpdates['labor_cost'] = $laborCost;
+            $jobUpdates['final_quoted_amount'] = $computedFinal;
+            $jobUpdates['final_quote_items'] = $finalQuoteItems;
+            $updatedFinalQuote = $computedFinal;
+        } elseif (!empty($validated['final_quoted_amount'])) {
+            $updatedFinalQuote = round((float) $validated['final_quoted_amount'], 2);
+            $jobUpdates['final_quoted_amount'] = $updatedFinalQuote;
         }
+
+        if ($request->has('warranty_configured') || $request->has('has_warranty') || $request->filled('warranty_days')) {
+            $warrantyConfig = self::resolveWarrantyConfig($request, $validated, $job->resolvedWarrantyDays() ?: 90);
+            $jobUpdates['has_warranty'] = $warrantyConfig['has_warranty'];
+            $jobUpdates['warranty_days'] = $warrantyConfig['warranty_days'];
+        }
+
         if ($newStatus === 'COMPLETED') {
             $jobUpdates['completed_at'] = now();
         }
@@ -643,8 +729,8 @@ class VendorBranchController extends Controller
 
         if ($job->repairRequest) {
             $reqUpdates = ['status' => $newStatus];
-            if (!empty($validated['final_quoted_amount'])) {
-                $reqUpdates['quoted_final_amount'] = (float) $validated['final_quoted_amount'];
+            if ($updatedFinalQuote !== null) {
+                $reqUpdates['quoted_final_amount'] = $updatedFinalQuote;
             }
             $job->repairRequest->update($reqUpdates);
 
@@ -685,12 +771,36 @@ class VendorBranchController extends Controller
     }
 
     /**
-     * Idempotent end-to-end completion settlement: PAID Invoice + Line Items + 90-Day Warranty
+     * Resolve warranty toggle and day count across Quote 1 and Quote 2 forms.
+     */
+    private static function resolveWarrantyConfig(Request $request, array $validated, int $defaultDays = 90): array
+    {
+        if ($request->has('warranty_configured') || $request->has('has_warranty')) {
+            $hasWarranty = $request->boolean('has_warranty');
+            $rawDays = (int) ($validated['warranty_days'] ?? ($defaultDays > 0 ? $defaultDays : 90));
+
+            return [
+                'has_warranty' => $hasWarranty,
+                'warranty_days' => $hasWarranty ? max(1, $rawDays) : 0,
+            ];
+        }
+
+        $hasExplicitDays = array_key_exists('warranty_days', $validated) && $validated['warranty_days'] !== null;
+        $days = $hasExplicitDays ? max(0, (int) $validated['warranty_days']) : $defaultDays;
+
+        return [
+            'has_warranty' => $days > 0,
+            'warranty_days' => $days,
+        ];
+    }
+
+    /**
+     * Idempotent end-to-end completion settlement: PAID Invoice + Line Items + Verified Warranty
      * + PaymentTransaction + Escrow HOLD/RELEASE + R16 10%/90% Double-Entry FinancialLedger.
      */
     public static function settleCompletedJobFinancials(RepairJob $job): void
     {
-        $job->loadMissing(['repairRequest', 'shop.vendorProfile']);
+        $job->loadMissing(['repairRequest', 'shop.vendorProfile', 'acceptedBid']);
         if (!$job->repairRequest) {
             return;
         }
@@ -739,27 +849,78 @@ class VendorBranchController extends Controller
             ]);
 
             $primarySvcId = ShopService::where('shop_id', $job->shop_id)->value('id');
-            DB::table('invoice_line_items')->insert([
-                'invoice_id' => $invoiceId,
-                'shop_service_id' => $primarySvcId,
-                'title' => $job->repairRequest->title,
-                'description' => $job->diagnosis_notes ?: 'Completed workshop repair & quality calibration',
-                'quantity' => 1,
-                'unit_price' => $gross,
-                'total_price' => $gross,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
+            $invoiceLines = [];
+
+            if (($job->repairRequest->source ?? 'MARKETPLACE') !== 'DIRECT_SERVICE') {
+                $partsItems = $job->resolvedPartsItems();
+                $partsSum = round((float) collect($partsItems)->sum('cost'), 2);
+                $laborAmount = $job->resolvedLaborCost();
+
+                if (!empty($partsItems) && abs(($partsSum + $laborAmount) - $gross) <= 0.02) {
+                    foreach ($partsItems as $part) {
+                        $cost = round((float) $part['cost'], 2);
+                        $invoiceLines[] = [
+                            'invoice_id' => $invoiceId,
+                            'shop_service_id' => $primarySvcId,
+                            'title' => $part['name'],
+                            'description' => 'Itemized replacement part approved in workshop quote',
+                            'quantity' => 1,
+                            'unit_price' => $cost,
+                            'total_price' => $cost,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
+                    }
+
+                    $remainingLabor = round($gross - $partsSum, 2);
+                    if ($remainingLabor > 0) {
+                        $invoiceLines[] = [
+                            'invoice_id' => $invoiceId,
+                            'shop_service_id' => $primarySvcId,
+                            'title' => 'Certified Technician Labor & Calibration',
+                            'description' => $job->diagnosis_notes ?: 'Completed bench diagnostics & quality verification',
+                            'quantity' => 1,
+                            'unit_price' => $remainingLabor,
+                            'total_price' => $remainingLabor,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
+                    }
+                }
+            }
+
+            if (empty($invoiceLines)) {
+                $invoiceLines[] = [
+                    'invoice_id' => $invoiceId,
+                    'shop_service_id' => $primarySvcId,
+                    'title' => $job->repairRequest->title,
+                    'description' => $job->diagnosis_notes ?: 'Completed workshop repair & quality calibration',
+                    'quantity' => 1,
+                    'unit_price' => $gross,
+                    'total_price' => $gross,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+
+            DB::table('invoice_line_items')->insert($invoiceLines);
         }
+
+        $hasWarranty = $job->hasWarrantyCoverage();
+        $warrantyDays = $hasWarranty ? $job->resolvedWarrantyDays() : 0;
 
         DB::table('warranties')->updateOrInsert(
             ['repair_job_id' => $job->id],
             [
-                'title' => '90-Day Meramot Verified Repair Warranty',
-                'details' => 'Covers replaced hardware components and bench workmanship for 90 days from completion.',
-                'duration_days' => 90,
+                'title' => $hasWarranty
+                    ? "{$warrantyDays}-Day Meramot Verified Repair Warranty"
+                    : 'Standard Bench Sign-Off (No Extended Warranty)',
+                'details' => $hasWarranty
+                    ? "Covers replaced hardware components and bench workmanship for {$warrantyDays} days from completion."
+                    : 'Completed without extended parts warranty coverage per accepted workshop quote.',
+                'duration_days' => $warrantyDays,
                 'starts_at' => $now,
-                'ends_at' => $now->copy()->addDays(90),
+                'ends_at' => $now->copy()->addDays($warrantyDays),
                 'created_at' => $now,
                 'updated_at' => $now,
             ]
