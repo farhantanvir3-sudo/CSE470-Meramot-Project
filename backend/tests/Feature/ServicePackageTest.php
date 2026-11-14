@@ -2,11 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\DeliveryAgent;
+use App\Models\DeliveryJob;
+use App\Models\PaymentTransaction;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\ServicePackage;
 use App\Models\ShopService;
 use App\Models\User;
+use App\Models\UserNotification;
+use App\Models\VendorProfile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -585,5 +590,302 @@ class ServicePackageTest extends TestCase
         $cartResponse = $this->get('/cart');
         $cartResponse->assertOk();
         $cartResponse->assertDontSee('ProTech Solutions Agrabad');
+    }
+
+    /** @test */
+    public function it_searches_packages_by_inclusion_keywords_and_sorts_by_price()
+    {
+        ServicePackage::create([
+            'title' => 'Phone Glass Care',
+            'description' => 'Fast display swap',
+            'device_category' => 'Smartphone',
+            'fixed_price' => 3800,
+            'estimated_turnaround_hours' => 2,
+            'warranty_months' => 6,
+            'inclusions' => ['Genuine OLED panel assembly', 'Free screen guard'],
+            'is_active' => true,
+        ]);
+
+        ServicePackage::create([
+            'title' => 'Port Micro-Fix',
+            'description' => 'Quick charging port fix',
+            'device_category' => 'Smartphone',
+            'fixed_price' => 1100,
+            'estimated_turnaround_hours' => 1,
+            'warranty_months' => 3,
+            'inclusions' => ['OEM Type-C port replacement'],
+            'is_active' => true,
+        ]);
+
+        $incRes = $this->get('/packages/catalog?q=OLED');
+        $incRes->assertOk()
+            ->assertSee('Phone Glass Care')
+            ->assertDontSee('Port Micro-Fix');
+
+        $lowRes = $this->get('/packages/catalog?sort=price_low');
+        $lowRes->assertOk();
+        $lowPackages = $lowRes->viewData('packages')->items();
+        $this->assertSame('Port Micro-Fix', $lowPackages[0]->title);
+
+        $highRes = $this->get('/packages/catalog?sort=price_high');
+        $highRes->assertOk();
+        $highPackages = $highRes->viewData('packages')->items();
+        $this->assertSame('Phone Glass Care', $highPackages[0]->title);
+    }
+
+    /** @test */
+    public function it_completes_end_to_end_direct_package_order_to_vendor_accept_and_courier_queue_sync()
+    {
+        $customer = User::factory()->create([
+            'name' => 'Samira Customer',
+            'role' => 'customer',
+            'is_active' => true,
+        ]);
+
+        $vendorUser = User::factory()->create([
+            'name' => 'Kamrul Workshop Owner',
+            'role' => 'vendor',
+            'is_active' => true,
+        ]);
+
+        $vendorProfile = VendorProfile::create([
+            'user_id' => $vendorUser->id,
+            'shop_name' => 'Panthapath Fixers',
+            'business_license_no' => 'TRAD/DNCC/991100',
+            'nid_number' => '1992112233445',
+            'verification_status' => 'approved',
+            'shop_address' => 'Green Road, Panthapath, Dhaka',
+            'city' => 'Dhaka',
+            'area' => 'Panthapath',
+            'is_setup_completed' => true,
+        ]);
+
+        $shop = RepairShop::factory()->create([
+            'vendor_profile_id' => $vendorProfile->id,
+            'name' => 'Panthapath Fixers',
+            'address' => 'Green Road, Panthapath, Dhaka',
+            'city' => 'Dhaka',
+            'area' => 'Panthapath',
+            'rating' => 4.9,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+        ]);
+
+        $riderUser = User::factory()->create([
+            'name' => 'Arif Courier',
+            'email' => 'arif.rider@meramotbd.com',
+            'role' => 'delivery_agent',
+            'is_active' => true,
+        ]);
+
+        DeliveryAgent::create([
+            'user_id' => $riderUser->id,
+            'applicant_name' => 'Arif Courier',
+            'personal_email' => 'arif.rider@gmail.com',
+            'company_email' => 'arif.rider@meramotbd.com',
+            'nid_number' => '1995001122334',
+            'license_number' => 'DL-DHK-9910',
+            'vehicle_type' => 'motorcycle',
+            'registration_status' => 'APPROVED',
+            'status' => 'AVAILABLE',
+            'is_active' => true,
+        ]);
+
+        $package = ServicePackage::create([
+            'title' => 'Original Display Panel Replacement',
+            'description' => 'OLED assembly fitted in a dust-free bench.',
+            'device_category' => 'Smartphone',
+            'fixed_price' => 2800,
+            'estimated_turnaround_hours' => 2,
+            'warranty_months' => 6,
+            'inclusions' => ['OLED display assembly'],
+            'is_active' => true,
+            'order_count' => 0,
+        ]);
+
+        // 1. Customer adds package, updates quantity, and places EXPRESS direct order
+        $this->actingAs($customer)
+            ->postJson('/cart/add', [
+                'package_id' => $package->id,
+                'shop_id' => $shop->id,
+                'quantity' => 1,
+            ])->assertOk();
+
+        $this->actingAs($customer)
+            ->patchJson("/cart/update/{$package->id}", ['quantity' => 2])
+            ->assertOk()
+            ->assertJson(['success' => true, 'subtotal' => 5600]);
+
+        $placeRes = $this->actingAs($customer)->post('/cart/checkout/place', [
+            'shop_id' => $shop->id,
+            'schedule_type' => 'NOW',
+            'delivery_type' => 'EXPRESS',
+            'payment_method' => 'CASH',
+            'area' => 'Panthapath',
+            'address' => 'House 19, Green Road, Panthapath',
+            'phone' => '01711009988',
+            'problem_note' => 'Cracked OLED glass',
+        ]);
+
+        $createdReq = RepairRequest::where('source', 'DIRECT_SERVICE')->latest('id')->first();
+        $this->assertNotNull($createdReq);
+        $placeRes->assertRedirect(route('requests.track', $createdReq->id));
+
+        // Expected total: (2800 * 2 = 5600) + 5% escrow (280) + EXPRESS (150) = 6030
+        $this->assertEquals(6030.0, (float) $createdReq->quoted_final_amount);
+        $this->assertEquals(2, $package->fresh()->order_count);
+        $this->assertDatabaseHas('carts', [
+            'user_id' => $customer->id,
+            'status' => 'CHECKED_OUT',
+        ]);
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $vendorUser->id,
+            'type' => 'direct_order_new',
+        ]);
+
+        // 2. Vendor sees booking in Direct Orders tab and accepts -> queues TO_SHOP DeliveryJob
+        $vendorDash = $this->actingAs($vendorUser)->get('/vendor/dashboard?tab=direct_orders');
+        $vendorDash->assertOk()->assertSee('Original Display Panel Replacement');
+
+        $this->actingAs($vendorUser)
+            ->post("/vendor/direct-orders/{$createdReq->id}/respond", ['decision' => 'accept'])
+            ->assertRedirect();
+
+        $this->assertEquals('ASSIGNED', $createdReq->fresh()->status);
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $customer->id,
+            'type' => 'direct_order_accepted',
+        ]);
+
+        $pickupJob = DeliveryJob::where('repair_request_id', $createdReq->id)
+            ->where('direction', 'TO_SHOP')
+            ->first();
+        $this->assertNotNull($pickupJob);
+        $this->assertNull($pickupJob->delivery_agent_id);
+
+        // 3. Courier sees task in queue, claims it -> RepairRequest syncs to PICKUP_SCHEDULED
+        $this->actingAs($riderUser)
+            ->get('/delivery/jobs-queue')
+            ->assertOk()
+            ->assertSee($pickupJob->tracking_code);
+
+        $this->actingAs($riderUser)
+            ->post("/delivery/jobs/{$pickupJob->id}/claim")
+            ->assertRedirect('/delivery/jobs-queue?tab=active');
+
+        $this->assertEquals('PICKUP_SCHEDULED', $createdReq->fresh()->status);
+
+        // 4. Customer tracker displays booked package breakdown & live courier milestone
+        $this->actingAs($customer)
+            ->get("/requests/{$createdReq->id}/track")
+            ->assertOk()
+            ->assertSee('Booked Service Packages')
+            ->assertSee('Original Display Panel Replacement')
+            ->assertSee($pickupJob->tracking_code)
+            ->assertSee('Pickup Scheduled');
+    }
+
+    /** @test */
+    public function it_calculates_exact_direct_order_total_on_sslcommerz_checkout_without_double_delivery_fee()
+    {
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        $shop = RepairShop::factory()->create(['name' => 'Banani Tech Lab']);
+        $package = ServicePackage::factory()->create([
+            'title' => 'Type-C Port Microsoldering Fix',
+            'fixed_price' => 1200,
+        ]);
+
+        $this->actingAs($customer)->postJson('/cart/add', [
+            'package_id' => $package->id,
+            'shop_id' => $shop->id,
+            'quantity' => 1,
+        ])->assertOk();
+
+        // Subtotal: 1200, Escrow (5%): 60, EXPRESS courier: 150 -> Total = 1410.00
+        $res = $this->actingAs($customer)->post('/cart/checkout/place', [
+            'shop_id' => $shop->id,
+            'schedule_type' => 'NOW',
+            'delivery_type' => 'EXPRESS',
+            'payment_method' => 'SSLCOMMERZ',
+            'area' => 'Banani',
+            'address' => 'Road 11, House 5, Banani',
+            'phone' => '01722334455',
+        ]);
+
+        $createdReq = RepairRequest::where('source', 'DIRECT_SERVICE')->latest('id')->first();
+        $this->assertNotNull($createdReq);
+        $this->assertEquals(1410.0, (float) $createdReq->quoted_final_amount);
+        $res->assertRedirect("/checkout/payment/{$createdReq->id}");
+
+        $checkoutView = $this->actingAs($customer)->get("/checkout/payment/{$createdReq->id}");
+        $checkoutView->assertOk()
+            ->assertSee('1,200.00')
+            ->assertSee('60.00')
+            ->assertSee('150.00')
+            ->assertSee('1,410.00')
+            ->assertDontSee('1,560.00');
+    }
+
+    /** @test */
+    public function it_refunds_and_notifies_customer_when_vendor_declines_direct_order()
+    {
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        $vendorUser = User::factory()->create(['role' => 'vendor', 'is_active' => true]);
+        $vendorProfile = VendorProfile::create([
+            'user_id' => $vendorUser->id,
+            'shop_name' => 'Dhanmondi Micro Repair',
+            'business_license_no' => 'TRAD/DNCC/887766',
+            'nid_number' => '1993556677889',
+            'verification_status' => 'approved',
+            'shop_address' => 'Satmasjid Road, Dhanmondi',
+            'city' => 'Dhaka',
+            'area' => 'Dhanmondi',
+            'is_setup_completed' => true,
+        ]);
+        $shop = RepairShop::factory()->create([
+            'vendor_profile_id' => $vendorProfile->id,
+            'name' => 'Dhanmondi Micro Repair',
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+        ]);
+        $package = ServicePackage::factory()->create(['fixed_price' => 2000]);
+
+        $this->actingAs($customer)->postJson('/cart/add', [
+            'package_id' => $package->id,
+            'shop_id' => $shop->id,
+        ])->assertOk();
+
+        $this->actingAs($customer)->post('/cart/checkout/place', [
+            'shop_id' => $shop->id,
+            'schedule_type' => 'NOW',
+            'delivery_type' => 'REGULAR',
+            'payment_method' => 'CASH',
+            'address' => 'Road 4, Dhanmondi',
+            'phone' => '01733445566',
+        ])->assertRedirect();
+
+        $createdReq = RepairRequest::where('source', 'DIRECT_SERVICE')->latest('id')->first();
+        $this->assertNotNull($createdReq);
+
+        $this->actingAs($vendorUser)
+            ->post("/vendor/direct-orders/{$createdReq->id}/respond", [
+                'decision' => 'decline',
+                'reason' => 'Replacement OEM part out of stock',
+            ])
+            ->assertRedirect();
+
+        $this->assertEquals('REJECTED', $createdReq->fresh()->status);
+        $this->assertDatabaseHas('payment_transactions', [
+            'repair_request_id' => $createdReq->id,
+            'status' => 'REFUNDED',
+        ]);
+        $this->assertDatabaseHas('user_notifications', [
+            'user_id' => $customer->id,
+            'type' => 'direct_order_declined',
+        ]);
     }
 }

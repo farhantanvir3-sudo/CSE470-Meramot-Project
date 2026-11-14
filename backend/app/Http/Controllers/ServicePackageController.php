@@ -11,10 +11,12 @@ use App\Models\RepairShop;
 use App\Models\ServicePackage;
 use App\Models\ShopService;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Services\GeolocationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -623,7 +625,8 @@ class ServicePackageController extends Controller
             $query->where(function ($q) use ($searchTerm) {
                 $q->where('title', 'ILIKE', "%{$searchTerm}%")
                   ->orWhere('description', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('device_category', 'ILIKE', "%{$searchTerm}%");
+                  ->orWhere('device_category', 'ILIKE', "%{$searchTerm}%")
+                  ->orWhereRaw('CAST(inclusions AS TEXT) ILIKE ?', ["%{$searchTerm}%"]);
             });
         }
 
@@ -904,6 +907,10 @@ class ServicePackageController extends Controller
      */
     public function removeFromCart(Request $request, $packageId)
     {
+        if ($resp = $this->guardCustomerOrdering($request)) {
+            return $resp;
+        }
+
         $cart = session()->get('cart', []);
 
         if (isset($cart[$packageId])) {
@@ -918,10 +925,18 @@ class ServicePackageController extends Controller
         $targetShop = empty($cart) ? null : $this->resolveTargetShop(null, $request);
         $this->syncDatabaseCart($request->user(), $targetShop, $cart);
 
+        if (!$request->expectsJson()) {
+            return redirect()->route('cart.view')->with('success', 'Service removed from cart.');
+        }
+
+        $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0.0);
+
         return response()->json([
             'success' => true,
             'message' => 'Service removed from cart',
             'cart_count' => count($cart),
+            'subtotal' => $subtotal,
+            'service_charge' => self::calculateServiceCharge($subtotal),
         ]);
     }
 
@@ -931,6 +946,10 @@ class ServicePackageController extends Controller
      */
     public function updateCartQuantity(Request $request, $packageId)
     {
+        if ($resp = $this->guardCustomerOrdering($request)) {
+            return $resp;
+        }
+
         $validated = $request->validate([
             'quantity' => 'required|integer|min:1|max:10',
         ]);
@@ -943,9 +962,18 @@ class ServicePackageController extends Controller
             $this->syncDatabaseCart($request->user(), $this->resolveTargetShop(null, $request), $cart);
         }
 
+        if (!$request->expectsJson()) {
+            return redirect()->route('cart.view')->with('success', 'Cart quantity updated.');
+        }
+
+        $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0.0);
+
         return response()->json([
             'success' => true,
             'message' => 'Cart quantity updated',
+            'cart_count' => count($cart),
+            'subtotal' => $subtotal,
+            'service_charge' => self::calculateServiceCharge($subtotal),
         ]);
     }
 
@@ -955,6 +983,10 @@ class ServicePackageController extends Controller
      */
     public function clearCart(Request $request)
     {
+        if ($resp = $this->guardCustomerOrdering($request)) {
+            return $resp;
+        }
+
         session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked', 'cart_shop_manual']);
         $this->syncDatabaseCart($request->user(), null, []);
 
@@ -1029,6 +1061,7 @@ class ServicePackageController extends Controller
             $cityLabel = $customerLocation['city'] ?? 'your selected area';
             return back()->with('error', "No verified workshop is available within {$cityLabel} for doorstep dispatch. Please update your pickup location or select an available workshop.");
         }
+        $shop->loadMissing('vendorProfile');
 
         $user = $request->user() ?? User::where('role', 'customer')->firstOrFail();
         if ($request->user()) {
@@ -1106,7 +1139,7 @@ class ServicePackageController extends Controller
                 'delivery_type' => $validated['delivery_type'],
                 'contact_phone' => $validated['phone'],
                 'pickup_address' => $fullAddress,
-                'dropoff_address' => $shop->address ?? trim(implode(', ', array_filter([$shop->area, $shop->city ?: $customerCity]))),
+                'dropoff_address' => $shop->public_address ?: ($shop->address ?? trim(implode(', ', array_filter([$shop->area, $shop->city ?: $customerCity])))),
                 'checkup_fee' => $serviceCharge,
                 'quoted_final_amount' => $totalAmount,
             ]);
@@ -1139,6 +1172,18 @@ class ServicePackageController extends Controller
                 }
             }
 
+            if ($shop->vendorProfile?->user_id && Schema::hasTable('user_notifications')) {
+                UserNotification::create([
+                    'user_id' => $shop->vendorProfile->user_id,
+                    'type' => 'direct_order_new',
+                    'severity' => 'info',
+                    'title' => "New Direct Order #{$req->id}",
+                    'message' => "{$user->name} booked {$title} (৳" . number_format($totalAmount, 0) . '). Review and confirm pickup dispatch.',
+                    'action_url' => '/vendor/dashboard?tab=direct_orders',
+                    'is_read' => false,
+                ]);
+            }
+
             return $req;
         });
 
@@ -1146,11 +1191,11 @@ class ServicePackageController extends Controller
 
         if ($validated['payment_method'] === 'SSLCOMMERZ') {
             return redirect("/checkout/payment/{$repairRequest->id}")
-                ->with('success', "Booking #{$repairRequest->id} created with {$shop->name}. Please complete online escrow authorization below.");
+                ->with('success', "Booking #{$repairRequest->id} created with {$shop->name}. Complete escrow authorization below.");
         }
 
         return redirect()
             ->route('requests.track', $repairRequest->id)
-            ->with('success', "Booking #{$repairRequest->id} has been sent to {$shop->name} and is awaiting workshop confirmation.");
+            ->with('success', "Booking #{$repairRequest->id} sent to {$shop->name} and awaiting confirmation.");
     }
 }

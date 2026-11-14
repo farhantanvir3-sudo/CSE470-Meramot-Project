@@ -801,25 +801,28 @@
 
     <!-- ── TAB 3: DIRECT ORDERS (Direct-Order Cart Queue) ── -->
     <div x-show="activeTab === 'direct_orders'" x-cloak class="space-y-4">
-        <div class="meramot-card p-6 shadow-sm">
+        <div class="meramot-card p-5 sm:p-6 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
-                <h3 class="font-bold text-base text-[var(--foreground)]">Direct-Order Cart &amp; Quickmatch Bookings (PENDING Acceptance)</h3>
-                <a href="/packages/catalog" class="text-xs font-bold text-[var(--accent-dark)] hover:underline">Browse Service Packages &rarr;</a>
+                <div>
+                    <h3 class="font-bold text-base text-[var(--foreground)]">Incoming Direct Orders</h3>
+                    <p class="text-xs text-[var(--muted-foreground)] mt-0.5">Fixed-price package and workshop service bookings awaiting confirmation.</p>
+                </div>
+                <a href="/packages/catalog" class="text-xs font-bold text-[var(--accent-dark)] hover:underline whitespace-nowrap">View Service Packages &rarr;</a>
             </div>
             <div class="space-y-4 text-xs">
                 @forelse($directOrders ?? [] as $order)
                     <div class="p-4 rounded-2xl bg-[var(--mint-100)] border-2 border-emerald-600 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-                        <div>
+                        <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="rounded bg-emerald-800 text-white font-bold text-[10px] px-2 py-0.5 uppercase">Live Direct Order #{{ $order->id }}</span>
-                                <span class="text-[11px] font-bold text-[var(--accent-dark)]">
+                                <span class="rounded bg-emerald-800 text-white font-bold text-[10px] px-2 py-0.5 uppercase whitespace-nowrap">Direct Order #{{ $order->id }}</span>
+                                <span class="text-[11px] font-bold text-[var(--accent-dark)] break-words">
                                     {{ $order->requestedShop->name ?? 'Assigned Workshop' }}{{ optional($order->requestedShop)->display_branch_tag ? ' [' . $order->requestedShop->display_branch_tag . ']' : '' }}
                                 </span>
-                                <a href="{{ route('requests.track', $order->id) }}" class="text-[11px] font-semibold text-[var(--accent-dark)] underline">View Order</a>
+                                <a href="{{ route('requests.track', $order->id) }}" class="text-[11px] font-semibold text-[var(--accent-dark)] underline whitespace-nowrap">View Order</a>
                             </div>
-                            <h4 class="font-bold text-sm text-[var(--foreground)] mt-1">{{ $order->title }}</h4>
-                            <p class="text-[var(--muted-foreground)]">
-                                Customer: {{ $order->customer->name ?? 'Meramot Customer' }} • {{ $order->pickup_address ?? 'Dhaka' }} • {{ $order->delivery_type ?? 'REGULAR' }} Courier
+                            <h4 class="font-bold text-sm text-[var(--foreground)] mt-1 break-words">{{ $order->title }}</h4>
+                            <p class="text-[var(--muted-foreground)] break-words">
+                                Customer: {{ $order->customer->name ?? 'Meramot Customer' }} • {{ $order->pickup_address ?? 'Dhaka' }} • {{ strtoupper((string) ($order->delivery_type ?? 'REGULAR')) === 'EXPRESS' ? 'Express Courier' : 'Standard Courier' }}
                             </p>
                             <span class="font-extrabold text-[var(--accent-dark)] text-sm">৳{{ number_format($order->quoted_final_amount ?? 0, 2) }}</span>
                         </div>
@@ -827,14 +830,14 @@
                             <form method="POST" action="{{ route('vendor.direct-orders.respond', $order->id) }}" class="w-full sm:w-auto">
                                 @csrf
                                 <input type="hidden" name="decision" value="accept">
-                                <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-4 py-2 hover:opacity-90 shadow-sm transition">
+                                <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-4 py-2 hover:opacity-90 shadow-sm transition whitespace-nowrap">
                                     Accept &amp; Dispatch Rider
                                 </button>
                             </form>
                             <form method="POST" action="{{ route('vendor.direct-orders.respond', $order->id) }}" class="w-full sm:w-auto">
                                 @csrf
                                 <input type="hidden" name="decision" value="decline">
-                                <button type="submit" class="w-full sm:w-auto rounded-full border border-rose-300 bg-white text-rose-700 font-bold px-4 py-2 hover:bg-rose-50 transition">
+                                <button type="submit" class="w-full sm:w-auto rounded-full border border-rose-300 bg-white text-rose-700 font-bold px-4 py-2 hover:bg-rose-50 transition whitespace-nowrap">
                                     Decline
                                 </button>
                             </form>
@@ -842,7 +845,7 @@
                     </div>
                 @empty
                     <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/40 py-8 text-center text-[var(--muted-foreground)]">
-                        No pending Direct-Order cart bookings awaiting response for this branch selection.
+                        No pending direct orders for this branch.
                     </div>
                 @endforelse
             </div>
