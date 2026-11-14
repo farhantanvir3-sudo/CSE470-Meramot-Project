@@ -22,6 +22,7 @@
         initialShopId: @js($initialShopIdStr),
         existingBidsByShop: @js($existingBidsByShop)
     })"
+    @meramot-prefill-quote-parts.window="if (Number($event.detail?.requestId) === {{ (int) $req->id }}) prefillSuggestedParts($event.detail?.parts || [])"
     class="space-y-3 text-xs"
 >
     <!-- Active Branch Selector (shown when vendor operates multiple branches and dashboard isn't filtered to one) -->
@@ -51,7 +52,7 @@
                 </span>
                 <p class="mt-1 text-[11px] font-semibold text-[var(--muted-foreground)]" x-text="(@js($shopNamesMap)[selectedShopId] || 'Your Branch') + ' • ' + estimatedDays + 'd turnaround'"></p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <span class="text-base font-black text-[var(--accent-dark)]">৳<span x-text="formatMoney(existingBid ? existingBid.proposed_cost : 0)">0.00</span></span>
                 <button
                     type="button"
@@ -60,6 +61,20 @@
                 >
                     <i class="fa-solid fa-pen-to-square mr-1"></i>Edit Quote
                 </button>
+                @if(in_array(strtoupper((string) ($req->status ?? 'BIDDING')), ['PENDING', 'BIDDING'], true))
+                    <form
+                        x-show="existingBid && existingBid.id"
+                        method="POST"
+                        :action="existingBid ? ('/vendor/bids/' + existingBid.id + '/withdraw') : '#'"
+                        onsubmit="return confirm('Withdraw your diagnostic estimate from this ticket?');"
+                        class="inline"
+                    >
+                        @csrf
+                        <button type="submit" class="rounded-full border border-rose-300 bg-rose-50 px-3 py-1 text-[11px] font-bold text-rose-800 hover:bg-rose-100 transition">
+                            Withdraw
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
 

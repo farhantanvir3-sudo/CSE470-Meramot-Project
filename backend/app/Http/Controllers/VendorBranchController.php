@@ -135,8 +135,20 @@ class VendorBranchController extends Controller
             ? (int) $activeBranch->review_count
             : (int) $branches->sum('review_count');
 
+        $escrowSummary = VendorPayoutController::computeShopEscrowSummary($scopedShopIds);
+        $vendorPayoutHistory = \App\Models\VendorPayout::with('shop')
+            ->whereIn('shop_id', $scopedShopIds)
+            ->orderByDesc('id')
+            ->limit(25)
+            ->get();
+
         $branchMetrics = [
             'gross_inflow' => $ledgerGross,
+            'commission_deducted' => $escrowSummary['commission_deducted'],
+            'net_allocated' => $escrowSummary['net_allocated'],
+            'paid_out' => $escrowSummary['paid_out'],
+            'pending_requested' => $escrowSummary['pending_requested'],
+            'available_to_request' => $escrowSummary['available_to_request'],
             'active_jobs_count' => $activeJobs->count(),
             'avg_rating' => $avgRating,
             'total_reviews' => $totalReviews,
@@ -155,6 +167,7 @@ class VendorBranchController extends Controller
             'marketplaceRequests',
             'activeJobs',
             'branchMetrics',
+            'vendorPayoutHistory',
             'bangladeshDistricts'
         ));
     }
@@ -898,19 +911,57 @@ class VendorBranchController extends Controller
         $vendorNet = round($gross - $commission, 2);
 
         $existingInvoice = DB::table('invoices')
-            ->where('repair_job_id', $job->id)
+            ->where(function ($q) use ($job) {
+                $q->where('repair_job_id', $job->id)
+                  ->orWhere('repair_request_id', $job->repairRequest->id);
+            })
+            ->orderByDesc('id')
             ->first();
 
         if ($existingInvoice) {
             $invoiceId = (int) $existingInvoice->id;
+            $existingLineSum = (float) DB::table('invoice_line_items')
+                ->where('invoice_id', $invoiceId)
+                ->sum('total_price');
+            $deliveryAmt = (float) ($existingInvoice->delivery_amount ?? 0);
+            $discountAmt = (float) ($existingInvoice->discount_amount ?? 0);
+
+            // Preserve pre-paid Direct-Order subtotal if line items already match; otherwise sync line items to $gross
+            $effectiveSubtotal = ($existingLineSum > 0 && abs($existingLineSum - (float) $existingInvoice->subtotal_amount) <= 0.02 && $existingInvoice->status === 'PAID')
+                ? round($existingLineSum, 2)
+                : $gross;
+            $effectiveCommission = round($effectiveSubtotal * 0.10, 2);
+
             DB::table('invoices')->where('id', $invoiceId)->update([
+                'repair_job_id' => $job->id,
+                'shop_id' => $job->shop_id,
                 'status' => 'PAID',
-                'subtotal_amount' => $gross,
-                'commission_amount' => $commission,
-                'total_amount' => $gross + (float) ($existingInvoice->delivery_amount ?? 0),
-                'paid_at' => $now,
+                'subtotal_amount' => $effectiveSubtotal,
+                'commission_amount' => $effectiveCommission,
+                'total_amount' => max(0.0, round($effectiveSubtotal + $deliveryAmt - $discountAmt, 2)),
+                'paid_at' => $existingInvoice->paid_at ?? $now,
                 'updated_at' => $now,
             ]);
+
+            if (abs($existingLineSum - $effectiveSubtotal) > 0.02) {
+                DB::table('invoice_line_items')->where('invoice_id', $invoiceId)->delete();
+                $primarySvcId = ShopService::where('shop_id', $job->shop_id)->value('id');
+                DB::table('invoice_line_items')->insert([[
+                    'invoice_id' => $invoiceId,
+                    'shop_service_id' => $primarySvcId,
+                    'title' => $job->repairRequest->title,
+                    'description' => $job->diagnosis_notes ?: 'Completed workshop repair & quality calibration',
+                    'quantity' => 1,
+                    'unit_price' => $effectiveSubtotal,
+                    'total_price' => $effectiveSubtotal,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]]);
+            }
+
+            $gross = $effectiveSubtotal;
+            $commission = $effectiveCommission;
+            $vendorNet = round($gross - $commission, 2);
         } else {
             $invoiceId = DB::table('invoices')->insertGetId([
                 'repair_request_id' => $job->repairRequest->id,
@@ -1025,9 +1076,14 @@ class VendorBranchController extends Controller
             ]
         );
 
-        $payment = PaymentTransaction::firstOrCreate(
-            ['repair_request_id' => $job->repairRequest->id],
-            [
+        $payment = PaymentTransaction::where('repair_request_id', $job->repairRequest->id)
+            ->orderByRaw("CASE WHEN status = 'PAID' THEN 0 ELSE 1 END")
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$payment) {
+            $payment = PaymentTransaction::create([
+                'repair_request_id' => $job->repairRequest->id,
                 'user_id' => $job->repairRequest->customer_id,
                 'invoice_id' => $invoiceId,
                 'amount' => $gross,
@@ -1036,61 +1092,68 @@ class VendorBranchController extends Controller
                 'status' => 'PAID',
                 'paid_at' => $now,
                 'transaction_reference' => 'MRM-JOB-' . $job->id . '-' . strtoupper(Str::random(4)),
-            ]
-        );
-        if ($payment->status !== 'PAID' || !$payment->invoice_id) {
+            ]);
+        } elseif ($payment->status !== 'PAID' || !$payment->invoice_id) {
             $payment->update([
                 'invoice_id' => $invoiceId,
                 'status' => 'PAID',
-                'paid_at' => $now,
-                'amount' => $gross,
+                'paid_at' => $payment->paid_at ?? $now,
+                'amount' => (float) $payment->amount > 0 ? $payment->amount : $gross,
             ]);
         }
 
         $vendorUserId = $job->shop?->vendorProfile?->user_id;
+        $hasEscrowHold = DB::table('escrow_ledgers')
+            ->where('payment_id', $payment->id)
+            ->where('action', 'HOLD')
+            ->exists();
         $hasEscrowRelease = DB::table('escrow_ledgers')
             ->where('payment_id', $payment->id)
             ->where('action', 'RELEASE')
             ->exists();
 
-        if (!$hasEscrowRelease) {
+        if (!$hasEscrowHold) {
             DB::table('escrow_ledgers')->insert([
-                [
-                    'payment_id' => $payment->id,
-                    'repair_request_id' => $job->repairRequest->id,
-                    'customer_user_id' => $job->repairRequest->customer_id,
-                    'vendor_user_id' => $vendorUserId,
-                    'amount' => $gross,
-                    'gross_amount' => $gross,
-                    'platform_commission_amount' => $commission,
-                    'vendor_net_amount' => $vendorNet,
-                    'action' => 'HOLD',
-                    'note' => "Escrow hold captured for Repair Job #{$job->id}",
-                    'created_at' => $job->started_at ?? $now,
-                    'updated_at' => $job->started_at ?? $now,
-                ],
-                [
-                    'payment_id' => $payment->id,
-                    'repair_request_id' => $job->repairRequest->id,
-                    'customer_user_id' => $job->repairRequest->customer_id,
-                    'vendor_user_id' => $vendorUserId,
-                    'amount' => $gross,
-                    'gross_amount' => $gross,
-                    'platform_commission_amount' => $commission,
-                    'vendor_net_amount' => $vendorNet,
-                    'action' => 'RELEASE',
-                    'note' => "Escrow released upon completion of Repair Job #{$job->id}",
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ],
+                'payment_id' => $payment->id,
+                'repair_request_id' => $job->repairRequest->id,
+                'customer_user_id' => $job->repairRequest->customer_id,
+                'vendor_user_id' => $vendorUserId,
+                'amount' => (float) $payment->amount,
+                'gross_amount' => $gross,
+                'platform_commission_amount' => $commission,
+                'vendor_net_amount' => $vendorNet,
+                'action' => 'HOLD',
+                'note' => "Escrow hold captured for Repair Job #{$job->id}",
+                'created_at' => $job->started_at ?? $now,
+                'updated_at' => $job->started_at ?? $now,
             ]);
         }
 
-        $alreadySettled = FinancialLedger::where('payment_id', $payment->id)
+        if (!$hasEscrowRelease) {
+            DB::table('escrow_ledgers')->insert([
+                'payment_id' => $payment->id,
+                'repair_request_id' => $job->repairRequest->id,
+                'customer_user_id' => $job->repairRequest->customer_id,
+                'vendor_user_id' => $vendorUserId,
+                'amount' => (float) $payment->amount,
+                'gross_amount' => $gross,
+                'platform_commission_amount' => $commission,
+                'vendor_net_amount' => $vendorNet,
+                'action' => 'RELEASE',
+                'note' => "Escrow released upon completion of Repair Job #{$job->id}",
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $hasCustomerPayment = FinancialLedger::where('payment_id', $payment->id)
             ->where('entry_type', 'CUSTOMER_PAYMENT')
             ->exists();
+        $hasVendorEarning = FinancialLedger::where('payment_id', $payment->id)
+            ->where('entry_type', 'VENDOR_EARNING')
+            ->exists();
 
-        if (!$alreadySettled) {
+        if (!$hasCustomerPayment) {
             AdminLedgerController::settleOrderWithCommission(
                 $gross,
                 (int) $job->shop_id,
@@ -1098,6 +1161,22 @@ class VendorBranchController extends Controller
                 $invoiceId,
                 0.10,
                 "Repair Job #{$job->id} ({$job->repairRequest->title})"
+            );
+        } elseif (!$hasVendorEarning) {
+            $noteSuffix = " — Note: Repair Job #{$job->id} ({$job->repairRequest->title})";
+            AdminLedgerController::logEntry(
+                'PLATFORM_COMMISSION',
+                'CREDIT',
+                $commission,
+                "10% platform service fee deducted (Gross: ৳{$gross}){$noteSuffix}",
+                ['shop_id' => (int) $job->shop_id, 'payment_id' => (int) $payment->id, 'invoice_id' => $invoiceId]
+            );
+            AdminLedgerController::logEntry(
+                'VENDOR_EARNING',
+                'DEBIT',
+                $vendorNet,
+                "Net earning allocated to vendor escrow (90% of ৳{$gross}){$noteSuffix}",
+                ['shop_id' => (int) $job->shop_id, 'payment_id' => (int) $payment->id, 'invoice_id' => $invoiceId]
             );
         }
     }

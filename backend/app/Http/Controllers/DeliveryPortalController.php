@@ -486,26 +486,121 @@ class DeliveryPortalController extends Controller
     public function advanceOrderStatus(Request $request, $id)
     {
         $agent = $this->resolveAuthenticatedAgent($request);
-        if (!$agent || $agent->registration_status !== 'APPROVED') {
-            return redirect('/delivery/login');
+        if (!$agent || !$agent->is_active || strtoupper((string) $agent->registration_status) !== 'APPROVED') {
+            return redirect('/delivery/login')->with('warning', 'Approved active courier credentials are required.');
         }
 
         $validated = $request->validate([
             'milestone' => 'nullable|string|max:40',
             'otp' => 'nullable|string|max:10',
-            'require_otp' => 'nullable|boolean',
         ]);
 
+        // Security invariant: always enforce 4-digit handover OTP on physical custody transitions
         $updated = app(DeliveryLifecycleService::class)->advanceMilestone(
             (int) $id,
             $agent,
             $validated['milestone'] ?? null,
             $validated['otp'] ?? null,
-            $request->boolean('require_otp')
+            true
         );
 
         return redirect("/delivery/order/{$updated->id}")
             ->with('success', 'Milestone updated to ' . DeliveryLifecycleService::milestoneLabel($updated) . '.');
+    }
+
+    /**
+     * Feature R4: Simulate Rider Advancing Along Active Route (`POST /delivery/location/simulate`)
+     * Useful when browser geolocation is unavailable or testing live tracking on desktop.
+     */
+    public function simulateRouteStep(Request $request)
+    {
+        $agent = $this->resolveAuthenticatedAgent($request);
+        if (!$agent || !$agent->is_active || strtoupper((string) $agent->registration_status) !== 'APPROVED') {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Unauthorized courier'], 403)
+                : redirect('/delivery/login');
+        }
+
+        $jobQuery = DeliveryJob::with(['repairRequest.customer', 'repairJob.shop'])
+            ->where('delivery_agent_id', $agent->id)
+            ->whereIn('status', self::ACTIVE_DELIVERY_STATUSES);
+
+        if ($request->filled('delivery_job_id')) {
+            $jobQuery->where('id', (int) $request->input('delivery_job_id'));
+        }
+
+        $activeJob = $jobQuery->latest('updated_at')->first();
+
+        $curLat = $agent->current_latitude !== null ? (float) $agent->current_latitude : 23.7808;
+        $curLng = $agent->current_longitude !== null ? (float) $agent->current_longitude : 90.4042;
+        $targetLat = 23.7937;
+        $targetLng = 90.4066;
+        $targetLabel = 'Dhaka Dispatch Corridor';
+
+        if ($activeJob) {
+            $req = $activeJob->repairRequest ?? $activeJob->repairJob?->repairRequest;
+            $shop = $activeJob->repairJob?->shop;
+            $cust = $req?->customer;
+            $isToShop = strtoupper((string) $activeJob->direction) !== 'TO_CUSTOMER';
+            $statusUpper = strtoupper((string) $activeJob->status);
+            $headingToDropoff = in_array($statusUpper, ['PICKED_UP', 'IN_TRANSIT'], true);
+
+            $custCoords = ($cust && $cust->latitude && $cust->longitude)
+                ? [(float) $cust->latitude, (float) $cust->longitude]
+                : [23.7937, 90.4066];
+            $shopCoords = ($shop && $shop->latitude && $shop->longitude)
+                ? [(float) $shop->latitude, (float) $shop->longitude]
+                : [23.7509, 90.3842];
+
+            if ($isToShop) {
+                [$targetLat, $targetLng] = $headingToDropoff ? $shopCoords : $custCoords;
+                $targetLabel = $headingToDropoff ? ($shop?->name ?: 'Workshop Dropoff') : 'Customer Pickup';
+            } else {
+                [$targetLat, $targetLng] = $headingToDropoff ? $custCoords : $shopCoords;
+                $targetLabel = $headingToDropoff ? 'Customer Dropoff' : ($shop?->name ?: 'Workshop Pickup');
+            }
+        }
+
+        $dLat = $targetLat - $curLat;
+        $dLng = $targetLng - $curLng;
+
+        if (abs($dLat) < 0.0006 && abs($dLng) < 0.0006) {
+            // Already at target pin — apply slight realistic patrol jitter
+            $newLat = round($targetLat + ((random_int(-3, 3)) * 0.0002), 6);
+            $newLng = round($targetLng + ((random_int(-3, 3)) * 0.0002), 6);
+        } else {
+            $newLat = round($curLat + ($dLat * 0.38), 6);
+            $newLng = round($curLng + ($dLng * 0.38), 6);
+        }
+
+        $heading = round(rad2deg(atan2($newLng - $curLng, $newLat - $curLat)) + 360, 1) % 360;
+
+        $agent->update([
+            'current_latitude' => $newLat,
+            'current_longitude' => $newLng,
+        ]);
+
+        LocationLog::create([
+            'delivery_agent_id' => $agent->id,
+            'delivery_job_id' => $activeJob?->id,
+            'latitude' => $newLat,
+            'longitude' => $newLng,
+            'speed_kmh' => 27.5,
+            'heading' => $heading,
+            'recorded_at' => now(),
+        ]);
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'ok' => true,
+                'latitude' => $newLat,
+                'longitude' => $newLng,
+                'delivery_job_id' => $activeJob?->id,
+                'target_label' => $targetLabel,
+            ]);
+        }
+
+        return back()->with('success', "Simulated GPS waypoint recorded toward {$targetLabel} ({$newLat}, {$newLng}).");
     }
 
     /**

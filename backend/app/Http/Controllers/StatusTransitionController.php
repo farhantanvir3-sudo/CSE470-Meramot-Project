@@ -138,7 +138,7 @@ class StatusTransitionController extends Controller
                 ->with('error', 'A bid has already been accepted or this request is no longer open for bidding.');
         }
 
-        $bid = $repairRequest->bids()->with('shop')->findOrFail($validated['bid_id']);
+        $bid = $repairRequest->bids()->with('shop.vendorProfile.user')->findOrFail($validated['bid_id']);
 
         DB::transaction(function () use ($repairRequest, $bid) {
             $shopAddress = $bid->shop?->address ?: (($bid->shop?->area ?: 'Banani') . ', ' . ($bid->shop?->city ?: 'Dhaka'));
@@ -178,6 +178,18 @@ class StatusTransitionController extends Controller
 
             $this->ensureCourierDeliveryJob($repairRequest->fresh(), $job, 'TO_SHOP');
         });
+
+        if ($bid->shop?->vendorProfile?->user) {
+            app(\App\Services\MultiChannelNotificationService::class)->notifyUser(
+                user: $bid->shop->vendorProfile->user,
+                eventType: 'BID_ACCEPTED',
+                title: "Your Quote Won Request #{$repairRequest->id}",
+                message: "Customer accepted your ৳" . number_format((float) $bid->proposed_cost, 0) . " estimate for {$repairRequest->title}. Courier pickup has been queued.",
+                actionUrl: '/vendor/dashboard?tab=assigned_jobs',
+                repairRequestId: $repairRequest->id,
+                severity: 'info'
+            );
+        }
 
         return redirect()
             ->route('requests.track', $repairRequest->id)
@@ -288,10 +300,10 @@ class StatusTransitionController extends Controller
     public function respondToFinalQuote(Request $request, $id)
     {
         $validated = $request->validate([
-            'decision' => 'required|in:approve,decline',
+            'decision' => 'required|in:approve,accept,decline',
         ]);
 
-        $repairRequest = RepairRequest::with('repairJob')->findOrFail($id);
+        $repairRequest = RepairRequest::with('repairJob.shop.vendorProfile.user')->findOrFail($id);
 
         if (
             $request->user()
@@ -301,7 +313,7 @@ class StatusTransitionController extends Controller
             abort(403, 'You are not authorized to respond to quotes on another customer\'s repair request.');
         }
 
-        if ($validated['decision'] === 'approve') {
+        if (in_array($validated['decision'], ['approve', 'accept'], true)) {
             if ($repairRequest->transitionTo(RepairRequest::STATUS_REPAIRING)) {
                 $finalAmount = $repairRequest->repairJob?->final_quoted_amount ?? $repairRequest->quoted_final_amount;
                 if ($finalAmount !== null) {
@@ -313,6 +325,16 @@ class StatusTransitionController extends Controller
                         'status' => 'REPAIRING',
                         'started_at' => $repairRequest->repairJob->started_at ?? now(),
                     ]);
+                }
+                if ($repairRequest->repairJob?->shop?->vendorProfile?->user) {
+                    app(\App\Services\MultiChannelNotificationService::class)->notifyUser(
+                        user: $repairRequest->repairJob->shop->vendorProfile->user,
+                        eventType: 'FINAL_QUOTE_APPROVED',
+                        title: "Final Quote Approved (#{$repairRequest->id})",
+                        message: "Customer approved the final bench quote of ৳" . number_format((float) ($finalAmount ?? 0), 0) . ". Proceed with repair.",
+                        actionUrl: '/vendor/dashboard?tab=assigned_jobs',
+                        repairRequestId: $repairRequest->id
+                    );
                 }
                 return redirect()
                     ->route('requests.track', $repairRequest->id)

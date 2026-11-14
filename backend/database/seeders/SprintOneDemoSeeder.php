@@ -4,12 +4,15 @@ namespace Database\Seeders;
 
 use App\Models\AIChatMessage;
 use App\Models\AIChatSession;
+use App\Models\AISummaryLog;
 use App\Models\AuditLog;
 use App\Models\Bid;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\DeliveryAgent;
 use App\Models\DeliveryJob;
+use App\Models\DisputeCase;
+use App\Models\DisputeNote;
 use App\Models\LocationLog;
 use App\Models\ModerationLog;
 use App\Models\PaymentTransaction;
@@ -1295,6 +1298,107 @@ class SprintOneDemoSeeder extends Seeder
         foreach (DeliveryAgent::all() as $agent) {
             $agent->update([
                 'total_earnings' => (float) RiderEarnings::where('delivery_agent_id', $agent->id)->sum('total_earned'),
+            ]);
+        }
+
+        /* --------------------------------------------------------------------
+         * 2G. Sprint 2 & Sprint 3 Enrichments (R3, R13, R14, R18, R19)
+         * -------------------------------------------------------------------- */
+        $aiTriageService = app(\App\Services\AISummaryService::class);
+        AISummaryLog::whereIn('repair_request_id', array_filter([
+            $openBiddingReq->id ?? null,
+            isset($openEditDemoReq) ? $openEditDemoReq->id : null,
+        ]))->delete();
+
+        $aiTriageService->summarize($openBiddingReq, $meramotAdmin?->id, false);
+        if (isset($openEditDemoReq)) {
+            $aiTriageService->summarize($openEditDemoReq, $meramotAdmin?->id, false);
+        }
+
+        if ($protechMain && $protechMain->vendorProfile) {
+            $protechMain->vendorProfile->update([
+                'alert_phone' => $protechMain->phone ?: '+8801711002233',
+                'notify_sms_enabled' => true,
+                'notify_email_enabled' => true,
+                'notify_in_app_enabled' => true,
+                'notify_new_requests' => true,
+                'notify_bid_updates' => true,
+                'notify_payout_updates' => true,
+                'payout_method' => 'BKASH',
+                'payout_account_name' => 'ProTech Solutions Ltd.',
+                'payout_account_number' => '+8801711002233',
+                'payout_bank_name' => 'BRAC Bank PLC',
+                'payout_branch_name' => 'Banani Branch',
+            ]);
+        }
+
+        if ($dhakaDoctors && $dhakaDoctors->vendorProfile) {
+            $dhakaDoctors->vendorProfile->update([
+                'alert_phone' => $dhakaDoctors->phone ?: '+8801812004455',
+                'notify_sms_enabled' => true,
+                'notify_email_enabled' => true,
+                'notify_in_app_enabled' => true,
+                'notify_new_requests' => true,
+                'notify_bid_updates' => true,
+                'notify_payout_updates' => true,
+                'payout_method' => 'NAGAD',
+                'payout_account_name' => 'Dhaka Device Doctors',
+                'payout_account_number' => '+8801812004455',
+            ]);
+
+            $ddEscrow = \App\Http\Controllers\VendorPayoutController::computeShopEscrowSummary([$dhakaDoctors->id]);
+            if ($ddEscrow['unsettled_balance'] >= 500) {
+                $pendingAmt = min(round($ddEscrow['unsettled_balance'] * 0.5, 2), 2500.00);
+                if ($pendingAmt >= 500) {
+                    VendorPayout::updateOrCreate(
+                        ['reference_code' => 'VND-PYT-DEMO-PENDING1'],
+                        [
+                            'shop_id' => $dhakaDoctors->id,
+                            'delivery_agent_id' => null,
+                            'amount' => $pendingAmt,
+                            'gross_reference_amount' => round($pendingAmt / 0.90, 2),
+                            'commission_deducted' => round(($pendingAmt / 0.90) * 0.10, 2),
+                            'currency' => 'BDT',
+                            'payout_method' => 'NAGAD',
+                            'payout_account' => '+8801812004455',
+                            'status' => 'PENDING',
+                            'notes' => 'Scheduled workshop escrow withdrawal request awaiting Admin treasury disbursement.',
+                        ]
+                    );
+                }
+            }
+        }
+
+        if ($approvedRider) {
+            $approvedRider->update([
+                'payout_method' => 'BKASH',
+                'payout_account_number' => $approvedRider->user?->phone ?: '+8801799998888',
+            ]);
+        }
+
+        if (isset($quoteTwoReq) && $protechMain && $protechMain->vendorProfile?->user_id) {
+            $openDispute = DisputeCase::updateOrCreate(
+                [
+                    'repair_request_id' => $quoteTwoReq->id,
+                    'opened_by_id' => $customer->id,
+                ],
+                [
+                    'repair_job_id' => $quoteTwoJob->id ?? null,
+                    'payment_id' => null,
+                    'against_id' => $protechMain->vendorProfile->user_id,
+                    'assigned_admin_id' => $meramotAdmin?->id,
+                    'status' => 'INVESTIGATING',
+                    'resolution' => null,
+                    'resolved_at' => null,
+                ]
+            );
+
+            DisputeNote::where('dispute_case_id', $openDispute->id)->delete();
+            DisputeNote::create([
+                'dispute_case_id' => $openDispute->id,
+                'author_id' => $customer->id,
+                'note' => 'Requesting Meramot Admin price review on Quote 2 (+৳400 variance over initial Quote 1 estimate for PMIC filter IC).',
+                'is_internal' => false,
             ]);
         }
 

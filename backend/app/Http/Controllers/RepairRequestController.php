@@ -258,6 +258,18 @@ class RepairRequestController extends Controller
             'dropoff_address' => $dropoffAddress,
         ]);
 
+        // Feature R13 + R14: Auto-generate AI fault triage & notify matching verified workshops
+        try {
+            app(\App\Services\AISummaryService::class)->summarize(
+                $repairRequest,
+                (int) $customerId,
+                !app()->environment('testing')
+            );
+            app(\App\Services\MultiChannelNotificationService::class)->notifyVendorsOfNewRequest($repairRequest);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[RepairRequestController] Post-create AI/Alert hook warning: ' . $e->getMessage());
+        }
+
         return redirect()
             ->route('requests.track', $repairRequest->id)
             ->with('success', 'Repair request published. Verified workshops across your region can now submit initial estimates.');

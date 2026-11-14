@@ -13,15 +13,28 @@
             <h1 class="text-xl font-extrabold text-[#163625]">Live Map</h1>
             <p class="text-xs text-[#163625]/70">Real-time route dispatch pins and turn-by-turn courier navigation</p>
         </div>
-        <button
-            type="button"
-            @click="updateMyLocation()"
-            :disabled="updatingLocation"
-            class="inline-flex items-center gap-2 rounded-xl bg-[#163625] px-4 py-2.5 text-xs md:text-sm font-bold text-[#E4FCD5] transition hover:opacity-95 disabled:opacity-60"
-        >
-            <i class="fa-solid fa-rotate" :class="updatingLocation ? 'fa-spin' : ''"></i>
-            <span x-text="updatingLocation ? 'Updating...' : 'Update my location'">Update my location</span>
-        </button>
+        <div class="flex flex-wrap items-center gap-2">
+            @if($activeDeliveries->count() > 0)
+                <button
+                    type="button"
+                    @click="simulateNextWaypoint({{ $activeDeliveries->first()->id }})"
+                    :disabled="updatingLocation"
+                    class="inline-flex items-center gap-2 rounded-xl border border-[#163625] bg-[#eef4ea] px-3.5 py-2.5 text-xs font-bold text-[#163625] transition hover:bg-[#d9e5d5] disabled:opacity-60"
+                >
+                    <i class="fa-solid fa-satellite-dish"></i>
+                    <span>Simulate GPS Step</span>
+                </button>
+            @endif
+            <button
+                type="button"
+                @click="updateMyLocation()"
+                :disabled="updatingLocation"
+                class="inline-flex items-center gap-2 rounded-xl bg-[#163625] px-4 py-2.5 text-xs md:text-sm font-bold text-[#E4FCD5] transition hover:opacity-95 disabled:opacity-60"
+            >
+                <i class="fa-solid fa-rotate" :class="updatingLocation ? 'fa-spin' : ''"></i>
+                <span x-text="updatingLocation ? 'Updating...' : 'Update my location'">Update my location</span>
+            </button>
+        </div>
     </div>
 
     <div class="mb-4 grid gap-3 md:grid-cols-3">
@@ -237,6 +250,38 @@ function meramotRiderMap() {
             if (!this.selectedPoint) return;
             const url = `https://www.google.com/maps/dir/?api=1&origin=${this.riderLat},${this.riderLng}&destination=${this.selectedPoint.lat},${this.selectedPoint.lng}&travelmode=driving`;
             window.open(url, '_blank', 'noopener,noreferrer');
+        },
+
+        async simulateNextWaypoint(deliveryJobId) {
+            this.updatingLocation = true;
+            this.errorMsg = '';
+            try {
+                const resp = await fetch('/delivery/location/simulate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ delivery_job_id: deliveryJobId })
+                });
+                const data = await resp.json();
+                if (resp.ok && typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+                    this.riderLat = data.latitude;
+                    this.riderLng = data.longitude;
+                    this.renderRiderPin();
+                    this.map.flyTo([this.riderLat, this.riderLng], 14);
+                    if (this.selectedPoint) {
+                        this.drawRoute(this.selectedPoint);
+                    }
+                } else {
+                    this.errorMsg = data.message || 'Could not simulate next GPS waypoint.';
+                }
+            } catch (e) {
+                this.errorMsg = 'Simulated GPS step failed.';
+            } finally {
+                this.updatingLocation = false;
+            }
         },
 
         updateMyLocation() {

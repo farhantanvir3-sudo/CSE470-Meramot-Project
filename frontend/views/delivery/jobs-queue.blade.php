@@ -77,24 +77,59 @@ Controller: DeliveryJobController@index, claimJob, updateMilestone
         </div>
     </section>
 
-    <!-- Queue Filter Tabs -->
-    <div class="flex flex-wrap items-center gap-2">
-        @php
-            $tabLinks = [
-                ['key' => 'all', 'label' => 'All Tasks'],
-                ['key' => 'pool', 'label' => 'Available (' . $availableList->count() . ')'],
-                ['key' => 'active', 'label' => 'Active (' . $activeList->count() . ')'],
-                ['key' => 'completed', 'label' => 'Completed (' . $completedList->count() . ')'],
-            ];
-        @endphp
-        @foreach($tabLinks as $t)
-            <a
-                href="/delivery/jobs-queue?tab={{ $t['key'] }}"
-                class="rounded-full px-4 py-2 text-xs font-bold border transition {{ $currentTab === $t['key'] ? 'bg-[#163625] text-[#E4FCD5] border-[#163625]' : 'bg-white text-[#163625] border-[#d9e5d5] hover:bg-[#eef4ea]' }}"
-            >
-                {{ $t['label'] }}
-            </a>
-        @endforeach
+    <!-- Queue Filter Tabs & Search Bar -->
+    <div class="space-y-3">
+        <div class="flex flex-wrap items-center gap-2">
+            @php
+                $tabLinks = [
+                    ['key' => 'all', 'label' => 'All Tasks'],
+                    ['key' => 'pool', 'label' => 'Available (' . $availableList->count() . ')'],
+                    ['key' => 'active', 'label' => 'Active (' . $activeList->count() . ')'],
+                    ['key' => 'completed', 'label' => 'Completed (' . $completedList->count() . ')'],
+                ];
+            @endphp
+            @foreach($tabLinks as $t)
+                <a
+                    href="{{ request()->fullUrlWithQuery(['tab' => $t['key']]) }}"
+                    class="rounded-full px-4 py-2 text-xs font-bold border transition {{ $currentTab === $t['key'] ? 'bg-[#163625] text-[#E4FCD5] border-[#163625]' : 'bg-white text-[#163625] border-[#d9e5d5] hover:bg-[#eef4ea]' }}"
+                >
+                    {{ $t['label'] }}
+                </a>
+            @endforeach
+        </div>
+
+        <form method="GET" action="/delivery/jobs-queue" class="rounded-2xl border border-[#d9e5d5] bg-white p-3.5 shadow-sm flex flex-col lg:flex-row gap-2.5">
+            <input type="hidden" name="tab" value="{{ $currentTab }}">
+            <div class="flex-1 min-w-0">
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ $search ?? '' }}"
+                    placeholder="Search tracking code, neighbourhood, pickup or workshop..."
+                    class="w-full rounded-xl border border-[#c8dac2] bg-[#f8fbf6] px-3.5 py-2 text-xs font-medium text-[#163625] outline-none focus:border-[#163625]"
+                >
+            </div>
+            <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
+                <select name="direction" class="rounded-xl border border-[#c8dac2] bg-[#f8fbf6] px-3 py-2 text-xs font-bold text-[#163625] outline-none focus:border-[#163625]">
+                    <option value="">All Directions</option>
+                    <option value="TO_SHOP" {{ ($directionFilter ?? '') === 'TO_SHOP' ? 'selected' : '' }}>Customer &rarr; Shop</option>
+                    <option value="TO_CUSTOMER" {{ ($directionFilter ?? '') === 'TO_CUSTOMER' ? 'selected' : '' }}>Shop &rarr; Customer</option>
+                </select>
+                <select name="type" class="rounded-xl border border-[#c8dac2] bg-[#f8fbf6] px-3 py-2 text-xs font-bold text-[#163625] outline-none focus:border-[#163625]">
+                    <option value="">All Speeds</option>
+                    <option value="EXPRESS" {{ ($typeFilter ?? '') === 'EXPRESS' ? 'selected' : '' }}>Express Priority</option>
+                    <option value="REGULAR" {{ ($typeFilter ?? '') === 'REGULAR' ? 'selected' : '' }}>Standard</option>
+                </select>
+                <button type="submit" class="rounded-xl bg-[#163625] px-4 py-2 text-xs font-bold text-[#E4FCD5] hover:opacity-90 transition">
+                    Filter
+                </button>
+                @if(!empty($search) || !empty($directionFilter) || !empty($typeFilter))
+                    <a href="/delivery/jobs-queue?tab={{ $currentTab }}" class="rounded-xl border border-[#d9e5d5] px-3 py-2 text-xs font-bold text-[#163625] hover:bg-[#eef4ea] transition">
+                        Reset
+                    </a>
+                @endif
+            </div>
+        </form>
     </div>
 
     <!-- Section 1: Open Dispatch Pool -->
@@ -280,8 +315,11 @@ Controller: DeliveryJobController@index, claimJob, updateMilestone
                                     @if($nextAction['requires_otp'])
                                         <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
                                             <span class="font-semibold text-[#163625]">{{ $nextAction['otp_prompt'] }}</span>
-                                            @if($nextAction['demo_otp'])
-                                                <span class="rounded bg-[#eef4ea] px-2 py-0.5 font-mono font-bold text-[#163625] border border-[#d9e5d5]">Code: {{ $nextAction['demo_otp'] }}</span>
+                                            @if($nextAction['demo_otp'] && (session('dev_mode', false) || config('app.debug')))
+                                                <details class="text-[11px]">
+                                                    <summary class="cursor-pointer font-bold text-[#163625]/70 hover:text-[#163625]">Demo OTP Helper</summary>
+                                                    <span class="ml-1 rounded bg-[#eef4ea] px-2 py-0.5 font-mono font-bold text-[#163625] border border-[#d9e5d5]">{{ $nextAction['demo_otp'] }}</span>
+                                                </details>
                                             @endif
                                         </div>
                                         <div class="flex flex-col sm:flex-row gap-2">
@@ -306,6 +344,29 @@ Controller: DeliveryJobController@index, claimJob, updateMilestone
                                         </button>
                                     @endif
                                 </form>
+                            @endif
+
+                            @if($canAct)
+                                <div class="flex flex-wrap items-center gap-2 pt-0.5">
+                                    @if(in_array($statusUpper, ['SCHEDULED', 'DISPATCHED'], true))
+                                        <form method="POST" action="/delivery/jobs/{{ $active->id }}/release" onsubmit="return confirm('Release this trip back to the open pool?');">
+                                            @csrf
+                                            <input type="hidden" name="reason" value="Courier released trip prior to pickup">
+                                            <button type="submit" class="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-100 transition">
+                                                Release to Pool
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    <details class="w-full">
+                                        <summary class="cursor-pointer text-[11px] font-semibold text-rose-800 hover:underline">Report Field Exception</summary>
+                                        <form method="POST" action="/delivery/jobs/{{ $active->id }}/exception" class="mt-2 flex flex-col sm:flex-row gap-2">
+                                            @csrf
+                                            <input type="text" name="reason" required minlength="5" maxlength="300" placeholder="Customer unreachable, road closure, address issue..." class="flex-1 rounded-xl border border-[#c8dac2] bg-white px-3 py-1.5 text-xs text-[#163625] outline-none focus:border-[#163625]">
+                                            <button type="submit" class="rounded-xl bg-rose-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-800 transition">Send Alert</button>
+                                        </form>
+                                    </details>
+                                </div>
                             @endif
 
                             <div class="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-xs">

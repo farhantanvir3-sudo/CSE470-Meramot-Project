@@ -26,7 +26,7 @@ class DeliveryJobController extends Controller
 
     /**
      * Display the Delivery Job Queue (open unassigned pool, active trips, and completed history).
-     * Route: GET /delivery/jobs-queue
+     * Route: GET /delivery/jobs-queue | GET /api/delivery/jobs
      */
     public function index(Request $request)
     {
@@ -43,59 +43,104 @@ class DeliveryJobController extends Controller
             $tab = 'all';
         }
 
-        $availableJobs = DeliveryJob::with([
-            'repairRequest.customer',
-            'repairJob.shop',
-        ])
-            ->whereNull('delivery_agent_id')
-            ->whereIn('status', DeliveryLifecycleService::OPEN_POOL_STATUSES)
-            ->where(function ($query) {
-                $query->whereDoesntHave('repairRequest')
-                    ->orWhereHas('repairRequest', function ($reqQuery) {
-                        $reqQuery->whereNotIn('status', ['CANCELLED', 'REJECTED']);
-                    });
-            })
+        $search = trim((string) $request->query('q', ''));
+        $directionFilter = strtoupper(trim((string) $request->query('direction', '')));
+        $typeFilter = strtoupper(trim((string) $request->query('type', '')));
+
+        $applyFilters = function ($query) use ($search, $directionFilter, $typeFilter) {
+            if (in_array($directionFilter, ['TO_SHOP', 'TO_CUSTOMER'], true)) {
+                $query->whereRaw('UPPER(direction) = ?', [$directionFilter]);
+            }
+            if (in_array($typeFilter, ['EXPRESS', 'REGULAR'], true)) {
+                $query->whereRaw('UPPER(type) = ?', [$typeFilter]);
+            }
+            if ($search !== '') {
+                $like = '%' . strtolower($search) . '%';
+                $query->where(function ($sub) use ($like) {
+                    $sub->whereRaw('LOWER(COALESCE(tracking_code, \'\')) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(COALESCE(pickup_address, \'\')) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(COALESCE(dropoff_address, \'\')) LIKE ?', [$like])
+                        ->orWhereHas('repairRequest', function ($rq) use ($like) {
+                            $rq->whereRaw('LOWER(COALESCE(title, \'\')) LIKE ?', [$like])
+                                ->orWhereRaw('LOWER(COALESCE(tracking_code, \'\')) LIKE ?', [$like]);
+                        });
+                });
+            }
+            return $query;
+        };
+
+        $availableJobs = $applyFilters(
+            DeliveryJob::with([
+                'repairRequest.customer',
+                'repairJob.shop',
+            ])
+                ->whereNull('delivery_agent_id')
+                ->whereIn('status', DeliveryLifecycleService::OPEN_POOL_STATUSES)
+                ->where(function ($query) {
+                    $query->whereDoesntHave('repairRequest')
+                        ->orWhereHas('repairRequest', function ($reqQuery) {
+                            $reqQuery->whereNotIn('status', ['CANCELLED', 'REJECTED']);
+                        });
+                })
+        )
             ->latest()
             ->get();
 
         $activeJobs = $agent
-            ? DeliveryJob::with([
-                'repairRequest.customer',
-                'repairJob.shop',
-                'repairJob.repairRequest.customer',
-            ])
-                ->where('delivery_agent_id', $agent->id)
-                ->whereIn('status', [
-                    'PENDING',
-                    'SCHEDULED',
-                    'DISPATCHED',
-                    'PICKED_UP',
-                    'IN_TRANSIT',
-                    'assigned',
-                    'picked_up',
-                    'in_transit',
+            ? $applyFilters(
+                DeliveryJob::with([
+                    'repairRequest.customer',
+                    'repairJob.shop',
+                    'repairJob.repairRequest.customer',
                 ])
+                    ->where('delivery_agent_id', $agent->id)
+                    ->whereIn('status', [
+                        'PENDING',
+                        'SCHEDULED',
+                        'DISPATCHED',
+                        'PICKED_UP',
+                        'IN_TRANSIT',
+                        'assigned',
+                        'picked_up',
+                        'in_transit',
+                    ])
+            )
                 ->orderByDesc('updated_at')
                 ->get()
             : collect();
 
         $completedJobs = $agent
-            ? DeliveryJob::with([
-                'repairRequest.customer',
-                'repairJob.shop',
-            ])
-                ->where('delivery_agent_id', $agent->id)
-                ->where('status', 'DELIVERED')
+            ? $applyFilters(
+                DeliveryJob::with([
+                    'repairRequest.customer',
+                    'repairJob.shop',
+                ])
+                    ->where('delivery_agent_id', $agent->id)
+                    ->where('status', 'DELIVERED')
+            )
                 ->latest('delivered_at')
-                ->take(8)
+                ->take(15)
                 ->get()
             : collect();
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 'success',
+                'is_approved_agent' => $isApprovedAgent,
+                'available_jobs' => $availableJobs,
+                'active_jobs' => $activeJobs,
+                'completed_jobs' => $completedJobs,
+            ]);
+        }
 
         return view('delivery.jobs-queue', compact(
             'user',
             'agent',
             'isApprovedAgent',
             'tab',
+            'search',
+            'directionFilter',
+            'typeFilter',
             'availableJobs',
             'activeJobs',
             'completedJobs'
@@ -171,6 +216,65 @@ class DeliveryJobController extends Controller
             'success',
             'Trip #' . ($delivery->tracking_code ?: $delivery->id) . " updated to {$label}."
         );
+    }
+
+    /**
+     * Release a claimed trip back to the open pool before physical handover.
+     * Route: POST /delivery/jobs/{id}/release
+     */
+    public function releaseJob(Request $request, $id)
+    {
+        $agent = $this->requireApprovedAgent($request, 'Sign in with an approved @meramotbd.com courier account to release trips.');
+        if ($agent instanceof \Illuminate\Http\Response || $agent instanceof \Illuminate\Http\JsonResponse || $agent instanceof \Illuminate\Http\RedirectResponse) {
+            return $agent;
+        }
+
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:250',
+        ]);
+
+        $delivery = $this->lifecycle->releaseJob((int) $id, $agent, $validated['reason'] ?? null);
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Trip released back to the open dispatch pool.',
+                'data' => $delivery,
+            ]);
+        }
+
+        return redirect('/delivery/jobs-queue?tab=pool')->with(
+            'success',
+            'Trip #' . ($delivery->tracking_code ?: $delivery->id) . ' released back to the open dispatch pool.'
+        );
+    }
+
+    /**
+     * Report a field exception (customer unreachable, traffic delay, address mismatch) to Admin Dispatch.
+     * Route: POST /delivery/jobs/{id}/exception
+     */
+    public function reportException(Request $request, $id)
+    {
+        $agent = $this->requireApprovedAgent($request, 'Sign in with an approved @meramotbd.com courier account to report trip exceptions.');
+        if ($agent instanceof \Illuminate\Http\Response || $agent instanceof \Illuminate\Http\JsonResponse || $agent instanceof \Illuminate\Http\RedirectResponse) {
+            return $agent;
+        }
+
+        $validated = $request->validate([
+            'reason' => 'required|string|min:5|max:400',
+        ]);
+
+        $msg = $this->lifecycle->reportException((int) $id, $agent, $validated['reason']);
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Field exception logged to Logistics Operations.',
+                'data' => $msg,
+            ]);
+        }
+
+        return back()->with('success', 'Field exception sent to Meramot Logistics Admin dispatch chat.');
     }
 
     private function requireApprovedAgent(Request $request, string $unauthMessage): DeliveryAgent|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse

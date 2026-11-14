@@ -307,21 +307,22 @@ class SprintOneDemoReadinessTest extends TestCase
             $this->get($uri)->assertStatus(200, "Expected HTTP 200 for GET {$uri}");
         }
 
-        // Later-sprint POST actions route cleanly to Coming Soon (HTTP 200, zero 500s)
+        // Sprint 2 & 3 live POST actions redirect cleanly to their active workflows (zero 500s)
         $firstReq = RepairRequest::firstOrFail();
         $this->post('/payment/initiate', [
             'repair_request_id' => $firstReq->id,
-            'amount' => 3500,
-        ])->assertStatus(200)->assertSee('Coming Soon');
+            'payment_method' => 'BKASH',
+        ])->assertStatus(302);
 
         // Unverified /forgot-password redirects to /login recovery popup
         $this->get('/forgot-password')->assertRedirect('/login?forgot=1');
 
         // R2 claim route is now live and redirects non-courier viewers to Delivery Partner login
         $this->post('/delivery/jobs/1/claim')->assertRedirect('/delivery/login');
-        $this->post('/delivery/payout/request')->assertStatus(200)->assertSee('Coming Soon');
-        $this->post('/admin/payouts/1/disburse')->assertStatus(200)->assertSee('Coming Soon');
-        $this->post('/admin/moderation/sanction')->assertStatus(200)->assertSee('Coming Soon');
+        // R3, R18, R19 POST routes are now live in Sprint 3 and redirect cleanly
+        $this->post('/delivery/payout/request')->assertRedirect('/delivery/earnings');
+        $this->post('/admin/payouts/1/disburse')->assertRedirect('/admin/payouts/manage');
+        $this->post('/admin/moderation/sanction')->assertStatus(302);
         $this->post('/coming-soon/multi-channel-alerts')->assertStatus(200)->assertSee('Coming Soon');
 
         // Verify full DatabaseSeeder (including SprintOneDemoSeeder) preserves all dual-address & branch invariants

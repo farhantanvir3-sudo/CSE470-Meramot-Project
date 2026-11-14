@@ -20,11 +20,18 @@
     selectedArea: @js(old('area', auth()->user()->area ?? ($customerLocation['area'] ?? 'Banani'))),
     subtotal: {{ (float) ($total ?? 0) }},
     serviceCharge: {{ (float) ($serviceCharge ?? 0) }},
+    appliedVoucher: @js($appliedVoucher ?? ''),
+    baseDiscount: {{ (float) ($discountAmount ?? 0) }},
     get deliveryFee() {
         return this.deliveryType === 'EXPRESS' ? 150 : 80;
     },
+    get activeDiscount() {
+        if (this.appliedVoucher === 'FREEDELIVERY') return this.deliveryFee;
+        if (this.appliedVoucher === 'SHOPFREE') return Math.min(this.deliveryFee, 80);
+        return this.baseDiscount;
+    },
     get grandTotal() {
-        return this.subtotal + this.serviceCharge + (this.subtotal > 0 ? this.deliveryFee : 0);
+        return Math.max(0, this.subtotal + this.serviceCharge + (this.subtotal > 0 ? this.deliveryFee : 0) - this.activeDiscount);
     },
     applyMapLocation(loc) {
         if (!loc) return;
@@ -534,8 +541,9 @@
                         >{{ old('problem_note') }}</textarea>
                     </div>
 
-                    <!-- Hidden Payment Input Synced from Right Card -->
+                    <!-- Hidden Payment & Voucher Inputs Synced from Right Card -->
                     <input type="hidden" name="payment_method" :value="paymentMethod">
+                    <input type="hidden" name="voucher_code" value="{{ $appliedVoucher ?? '' }}">
                 </form>
             </div>
 
@@ -544,6 +552,68 @@
                 <div>
                     <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Order Summary</p>
                     <h2 class="text-xl font-black text-[var(--foreground)] mt-0.5">Checkout &amp; Escrow</h2>
+                </div>
+
+                <!-- Promo & Voucher Engine (Daraz / Foodpanda Style) -->
+                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/75 p-3.5 space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                            <i class="fa-solid fa-ticket text-[var(--accent-dark)]"></i>
+                            <span>Promo / Voucher Code</span>
+                        </span>
+                        @if(!empty($appliedVoucher))
+                            <form method="POST" action="{{ route('cart.voucher.remove') }}" class="inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="text-[11px] font-bold text-rose-700 hover:underline">Remove</button>
+                            </form>
+                        @endif
+                    </div>
+
+                    @if(!empty($appliedVoucher))
+                        <div class="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 flex items-center justify-between gap-2 text-emerald-950">
+                            <div class="min-w-0">
+                                <p class="font-mono font-black text-xs">{{ $appliedVoucher }}</p>
+                                <p class="text-[10px] text-emerald-800">{{ $voucherLabel ?? 'Promo discount active' }}</p>
+                            </div>
+                            <span class="font-black text-xs text-emerald-800 shrink-0">-৳<span x-text="activeDiscount.toLocaleString()">{{ number_format($discountAmount ?? 0) }}</span></span>
+                        </div>
+                    @else
+                        <form method="POST" action="{{ route('cart.voucher.apply') }}" class="flex gap-2">
+                            @csrf
+                            <input
+                                type="text"
+                                name="voucher_code"
+                                maxlength="30"
+                                required
+                                placeholder="Enter code (e.g. MERAMOT10)"
+                                class="flex-1 min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs font-mono font-bold uppercase text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                            >
+                            <button type="submit" class="shrink-0 rounded-xl bg-[var(--accent-dark)] px-3.5 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                                Apply
+                            </button>
+                        </form>
+                        <div class="flex flex-wrap gap-1.5 pt-0.5">
+                            @foreach(['MERAMOT10' => '10% Off', 'FIRSTFIX100' => '৳100 Off', 'FREEDELIVERY' => 'Free Courier'] as $vCode => $vHint)
+                                <form method="POST" action="{{ route('cart.voucher.apply') }}" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="voucher_code" value="{{ $vCode }}">
+                                    <button type="submit" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                                        {{ $vCode }} · {{ $vHint }}
+                                    </button>
+                                </form>
+                            @endforeach
+                            @if(isset($activeShop) && $activeShop && $activeShop->free_delivery)
+                                <form method="POST" action="{{ route('cart.voucher.apply') }}" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="voucher_code" value="SHOPFREE">
+                                    <button type="submit" class="rounded-full border border-emerald-400 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-900 hover:bg-emerald-100 transition">
+                                        SHOPFREE · Shop Free Pickup
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <div class="space-y-2.5 text-xs border-y border-[var(--border)] py-4">
@@ -559,9 +629,15 @@
                         <span class="text-[var(--muted-foreground)]">Two-Way Courier (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳<span x-text="deliveryFee">80</span></span>
                     </div>
+                    <template x-if="activeDiscount > 0">
+                        <div class="flex items-center justify-between gap-2 text-emerald-800 font-bold">
+                            <span>Voucher Savings (<span class="font-mono" x-text="appliedVoucher"></span>)</span>
+                            <span class="shrink-0">-৳<span x-text="activeDiscount.toLocaleString()"></span></span>
+                        </div>
+                    </template>
                     <div class="pt-2 border-t border-[var(--border)] flex items-center justify-between gap-2 text-base">
                         <span class="font-black text-[var(--foreground)]">Total Payable</span>
-                        <span class="text-2xl font-black text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format($total + ($serviceCharge ?? 0) + 80) }}</span></span>
+                        <span class="text-2xl font-black text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 0) + 80 - ($discountAmount ?? 0))) }}</span></span>
                     </div>
                 </div>
 
@@ -578,10 +654,27 @@
                     <label class="cursor-pointer rounded-2xl border p-3 flex items-center justify-between gap-2 transition" :class="paymentMethod === 'SSLCOMMERZ' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)] font-bold' : 'border-[var(--border)] bg-[var(--card)]'">
                         <span class="flex items-center gap-2 text-[var(--foreground)]">
                             <input type="radio" value="SSLCOMMERZ" x-model="paymentMethod" class="accent-[#244229]">
-                            <span>SSLCommerz Online Escrow (bKash/Card)</span>
+                            <span>SSLCommerz Online Escrow (All Channels)</span>
                         </span>
                         <i class="fa-solid fa-lock text-[var(--accent-dark)] shrink-0"></i>
                     </label>
+                    <div class="grid grid-cols-3 gap-1.5">
+                        <label class="cursor-pointer rounded-xl border p-2 text-center transition" :class="paymentMethod === 'BKASH' ? 'border-pink-600 bg-pink-50 font-bold text-pink-900' : 'border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]'">
+                            <input type="radio" value="BKASH" x-model="paymentMethod" class="sr-only">
+                            <span class="block text-[11px] font-black">bKash</span>
+                            <span class="block text-[9px] opacity-75">Escrow</span>
+                        </label>
+                        <label class="cursor-pointer rounded-xl border p-2 text-center transition" :class="paymentMethod === 'NAGAD' ? 'border-orange-600 bg-orange-50 font-bold text-orange-900' : 'border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]'">
+                            <input type="radio" value="NAGAD" x-model="paymentMethod" class="sr-only">
+                            <span class="block text-[11px] font-black">Nagad</span>
+                            <span class="block text-[9px] opacity-75">Escrow</span>
+                        </label>
+                        <label class="cursor-pointer rounded-xl border p-2 text-center transition" :class="paymentMethod === 'CARD' ? 'border-sky-700 bg-sky-50 font-bold text-sky-900' : 'border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]'">
+                            <input type="radio" value="CARD" x-model="paymentMethod" class="sr-only">
+                            <span class="block text-[11px] font-black">Visa/MC</span>
+                            <span class="block text-[9px] opacity-75">Card</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-3.5 text-[11px] text-[var(--muted-foreground)] leading-relaxed">

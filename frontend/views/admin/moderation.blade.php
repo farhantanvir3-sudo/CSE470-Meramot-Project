@@ -16,10 +16,18 @@
             </p>
         </div>
 
-        <div class="grid grid-cols-2 w-full md:w-auto md:flex items-center gap-2.5 sm:gap-3 shrink-0">
+        <div class="grid grid-cols-2 sm:grid-cols-4 w-full md:w-auto md:flex items-center gap-2.5 sm:gap-3 shrink-0">
             <div class="rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/70 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
                 <div class="text-base sm:text-lg font-black text-[var(--foreground)]">{{ $reviews->count() }}</div>
                 <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Active Reviews</div>
+            </div>
+            <div class="rounded-xl sm:rounded-2xl border border-amber-300 bg-amber-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
+                <div class="text-base sm:text-lg font-black text-amber-800">{{ isset($disputes) ? $disputes->whereIn('status', ['OPEN', 'INVESTIGATING', 'WAITING_EVIDENCE', 'WAITING_RESPONSE'])->count() : 0 }}</div>
+                <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-900">Open Disputes</div>
+            </div>
+            <div class="rounded-xl sm:rounded-2xl border border-sky-300 bg-sky-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
+                <div class="text-base sm:text-lg font-black text-sky-800">{{ isset($supportTickets) ? $supportTickets->whereIn('status', ['OPEN', 'IN_PROGRESS', 'ESCALATED'])->count() : 0 }}</div>
+                <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-sky-900">Open Tickets</div>
             </div>
             <div class="rounded-xl sm:rounded-2xl border border-rose-300 bg-rose-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
                 <div class="text-base sm:text-lg font-black text-rose-700">{{ $bannedUsers->count() }}</div>
@@ -27,6 +35,191 @@
             </div>
         </div>
     </div>
+
+    @if(session('success'))
+        <div class="rounded-2xl border border-emerald-400 bg-emerald-50 p-4 text-xs font-bold text-emerald-950 flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-check text-emerald-700"></i>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+    @if(session('error') || $errors->any())
+        <div class="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs font-bold text-rose-900">
+            {{ session('error') ?? $errors->first() }}
+        </div>
+    @endif
+
+    {{-- Section 0: Order Disputes & Governance Sanction Desk (Feature R19) --}}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <section class="lg:col-span-7 rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 text-xs">
+            <div class="flex items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-lg font-black text-[var(--foreground)]">Escrow Order Disputes Arbitration</h2>
+                    <p class="text-xs text-[var(--muted-foreground)]">Resolve customer-workshop disputes with optional full or partial escrow refunds.</p>
+                </div>
+                <span class="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900">
+                    {{ isset($disputes) ? $disputes->count() : 0 }} Cases
+                </span>
+            </div>
+
+            <div class="space-y-3 max-h-[440px] overflow-y-auto pr-1">
+                @forelse($disputes ?? [] as $dc)
+                    @php
+                        $isOpenCase = in_array($dc->status, ['OPEN', 'INVESTIGATING', 'WAITING_EVIDENCE', 'WAITING_RESPONSE'], true);
+                    @endphp
+                    <div class="rounded-2xl border p-4 space-y-2.5 {{ $isOpenCase ? 'border-amber-300 bg-amber-50/60' : 'border-[var(--border)] bg-[var(--mint-100)]/45' }}">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="font-black text-sm text-[var(--foreground)]">
+                                Dispute #{{ $dc->id }} • Order #{{ $dc->repair_request_id }} ({{ $dc->repairRequest?->title ?? 'Repair Order' }})
+                            </span>
+                            <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $isOpenCase ? 'bg-amber-200 text-amber-950' : 'bg-emerald-100 text-emerald-900' }}">
+                                {{ $dc->status }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-[var(--muted-foreground)]">
+                            Opened by <strong>{{ $dc->openedBy?->name ?? 'Customer' }}</strong> against <strong>{{ $dc->against?->name ?? 'Workshop' }}</strong>
+                            @if($dc->payment)
+                                • Paid Escrow: <strong class="text-[var(--accent-dark)]">৳{{ number_format((float) $dc->payment->amount, 2) }}</strong>
+                            @endif
+                        </p>
+                        @if($dc->notes->isNotEmpty())
+                            <div class="rounded-xl bg-white/85 border border-[var(--border)] p-2.5 space-y-1">
+                                @foreach($dc->notes->take(3) as $dn)
+                                    <p class="text-[11px]"><strong class="text-[var(--accent-dark)]">{{ $dn->author?->name ?? 'User' }}:</strong> {{ $dn->note }}</p>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if($isOpenCase)
+                            <form method="POST" action="{{ route('admin.disputes.resolve', $dc->id) }}" class="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1">
+                                @csrf
+                                <select name="decision" class="sm:col-span-4 rounded-xl border border-[var(--border)] bg-white px-2.5 py-2 font-bold text-[var(--foreground)]">
+                                    <option value="resolve">Resolve (Release to Shop)</option>
+                                    <option value="full_refund">Full Escrow Refund</option>
+                                    <option value="partial_refund">Partial Refund (50%)</option>
+                                    <option value="reject">Reject Claim</option>
+                                </select>
+                                <input type="text" name="resolution" required placeholder="Arbitration ruling & settlement note..."
+                                       class="sm:col-span-5 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
+                                <button type="submit" class="sm:col-span-3 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-3 py-2 hover:opacity-90 transition">
+                                    Rule Case
+                                </button>
+                            </form>
+                        @elseif($dc->resolution)
+                            <p class="text-[11px] font-semibold text-emerald-900">Ruling: {{ $dc->resolution }}</p>
+                        @endif
+                    </div>
+                @empty
+                    <div class="rounded-2xl border border-dashed border-[var(--border)] p-6 text-center text-[var(--muted-foreground)]">
+                        No order disputes filed.
+                    </div>
+                @endforelse
+            </div>
+        </section>
+
+        <!-- Governance Sanction Desk -->
+        <section class="lg:col-span-5 rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 text-xs"
+                 x-data="{ targetType: 'user' }">
+            <div>
+                <h2 class="text-lg font-black text-[var(--foreground)]">Direct Governance Sanction Desk</h2>
+                <p class="text-xs text-[var(--muted-foreground)]">Issue official warnings, account suspensions, or workshop delistings.</p>
+            </div>
+
+            <form method="POST" action="{{ route('admin.moderation.sanction') }}" class="space-y-3">
+                @csrf
+                <div>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Target Entity Type</label>
+                    <select name="target_type" x-model="targetType" class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 font-bold">
+                        <option value="user">Platform User Account</option>
+                        <option value="shop">Partner Repair Workshop</option>
+                    </select>
+                </div>
+
+                <div x-show="targetType === 'user'">
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Select User</label>
+                    <select :name="targetType === 'user' ? 'target_id' : ''" class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 font-semibold">
+                        @foreach($sanctionableUsers ?? [] as $su)
+                            <option value="{{ $su->id }}">{{ $su->name }} ({{ $su->email }} • {{ $su->role }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div x-show="targetType === 'shop'" x-cloak>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Select Workshop</label>
+                    <select :name="targetType === 'shop' ? 'target_id' : ''" class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 font-semibold">
+                        @foreach($sanctionableShops ?? [] as $ss)
+                            <option value="{{ $ss->id }}">{{ $ss->name }} ({{ $ss->area }}, {{ $ss->city }} • {{ $ss->is_public ? 'Public' : 'Delisted' }})</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Governance Action</label>
+                        <select name="action" class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 font-bold">
+                            <option value="warn">Issue Official Warning</option>
+                            <option value="suspend">Suspend Ordering Privileges</option>
+                            <option value="ban">Ban Account</option>
+                            <option value="restore_user">Restore User Access</option>
+                            <option value="delist_shop">Delist Workshop</option>
+                            <option value="restore_shop">Restore Workshop</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Violation Category</label>
+                        <input type="text" name="violation_type" value="fraudulent_quote_or_policy"
+                               class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">Reason &amp; Notice Sent to Party</label>
+                    <textarea name="reason" rows="2" required placeholder="State clear policy basis for the audit log and recipient notification..."
+                              class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2"></textarea>
+                </div>
+
+                <button type="submit" class="w-full rounded-full bg-rose-700 hover:bg-rose-800 py-2.5 px-5 font-black text-white transition shadow">
+                    <i class="fa-solid fa-gavel mr-1"></i> Execute Governance Action
+                </button>
+            </form>
+        </section>
+    </div>
+
+    {{-- Support Escalations Queue --}}
+    @if(isset($supportTickets) && $supportTickets->count() > 0)
+        <section class="rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 text-xs">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-black text-[var(--foreground)]">Customer &amp; Partner Support Escalations</h2>
+                    <p class="text-xs text-[var(--muted-foreground)]">Respond directly to open support tickets submitted via the Help &amp; Dispute Desk.</p>
+                </div>
+                <span class="rounded-full bg-sky-100 px-3 py-1 text-[11px] font-bold text-sky-900">{{ $supportTickets->count() }} Tickets</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                @foreach($supportTickets->take(6) as $st)
+                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-black text-[var(--foreground)]">#{{ $st->id }} — {{ $st->subject }}</span>
+                            <span class="rounded-full bg-white border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold">{{ $st->status }}</span>
+                        </div>
+                        <p class="text-[11px] text-[var(--muted-foreground)]">{{ $st->user?->name ?? 'User' }} • Priority: <strong class="uppercase">{{ $st->priority }}</strong></p>
+                        <p class="rounded-xl bg-white p-2.5 border border-[var(--border)] text-[11px]">{{ $st->message }}</p>
+                        @if($st->status !== 'RESOLVED' && $st->status !== 'CLOSED')
+                            <form method="POST" action="{{ route('admin.support.resolve', $st->id) }}" class="flex gap-2 pt-1">
+                                @csrf
+                                <input type="text" name="admin_notes" required placeholder="Official support resolution..."
+                                       class="flex-1 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5">
+                                <button type="submit" class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-4 py-1.5 font-bold">
+                                    Resolve
+                                </button>
+                            </form>
+                        @elseif($st->admin_notes)
+                            <p class="text-[11px] font-semibold text-emerald-800">Admin Reply: {{ $st->admin_notes }}</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
 
     {{-- Section 1: Workshop Reviews Moderation Queue --}}
     <section class="rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">

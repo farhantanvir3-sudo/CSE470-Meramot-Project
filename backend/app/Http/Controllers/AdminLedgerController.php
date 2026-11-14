@@ -100,7 +100,7 @@ class AdminLedgerController extends Controller
 
         // 3. Filterable Query for Ledger Journal Table (Nawshad — Commit 4742c9c, fixed for PostgreSQL)
         $query = FinancialLedger::with(['shop', 'payment'])
-            ->when(Schema::hasColumn('financial_ledger', 'hidden_at'), fn ($q) => $q->whereNull('hidden_at'))
+            ->when(Schema::hasColumn('financial_ledgers', 'hidden_at'), fn ($q) => $q->whereNull('hidden_at'))
             ->orderBy('id', 'asc');
 
         if ($request->filled('entry_type')) {

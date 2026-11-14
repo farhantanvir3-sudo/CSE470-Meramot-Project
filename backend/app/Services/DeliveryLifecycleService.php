@@ -8,7 +8,9 @@ use App\Models\DeliveryJob;
 use App\Models\RepairJob;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
+use App\Models\RiderChatMessage;
 use App\Models\RiderEarnings;
+use App\Models\User;
 use App\Models\UserNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -268,12 +270,117 @@ class DeliveryLifecycleService
                 'dropoff_otp' => (string) random_int(1000, 9999),
                 'distance_km' => 4.20,
                 'fee' => $fee,
-                'scheduled_at' => null,
+                'scheduled_at' => $isToShop ? ($repairRequest->scheduled_pickup_at ?? null) : null,
                 'milestone_timestamps' => [
                     'PENDING' => now()->toIso8601String(),
                 ],
             ]
         );
+    }
+
+    /**
+     * Feature R2: Release a claimed job back to the open dispatch pool prior to physical pickup.
+     */
+    public function releaseJob(int $deliveryJobId, DeliveryAgent $agent, ?string $reason = null): DeliveryJob
+    {
+        return DB::transaction(function () use ($deliveryJobId, $agent, $reason) {
+            $delivery = DeliveryJob::with(['repairRequest', 'repairJob'])
+                ->where('id', $deliveryJobId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ((int) $delivery->delivery_agent_id !== (int) $agent->id) {
+                abort(403, 'Only the assigned courier can release this trip.');
+            }
+
+            $status = strtoupper((string) $delivery->status);
+            if (!in_array($status, ['SCHEDULED', 'DISPATCHED'], true)) {
+                throw ValidationException::withMessages([
+                    'job' => 'Trips can only be released before physical handover. Use Report Exception once a device is in your custody.',
+                ]);
+            }
+
+            $timestamps = is_array($delivery->milestone_timestamps) ? $delivery->milestone_timestamps : [];
+            $timestamps['RELEASED_TO_POOL'] = now()->toIso8601String();
+
+            $delivery->update([
+                'delivery_agent_id' => null,
+                'rider_name' => null,
+                'rider_phone' => null,
+                'status' => 'PENDING',
+                'dispatched_at' => null,
+                'milestone_timestamps' => $timestamps,
+            ]);
+
+            $req = $delivery->repairRequest ?? $delivery->repairJob?->repairRequest;
+            $rJob = $delivery->repairJob ?? $req?->repairJob;
+            $isToCustomer = strtoupper((string) $delivery->direction) === 'TO_CUSTOMER';
+
+            if ($req && !$isToCustomer && strtoupper((string) $req->status) === 'PICKUP_SCHEDULED') {
+                $req->update(['status' => 'ASSIGNED']);
+                if ($rJob && strtoupper((string) $rJob->status) === 'PICKUP_SCHEDULED') {
+                    $rJob->update(['status' => 'ASSIGNED']);
+                }
+            }
+
+            if ($reason) {
+                $dispatchAdminId = User::where('email', 'delivery.admin@meramot.demo')->value('id')
+                    ?? User::where('role', 'admin')->value('id')
+                    ?? $agent->user_id;
+
+                RiderChatMessage::create([
+                    'delivery_job_id' => $delivery->id,
+                    'sender_user_id' => $agent->user_id,
+                    'sender_role' => 'DELIVERY',
+                    'recipient_user_id' => $dispatchAdminId,
+                    'message' => '[TRIP RELEASED TO POOL] ' . trim($reason),
+                ]);
+            }
+
+            $hasRemainingActiveTrips = DeliveryJob::where('delivery_agent_id', $agent->id)
+                ->whereIn('status', self::ACTIVE_STATUSES)
+                ->exists();
+            $agent->update(['status' => $hasRemainingActiveTrips ? 'BUSY' : 'AVAILABLE']);
+
+            return $delivery->fresh();
+        });
+    }
+
+    /**
+     * Feature R2: Log a field exception (customer unreachable, address issue, delay) to Admin Dispatch.
+     */
+    public function reportException(int $deliveryJobId, DeliveryAgent $agent, string $reason): RiderChatMessage
+    {
+        $delivery = DeliveryJob::with(['repairRequest'])->findOrFail($deliveryJobId);
+        if ((int) $delivery->delivery_agent_id !== (int) $agent->id) {
+            abort(403, 'Only the assigned courier can report an exception on this trip.');
+        }
+
+        $dispatchAdminId = User::where('email', 'delivery.admin@meramot.demo')->value('id')
+            ?? User::where('role', 'admin')->value('id')
+            ?? $agent->user_id;
+
+        $msg = RiderChatMessage::create([
+            'delivery_job_id' => $delivery->id,
+            'sender_user_id' => $agent->user_id,
+            'sender_role' => 'DELIVERY',
+            'recipient_user_id' => $dispatchAdminId,
+            'message' => '[FIELD EXCEPTION] ' . trim($reason),
+        ]);
+
+        $adminIds = User::where('role', 'admin')->pluck('id');
+        foreach ($adminIds as $adminId) {
+            $this->notifyUser(
+                (int) $adminId,
+                'delivery_exception',
+                'warning',
+                'Courier Exception #' . ($delivery->tracking_code ?: $delivery->id),
+                ($agent->applicant_name ?: 'Courier') . ' reported: ' . trim($reason),
+                '/support/rider-chat/' . $delivery->id
+            );
+        }
+
+        return $msg;
     }
 
     /**
@@ -631,6 +738,19 @@ class DeliveryLifecycleService
     private function notifyUser(?int $userId, string $type, string $severity, string $title, string $message, string $actionUrl): void
     {
         if (!$userId) {
+            return;
+        }
+
+        $user = User::find($userId);
+        if ($user) {
+            app(MultiChannelNotificationService::class)->notifyUser(
+                user: $user,
+                eventType: $type,
+                title: $title,
+                message: $message,
+                actionUrl: $actionUrl,
+                severity: $severity
+            );
             return;
         }
 

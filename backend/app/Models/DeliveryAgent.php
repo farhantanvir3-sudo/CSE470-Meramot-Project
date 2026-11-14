@@ -50,6 +50,8 @@ class DeliveryAgent extends Model
         'current_latitude',
         'current_longitude',
         'total_earnings',
+        'payout_method',
+        'payout_account_number',
     ];
 
     protected $hidden = [

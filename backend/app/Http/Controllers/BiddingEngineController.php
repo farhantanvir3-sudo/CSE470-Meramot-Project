@@ -9,9 +9,12 @@ use App\Models\VendorProfile;
 use Illuminate\Http\Request;
 
 /**
- * Feature R12: Live Bidding Engine & Diagnostic Quote Generator
+ * ============================================================================
+ * Feature R12: Live Bidding Engine, Marketplace Filters & Quote Withdrawal
+ * ============================================================================
  * Assigned Developer: Farhan Tanvir [22299179] | Sprint 2
  * MVC Layer: Controller
+ * ============================================================================
  */
 class BiddingEngineController extends Controller
 {
@@ -40,6 +43,7 @@ class BiddingEngineController extends Controller
                 );
             }
 
+            $ownedProfile = null;
             if ($user->role === 'vendor') {
                 $ownedProfile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
                 if (!$ownedProfile) {
@@ -60,31 +64,101 @@ class BiddingEngineController extends Controller
                 }
             }
 
-            $openRequests = RepairRequest::with(['customer', 'bids.shop'])
-                ->whereIn('status', ['PENDING', 'BIDDING'])
-                ->where(function ($q) {
-                    $q->whereNull('source')->orWhere('source', '!=', 'DIRECT_SERVICE');
-                })
-                ->latest()
-                ->take(10)
-                ->get();
+            $vendorProfile = $ownedProfile
+                ?? VendorProfile::with('shops')->where('shop_name', 'ProTech Solutions')->first()
+                ?? VendorProfile::with('shops')->where('verification_status', 'approved')->first();
 
-            $vendorProfile = $request->user()
-                ? VendorProfile::with('shops')->where('user_id', $request->user()->id)->first()
-                : null;
-            if (!$vendorProfile) {
-                $vendorProfile = VendorProfile::with('shops')->where('shop_name', 'ProTech Solutions')->first()
-                    ?? VendorProfile::with('shops')->where('verification_status', 'approved')->first();
-            }
             $vendorShops = $vendorProfile
                 ? $vendorProfile->shops->where('is_active', true)->values()
                 : RepairShop::where('is_active', true)->where('is_public', true)->take(3)->get();
+            $myShopIds = $vendorShops->pluck('id')->map(fn ($id) => (int) $id)->all();
 
-            return view('vendor.bidding-board', compact('openRequests', 'vendorShops'));
+            $search = trim((string) $request->query('q', ''));
+            $deviceFilter = trim((string) $request->query('device_type', ''));
+            $areaFilter = trim((string) $request->query('area', ''));
+            $modeFilter = strtolower(trim((string) $request->query('mode', '')));
+            $scopeFilter = strtolower(trim((string) $request->query('scope', 'all')));
+            $sort = strtolower(trim((string) $request->query('sort', 'newest')));
+
+            $query = RepairRequest::with([
+                'customer',
+                'bids' => fn ($bq) => $bq->where('status', '!=', 'WITHDRAWN')->with('shop'),
+            ])
+                ->withCount(['bids as active_bids_count' => fn ($bq) => $bq->where('status', '!=', 'WITHDRAWN')])
+                ->whereIn('status', ['PENDING', 'BIDDING'])
+                ->where(function ($q) {
+                    $q->whereNull('source')->orWhere('source', '!=', 'DIRECT_SERVICE');
+                });
+
+            if ($search !== '') {
+                $like = '%' . strtolower($search) . '%';
+                $query->where(function ($sub) use ($like) {
+                    $sub->whereRaw('LOWER(COALESCE(title, \'\')) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(COALESCE(brand, \'\')) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(COALESCE(model_name, \'\')) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(COALESCE(problem, \'\')) LIKE ?', [$like])
+                        ->orWhereRaw('LOWER(COALESCE(pickup_address, \'\')) LIKE ?', [$like]);
+                });
+            }
+
+            if ($deviceFilter !== '') {
+                $query->whereRaw('LOWER(COALESCE(device_type, \'\')) LIKE ?', ['%' . strtolower($deviceFilter) . '%']);
+            }
+
+            if ($areaFilter !== '') {
+                $query->whereRaw('LOWER(COALESCE(pickup_address, \'\')) LIKE ?', ['%' . strtolower($areaFilter) . '%']);
+            }
+
+            if ($modeFilter === 'pickup') {
+                $query->where('preferred_pickup', true);
+            } elseif ($modeFilter === 'walk_in') {
+                $query->where('preferred_pickup', false);
+            }
+
+            if ($scopeFilter === 'direct' && !empty($myShopIds)) {
+                $query->whereIn('requested_shop_id', $myShopIds);
+            } elseif ($scopeFilter === 'my_bids' && !empty($myShopIds)) {
+                $query->whereHas('bids', fn ($bq) => $bq->whereIn('shop_id', $myShopIds)->where('status', '!=', 'WITHDRAWN'));
+            } elseif ($scopeFilter === 'unbid' && !empty($myShopIds)) {
+                $query->whereDoesntHave('bids', fn ($bq) => $bq->whereIn('shop_id', $myShopIds)->where('status', '!=', 'WITHDRAWN'));
+            }
+
+            if ($sort === 'fewest_bids') {
+                $query->orderBy('active_bids_count', 'asc')->orderByDesc('id');
+            } elseif ($sort === 'oldest') {
+                $query->orderBy('created_at', 'asc');
+            } else {
+                $query->latest();
+            }
+
+            if ($request->boolean('poll')) {
+                $count = (clone $query)->count();
+                $latest = (clone $query)->latest('id')->first(['id', 'updated_at']);
+                return response()->json([
+                    'ok' => true,
+                    'open_count' => $count,
+                    'latest_id' => $latest?->id,
+                    'server_time' => now()->format('h:i:s A'),
+                ]);
+            }
+
+            $openRequests = $query->paginate(12)->withQueryString();
+
+            return view('vendor.bidding-board', compact(
+                'openRequests',
+                'vendorShops',
+                'search',
+                'deviceFilter',
+                'areaFilter',
+                'modeFilter',
+                'scopeFilter',
+                'sort'
+            ));
         }
 
         $bids = Bid::with('shop')
             ->where('repair_request_id', $requestId)
+            ->where('status', '!=', 'WITHDRAWN')
             ->orderBy('proposed_cost', 'asc')
             ->get();
 
@@ -103,17 +177,64 @@ class BiddingEngineController extends Controller
     }
 
     /**
+     * Withdraw a vendor's active quote prior to customer acceptance.
+     * Route: POST /vendor/bids/{bidId}/withdraw
+     */
+    public function withdrawBid(Request $request, $bidId)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        $bid = Bid::with(['shop', 'repairRequest'])->findOrFail($bidId);
+        $repairRequest = $bid->repairRequest;
+
+        if ($user->role === 'vendor') {
+            $vp = VendorProfile::where('user_id', $user->id)->first();
+            if (!$vp || !$bid->shop || (int) $bid->shop->vendor_profile_id !== (int) $vp->id) {
+                abort(403, 'You can only withdraw estimates submitted by your own workshop.');
+            }
+        } elseif ($user->role !== 'admin') {
+            abort(403, 'Unauthorized quote withdrawal attempt.');
+        }
+
+        if (
+            !$repairRequest
+            || !in_array(strtoupper((string) $repairRequest->status), ['PENDING', 'BIDDING'], true)
+            || (int) $repairRequest->selected_bid_id === (int) $bid->id
+        ) {
+            return back()->with('error', 'Accepted or closed estimates can no longer be withdrawn.');
+        }
+
+        $bid->update(['status' => 'WITHDRAWN']);
+
+        if ($request->expectsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Diagnostic estimate withdrawn.',
+            ]);
+        }
+
+        return back()->with('success', 'Your diagnostic estimate on Ticket #' . $repairRequest->id . ' has been withdrawn.');
+    }
+
+    /**
      * Customer accepts a specific vendor bid (API endpoint synchronized with Web acceptBid).
      */
-    public function acceptBid($bidId)
+    public function acceptBid(Request $request, $bidId)
     {
         $bid = Bid::with('shop')->findOrFail($bidId);
         $repairRequest = RepairRequest::findOrFail($bid->repair_request_id);
 
-        app(StatusTransitionController::class)->acceptBid(
-            new Request(['bid_id' => $bid->id]),
-            $repairRequest->id
+        $subRequest = Request::create(
+            "/requests/{$repairRequest->id}/accept-bid",
+            'POST',
+            ['bid_id' => $bid->id]
         );
+        $subRequest->setUserResolver(fn () => $request->user());
+
+        app(StatusTransitionController::class)->acceptBid($subRequest, $repairRequest->id);
 
         return response()->json([
             'status' => 'success',

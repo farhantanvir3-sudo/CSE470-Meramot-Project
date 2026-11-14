@@ -1,49 +1,34 @@
 {{--
 =============================================================================
-FEATURE R17: SSLCommerz/Stripe Online Payment Gateway & PDF Invoice
+FEATURE R17: Online Payment Gateway (SSLCommerz / MFS Escrow) & PDF Invoice
 =============================================================================
 Assigned Member: Md. Nawshad Zaman Khan [Student ID: 23301622]
-Sprint: Sprint 2 (Nov 13 – Nov 27, 2026)
+Sprint: Sprint 2
 Architectural Layer: View (Checkout/Payment)
 Controller: PaymentGatewayController@showCheckout, initiatePayment
 =============================================================================
 --}}
 @extends('layouts.app')
 
-@section('title', 'Secure Checkout & Payment | Meramot')
+@section('title', 'Secure Escrow Checkout | Meramot')
 
 @section('content')
 @php
-    $isDirectService = ($repairRequest->source ?? '') === 'DIRECT_SERVICE';
-    if ($isDirectService) {
-        $deliveryFee = ($repairRequest->delivery_type === 'EXPRESS')
-            ? 150.0
-            : (($repairRequest->preferred_pickup ?? true) ? 80.0 : 0.0);
-        $escrowFee = (float) ($repairRequest->checkup_fee ?? 0);
-        $totalPayable = (float) ($repairRequest->quoted_final_amount ?? 0);
-        $quoteItems = is_array($repairRequest->repairJob?->final_quote_items)
-            ? $repairRequest->repairJob->final_quote_items
-            : [];
-        $servicesSubtotal = !empty($quoteItems)
-            ? (float) collect($quoteItems)->sum(fn ($it) => ((float) ($it['price'] ?? 0)) * ((int) ($it['quantity'] ?? 1)))
-            : max(0.0, $totalPayable - $escrowFee - $deliveryFee);
-        if ($totalPayable <= 0) {
-            $totalPayable = $servicesSubtotal + $escrowFee + $deliveryFee;
-        }
-    } else {
-        $acceptedBidCost = $repairRequest->quoted_final_amount
-            ?? optional($repairRequest->bids?->where('status', 'ACCEPTED')->first())->proposed_cost
-            ?? optional($repairRequest->bids?->sortBy('proposed_cost')->first())->proposed_cost
-            ?? 3500;
-        $deliveryFee = ($repairRequest->preferred_pickup ?? true) ? 150 : 0;
-        $totalPayable = (float) $acceptedBidCost + $deliveryFee;
-        $quoteItems = [];
-        $escrowFee = 0.0;
-        $servicesSubtotal = (float) $acceptedBidCost;
-    }
+    $b = $breakdown ?? \App\Http\Controllers\PaymentGatewayController::computeCheckoutBreakdown($repairRequest);
+    $isDirectService = $b['is_direct_service'];
+    $servicesSubtotal = $b['services_subtotal'];
+    $escrowFee = $b['escrow_fee'];
+    $deliveryFee = $b['delivery_fee'];
+    $discountAmount = $b['discount_amount'];
+    $totalPayable = $b['total_payable'];
+    $quoteItems = $b['quote_items'];
+    $acceptedBidCost = $servicesSubtotal;
+    $paidTxn = $paidTransaction ?? null;
+    $invoiceDoc = $latestInvoice ?? null;
+    $defaultMethod = $preferredChannel ?? 'BKASH';
 @endphp
 
-<div class="mx-auto max-w-2xl px-4 py-6 md:px-6 space-y-5">
+<div class="mx-auto max-w-3xl px-4 py-6 md:px-6 space-y-5" x-data="{ selectedChannel: '{{ $defaultMethod }}' }">
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
         <a href="/" class="hover:underline">Home</a>
@@ -53,34 +38,77 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
         <span class="text-[var(--foreground)] font-semibold">Escrow Payment Checkout</span>
     </div>
 
-    <!-- Online Payment Notice -->
-    <div class="rounded-[1.75rem] border border-amber-300 bg-amber-50/90 p-4 text-xs flex items-start gap-3">
-        <i class="fa-solid fa-circle-info text-amber-800 mt-0.5 shrink-0"></i>
-        <div>
-            <p class="font-black text-amber-950">Online Card &amp; MFS Gateway — Upcoming Release</p>
-            <p class="text-amber-900 mt-0.5">Hosted card, bKash, and Nagad checkout will be enabled soon. Cash on return with escrow protection is active now.</p>
+    @if(session('error'))
+        <div class="rounded-2xl border border-red-300 bg-red-50 p-4 text-xs text-red-900 flex items-start gap-3">
+            <i class="fa-solid fa-circle-xmark text-red-600 mt-0.5"></i>
+            <div>
+                <p class="font-extrabold">Payment Authorization Failed</p>
+                <p class="mt-0.5">{{ session('error') }}</p>
+            </div>
         </div>
-    </div>
+    @endif
+
+    @if(session('warning'))
+        <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950 flex items-start gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-amber-700 mt-0.5"></i>
+            <div>
+                <p class="font-extrabold">Payment Session Interrupted</p>
+                <p class="mt-0.5">{{ session('warning') }}</p>
+            </div>
+        </div>
+    @endif
+
+    @if($paidTxn)
+        <div class="rounded-[2rem] border border-emerald-400 bg-emerald-50/95 p-6 shadow-sm space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-white shadow-sm">
+                        <i class="fa-solid fa-shield-check text-lg"></i>
+                    </span>
+                    <div>
+                        <p class="text-sm font-black text-emerald-950">Escrow Payment Settled &amp; Protected</p>
+                        <p class="text-xs text-emerald-900">Ref: <span class="font-mono font-bold">{{ $paidTxn->transaction_reference }}</span> • Method: <strong>{{ $paidTxn->payment_method }}</strong></p>
+                    </div>
+                </div>
+                <span class="rounded-full bg-emerald-700 px-3.5 py-1 text-xs font-extrabold text-white">
+                    PAID ৳{{ number_format((float) $paidTxn->amount, 2) }}
+                </span>
+            </div>
+            <div class="flex flex-wrap gap-3 pt-1">
+                @if($invoiceDoc)
+                    <a href="{{ route('invoices.show', $invoiceDoc->id) }}" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                        <i class="fa-solid fa-file-invoice"></i> View Official Invoice
+                    </a>
+                    <a href="{{ route('invoices.pdf', $invoiceDoc->id) }}" class="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-white px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+                        <i class="fa-solid fa-file-pdf text-red-600"></i> Download PDF Receipt
+                    </a>
+                @endif
+                <a href="{{ route('requests.track', $repairRequest->id) }}" class="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-100/70 px-5 py-2.5 text-xs font-bold text-emerald-950 hover:bg-emerald-200/70 transition">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Order Tracker
+                </a>
+            </div>
+        </div>
+    @endif
 
     <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
         <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
             <div class="min-w-0">
                 <h1 class="text-2xl font-black text-[var(--foreground)]">Secure Escrow Checkout</h1>
                 <p class="text-xs text-[var(--muted-foreground)] mt-1 break-words">Order #{{ $repairRequest->id }} — {{ $repairRequest->title }}</p>
-                <p class="text-xs text-[var(--muted-foreground)] mt-1 dev-only-badge">Feature R17 | Assigned to: <strong class="text-[var(--accent-dark)]">Md. Nawshad Zaman Khan [23301622]</strong></p>
             </div>
             <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3.5 py-1.5 rounded-full border border-[var(--border)] whitespace-nowrap">
-                <i class="fa-solid fa-shield-halved mr-1"></i> Escrow Protected
+                <i class="fa-solid fa-shield-halved mr-1"></i> 100% Escrow Protected
             </span>
         </div>
 
+        <!-- Order Financial Breakdown -->
         <div class="border border-[var(--border)] rounded-2xl p-5 bg-[var(--mint-100)] mb-6 text-xs space-y-2.5">
             @if($isDirectService && !empty($quoteItems))
                 <div class="border-b border-[var(--border)] pb-3 mb-1 space-y-1.5">
                     <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Booked Services</p>
                     @foreach($quoteItems as $item)
                         @php
-                            $itemQty = (int) ($item['quantity'] ?? 1);
+                            $itemQty = max(1, (int) ($item['quantity'] ?? 1));
                             $itemLineTotal = ((float) ($item['price'] ?? 0)) * $itemQty;
                         @endphp
                         <div class="flex justify-between gap-3 text-[var(--foreground)]">
@@ -154,26 +182,77 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                 </div>
             @endif
 
+            @if($discountAmount > 0)
+                <div class="flex justify-between gap-3 text-emerald-800 font-bold">
+                    <span>Promo Discount {{ !empty($repairRequest->voucher_code) ? '(' . $repairRequest->voucher_code . ')' : '' }}:</span>
+                    <span class="shrink-0">- ৳{{ number_format($discountAmount, 2) }}</span>
+                </div>
+            @endif
+
             <div class="border-t border-[var(--border)] pt-2.5 flex justify-between gap-3 font-black text-base text-[var(--foreground)]">
                 <span>Total Payable:</span>
                 <span class="text-[var(--accent-dark)] shrink-0">৳{{ number_format($totalPayable, 2) }}</span>
             </div>
         </div>
 
-        <form method="POST" action="/payment/initiate" class="space-y-3">
-            @csrf
-            <input type="hidden" name="repair_request_id" value="{{ $repairRequest->id }}">
-            <input type="hidden" name="amount" value="{{ $totalPayable }}">
+        @if(!$paidTxn)
+            <form method="POST" action="{{ route('payment.initiate') }}" class="space-y-4">
+                @csrf
+                <input type="hidden" name="repair_request_id" value="{{ $repairRequest->id }}">
+                <input type="hidden" name="amount" value="{{ $totalPayable }}">
+                <input type="hidden" name="payment_method" :value="selectedChannel">
 
-            <button type="submit" class="w-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] font-bold py-3.5 px-5 rounded-full text-xs transition flex items-center justify-center gap-2 shadow">
-                <i class="fa-solid fa-lock"></i>
-                <span>Authorize ৳{{ number_format($totalPayable, 0) }} via SSLCommerz Escrow</span>
-            </button>
+                <div>
+                    <p class="text-[11px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-2.5">
+                        Choose Bangladeshi MFS or Card Gateway Channel
+                    </p>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                        @php
+                            $channels = [
+                                ['code' => 'BKASH', 'label' => 'bKash', 'sub' => 'Instant MFS', 'icon' => 'fa-mobile-screen-button', 'accent' => 'text-pink-700'],
+                                ['code' => 'NAGAD', 'label' => 'Nagad', 'sub' => 'Digital MFS', 'icon' => 'fa-wallet', 'accent' => 'text-orange-700'],
+                                ['code' => 'ROCKET', 'label' => 'Rocket', 'sub' => 'DBBL MFS', 'icon' => 'fa-bolt', 'accent' => 'text-purple-700'],
+                                ['code' => 'CARD', 'label' => 'Card', 'sub' => 'Visa / Master', 'icon' => 'fa-credit-card', 'accent' => 'text-sky-700'],
+                                ['code' => 'SSLCOMMERZ', 'label' => 'SSLCommerz', 'sub' => 'All Gateways', 'icon' => 'fa-building-columns', 'accent' => 'text-emerald-800'],
+                            ];
+                        @endphp
+                        @foreach($channels as $ch)
+                            <button
+                                type="button"
+                                @click="selectedChannel = '{{ $ch['code'] }}'"
+                                :class="selectedChannel === '{{ $ch['code'] }}'
+                                    ? 'border-[var(--accent-dark)] bg-[var(--mint-100)] ring-2 ring-[var(--accent-dark)]/20'
+                                    : 'border-[var(--border)] bg-white/80 hover:bg-[var(--mint-100)]/60'"
+                                class="rounded-2xl border p-3 text-left transition flex flex-col justify-between gap-1"
+                            >
+                                <div class="flex items-center justify-between">
+                                    <i class="fa-solid {{ $ch['icon'] }} {{ $ch['accent'] }} text-sm"></i>
+                                    <span x-show="selectedChannel === '{{ $ch['code'] }}'" class="h-2 w-2 rounded-full bg-[var(--accent-dark)]"></span>
+                                </div>
+                                <div>
+                                    <p class="font-black text-[var(--foreground)]">{{ $ch['label'] }}</p>
+                                    <p class="text-[10px] text-[var(--muted-foreground)]">{{ $ch['sub'] }}</p>
+                                </div>
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
 
-            <a href="{{ route('requests.track', $repairRequest->id) }}" class="block w-full text-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] py-3 px-4 text-xs font-bold text-[var(--foreground)] transition">
-                &larr; Return to Order Tracker (Pay Cash on Return)
-            </a>
-        </form>
+                <div class="rounded-2xl border border-[var(--border)] bg-white/70 px-4 py-3 text-[11px] text-[var(--muted-foreground)] flex items-start gap-2.5">
+                    <i class="fa-solid fa-lock text-[var(--accent-dark)] mt-0.5"></i>
+                    <span>Your payment is held in <strong>Meramot Escrow Custody</strong> and only released to the workshop after repair verification and device return.</span>
+                </div>
+
+                <button type="submit" class="w-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] font-bold py-3.5 px-5 rounded-full text-xs transition flex items-center justify-center gap-2 shadow">
+                    <i class="fa-solid fa-lock"></i>
+                    <span>Authorize ৳{{ number_format($totalPayable, 0) }} via SSLCommerz Escrow</span>
+                </button>
+
+                <a href="{{ route('requests.track', $repairRequest->id) }}" class="block w-full text-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] py-3 px-4 text-xs font-bold text-[var(--foreground)] transition">
+                    &larr; Return to Order Tracker (Pay Cash on Return)
+                </a>
+            </form>
+        @endif
     </div>
 </div>
 @endsection

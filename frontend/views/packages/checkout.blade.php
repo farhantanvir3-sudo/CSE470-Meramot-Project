@@ -17,8 +17,15 @@
     checkoutArea: @js(old('area', auth()->user()->area ?? ($customerLocation['area'] ?? 'Banani'))),
     subtotal: {{ (float) ($total ?? 0) }},
     serviceCharge: {{ (float) ($serviceCharge ?? 30) }},
+    appliedVoucher: @js($appliedVoucher ?? ''),
+    baseDiscount: {{ (float) ($discountAmount ?? 0) }},
     get deliveryFee() { return this.deliveryType === 'EXPRESS' ? 150 : 80; },
-    get grandTotal() { return this.subtotal + this.serviceCharge + this.deliveryFee; },
+    get activeDiscount() {
+        if (this.appliedVoucher === 'FREEDELIVERY') return this.deliveryFee;
+        if (this.appliedVoucher === 'SHOPFREE') return Math.min(this.deliveryFee, 80);
+        return this.baseDiscount;
+    },
+    get grandTotal() { return Math.max(0, this.subtotal + this.serviceCharge + this.deliveryFee - this.activeDiscount); },
     applyMapLocation(loc) {
         if (!loc) return;
         if (loc.address) {
@@ -204,17 +211,28 @@
                     <span>Two-Way Courier (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
                     <span class="shrink-0">৳<span x-text="deliveryFee">80</span></span>
                 </div>
+                <template x-if="activeDiscount > 0">
+                    <div class="flex justify-between gap-2 text-emerald-800 font-bold">
+                        <span>Voucher (<span class="font-mono" x-text="appliedVoucher"></span>)</span>
+                        <span class="shrink-0">-৳<span x-text="activeDiscount.toLocaleString()"></span></span>
+                    </div>
+                </template>
                 <div class="pt-2 border-t border-[var(--border)] flex justify-between gap-2 text-base font-black text-[var(--foreground)]">
                     <span>Total</span>
-                    <span class="text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format($total + ($serviceCharge ?? 30) + 80) }}</span></span>
+                    <span class="text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 30) + 80 - ($discountAmount ?? 0))) }}</span></span>
                 </div>
             </div>
+
+            <input type="hidden" name="voucher_code" value="{{ $appliedVoucher ?? '' }}">
 
             <div>
                 <label class="block font-bold text-[var(--foreground)] mb-1">Payment Method</label>
                 <select name="payment_method" x-model="paymentMethod" class="w-full min-w-0 max-w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 font-semibold text-[var(--foreground)] outline-none">
-                    <option value="SSLCOMMERZ">SSLCommerz Online Escrow</option>
-                    <option value="CASH">Cash on Device Return</option>
+                    <option value="SSLCOMMERZ">SSLCommerz Online Escrow (All Channels)</option>
+                    <option value="BKASH">bKash Online Escrow</option>
+                    <option value="NAGAD">Nagad Online Escrow</option>
+                    <option value="CARD">Visa / Mastercard Escrow</option>
+                    <option value="CASH">Cash on Device Return (COD)</option>
                 </select>
             </div>
 

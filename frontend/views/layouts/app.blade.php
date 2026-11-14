@@ -329,6 +329,7 @@
 </head>
 <body class="min-h-screen flex flex-col antialiased" x-data="{ 
     mobileMenuOpen: false, 
+    miniCartOpen: false,
     locationModalOpen: false, 
     showLogoutConfirm: false,
     notifModalOpen: false,
@@ -1065,10 +1066,11 @@
                             </div>
                         </div>
 
-                        <!-- Cart Button (Links directly to Unified Direct-Order Cart `/cart` for Active Customers & Guests) -->
+                        <!-- Cart Button (Opens Slide-Over Mini-Cart when populated or navigates to `/cart`) -->
                         @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
                         <a
                             href="/cart"
+                            @click="if ({{ $navCartCount }} > 0 && !window.location.pathname.startsWith('/cart')) { $event.preventDefault(); miniCartOpen = true; }"
                             class="meramot-cart-btn relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition duration-200 hover:scale-105 hover:bg-[var(--mint-300)]"
                             title="Direct-Order Cart"
                             aria-label="Direct-Order Cart"
@@ -1938,6 +1940,7 @@
                         <a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition">Request Repair</a>
                     @endif
                     <a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition">AI Diagnostics</a>
+                    <a href="/support" class="hover:text-[var(--foreground)] hover:underline transition">Support &amp; Disputes</a>
                     <a href="{{ request()->fullUrlWithQuery(['dev' => $isDevMode ? '0' : '1']) }}" class="text-[10px] text-[var(--muted-foreground)] opacity-40 hover:opacity-100 transition" title="Toggle developer presentation mode (Ctrl+Shift+D)">
                         <i class="fa-solid fa-code"></i> {{ $isDevMode ? 'Dev Mode (ON)' : 'Dev' }}
                     </a>
@@ -1945,6 +1948,72 @@
             </div>
         </div>
     </footer>
+
+    <!-- Slide-Over Mini-Cart Drawer (Feature R8 E-Commerce Quick Cart) -->
+    @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
+        @php
+            $miniCartItems = session('cart', []);
+            $miniCartSubtotal = array_reduce($miniCartItems, fn ($s, $it) => $s + ((float) ($it['price'] ?? 0) * (int) ($it['quantity'] ?? 1)), 0.0);
+        @endphp
+        <div x-show="miniCartOpen" x-cloak class="fixed inset-0 z-[120]" @keydown.escape.window="miniCartOpen = false">
+            <div class="fixed inset-0 bg-black/45 backdrop-blur-xs" @click="miniCartOpen = false"></div>
+            <aside class="fixed right-0 top-0 z-[121] flex h-full w-full max-w-md flex-col border-l border-[var(--border)] bg-[var(--background)] shadow-2xl">
+                <div class="flex items-center justify-between border-b border-[var(--border)] bg-[var(--card)] px-5 py-4">
+                    <div class="flex items-center gap-2.5">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-2xl bg-[var(--accent-dark)] text-[var(--accent-foreground)]">
+                            <i class="fa-solid fa-bag-shopping text-sm"></i>
+                        </span>
+                        <div>
+                            <h3 class="text-sm font-black text-[var(--foreground)]">Direct-Order Cart</h3>
+                            <p class="text-[11px] text-[var(--muted-foreground)]">{{ count($miniCartItems) }} {{ count($miniCartItems) === 1 ? 'service' : 'services' }} selected</p>
+                        </div>
+                    </div>
+                    <button type="button" @click="miniCartOpen = false" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)]">
+                        Close
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                    @forelse($miniCartItems as $mKey => $mItem)
+                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3.5 flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                                    {{ $mItem['category'] ?? 'Repair Service' }}
+                                </span>
+                                <p class="mt-1 text-xs font-extrabold text-[var(--foreground)] break-words">{{ $mItem['title'] ?? 'Service' }}</p>
+                                <p class="mt-0.5 text-xs font-bold text-[var(--accent-dark)]">
+                                    ৳{{ number_format((float) ($mItem['price'] ?? 0)) }} &times; {{ (int) ($mItem['quantity'] ?? 1) }}
+                                </p>
+                            </div>
+                            <span class="font-black text-xs text-[var(--foreground)] shrink-0">
+                                ৳{{ number_format((float) ($mItem['price'] ?? 0) * (int) ($mItem['quantity'] ?? 1)) }}
+                            </span>
+                        </div>
+                    @empty
+                        <div class="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] p-8 text-center">
+                            <p class="text-xs font-semibold text-[var(--muted-foreground)]">Your cart is currently empty.</p>
+                        </div>
+                    @endforelse
+                </div>
+
+                <div class="border-t border-[var(--border)] bg-[var(--card)] p-4 space-y-3">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-semibold text-[var(--muted-foreground)]">Services Subtotal</span>
+                        <span class="text-base font-black text-[var(--accent-dark)]">৳{{ number_format($miniCartSubtotal) }}</span>
+                    </div>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Apply promo codes (<span class="font-mono font-bold">MERAMOT10</span>, <span class="font-mono font-bold">FREEDELIVERY</span>) on the cart page.</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <a href="/packages/catalog" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-center text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                            + Add Services
+                        </a>
+                        <a href="/cart" class="rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-center text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                            Open Cart &amp; Checkout &rarr;
+                        </a>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    @endif
 
     <script>
         document.addEventListener('keydown', function(e) {

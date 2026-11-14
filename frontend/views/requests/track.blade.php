@@ -52,24 +52,51 @@
                 && $viewerRole === 'vendor'
                 && $repairRequest->requestedShop
                 && (int) ($repairRequest->requestedShop->vendorProfile?->user_id ?? 0) === (int) $viewer->id;
+            $orderInvoice = $repairRequest->invoices()->orderByDesc('id')->first();
+            $orderPaidTxn = $repairRequest->payments()->where('status', 'PAID')->orderByDesc('id')->first();
         @endphp
 
-        @if($canActAsCustomer && in_array($currentStatus, ['PENDING', 'BIDDING', 'ASSIGNED', 'PICKUP_SCHEDULED'], true))
-            <form method="POST" action="{{ route('requests.cancel', $repairRequest->id) }}">
-                @csrf
-                <button type="submit" class="rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-800 hover:bg-rose-100 transition">
-                    Cancel Request
-                </button>
-            </form>
-        @elseif($viewer && $viewerRole === 'vendor')
-            <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
-                <i class="fa-solid fa-store mr-1.5"></i>Back to Vendor Dashboard
-            </a>
-        @elseif($viewer && in_array($viewerRole, ['delivery_agent', 'delivery'], true))
-            <a href="/delivery" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
-                <i class="fa-solid fa-motorcycle mr-1.5"></i>Back to Rider Dashboard
-            </a>
-        @endif
+        <div class="flex flex-wrap items-center gap-2">
+            @if($viewer && $canActAsCustomer)
+                @if($orderPaidTxn && $orderInvoice)
+                    <a href="{{ route('invoices.show', $orderInvoice->id) }}" class="rounded-full bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition shadow-sm">
+                        <i class="fa-solid fa-file-invoice mr-1"></i> Official Invoice (Paid)
+                    </a>
+                @elseif(!in_array($currentStatus, ['CANCELLED', 'REJECTED'], true))
+                    <a href="{{ route('payment.checkout', $repairRequest->id) }}" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition shadow-sm">
+                        <i class="fa-solid fa-shield-halved mr-1"></i> Pay Online via Escrow
+                    </a>
+                @endif
+                <a href="{{ url('/tracking/' . $repairRequest->id) }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+                    <i class="fa-solid fa-location-dot mr-1 text-[var(--accent-dark)]"></i> Live GPS Map
+                </a>
+                <a href="{{ url('/support?order_id=' . $repairRequest->id) }}" class="rounded-full border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100 transition">
+                    <i class="fa-solid fa-scale-balanced mr-1"></i> Dispute / Help
+                </a>
+            @endif
+
+            @if($canActAsCustomer && in_array($currentStatus, ['PENDING', 'BIDDING', 'ASSIGNED', 'PICKUP_SCHEDULED'], true))
+                <form method="POST" action="{{ route('requests.cancel', $repairRequest->id) }}">
+                    @csrf
+                    <button type="submit" class="rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-800 hover:bg-rose-100 transition">
+                        Cancel Request
+                    </button>
+                </form>
+            @elseif($viewer && $viewerRole === 'vendor')
+                @if($orderInvoice)
+                    <a href="{{ route('invoices.show', $orderInvoice->id) }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                        <i class="fa-solid fa-file-pdf mr-1"></i> View Invoice
+                    </a>
+                @endif
+                <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
+                    <i class="fa-solid fa-store mr-1.5"></i>Back to Vendor Dashboard
+                </a>
+            @elseif($viewer && in_array($viewerRole, ['delivery_agent', 'delivery'], true))
+                <a href="/delivery" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
+                    <i class="fa-solid fa-motorcycle mr-1.5"></i>Back to Rider Dashboard
+                </a>
+            @endif
+        </div>
     </div>
 
     @if(session('success'))
@@ -592,20 +619,49 @@
 
             <!-- Vendor Bids Section (Path A: Marketplace Quote 1) -->
             @if(($repairRequest->source ?? 'MARKETPLACE') !== 'DIRECT_SERVICE' && ($currentStatus === 'BIDDING' || $repairRequest->bids->count() > 0))
-            <div class="meramot-card p-6 shadow-sm">
-                <div class="flex items-center justify-between mb-4">
+            <div class="meramot-card p-6 shadow-sm" x-data="{
+                bidSort: 'price',
+                sortBidCards(mode) {
+                    this.bidSort = mode;
+                    const container = this.$refs.bidsContainer;
+                    if (!container) return;
+                    const cards = Array.from(container.querySelectorAll('[data-bid-card]'));
+                    cards.sort((a, b) => {
+                        if (mode === 'turnaround') return Number(a.dataset.days || 99) - Number(b.dataset.days || 99);
+                        if (mode === 'warranty') return Number(b.dataset.warranty || 0) - Number(a.dataset.warranty || 0);
+                        if (mode === 'rating') return Number(b.dataset.rating || 0) - Number(a.dataset.rating || 0);
+                        return Number(a.dataset.price || 0) - Number(b.dataset.price || 0);
+                    });
+                    cards.forEach((c) => container.appendChild(c));
+                }
+            }">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                     <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
                         Vendor Bids ({{ $repairRequest->bids->count() }})
                     </h2>
-                    @if($currentStatus === 'BIDDING')
-                        <span class="px-3 py-1 rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] text-xs font-bold">
-                            Bidding Open
-                        </span>
-                    @endif
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        @if($repairRequest->bids->count() > 1)
+                            @foreach(['price' => 'Lowest Price', 'turnaround' => 'Fastest', 'warranty' => 'Best Warranty', 'rating' => 'Top Rated'] as $bKey => $bLabel)
+                                <button
+                                    type="button"
+                                    @click="sortBidCards('{{ $bKey }}')"
+                                    class="rounded-full border px-2.5 py-1 text-[10px] font-bold transition"
+                                    :class="bidSort === '{{ $bKey }}' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] border-[var(--accent-dark)]' : 'bg-[var(--mint-100)] text-[var(--foreground)] border-[var(--border)]'"
+                                >
+                                    {{ $bLabel }}
+                                </button>
+                            @endforeach
+                        @endif
+                        @if($currentStatus === 'BIDDING')
+                            <span class="px-3 py-1 rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] text-xs font-bold">
+                                Bidding Open
+                            </span>
+                        @endif
+                    </div>
                 </div>
 
                 @if($repairRequest->bids->count() > 0)
-                    <div class="space-y-3">
+                    <div class="space-y-3" x-ref="bidsContainer">
                         @foreach($repairRequest->bids as $bid)
                             @php
                                 $bidPartsItems = $bid->resolvedPartsItems();
@@ -616,7 +672,14 @@
                                     && auth()->user()->vendorProfile
                                     && (int) ($bid->shop?->vendor_profile_id ?? 0) === (int) auth()->user()->vendorProfile->id;
                             @endphp
-                            <div class="p-4 rounded-2xl border border-[var(--border)] {{ $bid->id === $repairRequest->selected_bid_id ? 'bg-[var(--mint-100)] border-emerald-600' : 'bg-[var(--mint-100)]/40' }}">
+                            <div
+                                data-bid-card
+                                data-price="{{ (float) $bid->proposed_cost }}"
+                                data-days="{{ (int) ($bid->estimated_days ?? 99) }}"
+                                data-warranty="{{ (int) $bidWarrantyDays }}"
+                                data-rating="{{ (float) ($bid->shop?->rating ?? 0) }}"
+                                class="p-4 rounded-2xl border border-[var(--border)] {{ $bid->id === $repairRequest->selected_bid_id ? 'bg-[var(--mint-100)] border-emerald-600' : 'bg-[var(--mint-100)]/40' }}"
+                            >
                                 <div class="flex items-start justify-between gap-3 mb-3">
                                     <div class="flex-1 min-w-0">
                                         <h3 class="text-sm font-bold text-[var(--foreground)]">

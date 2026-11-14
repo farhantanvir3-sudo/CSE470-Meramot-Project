@@ -36,6 +36,7 @@ class RepairRequest extends Model
         'mode',
         'status',
         'preferred_pickup',
+        'scheduled_pickup_at',
         'preferred_service_type',
         'delivery_type',
         'contact_phone',
@@ -43,7 +44,10 @@ class RepairRequest extends Model
         'dropoff_address',
         'checkup_fee',
         'quoted_final_amount',
+        'voucher_code',
+        'discount_amount',
         'ai_summary',
+        'ai_triage_json',
         'selected_bid_id',
         'approved_at',
         'rejected_at',
@@ -56,9 +60,12 @@ class RepairRequest extends Model
 
     protected $casts = [
         'image_urls' => 'array',
+        'ai_triage_json' => 'array',
         'preferred_pickup' => 'boolean',
+        'scheduled_pickup_at' => 'datetime',
         'checkup_fee' => 'decimal:2',
         'quoted_final_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'approved_at' => 'datetime',
         'rejected_at' => 'datetime',
     ];
@@ -219,6 +226,21 @@ class RepairRequest extends Model
     public function payments()
     {
         return $this->hasMany(PaymentTransaction::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'repair_request_id');
+    }
+
+    public function aiSummaryLogs()
+    {
+        return $this->hasMany(AISummaryLog::class, 'repair_request_id');
+    }
+
+    public function disputeCases()
+    {
+        return $this->hasMany(DisputeCase::class, 'repair_request_id');
     }
 
     public function review()

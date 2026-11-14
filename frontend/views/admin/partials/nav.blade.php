@@ -1,6 +1,7 @@
 @php
     $adminPendingVendorsCount = \App\Models\VendorProfile::where('verification_status', 'pending')->count();
     $adminPendingRidersCount = \App\Models\DeliveryAgent::where('registration_status', 'PENDING')->count();
+    $adminPendingPayoutsCount = \App\Models\VendorPayout::where('status', 'PENDING')->count();
     $currentAdminPath = '/' . ltrim(request()->path(), '/');
 @endphp
 
@@ -55,7 +56,9 @@
                 class="col-span-3 inline-flex items-center justify-center md:justify-start whitespace-nowrap gap-1 sm:gap-1.5 rounded-full px-1.5 py-2 sm:px-3.5 text-[10px] sm:text-xs font-bold transition {{ str_starts_with($currentAdminPath, '/admin/payouts') ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--accent-dark)]' }}"
             >
                 <span>Payouts</span>
-                <span class="hidden sm:inline text-[9px] uppercase opacity-75">Soon</span>
+                @if($adminPendingPayoutsCount > 0)
+                    <span class="rounded-full bg-amber-500 px-1.5 py-0.5 text-[9px] sm:px-2 sm:text-[10px] font-black leading-none text-white">{{ $adminPendingPayoutsCount }}</span>
+                @endif
             </a>
             <a
                 href="/admin/moderation"

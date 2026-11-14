@@ -9,7 +9,7 @@
 
 @section('content')
 @php
-    $initialTab = in_array(request('tab'), ['overview', 'marketplace', 'direct_orders', 'assigned_jobs', 'branches'], true)
+    $initialTab = in_array(request('tab'), ['overview', 'marketplace', 'direct_orders', 'assigned_jobs', 'branches', 'payouts'], true)
         ? request('tab')
         : 'overview';
     $brandTitle = $vendorProfile->canonical_brand_name ?? 'ProTech Solutions';
@@ -217,6 +217,17 @@
             <i class="fa-solid fa-screwdriver-wrench text-xs text-[var(--accent-dark)]"></i>
             <span>My Repair Jobs</span>
             <span class="rounded-full bg-indigo-800 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($activeJobs ?? collect())->count() }} Active</span>
+        </button>
+
+        <button
+            type="button"
+            @click="activeTab = 'payouts'"
+            :class="activeTab === 'payouts' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
+            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
+        >
+            <i class="fa-solid fa-money-bill-transfer text-xs text-emerald-700"></i>
+            <span>Earnings &amp; Payouts</span>
+            <span class="rounded-full bg-emerald-700 px-2 py-0.5 text-[10px] text-white font-bold">৳{{ number_format($branchMetrics['available_to_request'] ?? 0, 0) }}</span>
         </button>
     </div>
 
@@ -1040,6 +1051,176 @@
                         No assigned repair jobs in this branch queue right now.
                     </div>
                 @endforelse
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TAB 6: EARNINGS & PAYOUTS (Feature R18) ── -->
+    <div x-show="activeTab === 'payouts'" x-cloak class="space-y-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-xs">
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Gross Customer Inflow</p>
+                <p class="text-xl font-black text-[var(--foreground)] mt-1">৳{{ number_format($branchMetrics['gross_inflow'] ?? 0, 2) }}</p>
+            </div>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">10% Platform Fee</p>
+                <p class="text-xl font-black text-amber-800 mt-1">৳{{ number_format($branchMetrics['commission_deducted'] ?? 0, 2) }}</p>
+            </div>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">90% Net Allocated</p>
+                <p class="text-xl font-black text-[var(--accent-dark)] mt-1">৳{{ number_format($branchMetrics['net_allocated'] ?? 0, 2) }}</p>
+            </div>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Already Disbursed</p>
+                <p class="text-xl font-black text-[var(--foreground)] mt-1">৳{{ number_format($branchMetrics['paid_out'] ?? 0, 2) }}</p>
+            </div>
+            <div class="rounded-2xl border border-emerald-400 bg-emerald-50 p-4 shadow-sm">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900">Available to Withdraw</p>
+                <p class="text-xl font-black text-emerald-800 mt-1">৳{{ number_format($branchMetrics['available_to_request'] ?? 0, 2) }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs">
+            <!-- Request Payout Form -->
+            <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+                <div class="flex items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-base font-black text-[var(--foreground)]">Request Net Escrow Withdrawal</h2>
+                        <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Withdraw 90% net workshop earnings to your registered MFS or bank account.</p>
+                    </div>
+                    <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-black text-[var(--accent-dark)]">90% Net Split</span>
+                </div>
+
+                <form method="POST" action="{{ route('vendor.payouts.request') }}" class="space-y-3">
+                    @csrf
+                    <div>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Workshop Branch</label>
+                        <select name="shop_id" class="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 font-bold text-[var(--foreground)]">
+                            @foreach($branches as $bShop)
+                                <option value="{{ $bShop->id }}" @selected($activeBranch && $activeBranch->id === $bShop->id)>
+                                    {{ $bShop->name }} ({{ $bShop->area }}, {{ $bShop->city }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Withdrawal Amount (৳)</label>
+                            <input type="number" step="0.01" min="100" name="amount"
+                                   value="{{ number_format(max(100, (float) ($branchMetrics['available_to_request'] ?? 0)), 2, '.', '') }}"
+                                   class="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 font-mono font-bold text-[var(--foreground)]">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Channel</label>
+                            <select name="payout_method" class="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 font-bold text-[var(--foreground)]">
+                                @foreach(['BKASH' => 'bKash Merchant/Personal', 'NAGAD' => 'Nagad', 'ROCKET' => 'Rocket', 'BANK' => 'BEFTN Bank Transfer'] as $mCode => $mLbl)
+                                    <option value="{{ $mCode }}" @selected(($vendorProfile->payout_method ?? 'BKASH') === $mCode)>{{ $mLbl }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Account / Wallet Number</label>
+                        <input type="text" name="payout_account_number" required
+                               value="{{ $vendorProfile->payout_account_number ?? $vendorProfile->phone ?? auth()->user()?->phone ?? '' }}"
+                               placeholder="017XXXXXXXX or Bank Account Number"
+                               class="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 font-mono font-bold text-[var(--foreground)]">
+                    </div>
+                    <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] py-3 px-5 font-black transition shadow">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> Submit Payout Withdrawal Request
+                    </button>
+                </form>
+            </div>
+
+            <!-- Default Payout Account Settings -->
+            <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+                <div>
+                    <h2 class="text-base font-black text-[var(--foreground)]">Saved Settlement Destination</h2>
+                    <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Used for automated batch settlements and 1-click withdrawals.</p>
+                </div>
+
+                <form method="POST" action="{{ route('vendor.payouts.settings') }}" class="space-y-3">
+                    @csrf
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Default Method</label>
+                            <select name="payout_method" class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 font-bold text-[var(--foreground)]">
+                                @foreach(['BKASH' => 'bKash', 'NAGAD' => 'Nagad', 'ROCKET' => 'Rocket', 'BANK' => 'Bank BEFTN'] as $mCode => $mLbl)
+                                    <option value="{{ $mCode }}" @selected(($vendorProfile->payout_method ?? 'BKASH') === $mCode)>{{ $mLbl }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Account Holder Name</label>
+                            <input type="text" name="payout_account_name"
+                                   value="{{ $vendorProfile->payout_account_name ?? auth()->user()?->name ?? '' }}"
+                                   class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 font-semibold text-[var(--foreground)]">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Wallet / Account No.</label>
+                            <input type="text" name="payout_account_number" required
+                                   value="{{ $vendorProfile->payout_account_number ?? $vendorProfile->phone ?? '' }}"
+                                   class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 font-mono font-bold text-[var(--foreground)]">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Bank Name (Optional)</label>
+                            <input type="text" name="payout_bank_name" value="{{ $vendorProfile->payout_bank_name ?? '' }}" placeholder="BRAC / City Bank"
+                                   class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 text-[var(--foreground)]">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Branch (Optional)</label>
+                            <input type="text" name="payout_branch_name" value="{{ $vendorProfile->payout_branch_name ?? '' }}" placeholder="Banani"
+                                   class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 text-[var(--foreground)]">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full rounded-full border border-[var(--accent-dark)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] py-2.5 px-5 font-black text-[var(--accent-dark)] transition">
+                        Save Settlement Destination
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Workshop Payout History -->
+        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-3 text-xs">
+            <h2 class="text-base font-black text-[var(--foreground)]">Workshop Payout History</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-[var(--border)] text-[10px] font-black uppercase text-[var(--muted-foreground)]">
+                            <th class="py-2.5 pr-3">Reference</th>
+                            <th class="py-2.5 pr-3">Branch</th>
+                            <th class="py-2.5 pr-3">Destination</th>
+                            <th class="py-2.5 pr-3">Status</th>
+                            <th class="py-2.5 text-right">Net Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--border)]">
+                        @forelse($vendorPayoutHistory ?? [] as $vPyt)
+                            <tr>
+                                <td class="py-3 pr-3 font-mono font-bold text-[var(--foreground)]">
+                                    {{ $vPyt->reference_code }}
+                                    @if($vPyt->transaction_ref)
+                                        <span class="block text-[10px] text-emerald-800">TXN: {{ $vPyt->transaction_ref }}</span>
+                                    @endif
+                                </td>
+                                <td class="py-3 pr-3 font-semibold">{{ $vPyt->shop?->name ?? 'Workshop' }}</td>
+                                <td class="py-3 pr-3">{{ $vPyt->payout_method ?? 'BKASH' }} • {{ $vPyt->payout_account ?? 'Default' }}</td>
+                                <td class="py-3 pr-3">
+                                    <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ strtoupper((string) $vPyt->status) === 'PAID' ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900' }}">
+                                        {{ $vPyt->status }}
+                                    </span>
+                                </td>
+                                <td class="py-3 text-right font-mono font-black text-[var(--accent-dark)]">৳{{ number_format((float) $vPyt->amount, 2) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="py-6 text-center text-[var(--muted-foreground)]">No payout disbursements recorded for this branch scope yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

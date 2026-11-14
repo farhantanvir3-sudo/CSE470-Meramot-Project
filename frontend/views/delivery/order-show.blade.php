@@ -49,6 +49,17 @@
                 <i class="fa-solid fa-location-crosshairs"></i>
                 <span>Live GPS Tracking View</span>
             </a>
+
+            @if($delivery->delivery_agent_id && strtoupper((string) $delivery->status) !== 'DELIVERED')
+                <form method="POST" action="/delivery/location/simulate" class="inline">
+                    @csrf
+                    <input type="hidden" name="delivery_job_id" value="{{ $delivery->id }}">
+                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition">
+                        <i class="fa-solid fa-route"></i>
+                        <span>Simulate Next GPS Waypoint</span>
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 
@@ -89,8 +100,11 @@
             <div class="rounded-2xl border border-[#d9e5d5] p-4 bg-white min-w-0">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                     <p class="text-[10px] font-bold text-[#163625]/60 uppercase tracking-wider">Pickup</p>
-                    @if($delivery->pickup_otp)
-                        <span class="font-mono text-[11px] font-bold bg-[#eef4ea] text-[#163625] px-2 py-0.5 rounded border border-[#d9e5d5]">OTP: {{ $delivery->pickup_otp }}</span>
+                    @if($delivery->pickup_otp && (session('dev_mode', false) || config('app.debug')))
+                        <details class="text-[11px]">
+                            <summary class="cursor-pointer font-bold text-[#163625]/65 hover:text-[#163625]">Demo OTP</summary>
+                            <span class="font-mono font-bold bg-[#eef4ea] text-[#163625] px-2 py-0.5 rounded border border-[#d9e5d5]">{{ $delivery->pickup_otp }}</span>
+                        </details>
                     @endif
                 </div>
                 <p class="break-words text-sm font-semibold text-[#163625]">{{ $delivery->pickup_address }}</p>
@@ -99,8 +113,11 @@
             <div class="rounded-2xl border border-[#d9e5d5] p-4 bg-white min-w-0">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                     <p class="text-[10px] font-bold text-[#163625]/60 uppercase tracking-wider">Dropoff</p>
-                    @if($delivery->dropoff_otp)
-                        <span class="font-mono text-[11px] font-bold bg-[#eef4ea] text-[#163625] px-2 py-0.5 rounded border border-[#d9e5d5]">OTP: {{ $delivery->dropoff_otp }}</span>
+                    @if($delivery->dropoff_otp && (session('dev_mode', false) || config('app.debug')))
+                        <details class="text-[11px]">
+                            <summary class="cursor-pointer font-bold text-[#163625]/65 hover:text-[#163625]">Demo OTP</summary>
+                            <span class="font-mono font-bold bg-[#eef4ea] text-[#163625] px-2 py-0.5 rounded border border-[#d9e5d5]">{{ $delivery->dropoff_otp }}</span>
+                        </details>
                     @endif
                 </div>
                 <p class="break-words text-sm font-semibold text-[#163625]">{{ $delivery->dropoff_address }}</p>
@@ -174,8 +191,11 @@
                         <div class="space-y-1.5">
                             <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#163625]/75">
                                 <span class="font-semibold">{{ $otpPromptLabel }}</span>
-                                @if(!empty($queueNextAction['demo_otp']))
-                                    <span class="rounded bg-[#eef4ea] px-2 py-0.5 font-mono font-bold text-[#163625] border border-[#d9e5d5]">Code: {{ $queueNextAction['demo_otp'] }}</span>
+                                @if(!empty($queueNextAction['demo_otp']) && (session('dev_mode', false) || config('app.debug')))
+                                    <details class="text-[11px]">
+                                        <summary class="cursor-pointer font-bold text-[#163625]/70 hover:text-[#163625]">Demo OTP Helper</summary>
+                                        <span class="ml-1 rounded bg-[#eef4ea] px-2 py-0.5 font-mono font-bold text-[#163625] border border-[#d9e5d5]">{{ $queueNextAction['demo_otp'] }}</span>
+                                    </details>
                                 @endif
                             </div>
                             <div class="flex flex-col sm:flex-row gap-2">

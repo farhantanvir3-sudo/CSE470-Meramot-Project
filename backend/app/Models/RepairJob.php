@@ -173,4 +173,14 @@ class RepairJob extends Model
     {
         return $this->hasMany(DeliveryJob::class, 'repair_job_id');
     }
+
+    public function warranty()
+    {
+        return $this->hasOne(Warranty::class, 'repair_job_id');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'repair_job_id');
+    }
 }

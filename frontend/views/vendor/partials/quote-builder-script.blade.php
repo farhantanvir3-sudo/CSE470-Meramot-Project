@@ -190,6 +190,28 @@
 
             cancelEdit: function () {
                 this.syncForShop(false);
+            },
+
+            prefillSuggestedParts: function (suggestedList) {
+                const items = Array.isArray(suggestedList) ? suggestedList.filter(Boolean) : [];
+                if (!items.length) return;
+                this.editing = true;
+                this.parts = items.map(function (entry) {
+                    if (entry && typeof entry === 'object') {
+                        return {
+                            name: String(entry.name || entry.title || ''),
+                            cost: formatInputNumber(entry.estimated_cost !== undefined ? entry.estimated_cost : (entry.cost || '')),
+                            has_warranty: true,
+                            warranty_days: 90
+                        };
+                    }
+                    return {
+                        name: String(entry),
+                        cost: '',
+                        has_warranty: true,
+                        warranty_days: 90
+                    };
+                });
             }
         };
     };

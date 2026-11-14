@@ -53,6 +53,140 @@ class ServicePackageController extends Controller
     }
 
     /**
+     * Evaluate promotional voucher codes against cart subtotal, delivery fee, and matched shop perks.
+     *
+     * @return array{valid: bool, code: ?string, discount: float, label: string, error: ?string}
+     */
+    public static function evaluateVoucher(?string $rawCode, float $subtotal, float $deliveryFee = 80.0, ?RepairShop $shop = null): array
+    {
+        $code = strtoupper(trim((string) $rawCode));
+        if ($code === '' || $subtotal <= 0) {
+            return ['valid' => false, 'code' => null, 'discount' => 0.0, 'label' => '', 'error' => null];
+        }
+
+        if ($code === 'MERAMOT10') {
+            $discount = (float) min(500.0, round($subtotal * 0.10, 2));
+            return [
+                'valid' => true,
+                'code' => 'MERAMOT10',
+                'discount' => $discount,
+                'label' => '10% Marketplace Discount (up to ৳500)',
+                'error' => null,
+            ];
+        }
+
+        if ($code === 'FIRSTFIX100') {
+            if ($subtotal < 800) {
+                return [
+                    'valid' => false,
+                    'code' => null,
+                    'discount' => 0.0,
+                    'label' => '',
+                    'error' => 'FIRSTFIX100 requires a minimum service subtotal of ৳800.',
+                ];
+            }
+            return [
+                'valid' => true,
+                'code' => 'FIRSTFIX100',
+                'discount' => 100.0,
+                'label' => '৳100 Off Direct Repair Booking',
+                'error' => null,
+            ];
+        }
+
+        if ($code === 'FREEDELIVERY') {
+            return [
+                'valid' => true,
+                'code' => 'FREEDELIVERY',
+                'discount' => (float) $deliveryFee,
+                'label' => 'Two-Way Doorstep Courier Fee Waived',
+                'error' => null,
+            ];
+        }
+
+        if ($code === 'SHOPFREE') {
+            if (!$shop || !$shop->free_delivery) {
+                return [
+                    'valid' => false,
+                    'code' => null,
+                    'discount' => 0.0,
+                    'label' => '',
+                    'error' => 'SHOPFREE applies only when the selected workshop sponsors Free Delivery.',
+                ];
+            }
+            return [
+                'valid' => true,
+                'code' => 'SHOPFREE',
+                'discount' => (float) min($deliveryFee, self::REGULAR_DELIVERY_FEE),
+                'label' => 'Workshop Sponsored Free Regular Pickup',
+                'error' => null,
+            ];
+        }
+
+        return [
+            'valid' => false,
+            'code' => null,
+            'discount' => 0.0,
+            'label' => '',
+            'error' => "Promo code '{$code}' is invalid or expired. Try MERAMOT10, FIRSTFIX100, or FREEDELIVERY.",
+        ];
+    }
+
+    /**
+     * Apply a promotional voucher to the active cart session.
+     * Route: POST /cart/voucher
+     */
+    public function applyVoucher(Request $request)
+    {
+        if ($resp = $this->guardCustomerOrdering($request)) {
+            return $resp;
+        }
+
+        $validated = $request->validate([
+            'voucher_code' => 'required|string|max:40',
+        ]);
+
+        $cart = session()->get('cart', []);
+        $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0.0);
+        $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request) : null;
+
+        $eval = self::evaluateVoucher($validated['voucher_code'], $subtotal, self::REGULAR_DELIVERY_FEE, $activeShop);
+        if (!$eval['valid']) {
+            session()->forget('cart_voucher_code');
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $eval['error']], 422);
+            }
+            return back()->with('error', $eval['error'] ?: 'Invalid promo code.');
+        }
+
+        session()->put('cart_voucher_code', $eval['code']);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'voucher_code' => $eval['code'],
+                'discount' => $eval['discount'],
+                'label' => $eval['label'],
+            ]);
+        }
+
+        return back()->with('success', "Voucher {$eval['code']} applied — {$eval['label']} (-৳" . number_format($eval['discount'], 0) . ').');
+    }
+
+    /**
+     * Remove active promotional voucher from cart session.
+     * Route: DELETE /cart/voucher
+     */
+    public function removeVoucher(Request $request)
+    {
+        session()->forget('cart_voucher_code');
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
+        return back()->with('success', 'Promo voucher removed.');
+    }
+
+    /**
      * Persist navbar / browser map location into session and refresh auto-matched workshop.
      * Route: POST /location/sync
      */
@@ -890,6 +1024,10 @@ class ServicePackageController extends Controller
         $shopLocked = (bool) session('cart_shop_locked', false);
         $shopManuallySelected = (bool) session('cart_shop_manual', false);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
+        $voucherEval = self::evaluateVoucher(session('cart_voucher_code'), (float) $total, self::REGULAR_DELIVERY_FEE, $activeShop);
+        $appliedVoucher = $voucherEval['valid'] ? $voucherEval['code'] : null;
+        $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
+        $voucherLabel = $voucherEval['valid'] ? $voucherEval['label'] : null;
 
         return view('packages.cart', compact(
             'cart',
@@ -899,7 +1037,10 @@ class ServicePackageController extends Controller
             'shopLocked',
             'shopManuallySelected',
             'verifiedShops',
-            'customerLocation'
+            'customerLocation',
+            'appliedVoucher',
+            'discountAmount',
+            'voucherLabel'
         ));
     }
 
@@ -989,7 +1130,7 @@ class ServicePackageController extends Controller
             return $resp;
         }
 
-        session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked', 'cart_shop_manual']);
+        session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked', 'cart_shop_manual', 'cart_voucher_code']);
         $this->syncDatabaseCart($request->user(), null, []);
 
         return redirect()->route('packages.catalog')->with('success', 'Your cart has been cleared.');
@@ -1020,8 +1161,12 @@ class ServicePackageController extends Controller
         $customerLocation = $this->resolveCustomerLocation($request);
         $activeShop = $this->resolveTargetShop(null, $request);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
+        $voucherEval = self::evaluateVoucher(session('cart_voucher_code'), (float) $total, self::REGULAR_DELIVERY_FEE, $activeShop);
+        $appliedVoucher = $voucherEval['valid'] ? $voucherEval['code'] : null;
+        $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
+        $voucherLabel = $voucherEval['valid'] ? $voucherEval['label'] : null;
 
-        return view('packages.checkout', compact('cart', 'total', 'serviceCharge', 'activeShop', 'verifiedShops', 'customerLocation'));
+        return view('packages.checkout', compact('cart', 'total', 'serviceCharge', 'activeShop', 'verifiedShops', 'customerLocation', 'appliedVoucher', 'discountAmount', 'voucherLabel'));
     }
 
     /**
@@ -1046,7 +1191,8 @@ class ServicePackageController extends Controller
             'schedule_type' => 'required|in:NOW,LATER',
             'scheduled_at' => 'nullable|date',
             'delivery_type' => 'required|in:REGULAR,EXPRESS',
-            'payment_method' => 'required|in:CASH,SSLCOMMERZ',
+            'payment_method' => 'required|in:CASH,SSLCOMMERZ,BKASH,NAGAD,CARD',
+            'voucher_code' => 'nullable|string|max:40',
             'area' => 'nullable|string|max:100',
             'address' => 'required|string|max:500',
             'phone' => 'required|string|max:30',
@@ -1091,7 +1237,15 @@ class ServicePackageController extends Controller
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0);
         $serviceCharge = self::calculateServiceCharge($subtotal);
         $deliveryFee = $validated['delivery_type'] === 'EXPRESS' ? self::EXPRESS_DELIVERY_FEE : self::REGULAR_DELIVERY_FEE;
-        $totalAmount = $subtotal + $serviceCharge + $deliveryFee;
+
+        $requestedVoucher = $validated['voucher_code'] ?? session('cart_voucher_code');
+        $voucherEval = self::evaluateVoucher($requestedVoucher, (float) $subtotal, (float) $deliveryFee, $shop);
+        $appliedVoucherCode = $voucherEval['valid'] ? $voucherEval['code'] : null;
+        $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
+        $totalAmount = max(0.0, ($subtotal + $serviceCharge + $deliveryFee) - $discountAmount);
+        $scheduledPickupAt = ($validated['schedule_type'] === 'LATER' && !empty($validated['scheduled_at']))
+            ? \Carbon\Carbon::parse($validated['scheduled_at'])
+            : null;
 
         $serviceLines = collect($cart)->values()->map(function ($item, $idx) {
             return ($idx + 1) . '. ' . $item['title'] . ' × ' . $item['quantity'] . ' — ৳' . number_format($item['price'] * $item['quantity'], 2);
@@ -1117,9 +1271,11 @@ class ServicePackageController extends Controller
 
         $repairRequest = DB::transaction(function () use (
             $user, $shop, $cart, $firstItem, $validated, $cleanPhone, $title, $serviceLines, $scheduleLabel,
-            $subtotal, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress, $customerCity
+            $subtotal, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress, $customerCity,
+            $appliedVoucherCode, $discountAmount, $scheduledPickupAt
         ) {
             $requestedServiceId = is_numeric($firstItem['id'] ?? null) ? (int) $firstItem['id'] : null;
+            $discountLine = $discountAmount > 0 ? " | Discount ({$appliedVoucherCode}): -৳" . number_format($discountAmount, 2) : '';
 
             $req = RepairRequest::create([
                 'customer_id' => $user->id,
@@ -1131,7 +1287,7 @@ class ServicePackageController extends Controller
                     . "Schedule: {$scheduleLabel}\n"
                     . "Logistics: {$validated['delivery_type']} (৳{$deliveryFee})\n"
                     . "Payment: {$validated['payment_method']}\n"
-                    . "Subtotal: ৳" . number_format($subtotal, 2) . " | Escrow Fee: ৳" . number_format($serviceCharge, 2) . " | Total: ৳" . number_format($totalAmount, 2) . "\n\n"
+                    . "Subtotal: ৳" . number_format($subtotal, 2) . " | Escrow Fee: ৳" . number_format($serviceCharge, 2) . $discountLine . " | Total: ৳" . number_format($totalAmount, 2) . "\n\n"
                     . "Selected Services:\n{$serviceLines}",
                 'problem' => !empty($validated['problem_note'])
                     ? trim($validated['problem_note']) . "\n\nBooked Services:\n" . $serviceLines
@@ -1151,6 +1307,9 @@ class ServicePackageController extends Controller
                 'dropoff_address' => $shop->public_address ?: ($shop->address ?? trim(implode(', ', array_filter([$shop->area, $shop->city ?: $customerCity])))),
                 'checkup_fee' => $serviceCharge,
                 'quoted_final_amount' => $totalAmount,
+                'voucher_code' => $appliedVoucherCode,
+                'discount_amount' => $discountAmount,
+                'scheduled_pickup_at' => $scheduledPickupAt,
             ]);
 
             RepairJob::create([
@@ -1196,9 +1355,10 @@ class ServicePackageController extends Controller
             return $req;
         });
 
-        session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked', 'cart_shop_manual']);
+        session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked', 'cart_shop_manual', 'cart_voucher_code']);
 
-        if ($validated['payment_method'] === 'SSLCOMMERZ') {
+        if ($validated['payment_method'] !== 'CASH') {
+            session()->flash('preselected_payment_method', $validated['payment_method']);
             return redirect("/checkout/payment/{$repairRequest->id}")
                 ->with('success', "Booking #{$repairRequest->id} created with {$shop->name}. Complete escrow authorization below.");
         }

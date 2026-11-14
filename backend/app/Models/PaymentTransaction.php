@@ -75,4 +75,14 @@ class PaymentTransaction extends Model
     {
         return $this->belongsTo(RepairRequest::class);
     }
+
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function escrowLedgers()
+    {
+        return $this->hasMany(EscrowLedger::class, 'payment_id');
+    }
 }
