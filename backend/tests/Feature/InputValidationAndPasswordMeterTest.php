@@ -43,15 +43,17 @@ class InputValidationAndPasswordMeterTest extends TestCase
     /** @test */
     public function password_strength_meter_appears_strictly_on_setup_and_change_pages_never_on_signin(): void
     {
-        // Sign-in pages must NEVER display a password strength meter, MUST offer Forgot Credentials trigger
+        // Sign-in pages must NEVER display a password strength meter, MUST offer distinct right-aligned recovery triggers
         $this->get('/login')
             ->assertStatus(200)
             ->assertSee('data-forgot-credentials-trigger="main"', false)
+            ->assertSee('Forgot password?')
             ->assertDontSee('data-password-strength-meter', false);
 
         $this->get('/delivery/login')
             ->assertStatus(200)
             ->assertSee('data-forgot-credentials-trigger="delivery"', false)
+            ->assertSee('Forgot credentials?')
             ->assertDontSee('data-password-strength-meter', false);
 
         // New registration / setup / reset pages MUST include password strength meter

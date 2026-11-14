@@ -229,15 +229,14 @@
                     <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
                 </button>
 
-                <div class="pt-1 text-center">
+                <div class="flex justify-end pt-0.5">
                     <button
                         type="button"
                         @click="openRecoverModal()"
                         data-forgot-credentials-trigger="delivery"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#c8dac2] bg-white px-4 py-2.5 text-xs font-bold text-[#214c34] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:bg-[#eef5ea]"
+                        class="inline-flex items-center gap-1 text-xs font-bold text-[#1b365d] underline decoration-[#1b365d]/40 underline-offset-4 hover:text-[#214c34] hover:decoration-[#214c34] transition-colors"
                     >
-                        <i class="fa-solid fa-key text-[11px]"></i>
-                        <span>Forgot password or company credentials?</span>
+                        <span>Forgot credentials?</span>
                     </button>
                 </div>
             </form>

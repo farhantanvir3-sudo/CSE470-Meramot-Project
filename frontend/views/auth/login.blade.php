@@ -175,15 +175,14 @@
                     Sign In
                 </button>
 
-                <div class="pt-1 text-center">
+                <div class="flex justify-end pt-0.5">
                     <a
                         href="/forgot-password"
                         @click.prevent="openForgotModal()"
                         data-forgot-credentials-trigger="main"
-                        class="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#c8dac2] bg-[#f8fbf6] px-4 py-2.5 text-xs font-bold text-[#214c34] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:bg-[#eef5ea]"
+                        class="text-xs font-semibold text-[#214c34] hover:text-[#163625] hover:underline transition-colors"
                     >
-                        <i class="fa-solid fa-key text-[11px]"></i>
-                        <span>Forgot password or account credentials?</span>
+                        Forgot password?
                     </a>
                 </div>
             </form>
@@ -285,7 +284,7 @@
                             <i class="fa-solid fa-key text-base"></i>
                         </div>
                         <div>
-                            <h2 id="forgot-password-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Recover password &amp; credentials</h2>
+                            <h2 id="forgot-password-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Reset your password</h2>
                             <p class="text-xs text-[var(--muted-foreground)]">Receive your username reminder &amp; 6-digit password reset code.</p>
                         </div>
                     </div>

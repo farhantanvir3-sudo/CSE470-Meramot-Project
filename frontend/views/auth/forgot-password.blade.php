@@ -44,7 +44,7 @@
                     <i class="fa-solid fa-key"></i> Account Recovery
                 </span>
                 <h1 class="text-2xl sm:text-3xl font-bold leading-tight text-[#214c34]">
-                    Forgot Credentials?
+                    Reset Your Password
                 </h1>
                 <p class="mt-1.5 text-xs sm:text-sm text-[#5e6d64]">
                     Receive your username reminder and 6-digit password reset code by email.
