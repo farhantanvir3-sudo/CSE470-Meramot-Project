@@ -116,3 +116,9 @@ Desktop.ini
 .neon
 .agents/
 skills-lock.json
+
+# Local Developer & Debugging Notes
+*REMOTE_DEBUGGING*.md
+docs/*REMOTE_DEBUGGING*.md
+REMOTE_DEBUGGING.md
+docs/CHROME_REMOTE_DEBUGGING.md
