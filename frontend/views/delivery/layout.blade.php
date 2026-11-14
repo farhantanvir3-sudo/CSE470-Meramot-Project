@@ -46,12 +46,19 @@
         $currentPath = '/' . trim(request()->path(), '/');
         $authRider = auth()->user()?->deliveryAgent;
         $isApprovedPartner = ($authRider?->registration_status ?? 'APPROVED') === 'APPROVED';
+        $openPoolCountBadge = \App\Models\DeliveryJob::whereNull('delivery_agent_id')
+            ->whereIn('status', ['PENDING', 'unassigned', 'UNASSIGNED'])
+            ->where(function ($query) {
+                $query->whereDoesntHave('repairRequest')
+                    ->orWhereHas('repairRequest', fn ($rq) => $rq->whereNotIn('status', ['CANCELLED', 'REJECTED']));
+            })
+            ->count();
         $navItems = [
-            ['name' => 'Dashboard', 'icon' => 'fa-house', 'path' => '/delivery', 'active' => $currentPath === '/delivery' || str_starts_with($currentPath, '/delivery/order')],
-            ['name' => 'Live Map', 'icon' => 'fa-map-location-dot', 'path' => '/delivery/map', 'active' => $currentPath === '/delivery/map'],
-            ['name' => 'Earnings', 'icon' => 'fa-wallet', 'path' => '/delivery/earnings', 'active' => $currentPath === '/delivery/earnings'],
-            ['name' => 'Dispatch Pool', 'icon' => 'fa-boxes-packing', 'path' => '/delivery/jobs-queue', 'active' => $currentPath === '/delivery/jobs-queue'],
-            ['name' => 'Profile', 'icon' => 'fa-user-shield', 'path' => '/delivery/profile', 'active' => $currentPath === '/delivery/profile'],
+            ['name' => 'Dashboard', 'icon' => 'fa-house', 'path' => '/delivery', 'active' => $currentPath === '/delivery' || str_starts_with($currentPath, '/delivery/order'), 'badge' => 0],
+            ['name' => 'Job Queue', 'icon' => 'fa-boxes-packing', 'path' => '/delivery/jobs-queue', 'active' => $currentPath === '/delivery/jobs-queue', 'badge' => $openPoolCountBadge],
+            ['name' => 'Live Map', 'icon' => 'fa-map-location-dot', 'path' => '/delivery/map', 'active' => $currentPath === '/delivery/map', 'badge' => 0],
+            ['name' => 'Earnings', 'icon' => 'fa-wallet', 'path' => '/delivery/earnings', 'active' => $currentPath === '/delivery/earnings', 'badge' => 0],
+            ['name' => 'Profile', 'icon' => 'fa-user-shield', 'path' => '/delivery/profile', 'active' => $currentPath === '/delivery/profile', 'badge' => 0],
         ];
     @endphp
 
@@ -80,7 +87,7 @@
     </header>
 
     <aside
-        class="fixed left-0 top-0 z-40 flex h-screen w-[85vw] max-w-[290px] flex-col border-r border-[#d9e5d5] bg-white transition-transform duration-300 md:sticky md:top-0 md:w-[275px] md:max-w-none md:translate-x-0"
+        class="fixed left-0 top-0 z-40 flex h-screen w-[85vw] max-w-[290px] flex-col border-r border-[#d9e5d5] bg-white transition-transform duration-300 md:sticky md:top-0 md:w-[216px] lg:w-[256px] shrink-0 md:max-w-none md:translate-x-0"
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
     >
         <div class="border-b border-[#d9e5d5] px-6 py-6 flex items-center justify-between gap-3">
@@ -101,15 +108,22 @@
             </div>
         @endauth
 
-        <nav class="flex-1 space-y-1.5 overflow-y-auto px-4 py-5">
+        <nav class="flex-1 space-y-1.5 overflow-y-auto px-3 lg:px-4 py-5">
             @foreach($navItems as $item)
                 <a
                     href="{{ $item['path'] }}"
                     @click="sidebarOpen = false"
-                    class="flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition {{ $item['active'] ? 'border border-[#d9e5d5] bg-[#eef4ea] text-[#163625]' : 'text-[#163625]/75 hover:bg-[#f3faf0] hover:text-[#163625]' }}"
+                    class="flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 lg:px-3.5 lg:py-3 text-sm font-semibold transition {{ $item['active'] ? 'border border-[#d9e5d5] bg-[#eef4ea] text-[#163625]' : 'text-[#163625]/75 hover:bg-[#f3faf0] hover:text-[#163625]' }}"
                 >
-                    <i class="fa-solid {{ $item['icon'] }} w-5 text-center {{ $item['active'] ? 'text-[#163625]' : 'text-[#163625]/65' }}"></i>
-                    <span>{{ $item['name'] }}</span>
+                    <span class="flex items-center gap-2.5 min-w-0">
+                        <i class="fa-solid {{ $item['icon'] }} w-5 shrink-0 text-center {{ $item['active'] ? 'text-[#163625]' : 'text-[#163625]/65' }}"></i>
+                        <span class="truncate">{{ $item['name'] }}</span>
+                    </span>
+                    @if(!empty($item['badge']))
+                        <span class="shrink-0 rounded-full bg-[#163625] px-2 py-0.5 text-[10px] font-bold text-[#E4FCD5]">
+                            {{ $item['badge'] }}
+                        </span>
+                    @endif
                 </a>
             @endforeach
         </nav>
@@ -146,7 +160,7 @@
 
     <!-- Main Workspace Content -->
     <main class="min-h-screen flex-1 min-w-0">
-        <div class="mx-auto w-full max-w-6xl px-4 py-6 pb-10 md:px-8 md:py-8 space-y-5">
+        <div class="mx-auto w-full max-w-6xl px-4 py-5 pb-10 sm:px-5 md:px-5 lg:px-8 lg:py-8 space-y-5">
             @if(session('success'))
                 <div class="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
                     <i class="fa-solid fa-circle-check text-emerald-700"></i>
@@ -165,6 +179,17 @@
                 <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
                     <i class="fa-solid fa-circle-exclamation text-rose-700"></i>
                     <span>{{ session('error') }}</span>
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-900 space-y-1 shadow-sm">
+                    @foreach($errors->all() as $err)
+                        <div class="flex items-center gap-2 font-bold">
+                            <i class="fa-solid fa-circle-exclamation text-rose-700"></i>
+                            <span>{{ $err }}</span>
+                        </div>
+                    @endforeach
                 </div>
             @endif
 

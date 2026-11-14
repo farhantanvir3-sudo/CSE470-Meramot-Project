@@ -34,29 +34,48 @@
         </section>
     @else
         <!-- 3 KPI Stat Cards -->
-        <section class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-2xl border border-[#d9e5d5] bg-white p-5 shadow-sm">
-                <div class="flex items-center justify-between">
+        <section class="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
+            <div class="rounded-2xl border border-[#d9e5d5] bg-white p-5 shadow-sm min-w-0">
+                <div class="flex items-center justify-between gap-2">
                     <p class="text-xs font-semibold text-[#163625]/65">Active deliveries</p>
-                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eef4ea] text-[#163625]"><i class="fa-solid fa-motorcycle text-xs"></i></span>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#eef4ea] text-[#163625]"><i class="fa-solid fa-motorcycle text-xs"></i></span>
                 </div>
                 <p class="mt-2 text-3xl font-extrabold text-[#163625]">{{ $activeCount }}</p>
             </div>
-            <div class="rounded-2xl border border-[#d9e5d5] bg-white p-5 shadow-sm">
-                <div class="flex items-center justify-between">
+            <div class="rounded-2xl border border-[#d9e5d5] bg-white p-5 shadow-sm min-w-0">
+                <div class="flex items-center justify-between gap-2">
                     <p class="text-xs font-semibold text-[#163625]/65">Completed trips</p>
-                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check text-xs"></i></span>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check text-xs"></i></span>
                 </div>
                 <p class="mt-2 text-3xl font-extrabold text-[#163625]">{{ $completedCount }}</p>
             </div>
-            <div class="rounded-2xl border border-[#d9e5d5] bg-white p-5 shadow-sm">
-                <div class="flex items-center justify-between">
+            <div class="rounded-2xl border border-[#d9e5d5] bg-white p-5 shadow-sm min-w-0 sm:col-span-2 xl:col-span-1">
+                <div class="flex items-center justify-between gap-2">
                     <p class="text-xs font-semibold text-[#163625]/65">Completed earnings</p>
-                    <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><i class="fa-solid fa-wallet text-xs"></i></span>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-800"><i class="fa-solid fa-wallet text-xs"></i></span>
                 </div>
-                <p class="mt-2 text-2xl sm:text-3xl font-extrabold text-[#163625]">BDT {{ number_format($completedEarnings, 2) }}</p>
+                <p class="mt-2 text-2xl xl:text-3xl font-extrabold text-[#163625]">BDT {{ number_format($completedEarnings, 2) }}</p>
             </div>
         </section>
+
+        @if(($openPoolCount ?? 0) > 0)
+            <section class="rounded-3xl border border-[#c8dac2] bg-white p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="min-w-0 space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex h-2 w-2 rounded-full bg-emerald-600"></span>
+                        <p class="text-xs font-bold uppercase tracking-wider text-emerald-800">Open Job Queue</p>
+                    </div>
+                    <h2 class="text-base font-extrabold text-[#163625]">
+                        {{ $openPoolCount }} unassigned {{ $openPoolCount === 1 ? 'task ready' : 'tasks ready' }} for pickup or return dispatch
+                    </h2>
+                    <p class="text-xs text-[#163625]/70">Review route fees and accept jobs directly in the courier queue.</p>
+                </div>
+                <a href="/delivery/jobs-queue?tab=pool" class="shrink-0 inline-flex items-center justify-center gap-2 rounded-full bg-[#163625] px-5 py-2.5 text-xs font-bold text-[#E4FCD5] hover:opacity-90 transition">
+                    <span>Open Job Queue</span>
+                    <span>&rarr;</span>
+                </a>
+            </section>
+        @endif
 
         <!-- Delivery Queue -->
         <section class="rounded-3xl border border-[#d9e5d5] bg-white p-4 sm:p-6 shadow-sm">
@@ -133,9 +152,14 @@
                                         <span class="font-semibold">Dropoff:</span> {{ $d->dropoff_address }}
                                     </p>
                                 </div>
-                                <span class="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold border {{ $badgeClass }}">
-                                    {{ $statusUpper }}
-                                </span>
+                                <div class="flex flex-col items-end gap-1 shrink-0">
+                                    <span class="rounded-full px-2.5 py-1 text-[11px] font-bold border {{ $badgeClass }}">
+                                        {{ $d->milestone_label }}
+                                    </span>
+                                    <span class="font-mono text-[10px] font-semibold text-[#163625]/55">
+                                        {{ $statusUpper }}
+                                    </span>
+                                </div>
                             </div>
                             <div class="mt-3 pt-2.5 border-t border-[#d9e5d5]/70 flex items-center justify-between text-xs text-[#163625]/80">
                                 <p class="font-semibold">Fee: BDT {{ number_format((float) ($d->fee ?? 0), 2) }}</p>

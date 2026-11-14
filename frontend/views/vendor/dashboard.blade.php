@@ -860,8 +860,12 @@
             </div>
             <div class="divide-y divide-[var(--border)] text-xs">
                 @forelse($activeJobs ?? [] as $job)
-                    <div class="py-4 space-y-3" x-data="{ chosenStatus: @js($job->status) }">
-                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    @php
+                        $initialSelectStatus = $job->status === 'READY_TO_RETURN' ? 'RETURN_SCHEDULED' : $job->status;
+                        $jobDeliveries = $job->repairRequest?->deliveryJobs?->sortBy('id') ?? collect();
+                    @endphp
+                    <div class="py-4 space-y-3" x-data="{ chosenStatus: @js($initialSelectStatus) }">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2 mb-1">
                                     <span class="break-words font-bold text-sm text-[var(--foreground)]">
@@ -876,7 +880,7 @@
                                         </span>
                                     @endif
                                 </div>
-                                <p class="text-[var(--muted-foreground)]">
+                                <p class="text-[var(--muted-foreground)] break-words">
                                     Customer: {{ $job->repairRequest?->customer?->name ?? 'Meramot Customer' }}
                                     • Quoted: <strong>৳{{ number_format($job->final_quoted_amount ?? $job->repairRequest?->quoted_final_amount ?? 0, 2) }}</strong>
                                     @if($job->repairRequest)
@@ -885,13 +889,14 @@
                                 </p>
                             </div>
 
-                            <form method="POST" action="{{ route('vendor.jobs.status', $job->id) }}" class="flex flex-col sm:flex-row sm:items-center gap-2 w-full md:w-auto">
+                            <form method="POST" action="{{ route('vendor.jobs.status', $job->id) }}" class="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto shrink-0">
                                 @csrf
                                 <select name="status" x-model="chosenStatus" class="w-full sm:w-auto min-w-0 max-w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
                                     <option value="AT_SHOP">At Shop (Received)</option>
                                     <option value="DIAGNOSING">Diagnosing Bench</option>
                                     <option value="WAITING_APPROVAL">Send Final Quote (Await Approval)</option>
                                     <option value="REPAIRING">Repairing / Servicing</option>
+                                    <option value="RETURN_SCHEDULED">Ready for Return Delivery (Dispatch Courier)</option>
                                     <option value="COMPLETED">Completed (Settle Ledger)</option>
                                 </select>
 
@@ -919,6 +924,36 @@
                                 </button>
                             </form>
                         </div>
+
+                        @if($jobDeliveries->isNotEmpty())
+                            <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/55 p-3 space-y-2">
+                                @foreach($jobDeliveries as $trip)
+                                    @php
+                                        $isReturn = strtoupper((string) $trip->direction) === 'TO_CUSTOMER';
+                                        $tripStatus = strtoupper((string) $trip->status);
+                                        $shopHandoverCode = !$isReturn
+                                            ? ($tripStatus !== 'DELIVERED' ? $trip->dropoff_otp : null)
+                                            : (in_array($tripStatus, ['PENDING', 'SCHEDULED', 'DISPATCHED'], true) ? $trip->pickup_otp : null);
+                                    @endphp
+                                    <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                                        <div class="flex flex-wrap items-center gap-2 min-w-0">
+                                            <span class="rounded-full bg-white border border-[var(--border)] px-2 py-0.5 font-bold text-[var(--accent-dark)]">
+                                                {{ $isReturn ? 'Return Courier' : 'Inbound Courier' }}
+                                            </span>
+                                            <span class="font-bold text-[var(--foreground)]">{{ $trip->milestone_label }}</span>
+                                            @if($trip->rider_name || $trip->deliveryAgent?->user?->name)
+                                                <span class="text-[var(--muted-foreground)]">&bull; {{ $trip->rider_name ?? $trip->deliveryAgent?->user?->name }}</span>
+                                            @endif
+                                        </div>
+                                        @if($shopHandoverCode)
+                                            <span class="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-0.5 font-mono font-bold text-amber-950">
+                                                {{ $isReturn ? 'Workshop Release Code:' : 'Workshop Check-In Code:' }} {{ $shopHandoverCode }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 @empty
                     <div class="py-8 text-center text-[var(--muted-foreground)]">

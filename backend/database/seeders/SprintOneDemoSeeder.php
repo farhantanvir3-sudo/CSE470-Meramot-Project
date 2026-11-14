@@ -1060,6 +1060,115 @@ class SprintOneDemoSeeder extends Seeder
                     );
                 }
             }
+
+            // 2F. Open Unassigned Dispatch Pool Tasks (R2 Job Queue Demo — ready to accept & sync)
+            $openDispatchTasks = [
+                [
+                    'title' => 'MacBook Pro 14 M3 — Liquid Spill Diagnostic Pickup',
+                    'device_type' => 'Laptop',
+                    'brand' => 'Apple',
+                    'model_name' => 'MacBook Pro 14 M3',
+                    'issue_category' => 'Logic Board / Liquid',
+                    'pickup_address' => 'House 18, Road 104, Gulshan 2, Dhaka',
+                    'dropoff_override' => null,
+                    'direction' => 'TO_SHOP',
+                    'type' => 'EXPRESS',
+                    'req_status' => 'ASSIGNED',
+                    'job_status' => 'CREATED',
+                    'tracking_code' => 'MRM-PKP-OPEN-01',
+                    'fee' => 240.00,
+                    'distance_km' => 4.80,
+                    'pickup_otp' => '3418',
+                    'dropoff_otp' => '7629',
+                ],
+                [
+                    'title' => 'Samsung Galaxy S23 Ultra — Repaired OLED Return Delivery',
+                    'device_type' => 'Phone',
+                    'brand' => 'Samsung',
+                    'model_name' => 'Galaxy S23 Ultra',
+                    'issue_category' => 'Display Replacement',
+                    'pickup_address' => $dhakaDoctors->public_address,
+                    'dropoff_override' => 'Apartment 5B, Road 6, Banani, Dhaka',
+                    'direction' => 'TO_CUSTOMER',
+                    'type' => 'REGULAR',
+                    'req_status' => 'RETURN_SCHEDULED',
+                    'job_status' => 'READY_TO_RETURN',
+                    'tracking_code' => 'MRM-RTN-OPEN-02',
+                    'fee' => 160.00,
+                    'distance_km' => 5.40,
+                    'pickup_otp' => '5180',
+                    'dropoff_otp' => '9264',
+                ],
+            ];
+
+            foreach ($openDispatchTasks as $idx => $task) {
+                $targetShop = ($idx === 0 && $protechMain) ? $protechMain : $dhakaDoctors;
+                $dropoffAddr = $task['dropoff_override'] ?? $targetShop->public_address;
+
+                $rr = RepairRequest::updateOrCreate(
+                    [
+                        'customer_id' => $nusratCustomer->id,
+                        'title' => $task['title'],
+                    ],
+                    [
+                        'source' => 'MARKETPLACE',
+                        'requested_shop_id' => $targetShop->id,
+                        'device_type' => $task['device_type'],
+                        'brand' => $task['brand'],
+                        'model_name' => $task['model_name'],
+                        'issue_category' => $task['issue_category'],
+                        'description' => 'Open courier dispatch queue order: ' . $task['title'],
+                        'problem' => 'Open courier dispatch queue order: ' . $task['title'],
+                        'mode' => 'CHECKUP_AND_REPAIR',
+                        'status' => $task['req_status'],
+                        'preferred_pickup' => true,
+                        'preferred_service_type' => 'pickup_dropoff',
+                        'delivery_type' => $task['type'],
+                        'contact_phone' => $nusratCustomer->phone ?? '+8801714100201',
+                        'pickup_address' => $task['pickup_address'],
+                        'dropoff_address' => $dropoffAddr,
+                        'quoted_final_amount' => 4500.00,
+                    ]
+                );
+
+                $rj = RepairJob::updateOrCreate(
+                    ['repair_request_id' => $rr->id],
+                    [
+                        'shop_id' => $targetShop->id,
+                        'status' => $task['job_status'],
+                        'final_quoted_amount' => 4500.00,
+                    ]
+                );
+
+                DeliveryJob::updateOrCreate(
+                    [
+                        'repair_request_id' => $rr->id,
+                        'direction' => $task['direction'],
+                    ],
+                    [
+                        'repair_job_id' => $rj->id,
+                        'delivery_agent_id' => null,
+                        'coverage_zone_id' => $dhanmondiZoneId,
+                        'type' => $task['type'],
+                        'status' => 'PENDING',
+                        'partner_name' => 'Meramot Logistics',
+                        'tracking_code' => $task['tracking_code'],
+                        'rider_name' => null,
+                        'rider_phone' => null,
+                        'pickup_address' => $task['pickup_address'],
+                        'dropoff_address' => $dropoffAddr,
+                        'pickup_otp' => $task['pickup_otp'],
+                        'dropoff_otp' => $task['dropoff_otp'],
+                        'distance_km' => $task['distance_km'],
+                        'fee' => $task['fee'],
+                        'scheduled_at' => null,
+                        'dispatched_at' => null,
+                        'picked_up_at' => null,
+                        'delivered_at' => null,
+                        'milestone_timestamps' => ['PENDING' => $now->copy()->subMinutes(15)->toIso8601String()],
+                    ]
+                );
+            }
         }
 
         // Re-sync all DeliveryAgent.total_earnings strictly with RiderEarnings rows

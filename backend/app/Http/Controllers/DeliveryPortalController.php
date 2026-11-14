@@ -6,10 +6,9 @@ use App\Models\DeliveryAgent;
 use App\Models\DeliveryJob;
 use App\Models\LocationLog;
 use App\Models\RiderChatMessage;
-use App\Models\RiderEarnings;
+use App\Services\DeliveryLifecycleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 /**
@@ -54,7 +53,7 @@ class DeliveryPortalController extends Controller
     /**
      * Ensure current request is authenticated as an approved, active delivery agent.
      */
-    private function resolveAuthenticatedAgent(Request $request): ?DeliveryAgent
+    public function resolveAuthenticatedAgent(Request $request): ?DeliveryAgent
     {
         $user = $request->user();
         if (!$user || !in_array($user->role, ['delivery_agent', 'delivery'], true)) {
@@ -191,6 +190,22 @@ class DeliveryPortalController extends Controller
 
         $visibleDeliveries = $viewMode === 'ASSIGNED' ? $deliveries : $activeDeliveries;
 
+        $openPoolQuery = DeliveryJob::with([
+            'repairRequest.customer',
+            'repairJob.shop',
+        ])
+            ->whereNull('delivery_agent_id')
+            ->whereIn('status', DeliveryLifecycleService::OPEN_POOL_STATUSES)
+            ->where(function ($query) {
+                $query->whereDoesntHave('repairRequest')
+                    ->orWhereHas('repairRequest', function ($reqQuery) {
+                        $reqQuery->whereNotIn('status', ['CANCELLED', 'REJECTED']);
+                    });
+            });
+
+        $openPoolCount = (clone $openPoolQuery)->count();
+        $openPoolJobs = $openPoolQuery->latest()->take(3)->get();
+
         return view('delivery.dashboard', compact(
             'user',
             'agent',
@@ -199,7 +214,9 @@ class DeliveryPortalController extends Controller
             'viewMode',
             'activeCount',
             'completedCount',
-            'completedEarnings'
+            'completedEarnings',
+            'openPoolCount',
+            'openPoolJobs'
         ));
     }
 
@@ -407,20 +424,20 @@ class DeliveryPortalController extends Controller
 
         $flowByDirection = [
             'TO_SHOP' => [
-                ['code' => 'PENDING', 'title' => 'Waiting for rider acceptance'],
-                ['code' => 'SCHEDULED', 'title' => 'Accepted by rider'],
-                ['code' => 'DISPATCHED', 'title' => 'Rider is going to customer'],
-                ['code' => 'PICKED_UP', 'title' => 'Picked up from customer'],
-                ['code' => 'IN_TRANSIT', 'title' => 'On the way to shop'],
-                ['code' => 'DELIVERED', 'title' => 'Delivered to shop'],
+                ['code' => 'PENDING', 'title' => 'Awaiting Courier Acceptance'],
+                ['code' => 'SCHEDULED', 'title' => 'Pickup Scheduled'],
+                ['code' => 'DISPATCHED', 'title' => 'En Route to Customer'],
+                ['code' => 'PICKED_UP', 'title' => 'Picked Up from Customer'],
+                ['code' => 'IN_TRANSIT', 'title' => 'En Route to Workshop'],
+                ['code' => 'DELIVERED', 'title' => 'At Shop (Checked In)'],
             ],
             'TO_CUSTOMER' => [
-                ['code' => 'PENDING', 'title' => 'Waiting for rider acceptance'],
-                ['code' => 'SCHEDULED', 'title' => 'Accepted by rider'],
-                ['code' => 'DISPATCHED', 'title' => 'Rider is going to shop'],
-                ['code' => 'PICKED_UP', 'title' => 'Picked up from shop'],
-                ['code' => 'IN_TRANSIT', 'title' => 'On the way to customer'],
-                ['code' => 'DELIVERED', 'title' => 'Delivered to customer'],
+                ['code' => 'PENDING', 'title' => 'Awaiting Courier Acceptance'],
+                ['code' => 'SCHEDULED', 'title' => 'Pickup Scheduled'],
+                ['code' => 'DISPATCHED', 'title' => 'En Route to Workshop'],
+                ['code' => 'PICKED_UP', 'title' => 'Picked Up from Shop'],
+                ['code' => 'IN_TRANSIT', 'title' => 'Out for Delivery'],
+                ['code' => 'DELIVERED', 'title' => 'Delivered to Customer'],
             ],
         ];
 
@@ -436,6 +453,11 @@ class DeliveryPortalController extends Controller
         }
 
         $nextStatus = self::NEXT_STATUS_MAP[$statusUpper] ?? null;
+        $canonicalLabel = DeliveryLifecycleService::milestoneLabel($delivery);
+        $requiresOtp = (
+            ($nextStatus === 'PICKED_UP' && !empty($delivery->pickup_otp))
+            || ($nextStatus === 'DELIVERED' && !empty($delivery->dropoff_otp))
+        );
 
         $chatMessages = RiderChatMessage::where('delivery_job_id', $delivery->id)
             ->orderBy('created_at')
@@ -448,6 +470,8 @@ class DeliveryPortalController extends Controller
             'flowSteps',
             'currentStepIndex',
             'nextStatus',
+            'canonicalLabel',
+            'requiresOtp',
             'chatMessages'
         ));
     }
@@ -462,114 +486,22 @@ class DeliveryPortalController extends Controller
             return redirect('/delivery/login');
         }
 
-        $delivery = DeliveryJob::findOrFail($id);
+        $validated = $request->validate([
+            'milestone' => 'nullable|string|max:40',
+            'otp' => 'nullable|string|max:10',
+            'require_otp' => 'nullable|boolean',
+        ]);
 
-        if ($delivery->delivery_agent_id !== null && (int) $delivery->delivery_agent_id !== (int) $agent->id) {
-            abort(403, 'This delivery order is assigned to another courier partner.');
-        }
+        $updated = app(DeliveryLifecycleService::class)->advanceMilestone(
+            (int) $id,
+            $agent,
+            $validated['milestone'] ?? null,
+            $validated['otp'] ?? null,
+            $request->boolean('require_otp')
+        );
 
-        DB::transaction(function () use ($delivery, $agent) {
-            if (!$delivery->delivery_agent_id) {
-                $delivery->update([
-                    'delivery_agent_id' => $agent->id,
-                    'rider_name' => $agent->user?->name,
-                    'rider_phone' => $agent->user?->phone,
-                    'status' => 'SCHEDULED',
-                    'scheduled_at' => $delivery->scheduled_at ?? now(),
-                ]);
-                return;
-            }
-
-            $currentStatus = strtoupper((string) $delivery->status);
-            $next = self::NEXT_STATUS_MAP[$currentStatus] ?? null;
-            if (!$next) {
-                return;
-            }
-
-            $updates = ['status' => $next];
-            if ($next === 'SCHEDULED' && !$delivery->scheduled_at) {
-                $updates['scheduled_at'] = now();
-            } elseif ($next === 'DISPATCHED') {
-                $updates['dispatched_at'] = now();
-            } elseif ($next === 'PICKED_UP') {
-                $updates['picked_up_at'] = now();
-            } elseif ($next === 'DELIVERED') {
-                $updates['delivered_at'] = now();
-            }
-
-            $delivery->update($updates);
-
-            // Synchronize parent RepairRequest & RepairJob lifecycle states with rider milestones
-            $req = $delivery->repairRequest ?? $delivery->repairJob?->repairRequest;
-            $rJob = $delivery->repairJob ?? $req?->repairJob;
-            $isToCustomer = strtoupper((string) $delivery->direction) === 'TO_CUSTOMER';
-
-            if ($req) {
-                if (!$isToCustomer) {
-                    if (in_array($next, ['SCHEDULED', 'DISPATCHED'], true) && $req->status === 'ASSIGNED') {
-                        $req->update(['status' => 'PICKUP_SCHEDULED']);
-                        if ($rJob && $rJob->status === 'CREATED') {
-                            $rJob->update(['status' => 'PICKUP_SCHEDULED']);
-                        }
-                    } elseif (in_array($next, ['PICKED_UP', 'IN_TRANSIT'], true)) {
-                        $req->update(['status' => 'PICKED_UP']);
-                        if ($rJob) {
-                            $rJob->update(['status' => 'PICKED_UP']);
-                        }
-                    } elseif ($next === 'DELIVERED') {
-                        $req->update(['status' => 'AT_SHOP']);
-                        if ($rJob) {
-                            $rJob->update(['status' => 'AT_SHOP']);
-                        }
-                    }
-                } else {
-                    if (in_array($next, ['DISPATCHED', 'PICKED_UP', 'IN_TRANSIT'], true)) {
-                        $req->update(['status' => 'RETURNING']);
-                        if ($rJob) {
-                            $rJob->update(['status' => 'RETURNING']);
-                        }
-                    } elseif ($next === 'DELIVERED') {
-                        $wasDeclinedQuote2 = $rJob && $rJob->customer_approved === false;
-                        $req->update(['status' => $wasDeclinedQuote2 ? 'RETURNED_TO_CUSTOMER' : 'COMPLETED']);
-                        if ($rJob) {
-                            $rJob->update([
-                                'status' => 'COMPLETED',
-                                'completed_at' => $rJob->completed_at ?? now(),
-                            ]);
-
-                            if (!$wasDeclinedQuote2) {
-                                VendorBranchController::settleCompletedJobFinancials(
-                                    $rJob->fresh(['repairRequest', 'shop.vendorProfile'])
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-
-            if ($next === 'DELIVERED') {
-                $fee = (float) ($delivery->fee ?? 150.00);
-                RiderEarnings::updateOrCreate(
-                    [
-                        'delivery_agent_id' => $agent->id,
-                        'delivery_job_id' => $delivery->id,
-                    ],
-                    [
-                        'trip_fee' => $fee,
-                        'bonus_amount' => 0.00,
-                        'total_earned' => $fee,
-                        'payout_status' => 'unpaid',
-                    ]
-                );
-
-                $agent->update([
-                    'total_earnings' => (float) RiderEarnings::where('delivery_agent_id', $agent->id)->sum('total_earned'),
-                ]);
-            }
-        });
-
-        return redirect("/delivery/order/{$delivery->id}")
-            ->with('success', 'Delivery status updated to ' . $delivery->fresh()->status . '.');
+        return redirect("/delivery/order/{$updated->id}")
+            ->with('success', 'Milestone updated to ' . DeliveryLifecycleService::milestoneLabel($updated) . '.');
     }
 
     /**

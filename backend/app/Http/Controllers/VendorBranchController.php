@@ -10,8 +10,10 @@ use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\ShopService;
 use App\Models\User;
+use App\Models\UserNotification;
 use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
+use App\Services\DeliveryLifecycleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -108,7 +110,7 @@ class VendorBranchController extends Controller
             ->take(8)
             ->get();
 
-        $activeJobs = RepairJob::with(['repairRequest.customer', 'shop'])
+        $activeJobs = RepairJob::with(['repairRequest.customer', 'repairRequest.deliveryJobs.deliveryAgent.user', 'shop'])
             ->whereIn('shop_id', $scopedShopIds)
             ->where('status', '!=', 'CANCELLED')
             ->orderByRaw("CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END")
@@ -616,13 +618,13 @@ class VendorBranchController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => 'required|in:AT_SHOP,DIAGNOSING,WAITING_APPROVAL,REPAIRING,COMPLETED',
+            'status' => 'required|in:AT_SHOP,DIAGNOSING,WAITING_APPROVAL,REPAIRING,RETURN_SCHEDULED,COMPLETED',
             'final_quoted_amount' => 'nullable|numeric|min:50|max:2000000',
             'diagnosis_notes' => 'nullable|string|max:1000',
         ]);
 
         $newStatus = $validated['status'];
-        $jobUpdates = ['status' => $newStatus];
+        $jobUpdates = ['status' => $newStatus === 'RETURN_SCHEDULED' ? 'READY_TO_RETURN' : $newStatus];
 
         if ($newStatus === 'REPAIRING' && !$job->started_at) {
             $jobUpdates['started_at'] = now();
@@ -646,6 +648,26 @@ class VendorBranchController extends Controller
             }
             $job->repairRequest->update($reqUpdates);
 
+            if ($newStatus === 'RETURN_SCHEDULED') {
+                $returnDelivery = app(DeliveryLifecycleService::class)->ensureDeliveryJob(
+                    $job->repairRequest->fresh(),
+                    $job->fresh(),
+                    'TO_CUSTOMER'
+                );
+
+                if ($job->repairRequest->customer_id) {
+                    UserNotification::create([
+                        'user_id' => $job->repairRequest->customer_id,
+                        'type' => 'delivery_milestone',
+                        'severity' => 'info',
+                        'title' => 'Ready for Return Delivery',
+                        'message' => ($job->shop?->name ?? 'The workshop') . " completed bench service for #{$job->repairRequest->id} and queued a return courier ({$returnDelivery->tracking_code}).",
+                        'action_url' => '/requests/' . $job->repairRequest->id . '/track',
+                        'is_read' => false,
+                    ]);
+                }
+            }
+
             // When repair completes, generate Invoice + Warranty + Escrow Release + 10%/90% Double-Entry Ledger
             if ($newStatus === 'COMPLETED') {
                 self::settleCompletedJobFinancials($job->fresh(['repairRequest', 'shop.vendorProfile']));
@@ -656,8 +678,9 @@ class VendorBranchController extends Controller
             ->with(
                 'success',
                 "Updated Job #{$job->id} status to {$newStatus}"
-                . ($newStatus === 'WAITING_APPROVAL' ? ' — Quote 2 sent to customer for approval!' : '')
-                . ($newStatus === 'COMPLETED' ? ' — Invoice, Warranty & 10%/90% double-entry ledger recorded!' : '.')
+                . ($newStatus === 'WAITING_APPROVAL' ? ' — Final quote sent to customer for approval.' : '')
+                . ($newStatus === 'RETURN_SCHEDULED' ? ' — Return pickup task queued in courier dispatch pool.' : '')
+                . ($newStatus === 'COMPLETED' ? ' — Invoice, warranty & 10%/90% ledger settled.' : '')
             );
     }
 

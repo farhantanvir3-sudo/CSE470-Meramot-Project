@@ -53,4 +53,9 @@ class RepairJob extends Model
     {
         return $this->belongsTo(Bid::class, 'accepted_bid_id');
     }
+
+    public function deliveryJobs()
+    {
+        return $this->hasMany(DeliveryJob::class, 'repair_job_id');
+    }
 }
