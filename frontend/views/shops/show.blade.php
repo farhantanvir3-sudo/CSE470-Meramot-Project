@@ -108,7 +108,7 @@
         @endif
 
         <div class="p-4 sm:p-5 md:p-8">
-        <div class="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[130px_minmax(0,1fr)_260px] lg:items-start">
+        <div class="grid gap-5 sm:gap-6 sm:grid-cols-[auto_minmax(0,1fr)] lg:grid-cols-[130px_minmax(0,1fr)_260px] lg:items-start">
 
             <!-- Left: Shop Logo / Avatar -->
             <div class="h-24 w-24 sm:h-28 sm:w-28 lg:h-[130px] lg:w-[130px] rounded-[1.5rem] border-2 border-[var(--border)] bg-[var(--mint-100)] flex items-center justify-center font-black text-4xl text-[var(--accent-dark)] shrink-0 overflow-hidden shadow-sm">
@@ -199,9 +199,9 @@
                 </div>
             </div>
 
-            <!-- Right: Quick Quote / Booking Card -->
-            <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm space-y-4">
-                <div>
+            <!-- Right: Quick Quote / Booking Card (full-width row below lg, sidebar column on lg+) -->
+            <div class="min-w-0 rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm space-y-4 sm:col-span-2 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] sm:items-center sm:gap-5 sm:space-y-0 lg:col-span-1 lg:block lg:space-y-4">
+                <div class="min-w-0">
                     <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Starting Inspection</span>
                     <div class="text-2xl font-black text-[var(--accent-dark)]">
                         ৳{{ number_format($shop->inspection_fee ?: 200) }}
