@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\DeliveryLifecycleService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -70,5 +71,10 @@ class DeliveryJob extends Model
     public function deliveryAgent()
     {
         return $this->belongsTo(DeliveryAgent::class);
+    }
+
+    public function getMilestoneLabelAttribute(): string
+    {
+        return DeliveryLifecycleService::milestoneLabel($this);
     }
 }

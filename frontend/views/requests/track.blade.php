@@ -321,6 +321,91 @@
                 </div>
             </div>
 
+            <!-- Courier & Handover Status Card -->
+            @if($repairRequest->deliveryJobs && $repairRequest->deliveryJobs->isNotEmpty())
+                @php
+                    $orderedTrips = $repairRequest->deliveryJobs->sortBy('id');
+                @endphp
+                <div class="meramot-card p-6 shadow-sm space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                                Courier &amp; Handover Status
+                            </h2>
+                            <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
+                                Live pickup and return milestones synced directly with your assigned courier.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        @foreach($orderedTrips as $trip)
+                            @php
+                                $isReturnTrip = strtoupper((string) $trip->direction) === 'TO_CUSTOMER';
+                                $tripUpper = strtoupper((string) $trip->status);
+                                $tripLabel = \App\Services\DeliveryLifecycleService::milestoneLabel($trip);
+                                $tripStages = \App\Services\DeliveryLifecycleService::canonicalStages($trip);
+                                $customerHandoverCode = !$isReturnTrip
+                                    ? (in_array($tripUpper, ['PENDING', 'SCHEDULED', 'DISPATCHED'], true) ? $trip->pickup_otp : null)
+                                    : (in_array($tripUpper, ['PENDING', 'SCHEDULED', 'DISPATCHED', 'PICKED_UP', 'IN_TRANSIT'], true) ? $trip->dropoff_otp : null);
+                            @endphp
+                            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/55 p-4 space-y-3">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold uppercase text-[var(--accent-dark)]">
+                                                {{ $isReturnTrip ? 'Return Delivery' : 'Pickup to Workshop' }}
+                                            </span>
+                                            @if($trip->tracking_code)
+                                                <span class="font-mono text-xs text-[var(--muted-foreground)]">{{ $trip->tracking_code }}</span>
+                                            @endif
+                                        </div>
+                                        <p class="mt-1.5 text-xs text-[var(--foreground)] break-words">
+                                            @if($trip->rider_name || $trip->deliveryAgent?->user?->name)
+                                                Courier: <strong>{{ $trip->rider_name ?? $trip->deliveryAgent?->user?->name }}</strong>
+                                                @if($trip->rider_phone || $trip->deliveryAgent?->user?->phone)
+                                                    &bull; {{ $trip->rider_phone ?? $trip->deliveryAgent?->user?->phone }}
+                                                @endif
+                                            @else
+                                                <span class="text-[var(--muted-foreground)]">Awaiting courier acceptance from the dispatch queue.</span>
+                                            @endif
+                                        </p>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="rounded-full px-3 py-1 text-[11px] font-bold border {{ $tripUpper === 'DELIVERED' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-[var(--card)] text-[var(--accent-dark)] border-[var(--border)]' }}">
+                                            {{ $tripLabel }}
+                                        </span>
+                                        <a href="/tracking/{{ $trip->id }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                                            Live Map
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                                    @foreach($tripStages as $st)
+                                        <div class="rounded-lg border px-2 py-1.5 text-center {{ $st['state'] === 'done' ? 'bg-emerald-100/80 border-emerald-300 text-emerald-900' : ($st['state'] === 'current' ? 'bg-[var(--accent-dark)] border-[var(--accent-dark)] text-[var(--accent-foreground)]' : 'bg-[var(--card)] border-[var(--border)] text-[var(--muted-foreground)]') }}">
+                                            <p class="text-[10px] font-bold truncate">{{ $st['label'] }}</p>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                @if($canActAsCustomer && $customerHandoverCode)
+                                    <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-300 bg-amber-50/90 px-3.5 py-2.5 text-xs">
+                                        <span class="font-medium text-amber-950">
+                                            {{ $isReturnTrip ? 'Share this delivery confirmation code when receiving your device:' : 'Share this pickup code with the courier at handover:' }}
+                                        </span>
+                                        <span class="rounded-lg bg-white border border-amber-300 px-3 py-1 font-mono text-sm font-black tracking-widest text-[#163625]">
+                                            {{ $customerHandoverCode }}
+                                        </span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <!-- Device Information Card -->
             <div class="meramot-card p-6 shadow-sm">
                 <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-4">

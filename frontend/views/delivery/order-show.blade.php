@@ -55,16 +55,16 @@
     <!-- Main Body -->
     <div class="p-4 sm:p-6">
         <div class="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-            <div>
-                <h1 class="text-xl md:text-2xl font-extrabold text-[#163625] mb-1">{{ $title }}</h1>
+            <div class="min-w-0">
+                <h1 class="text-xl md:text-2xl font-extrabold text-[#163625] mb-1 break-words">{{ $title }}</h1>
                 <p class="text-sm text-[#163625]/70">
                     {{ strtoupper((string) $delivery->direction) === 'TO_SHOP' ? 'Customer to service center' : 'Service center to customer' }}
                 </p>
             </div>
-            <div class="sm:text-right">
-                <h3 class="text-2xl font-extrabold text-emerald-700">BDT {{ number_format((float) ($delivery->fee ?? 0), 2) }}</h3>
-                <span class="inline-block mt-1 text-[10px] uppercase font-bold tracking-wider text-[#163625] bg-[#eef4ea] border border-[#d9e5d5] px-2.5 py-0.5 rounded-full">
-                    {{ strtoupper((string) $delivery->status) }}
+            <div class="sm:text-right shrink-0">
+                <h3 class="text-2xl font-extrabold text-emerald-700 whitespace-nowrap">BDT {{ number_format((float) ($delivery->fee ?? 0), 2) }}</h3>
+                <span class="inline-block mt-1 text-[10px] uppercase font-bold tracking-wider text-[#163625] bg-[#eef4ea] border border-[#d9e5d5] px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                    {{ $canonicalLabel ?? $delivery->milestone_label }}
                 </span>
             </div>
         </div>
@@ -85,7 +85,7 @@
         </div>
 
         <!-- Pickup & Dropoff Cards -->
-        <div class="grid gap-4 sm:grid-cols-2 mb-8">
+        <div class="grid gap-4 grid-cols-1 lg:grid-cols-2 mb-8">
             <div class="rounded-2xl border border-[#d9e5d5] p-4 bg-white min-w-0">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                     <p class="text-[10px] font-bold text-[#163625]/60 uppercase tracking-wider">Pickup</p>
@@ -108,29 +108,35 @@
         </div>
 
         <!-- 6-Step Milestone Flow -->
-        <div class="mb-8 rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-5">
+        <div class="mb-8 rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-4 sm:p-5">
             <p class="mb-3 text-xs font-bold uppercase tracking-wider text-[#163625]/70">
-                {{ strtoupper((string) $delivery->direction) === 'TO_SHOP' ? 'Customer to shop flow' : 'Shop to customer flow' }}
+                {{ strtoupper((string) $delivery->direction) === 'TO_SHOP' ? 'Inbound Pickup Milestones' : 'Return Delivery Milestones' }}
             </p>
             <div class="space-y-2">
                 @foreach($flowSteps as $idx => $step)
                     @php
                         $isDoneOrCurrent = $currentStepIndex >= $idx;
                         $isCurrent = $currentStepIndex === $idx;
+                        $stepTimestamp = $delivery->milestone_timestamps[$step['code']] ?? null;
                     @endphp
                     <div class="flex items-center gap-3 rounded-xl border {{ $isCurrent ? 'border-[#163625] bg-white shadow-sm' : 'border-[#d9e5d5] bg-white/85' }} px-3.5 py-2.5">
                         <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold {{ $isDoneOrCurrent ? 'bg-[#163625] text-[#E4FCD5]' : 'bg-[#eef4ea] text-[#163625]/60' }}">
                             {{ $idx + 1 }}
                         </span>
-                        <div class="flex-1 flex items-center justify-between gap-2">
-                            <div>
+                        <div class="flex-1 flex flex-wrap items-center justify-between gap-2 min-w-0">
+                            <div class="min-w-0">
                                 <p class="text-sm font-semibold {{ $isCurrent ? 'text-[#163625]' : 'text-[#163625]/75' }}">{{ $step['title'] }}</p>
-                                <p class="text-[10px] font-bold font-mono text-[#163625]/50">{{ $step['code'] }}</p>
+                                <p class="text-[10px] font-bold font-mono text-[#163625]/50">
+                                    {{ $step['code'] }}
+                                    @if($stepTimestamp)
+                                        &bull; {{ \Carbon\Carbon::parse($stepTimestamp)->format('M d, h:i A') }}
+                                    @endif
+                                </p>
                             </div>
                             @if($isCurrent)
-                                <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">Current</span>
+                                <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200 shrink-0">Current</span>
                             @elseif($currentStepIndex > $idx)
-                                <i class="fa-solid fa-check text-emerald-700 text-xs"></i>
+                                <i class="fa-solid fa-check text-emerald-700 text-xs shrink-0"></i>
                             @endif
                         </div>
                     </div>
@@ -139,31 +145,64 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row gap-3">
+        <div class="flex flex-col sm:flex-row gap-3 items-stretch">
             <a
-                href="/delivery"
-                class="flex-1 text-center rounded-xl border border-[#d9e5d5] bg-white py-3 text-sm font-bold text-[#163625] hover:bg-[#f8fbf6] transition"
+                href="/delivery/jobs-queue"
+                class="sm:flex-1 text-center rounded-xl border border-[#d9e5d5] bg-white py-3 px-4 text-sm font-bold text-[#163625] hover:bg-[#f8fbf6] transition flex items-center justify-center"
             >
-                Back to dashboard
+                Job Queue
             </a>
 
             @if(!$delivery->delivery_agent_id)
-                <form method="POST" action="/delivery/order/{{ $delivery->id }}/status" class="flex-[2]">
+                <form method="POST" action="/delivery/jobs/{{ $delivery->id }}/claim" class="sm:flex-[2]">
                     @csrf
-                    <button type="submit" class="w-full rounded-xl bg-[#163625] py-3 text-sm font-bold text-[#E4FCD5] hover:opacity-95 transition">
-                        Accept this order
+                    <input type="hidden" name="redirect_to" value="/delivery/order/{{ $delivery->id }}">
+                    <button type="submit" class="w-full rounded-xl bg-[#163625] py-3 px-4 text-sm font-bold text-[#E4FCD5] hover:opacity-95 transition">
+                        Accept Job
                     </button>
                 </form>
             @elseif($nextStatus)
-                <form method="POST" action="/delivery/order/{{ $delivery->id }}/status" class="flex-[2]">
+                @php
+                    $queueNextAction = \App\Services\DeliveryLifecycleService::nextQueueAction($delivery);
+                    $nextActionLabel = $queueNextAction['label'] ?? ('Advance to ' . $nextStatus);
+                    $otpPromptLabel = $queueNextAction['otp_prompt'] ?? 'Enter 4-digit handover OTP';
+                @endphp
+                <form method="POST" action="/delivery/order/{{ $delivery->id }}/status" class="sm:flex-[2]">
                     @csrf
-                    <button type="submit" class="w-full rounded-xl bg-[#163625] py-3 text-sm font-bold text-[#E4FCD5] hover:opacity-95 transition">
-                        Move to {{ $nextStatus }}
-                    </button>
+                    @if(!empty($requiresOtp))
+                        <input type="hidden" name="require_otp" value="1">
+                        <div class="space-y-1.5">
+                            <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#163625]/75">
+                                <span class="font-semibold">{{ $otpPromptLabel }}</span>
+                                @if(!empty($queueNextAction['demo_otp']))
+                                    <span class="rounded bg-[#eef4ea] px-2 py-0.5 font-mono font-bold text-[#163625] border border-[#d9e5d5]">Code: {{ $queueNextAction['demo_otp'] }}</span>
+                                @endif
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="text"
+                                    name="otp"
+                                    inputmode="numeric"
+                                    pattern="[0-9]{4}"
+                                    maxlength="4"
+                                    required
+                                    placeholder="4-digit OTP"
+                                    class="w-full sm:w-36 rounded-xl border border-[#c8dac2] bg-[#f8fbf6] px-3 py-3 text-center font-mono text-sm font-bold tracking-widest text-[#163625] outline-none focus:border-[#163625]"
+                                >
+                                <button type="submit" class="flex-1 rounded-xl bg-[#163625] py-3 px-4 text-sm font-bold text-[#E4FCD5] hover:opacity-95 transition">
+                                    {{ $nextActionLabel }}
+                                </button>
+                            </div>
+                        </div>
+                    @else
+                        <button type="submit" class="w-full rounded-xl bg-[#163625] py-3 px-4 text-sm font-bold text-[#E4FCD5] hover:opacity-95 transition">
+                            {{ $nextActionLabel }} &rarr;
+                        </button>
+                    @endif
                 </form>
             @else
-                <button type="button" disabled class="flex-[2] rounded-xl bg-[#163625]/50 py-3 text-sm font-bold text-[#E4FCD5] cursor-not-allowed">
-                    Final status reached ({{ strtoupper((string) $delivery->status) }})
+                <button type="button" disabled class="sm:flex-[2] rounded-xl bg-[#163625]/50 py-3 px-4 text-sm font-bold text-[#E4FCD5] cursor-not-allowed">
+                    Completed ({{ $canonicalLabel ?? $delivery->milestone_label }})
                 </button>
             @endif
         </div>

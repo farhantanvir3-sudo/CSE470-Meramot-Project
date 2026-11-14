@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DeliveryAgent;
 use App\Models\DeliveryJob;
 use App\Models\RepairJob;
 use App\Models\RepairRequest;
-use App\Models\RepairShop;
 use App\Models\VendorProfile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 /**
  * ============================================================================
@@ -360,44 +357,10 @@ class StatusTransitionController extends Controller
     }
 
     /**
-     * Ensure a DeliveryJob (`TO_SHOP` or `TO_CUSTOMER`) is created and linked whenever courier pickup/return is active.
+     * Ensure a DeliveryJob (`TO_SHOP` or `TO_CUSTOMER`) is queued whenever courier pickup/return is active.
      */
     private function ensureCourierDeliveryJob(RepairRequest $repairRequest, RepairJob $job, string $direction): void
     {
-        $shop = RepairShop::find($job->shop_id);
-        $shopAddress = $shop?->address ?: (($shop?->area ?: 'Banani') . ', ' . ($shop?->city ?: 'Dhaka'));
-        $customerAddress = $repairRequest->pickup_address ?: 'Banani, Dhaka';
-
-        $activeAgent = DeliveryAgent::with('user')
-            ->where('registration_status', 'APPROVED')
-            ->where('is_active', true)
-            ->orderBy('id')
-            ->first();
-
-        $isToShop = $direction === 'TO_SHOP';
-
-        DeliveryJob::firstOrCreate(
-            [
-                'repair_request_id' => $repairRequest->id,
-                'direction' => $direction,
-            ],
-            [
-                'repair_job_id' => $job->id,
-                'delivery_agent_id' => $activeAgent?->id,
-                'type' => $repairRequest->delivery_type ?? 'REGULAR',
-                'status' => $activeAgent ? 'SCHEDULED' : 'PENDING',
-                'partner_name' => 'Meramot Logistics',
-                'tracking_code' => 'MRM-' . ($isToShop ? 'PKP' : 'RTN') . '-' . $repairRequest->id . '-' . strtoupper(Str::random(4)),
-                'rider_name' => $activeAgent?->user?->name ?? 'Assigned Meramot Rider',
-                'rider_phone' => $activeAgent?->user?->phone ?? '+8801711000099',
-                'pickup_address' => $isToShop ? $customerAddress : $shopAddress,
-                'dropoff_address' => $isToShop ? $shopAddress : $customerAddress,
-                'pickup_otp' => (string) random_int(1000, 9999),
-                'dropoff_otp' => (string) random_int(1000, 9999),
-                'distance_km' => 4.2,
-                'fee' => ($repairRequest->delivery_type ?? 'REGULAR') === 'EXPRESS' ? 240.00 : 120.00,
-                'scheduled_at' => now(),
-            ]
-        );
+        app(\App\Services\DeliveryLifecycleService::class)->ensureDeliveryJob($repairRequest, $job, $direction);
     }
 }

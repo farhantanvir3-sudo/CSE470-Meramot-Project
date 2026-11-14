@@ -315,7 +315,8 @@ class SprintOneDemoReadinessTest extends TestCase
             'amount' => 3500,
         ])->assertStatus(200)->assertSee('Coming Soon');
 
-        $this->post('/delivery/jobs/1/claim')->assertStatus(200)->assertSee('Coming Soon');
+        // R2 claim route is now live and redirects non-courier viewers to Delivery Partner login
+        $this->post('/delivery/jobs/1/claim')->assertRedirect('/delivery/login');
         $this->post('/delivery/payout/request')->assertStatus(200)->assertSee('Coming Soon');
         $this->post('/admin/payouts/1/disburse')->assertStatus(200)->assertSee('Coming Soon');
         $this->post('/admin/moderation/sanction')->assertStatus(200)->assertSee('Coming Soon');
