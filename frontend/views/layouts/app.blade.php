@@ -561,7 +561,7 @@
         <div class="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 md:gap-4 md:px-6 md:py-5">
             
             <!-- ── Row 1: Logo + hamburger (mobile) / Logo + location + actions (desktop) ── -->
-            <div class="flex items-center justify-between gap-3 md:grid md:grid-cols-[auto_minmax(280px,1fr)_auto] md:items-center md:gap-4">
+            <div class="flex items-center justify-between gap-3 md:grid md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center md:gap-3 lg:gap-4">
                 
                 <!-- Hamburger — mobile only -->
                 <button
@@ -589,10 +589,12 @@
                     <button
                         type="button"
                         @click="openLocationModal()"
-                        class="group inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
+                        :title="locationLabel"
+                        aria-label="Choose your location"
+                        class="group inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--card)] px-3 lg:px-4 py-2.5 text-sm font-semibold text-[var(--foreground)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
                     >
                         <i class="fa-solid fa-location-dot shrink-0 text-[var(--accent-dark)] text-base"></i>
-                        <span class="max-w-[160px] xl:max-w-[220px] truncate" x-text="locationLabel">Choose your location</span>
+                        <span class="hidden lg:inline max-w-[160px] xl:max-w-[220px] truncate" x-text="locationLabel">Choose your location</span>
                     </button>
                 </div>
 
@@ -742,7 +744,7 @@
                     @endif
 
                     <!-- Desktop: Full Action Bar -->
-                    <div class="hidden md:flex md:items-center md:gap-3">
+                    <div class="hidden md:flex md:items-center md:gap-2 lg:gap-3">
                         
                         <!-- Theme Toggle Button -->
                         <button
@@ -758,26 +760,26 @@
                         @if($isRiderAuth && !request()->is('delivery*'))
                             <a
                                 href="/delivery"
-                                class="inline-flex items-center gap-2 rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
+                                class="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full border border-[#c8dac2] bg-[var(--card)] px-3 lg:px-4 py-2 text-xs font-bold text-[var(--accent-dark)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
                             >
                                 <i class="fa-solid fa-motorcycle text-[var(--accent-dark)]"></i>
-                                <span>Rider Dashboard</span>
+                                <span class="sr-only lg:not-sr-only">Rider Dashboard</span>
                             </a>
                         @elseif($isVendorAuth && !request()->is('vendor/dashboard*'))
                             <a
                                 href="{{ $vendorWorkspaceUrl }}"
-                                class="inline-flex items-center gap-2 rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
+                                class="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full border border-[#c8dac2] bg-[var(--card)] px-3 lg:px-4 py-2 text-xs font-bold text-[var(--accent-dark)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
                             >
                                 <i class="fa-solid fa-store text-[var(--accent-dark)]"></i>
-                                <span>{{ $vendorWorkspaceLabel }}</span>
+                                <span class="sr-only lg:not-sr-only">{{ $vendorWorkspaceLabel }}</span>
                             </a>
                         @elseif($isAdminAuth && !request()->is('admin*'))
                             <a
                                 href="/admin"
-                                class="inline-flex items-center gap-2 rounded-full border border-[#c8dac2] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
+                                class="inline-flex h-10 items-center gap-2 whitespace-nowrap rounded-full border border-[#c8dac2] bg-[var(--card)] px-3 lg:px-4 py-2 text-xs font-bold text-[var(--accent-dark)] shadow-sm transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
                             >
                                 <i class="fa-solid fa-shield-halved text-[var(--accent-dark)]"></i>
-                                <span>Admin Console</span>
+                                <span class="sr-only lg:not-sr-only">Admin Console</span>
                             </a>
                         @endif
 
@@ -787,12 +789,12 @@
                                 <button
                                     @click="userMenuOpen = !userMenuOpen"
                                     type="button"
-                                    class="inline-flex items-center justify-center gap-2 text-center rounded-full bg-[var(--accent-dark)] px-5 py-2 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
+                                    class="inline-flex max-w-full items-center justify-center gap-2 whitespace-nowrap text-center rounded-full bg-[var(--accent-dark)] px-3.5 lg:px-5 py-2 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
                                 >
                                     @if(!empty(auth()->user()->avatar_url))
                                         <img src="{{ auth()->user()->avatar_url }}" alt="" class="h-6 w-6 rounded-full object-cover border border-white/40 shrink-0">
                                     @endif
-                                    <span class="max-w-[150px] lg:max-w-[210px] truncate">{{ auth()->user()->name ?? 'User' }}</span>
+                                    <span class="max-w-[96px] lg:max-w-[150px] xl:max-w-[210px] truncate">{{ auth()->user()->name ?? 'User' }}</span>
                                     <span class="ml-0.5 text-xs shrink-0">▼</span>
                                 </button>
 
@@ -901,7 +903,7 @@
                         @else
                             <a
                                 href="/login"
-                                class="inline-flex items-center justify-center text-center rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
+                                class="inline-flex items-center justify-center whitespace-nowrap text-center rounded-full bg-[var(--accent-dark)] px-4 lg:px-6 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
                             >
                                 Sign in/Sign up
                             </a>
@@ -912,9 +914,9 @@
                             <button
                                 type="button"
                                 @click="langMenuOpen = !langMenuOpen"
-                                class="rounded-full bg-[var(--mint-200)] px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--mint-300)]"
+                                class="whitespace-nowrap rounded-full bg-[var(--mint-200)] px-3 lg:px-5 py-2.5 text-sm font-medium text-[var(--foreground)] transition hover:bg-[var(--mint-300)]"
                             >
-                                <span x-text="currentLang === 'bn' ? 'বাংলা' : 'English'">English</span> ▼
+                                <span class="hidden lg:inline" x-text="currentLang === 'bn' ? 'বাংলা' : 'English'">English</span><span class="lg:hidden" x-text="currentLang === 'bn' ? 'বাং' : 'EN'">EN</span> ▼
                             </button>
 
                             <div
@@ -1005,7 +1007,7 @@
                 @php
                     $activeCategory = request('category', '');
                 @endphp
-                <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs font-semibold text-[var(--foreground)] md:flex-nowrap md:items-end md:gap-6 md:text-base">
+                <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs font-semibold text-[var(--foreground)] md:flex-nowrap md:shrink-0 md:items-end md:gap-4 md:text-sm lg:gap-6 lg:text-base">
                     <a
                         href="/shops?category=COURIER_PICKUP"
                         class="inline-flex border-b-[3px] pb-1 transition {{ $activeCategory === 'COURIER_PICKUP' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-bold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
@@ -1032,7 +1034,7 @@
                     </a>
                 </div>
 
-                <form action="/shops" method="GET" class="relative hidden w-full md:block md:flex-1 md:max-w-[640px]">
+                <form action="/shops" method="GET" class="relative hidden w-full min-w-0 md:block md:flex-1 md:max-w-[640px]">
                     @if(request('category'))
                         <input type="hidden" name="category" value="{{ request('category') }}">
                     @endif
@@ -1047,7 +1049,7 @@
                         type="text"
                         name="q"
                         value="{{ request('q') }}"
-                        placeholder="Search shops, parts, devices, or repair types"
+                        placeholder="Search shops, parts, devices..."
                         class="w-full rounded-xl border-2 border-[var(--border)] bg-[var(--mint-300)] py-3 pl-5 pr-20 text-sm text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)] transition"
                     />
                     <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
