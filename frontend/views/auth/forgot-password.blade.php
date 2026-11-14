@@ -1,15 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Recover Password & Credentials | Meramot')
+@section('title', 'Set New Password | Meramot')
 
 @section('content')
 <div
     class="min-h-[80vh] flex items-center justify-center px-4 py-8"
     x-data="{
-        step: @js($step ?? 'request'),
-        identifier: @js(old('identifier', $email ?? '')),
-        email: @js($email ?? ''),
-        otp: @js(old('otp', '')),
         password: '',
         passwordConfirmation: '',
         pwFocused: false,
@@ -40,22 +36,22 @@
             </a>
 
             <div class="mb-5 text-center px-8">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-[#eef5ea] border border-[#cbe0c2] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#214c34] mb-2">
-                    <i class="fa-solid fa-key"></i> Account Recovery
+                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-900 mb-2">
+                    <i class="fa-solid fa-shield-halved"></i> Identity Verified
                 </span>
                 <h1 class="text-2xl sm:text-3xl font-bold leading-tight text-[#214c34]">
-                    Reset Your Password
+                    Set New Password
                 </h1>
                 <p class="mt-1.5 text-xs sm:text-sm text-[#5e6d64]">
-                    Receive your username reminder and 6-digit password reset code by email.
+                    Create a strong new password for your account.
                 </p>
+                @if(!empty($maskedEmail))
+                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#cbe0c2] bg-[#f8fbf6] px-3 py-1 font-mono text-xs font-bold text-[#163625]">
+                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                        <span>{{ $maskedEmail }}</span>
+                    </p>
+                @endif
             </div>
-
-            @if(session('success'))
-                <div class="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-semibold text-emerald-900 leading-relaxed">
-                    <i class="fa-solid fa-circle-check text-emerald-700 mr-1.5"></i>{{ session('success') }}
-                </div>
-            @endif
 
             @if($errors->any())
                 <div class="mb-4 rounded-2xl bg-red-50/90 border border-red-200 px-4 py-3 text-xs font-medium text-red-800 space-y-1">
@@ -68,86 +64,9 @@
                 </div>
             @endif
 
-            <div class="mb-5 grid grid-cols-2 gap-1.5 rounded-full border border-[#d9e5d5] bg-[#f8fbf6] p-1 text-xs font-bold">
-                <button
-                    type="button"
-                    @click="step = 'request'"
-                    :class="step === 'request' ? 'bg-[#163625] text-white shadow-sm' : 'text-[#5e6d64] hover:text-[#163625]'"
-                    class="rounded-full py-2 px-3 transition"
-                >
-                    1. Send Reset Code
-                </button>
-                <button
-                    type="button"
-                    @click="step = 'reset'"
-                    :class="step === 'reset' ? 'bg-[#163625] text-white shadow-sm' : 'text-[#5e6d64] hover:text-[#163625]'"
-                    class="rounded-full py-2 px-3 transition"
-                >
-                    2. Enter Code &amp; Reset
-                </button>
-            </div>
-
-            <!-- Step 1: Request 6-digit Code & Credentials Reminder -->
-            <form method="POST" action="/forgot-password" x-show="step === 'request'" class="space-y-4">
+            <form method="POST" action="/forgot-password/reset" class="space-y-4">
                 @csrf
-                <div>
-                    <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-[#214c34]">
-                        Registered Email Address or Username
-                    </label>
-                    <input
-                        type="text"
-                        name="identifier"
-                        x-model="identifier"
-                        required
-                        autocomplete="username"
-                        placeholder="name@example.com or username"
-                        class="w-full rounded-2xl border border-[#c8dac2] bg-white px-4 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
-                    />
-                </div>
-
-                <button
-                    type="submit"
-                    class="w-full rounded-full bg-[#163625] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
-                >
-                    Send 6-Digit Recovery Code
-                </button>
-            </form>
-
-            <!-- Step 2: Verify 6-Digit OTP & Set New Password (with Password Strength Meter) -->
-            <form method="POST" action="/forgot-password/reset" x-show="step === 'reset'" x-cloak class="space-y-4">
-                @csrf
-                <div>
-                    <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-[#214c34]">
-                        Email Address or Username
-                    </label>
-                    <input
-                        type="text"
-                        name="email"
-                        x-model="email"
-                        required
-                        autocomplete="username"
-                        placeholder="name@example.com or username"
-                        class="w-full rounded-2xl border border-[#c8dac2] bg-white px-4 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
-                    />
-                </div>
-
-                <div>
-                    <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-[#214c34]">
-                        6-Digit Verification Code
-                    </label>
-                    <input
-                        type="text"
-                        name="otp"
-                        x-model="otp"
-                        inputmode="numeric"
-                        pattern="[0-9]{6}"
-                        maxlength="6"
-                        required
-                        autocomplete="one-time-code"
-                        placeholder="Enter 6-digit code"
-                        class="w-full rounded-2xl border border-[#c8dac2] bg-white px-4 py-3 text-center font-mono text-base font-bold tracking-[0.35em] text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
-                    />
-                </div>
+                <input type="hidden" name="reset_token" value="{{ $token ?? '' }}" />
 
                 <div>
                     <label class="mb-1 block text-xs font-bold uppercase tracking-wider text-[#214c34]">
@@ -163,6 +82,7 @@
                             autocomplete="new-password"
                             minlength="8"
                             required
+                            autofocus
                             placeholder="Minimum 8 characters"
                             class="w-full rounded-2xl border border-[#c8dac2] bg-white pl-4 pr-16 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         />
@@ -212,21 +132,12 @@
                     type="submit"
                     class="w-full rounded-full bg-[#163625] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
-                    Verify Code &amp; Save New Password
+                    Save New Password
                 </button>
             </form>
 
-            <div class="mt-5 pt-4 border-t border-[var(--border)]/40 text-center space-y-2 text-xs text-[#5e6d64]">
-                <div>
-                    Remembered your password?
-                    <a href="/login" class="font-bold text-[#214c34] hover:underline">Back to Sign In</a>
-                </div>
-                <div>
-                    <a href="/delivery/login?recover=1" class="inline-flex items-center gap-1.5 font-semibold text-[#1b365d] hover:underline">
-                        <i class="fa-solid fa-motorcycle text-[11px]"></i>
-                        <span>Delivery Partner (@meramotbd.com)? Recover company credentials &rarr;</span>
-                    </a>
-                </div>
+            <div class="mt-5 pt-4 border-t border-[var(--border)]/40 text-center text-xs text-[#5e6d64]">
+                <a href="/login" class="font-bold text-[#214c34] hover:underline">Back to Sign In</a>
             </div>
         </div>
     </div>

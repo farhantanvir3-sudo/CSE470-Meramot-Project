@@ -21,7 +21,7 @@
                     Verify your email
                 </h1>
                 <p class="mt-1.5 text-sm text-[#5e6d64]">
-                    We sent a 6-digit verification code from <strong class="text-[#214c34]">meramotbd.official@gmail.com</strong> to:
+                    Enter the 6-digit verification code sent to:
                 </p>
                 <p class="mt-1 inline-block rounded-full bg-[#eef5ea] px-3.5 py-1 text-xs font-semibold text-[#214c34]">
                     {{ $user->email }}

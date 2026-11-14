@@ -588,7 +588,7 @@
                     <span>Password &amp; Security</span>
                 </h2>
                 <p class="mt-1 text-xs text-[var(--muted-foreground)]">
-                    {{ $hasPassword ? 'Update your account password anytime. Use a strong mix of letters, numbers, and symbols.' : 'Your account was signed up with Google. Set a password if you also want to sign in with email & password.' }}
+                    {{ $hasPassword ? 'Update your password anytime using a strong mix of characters.' : 'Signed up with Google. Set a password if you also want email login.' }}
                 </p>
             </div>
             <span class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
@@ -641,8 +641,8 @@
                             <span x-text="showCurrent ? 'Hide' : 'Show'">Show</span>
                         </button>
                     </div>
-                    <a href="/forgot-password?email={{ urlencode($user->email) }}" class="mt-1.5 inline-block text-[11px] font-semibold text-[#214c34] hover:underline">
-                        Forgot your current password? Reset via email code &rarr;
+                    <a href="/login?forgot=1&identifier={{ urlencode($user->email) }}" class="mt-1.5 inline-block text-[11px] font-semibold text-[#214c34] hover:underline">
+                        Forgot current password? Reset via email OTP &rarr;
                     </a>
                 </div>
             @endif
@@ -762,14 +762,14 @@
                     Verify your <span x-text="otpChannel"></span>
                 </h3>
                 <p class="mt-1 text-xs text-slate-700">
-                    We will send a 6-digit code to
+                    Code destination:
                     <span class="font-bold" x-text="otpChannel === 'email' ? @js($user->email) : @js($user->phone ?? '')"></span>
                 </p>
             </div>
             <div class="p-6">
                 <template x-if="!otpStepSent">
                     <div class="text-center">
-                        <p class="mb-5 text-sm text-slate-600">Click below to receive your one-time verification code.</p>
+                        <p class="mb-5 text-sm text-slate-600">Send a 6-digit verification code to continue.</p>
                         <button
                             type="button"
                             @click="sendOtpNow()"

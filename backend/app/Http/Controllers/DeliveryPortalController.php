@@ -135,12 +135,13 @@ class DeliveryPortalController extends Controller
             ]);
         }
 
+        AuthController::clearTransientAuthSession($request);
         Auth::login($agent->user, $request->boolean('remember'));
         $request->session()->regenerate();
 
         return redirect('/delivery')->with(
             'success',
-            'Signed in to Delivery Workspace as ' . ($agent->user->name ?: $companyEmail) . '!'
+            'Signed in as ' . ($agent->user->name ?: $companyEmail) . '.'
         );
     }
 
@@ -551,7 +552,7 @@ class DeliveryPortalController extends Controller
         if ($agent && strtoupper((string) $agent->registration_status) !== 'APPROVED') {
             $statusLabel = strtoupper((string) $agent->registration_status);
             throw ValidationException::withMessages([
-                'lookup_email' => "Your delivery partner application is currently {$statusLabel}. Company @meramotbd.com credentials are issued once Admin approves your application — use Check Application Status below.",
+                'lookup_email' => "Application status is {$statusLabel}. Credentials are issued upon approval — open Check Application Status below.",
             ]);
         }
 
@@ -585,7 +586,7 @@ class DeliveryPortalController extends Controller
             }
         }
 
-        $message = "If an approved delivery partner account matches {$lookup}, your @meramotbd.com company email and password have been re-sent to your registered personal email.";
+        $message = "If an approved delivery partner account matches {$lookup}, credentials were sent to the registered personal email.";
 
         if ($request->expectsJson()) {
             return response()->json([

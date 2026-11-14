@@ -58,29 +58,31 @@ Route::get('/', [ShopDiscoveryController::class, 'home'])->name('home');
 // Authentication Routes (Ported from AuthCard.tsx at commit 8e44218)
 // -------------------------------------------------------------
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:25,1');
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:25,1');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('/auth/demo', [AuthController::class, 'demoLogin'])->name('auth.demo');
 Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 Route::get('/verify-email-otp', [AuthController::class, 'showVerifyOtp'])->name('auth.verify-otp.form');
-Route::post('/verify-email-otp', [AuthController::class, 'verifyOtp'])->name('auth.verify-otp.submit');
-Route::post('/verify-email-otp/send', [AuthController::class, 'sendVerificationOtp'])->name('auth.verify-otp.send');
-Route::post('/api/verification/send-otp', [AuthController::class, 'sendVerificationOtp']);
-Route::post('/api/verification/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/verify-email-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:25,1')->name('auth.verify-otp.submit');
+Route::post('/verify-email-otp/send', [AuthController::class, 'sendVerificationOtp'])->middleware('throttle:25,1')->name('auth.verify-otp.send');
+Route::post('/api/verification/send-otp', [AuthController::class, 'sendVerificationOtp'])->middleware('throttle:25,1');
+Route::post('/api/verification/verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:25,1');
 Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
-Route::post('/forgot-password', [AuthController::class, 'sendForgotPasswordEmail'])->name('password.email');
-Route::post('/forgot-password/reset', [AuthController::class, 'resetPasswordWithOtp'])->name('password.update');
+Route::get('/reset-password', [AuthController::class, 'showForgotPassword'])->name('password.reset.form');
+Route::post('/forgot-password', [AuthController::class, 'sendForgotPasswordEmail'])->middleware('throttle:25,1')->name('password.email');
+Route::post('/forgot-password/verify-otp', [AuthController::class, 'verifyForgotPasswordOtp'])->middleware('throttle:25,1')->name('password.verify-otp');
+Route::post('/forgot-password/reset', [AuthController::class, 'resetPasswordWithOtp'])->middleware('throttle:25,1')->name('password.update');
 
 // -------------------------------------------------------------
 // MODULE: Delivery & Rider Logistics (Assigned: Md. Nafiul Islam [22299035])
 // -------------------------------------------------------------
 Route::prefix('delivery')->group(function () {
     Route::get('/login', [DeliveryPortalController::class, 'showLogin'])->name('delivery.login');       // R1 Company Login
-    Route::post('/login', [DeliveryPortalController::class, 'login'])->name('delivery.login.submit');   // R1 Company Login
-    Route::post('/forgot-credentials', [DeliveryPortalController::class, 'sendForgotCredentials'])->name('delivery.forgot-credentials');
+    Route::post('/login', [DeliveryPortalController::class, 'login'])->middleware('throttle:25,1')->name('delivery.login.submit');   // R1 Company Login
+    Route::post('/forgot-credentials', [DeliveryPortalController::class, 'sendForgotCredentials'])->middleware('throttle:25,1')->name('delivery.forgot-credentials');
     Route::post('/logout', [DeliveryPortalController::class, 'logout'])->name('delivery.logout');       // R1 Sign Out
     Route::get('/', [DeliveryPortalController::class, 'dashboard'])->name('delivery.dashboard');        // R1/R2 Rider Dashboard
     Route::get('/map', [DeliveryPortalController::class, 'map'])->name('delivery.map');                 // R4 Live Rider Map
@@ -108,8 +110,8 @@ Route::middleware('admin.access')->group(function () {
 Route::get('/delivery-agent/register', [AdminDeliveryController::class, 'create'])->name('delivery.register');                            // R1
 Route::post('/delivery-agent/register', [AdminDeliveryController::class, 'store'])->name('delivery.register.store');                      // R1
 Route::get('/delivery-agent/status', [AdminDeliveryController::class, 'showStatus'])->name('delivery.status');                            // R1 OTP Status
-Route::post('/delivery-agent/status/send-otp', [AdminDeliveryController::class, 'sendStatusOtp'])->name('delivery.status.send-otp');      // R1
-Route::post('/delivery-agent/status/verify-otp', [AdminDeliveryController::class, 'verifyStatusOtp'])->name('delivery.status.verify-otp'); // R1
+Route::post('/delivery-agent/status/send-otp', [AdminDeliveryController::class, 'sendStatusOtp'])->middleware('throttle:25,1')->name('delivery.status.send-otp');      // R1
+Route::post('/delivery-agent/status/verify-otp', [AdminDeliveryController::class, 'verifyStatusOtp'])->middleware('throttle:25,1')->name('delivery.status.verify-otp'); // R1
 Route::post('/delivery-agent/status/reset', [AdminDeliveryController::class, 'resetStatusCheck'])->name('delivery.status.reset');          // R1
 Route::post('/delivery-agent/status/resend-credentials', [AdminDeliveryController::class, 'resendCompanyCredentials'])->name('delivery.status.resend-credentials'); // R1 Forgot Credentials
 Route::get('/delivery-agent/edit', [AdminDeliveryController::class, 'editApplication'])->name('delivery.edit');                           // R1 Unlimited Edit

@@ -11,6 +11,7 @@ use App\Services\MediaUploadService;
 use App\Support\InputSanitizer;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -340,7 +341,7 @@ class AdminDeliveryController extends Controller
             ])
             ->with(
                 'success',
-                "Application submitted! Once reviewed, your @meramotbd.com company email and password (or rejection reason) will be emailed from meramotbd.official@gmail.com to {$personalEmail}."
+                "Application submitted. Updates will be emailed to {$personalEmail}."
             );
     }
 
@@ -353,22 +354,53 @@ class AdminDeliveryController extends Controller
      *   - POST /delivery-agent/status/reset
      *   - POST /delivery-agent/status/resend-credentials
      * ------------------------------------------------------------------------ */
-    public function showStatus(Request $request)
+    private function resolveVerifiedStatusAgent(Request $request): ?DeliveryAgent
     {
-        $verifiedAgentId = $request->session()->get('delivery_status_verified_agent_id');
-        $pendingEmail = $request->session()->get('delivery_status_pending_email');
-        $agent = null;
+        $verifiedAgentId = (int) $request->session()->get('delivery_status_verified_agent_id', 0);
+        $verifiedAt = (int) $request->session()->get('delivery_status_verified_at', 0);
 
-        if ($verifiedAgentId) {
-            $agent = DeliveryAgent::with('user')->find($verifiedAgentId);
-            if (!$agent) {
-                $request->session()->forget(['delivery_status_verified_agent_id', 'delivery_status_pending_email']);
-                return redirect('/delivery-agent/status')
-                    ->with('error', 'This application was deleted by the Admin Portal and is no longer available.');
+        if ($verifiedAgentId <= 0 || $verifiedAt <= 0 || (now()->timestamp - $verifiedAt) > 1800) {
+            if ($verifiedAgentId > 0 || $verifiedAt > 0) {
+                $request->session()->forget([
+                    'delivery_status_verified_agent_id',
+                    'delivery_status_verified_at',
+                    'delivery_status_pending_email',
+                ]);
             }
+
+            return null;
         }
 
-        return view('delivery.status', compact('agent', 'pendingEmail'));
+        $agent = DeliveryAgent::with('user')->find($verifiedAgentId);
+        if (!$agent) {
+            $request->session()->forget([
+                'delivery_status_verified_agent_id',
+                'delivery_status_verified_at',
+                'delivery_status_pending_email',
+            ]);
+
+            return null;
+        }
+
+        return $agent;
+    }
+
+    public function showStatus(Request $request)
+    {
+        $hadVerifiedId = $request->session()->has('delivery_status_verified_agent_id');
+        $agent = $this->resolveVerifiedStatusAgent($request);
+
+        if ($hadVerifiedId && !$agent) {
+            return redirect('/delivery-agent/status')
+                ->with('warning', 'Session expired or application unavailable. Verify your personal email again.');
+        }
+
+        $pendingEmail = $request->session()->get('delivery_status_pending_email');
+
+        return response()
+            ->view('delivery.status', compact('agent', 'pendingEmail'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     public function sendStatusOtp(Request $request, GmailApiService $gmailService)
@@ -385,25 +417,26 @@ class AdminDeliveryController extends Controller
 
         if (!$agent) {
             return back()->withInput()->withErrors([
-                'personal_email' => 'No delivery partner application was found for this personal email address.',
+                'personal_email' => 'No delivery partner application found for this email.',
             ]);
         }
 
-        $otp = (string) random_int(100000, 999999);
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $agent->update([
             'status_otp_code' => $otp,
             'status_otp_expires_at' => now()->addMinutes(10),
         ]);
+        Cache::forget("delivery_status_otp_attempts:{$agent->id}");
 
         $applicantName = $agent->applicant_name ?: ($agent->user?->name ?? 'Delivery Partner Applicant');
         $gmailService->sendDeliveryStatusOtpEmail($agent->personal_email, $applicantName, $otp);
 
-        $request->session()->forget('delivery_status_verified_agent_id');
+        $request->session()->forget(['delivery_status_verified_agent_id', 'delivery_status_verified_at']);
         $request->session()->put('delivery_status_pending_email', $agent->personal_email);
 
         return redirect('/delivery-agent/status')->with(
             'success',
-            "A 6-digit verification OTP has been sent from meramotbd.official@gmail.com to {$agent->personal_email}."
+            "6-digit verification code sent to {$agent->personal_email}."
         );
     }
 
@@ -411,13 +444,13 @@ class AdminDeliveryController extends Controller
     {
         $validated = $request->validate([
             'personal_email' => 'nullable|email|max:150',
-            'otp' => 'required|string|max:10',
+            'otp' => 'required|string|max:12',
         ]);
 
         $email = strtolower(trim((string) ($validated['personal_email'] ?? $request->session()->get('delivery_status_pending_email', ''))));
         if ($email === '') {
             return redirect('/delivery-agent/status')->withErrors([
-                'personal_email' => 'Please enter your personal email first to receive an OTP.',
+                'personal_email' => 'Enter your personal email to receive a verification code.',
             ]);
         }
 
@@ -426,39 +459,63 @@ class AdminDeliveryController extends Controller
             ->first();
 
         if (!$agent) {
-            $request->session()->forget(['delivery_status_pending_email', 'delivery_status_verified_agent_id']);
+            $request->session()->forget(['delivery_status_pending_email', 'delivery_status_verified_agent_id', 'delivery_status_verified_at']);
             return redirect('/delivery-agent/status')->withErrors([
-                'personal_email' => 'Application not found or deleted by admin.',
+                'personal_email' => 'Application not found or removed.',
             ]);
         }
 
-        $otp = trim($validated['otp']);
-        if (!$agent->status_otp_code || !hash_equals((string) $agent->status_otp_code, $otp)) {
+        $otp = InputSanitizer::sanitizeDigits($validated['otp']) ?? '';
+        $attemptKey = "delivery_status_otp_attempts:{$agent->id}";
+
+        if (strlen($otp) !== 6 || !$agent->status_otp_code || !hash_equals((string) $agent->status_otp_code, $otp)) {
+            $attempts = (int) Cache::get($attemptKey, 0) + 1;
+            Cache::put($attemptKey, $attempts, now()->addMinutes(10));
+
+            if ($attempts >= 5) {
+                $agent->update([
+                    'status_otp_code' => null,
+                    'status_otp_expires_at' => null,
+                ]);
+                Cache::forget($attemptKey);
+
+                return back()->withErrors([
+                    'otp' => 'Too many failed attempts. Request a new 6-digit code.',
+                ]);
+            }
+
             return back()->withErrors([
-                'otp' => 'Invalid 6-digit OTP code. Please check your personal email inbox.',
+                'otp' => 'Invalid 6-digit verification code.',
             ]);
         }
 
         if (!$agent->status_otp_expires_at || $agent->status_otp_expires_at->isPast()) {
             return back()->withErrors([
-                'otp' => 'This OTP has expired. Click "Resend OTP" to request a fresh code.',
+                'otp' => 'This code has expired. Click Resend OTP.',
             ]);
         }
 
+        Cache::forget($attemptKey);
         $agent->update([
             'status_otp_code' => null,
             'status_otp_expires_at' => null,
         ]);
 
+        $request->session()->regenerate();
         $request->session()->forget('delivery_status_pending_email');
         $request->session()->put('delivery_status_verified_agent_id', $agent->id);
+        $request->session()->put('delivery_status_verified_at', now()->timestamp);
 
-        return redirect('/delivery-agent/status')->with('success', 'Personal email verified. Displaying your current application status.');
+        return redirect('/delivery-agent/status')->with('success', 'Personal email verified.');
     }
 
     public function resetStatusCheck(Request $request)
     {
-        $request->session()->forget(['delivery_status_pending_email', 'delivery_status_verified_agent_id']);
+        $request->session()->forget([
+            'delivery_status_pending_email',
+            'delivery_status_verified_agent_id',
+            'delivery_status_verified_at',
+        ]);
 
         return redirect('/delivery-agent/status');
     }
@@ -469,25 +526,19 @@ class AdminDeliveryController extends Controller
      */
     public function resendCompanyCredentials(Request $request, GmailApiService $gmailService)
     {
-        $verifiedAgentId = $request->session()->get('delivery_status_verified_agent_id');
-        if (!$verifiedAgentId) {
-            return redirect('/delivery-agent/status')->with('warning', 'Please verify your personal email via OTP first.');
-        }
-
-        $agent = DeliveryAgent::with('user')->find($verifiedAgentId);
+        $agent = $this->resolveVerifiedStatusAgent($request);
         if (!$agent) {
-            $request->session()->forget('delivery_status_verified_agent_id');
-            return redirect('/delivery-agent/status')->with('error', 'Application no longer exists.');
+            return redirect('/delivery-agent/status')->with('warning', 'Verify your personal email via OTP first.');
         }
 
         if ($agent->registration_status !== 'APPROVED' || empty($agent->company_email) || empty($agent->company_password_vault)) {
-            return redirect('/delivery-agent/status')->with('warning', 'Company credentials are only available after Admin approves your application.');
+            return redirect('/delivery-agent/status')->with('warning', 'Company credentials are issued after application approval.');
         }
 
         try {
             $plainPassword = Crypt::decryptString($agent->company_password_vault);
         } catch (\Throwable $e) {
-            return redirect('/delivery-agent/status')->with('error', 'Could not retrieve stored credentials. Please contact Delivery Operations.');
+            return redirect('/delivery-agent/status')->with('error', 'Unable to retrieve stored credentials. Contact Delivery Operations.');
         }
 
         $recipientEmail = $agent->personal_email ?: $agent->user?->email;
@@ -505,7 +556,7 @@ class AdminDeliveryController extends Controller
             ->with('credentials_emailed_popup', $recipientEmail)
             ->with(
                 'success',
-                "Your @meramotbd.com company email and password have been re-sent to {$recipientEmail}."
+                "Company credentials sent to {$recipientEmail}."
             );
     }
 
@@ -517,45 +568,34 @@ class AdminDeliveryController extends Controller
      * ------------------------------------------------------------------------ */
     public function editApplication(Request $request)
     {
-        $verifiedAgentId = $request->session()->get('delivery_status_verified_agent_id');
-        if (!$verifiedAgentId) {
-            return redirect('/delivery-agent/status')
-                ->with('warning', 'Please verify your personal email via OTP first to edit your application.');
-        }
-
-        $agent = DeliveryAgent::with('user')->find($verifiedAgentId);
+        $agent = $this->resolveVerifiedStatusAgent($request);
         if (!$agent) {
-            $request->session()->forget('delivery_status_verified_agent_id');
             return redirect('/delivery-agent/status')
-                ->with('error', 'This application was deleted by the Admin Portal and can no longer be edited.');
+                ->with('warning', 'Verify your personal email via OTP first.');
         }
 
         if ($agent->registration_status === 'APPROVED') {
             return redirect('/delivery-agent/status')
-                ->with('warning', 'Your application has already been approved. Please sign in using your @meramotbd.com company credentials.');
+                ->with('warning', 'Approved applications cannot be edited. Sign in with your @meramotbd.com credentials.');
         }
 
-        return view('delivery.edit', compact('agent'));
+        return response()
+            ->view('delivery.edit', compact('agent'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     public function updateApplication(Request $request, GmailApiService $gmailService)
     {
-        $verifiedAgentId = $request->session()->get('delivery_status_verified_agent_id');
-        if (!$verifiedAgentId) {
-            return redirect('/delivery-agent/status')
-                ->with('warning', 'Please verify your personal email via OTP first.');
-        }
-
-        $agent = DeliveryAgent::with('user')->find($verifiedAgentId);
+        $agent = $this->resolveVerifiedStatusAgent($request);
         if (!$agent) {
-            $request->session()->forget('delivery_status_verified_agent_id');
             return redirect('/delivery-agent/status')
-                ->with('error', 'This application was deleted by the Admin Portal and can no longer be edited.');
+                ->with('warning', 'Verify your personal email via OTP first.');
         }
 
         if ($agent->registration_status === 'APPROVED') {
             return redirect('/delivery-agent/status')
-                ->with('warning', 'Approved partner profiles cannot be modified through onboarding.');
+                ->with('warning', 'Approved profiles cannot be modified here.');
         }
 
         $validated = $request->validate([

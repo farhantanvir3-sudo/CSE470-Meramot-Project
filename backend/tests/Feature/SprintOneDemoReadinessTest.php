@@ -296,7 +296,6 @@ class SprintOneDemoReadinessTest extends TestCase
             '/admin/payouts/manage',
             '/admin/moderation',
             '/admin/audit-logs',
-            '/forgot-password',
             '/profile',
             '/settings',
             '/support',
@@ -314,6 +313,9 @@ class SprintOneDemoReadinessTest extends TestCase
             'repair_request_id' => $firstReq->id,
             'amount' => 3500,
         ])->assertStatus(200)->assertSee('Coming Soon');
+
+        // Unverified /forgot-password redirects to /login recovery popup
+        $this->get('/forgot-password')->assertRedirect('/login?forgot=1');
 
         // R2 claim route is now live and redirects non-courier viewers to Delivery Partner login
         $this->post('/delivery/jobs/1/claim')->assertRedirect('/delivery/login');

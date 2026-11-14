@@ -11,11 +11,11 @@
     <div class="flex items-start justify-between gap-4">
         <div>
             <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-[11px] font-bold text-[var(--accent-dark)] mb-2 shadow-sm">
-                <i class="fa-solid fa-shield-check"></i> OTP-Verified Applicant Portal
+                <i class="fa-solid fa-shield-halved"></i> OTP-Verified Applicant Portal
             </span>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Check Application Status</h1>
             <p class="text-xs md:text-sm text-[var(--muted-foreground)] mt-1">
-                Verify your personal email via OTP to inspect your application status, view Admin feedback, edit your application, or re-send your <code class="font-mono">@meramotbd.com</code> company credentials.
+                Verify your personal email via OTP to view status, edit documents, or resend <code class="font-mono">@meramotbd.com</code> credentials.
             </p>
         </div>
         <a
@@ -81,7 +81,7 @@
                         {{ $agent->rejection_reason ?: 'Please review and update your submitted identity/license documents.' }}
                     </p>
                     <p class="text-[11px] text-rose-800 pt-1">
-                        Click <strong>Edit Application</strong> below to correct your information or upload updated documents. Once saved, your application will automatically return to <strong>PENDING</strong> status for Admin review.
+                        Click <strong>Edit Application</strong> below to update your information and resubmit for review.
                     </p>
                 </div>
             @elseif($status === 'APPROVED')
@@ -91,11 +91,11 @@
                         <span>Delivery Partner Application Approved</span>
                     </h3>
                     <p class="text-xs text-emerald-900 leading-relaxed">
-                        Your assigned Meramot company login email is:
+                        Company login email:
                         <code class="font-mono font-bold bg-white px-2 py-0.5 rounded border border-emerald-300">{{ $agent->company_email }}</code>
                     </p>
                     <p class="text-[11px] text-emerald-800">
-                        Your <code class="font-mono">@meramotbd.com</code> company email and system-generated password were delivered to <strong>{{ $agent->personal_email }}</strong>. Use <strong>Forgot Company Credentials</strong> below if you need them re-sent.
+                        Your credentials were sent to <strong>{{ $agent->personal_email }}</strong>. Click below to resend them.
                     </p>
                 </div>
             @else
@@ -105,7 +105,7 @@
                         <span>Application Under Admin Review</span>
                     </h3>
                     <p class="text-xs text-amber-900 leading-relaxed">
-                        Meramot Delivery Operations is verifying your NID, driving license, and uploaded documents. Once approved, your <code class="font-mono font-bold">@meramotbd.com</code> company email and password will be sent to <strong>{{ $agent->personal_email }}</strong>. You can still edit your application anytime below before approval.
+                        Your documents are under review. Credentials will be emailed to <strong>{{ $agent->personal_email }}</strong> upon approval, or you may edit below.
                     </p>
                 </div>
             @endif
@@ -182,7 +182,7 @@
                 <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800">Step 2 of 2 &bull; Verify Identity</span>
                 <h2 class="text-xl font-black text-[#163625] mt-1">Enter 6-Digit Verification OTP</h2>
                 <p class="text-xs text-[#5e6d64] mt-1">
-                    We sent a 6-digit code from <strong>meramotbd.official@gmail.com</strong> to <strong class="font-mono text-[#163625]">{{ $pendingEmail }}</strong>.
+                    Enter the 6-digit verification code sent to <strong class="font-mono text-[#163625]">{{ $pendingEmail }}</strong>.
                 </p>
             </div>
 
@@ -243,7 +243,7 @@
                 <span class="text-[11px] font-bold uppercase tracking-wider text-[#214c34]">Step 1 of 2 &bull; Applicant Verification</span>
                 <h2 class="text-xl font-black text-[#163625] mt-1">Verify Your Personal Email</h2>
                 <p class="text-xs text-[#5e6d64] mt-1">
-                    Enter the personal email address used when submitting your Delivery Agent application. A one-time 6-digit verification code will be sent to confirm your identity.
+                    Enter your application personal email to receive a 6-digit verification code.
                 </p>
             </div>
 
@@ -326,7 +326,7 @@
                 </div>
 
                 <p class="mt-3.5 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                    Your <code class="font-mono font-bold">@meramotbd.com</code> company login email and password have been sent to your personal inbox.
+                    Your <code class="font-mono font-bold">@meramotbd.com</code> company credentials have been sent to your personal inbox.
                 </p>
 
                 <div class="mt-6">

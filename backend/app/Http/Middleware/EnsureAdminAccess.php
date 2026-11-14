@@ -27,9 +27,9 @@ class EnsureAdminAccess
             abort(403, 'Administrative privileges are required to access this governance desk.');
         }
 
-        if (!$user && !app()->runningUnitTests() && app()->environment('production')) {
+        if (!$user && !app()->runningUnitTests()) {
             return redirect('/login')->withErrors([
-                'identifier' => 'Please sign in as an Administrator (or click the Admin 1-Click Demo Login chip below) to access the Admin Console.',
+                'identifier' => 'Sign in with an administrator account to access the Admin Console.',
             ]);
         }
 

@@ -3,32 +3,54 @@
 @section('title', 'Welcome back | Sign In — Meramot')
 
 @section('content')
+@php
+    $pendingRecovery = session('forgot_password_pending');
+    $autoOpenForgot = request()->boolean('forgot') || is_array($pendingRecovery);
+    $initialForgotStep = is_array($pendingRecovery) ? 'otp' : 'form';
+    $initialForgotIdentifier = is_array($pendingRecovery)
+        ? ($pendingRecovery['lookup'] ?? '')
+        : trim((string) request()->query('identifier', request()->query('email', old('identifier', ''))));
+    $initialForgotTarget = is_array($pendingRecovery)
+        ? ($pendingRecovery['target'] ?? $initialForgotIdentifier)
+        : $initialForgotIdentifier;
+@endphp
 <div
     class="min-h-[80vh] flex items-center justify-center px-4 py-8"
     x-data="{
-        forgotModalOpen: {{ session('forgot_password_sent_email') ? 'true' : 'false' }},
-        forgotStep: '{{ session('forgot_password_sent_email') ? 'sent' : 'form' }}',
-        forgotEmail: @js(session('forgot_password_sent_email', '')),
-        forgotResetUrl: @js(session('forgot_password_sent_email') ? '/forgot-password?step=reset&email=' . urlencode((string) session('forgot_password_sent_email')) : '/forgot-password?step=reset'),
+        forgotModalOpen: {{ $autoOpenForgot ? 'true' : 'false' }},
+        forgotStep: '{{ $initialForgotStep }}',
+        forgotEmail: @js($initialForgotIdentifier),
+        forgotTarget: @js($initialForgotTarget),
+        forgotOtp: '',
+        forgotResetUrl: '',
         forgotSending: false,
+        forgotVerifying: false,
         forgotError: '',
+        forgotNotice: '',
         openForgotModal() {
             const loginInput = document.querySelector('input[name=identifier]')?.value?.trim() || '';
-            this.forgotEmail = loginInput;
+            if (loginInput) {
+                this.forgotEmail = loginInput;
+            }
+            this.forgotOtp = '';
+            this.forgotResetUrl = '';
             this.forgotError = '';
+            this.forgotNotice = '';
             this.forgotSending = false;
+            this.forgotVerifying = false;
             this.forgotStep = 'form';
             this.forgotModalOpen = true;
         },
-        async submitForgotPassword() {
+        async submitForgotPassword(isResend = false) {
             this.forgotError = '';
+            this.forgotNotice = '';
             const identifier = (this.forgotEmail || '').trim();
             if (!identifier) {
-                this.forgotError = 'Please enter your email address or username.';
+                this.forgotError = 'Enter your email address or username.';
                 return;
             }
             if (identifier.includes('@') && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)) {
-                this.forgotError = 'Please enter a valid email address or username.';
+                this.forgotError = 'Enter a valid email address or username.';
                 return;
             }
             this.forgotSending = true;
@@ -44,16 +66,56 @@
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
-                    this.forgotError = data?.errors?.email?.[0] || data?.errors?.identifier?.[0] || data?.message || 'Unable to send recovery code right now.';
+                    this.forgotError = data?.errors?.email?.[0] || data?.errors?.identifier?.[0] || data?.message || 'Unable to send verification code right now.';
                     return;
                 }
-                this.forgotEmail = data.email || identifier;
-                this.forgotResetUrl = data.reset_url || ('/forgot-password?step=reset&email=' + encodeURIComponent(data.lookup || identifier));
-                this.forgotStep = 'sent';
+                this.forgotTarget = data.email || identifier;
+                this.forgotOtp = '';
+                this.forgotResetUrl = '';
+                this.forgotStep = 'otp';
+                if (isResend) {
+                    this.forgotNotice = 'New 6-digit code sent.';
+                }
             } catch (e) {
                 this.forgotError = 'Network error. Please try again.';
             } finally {
                 this.forgotSending = false;
+            }
+        },
+        async submitForgotOtp() {
+            this.forgotError = '';
+            this.forgotNotice = '';
+            const digits = (this.forgotOtp || '').replace(/\D+/g, '').slice(0, 6);
+            this.forgotOtp = digits;
+            if (digits.length !== 6) {
+                this.forgotError = 'Enter the 6-digit verification code.';
+                return;
+            }
+            this.forgotVerifying = true;
+            try {
+                const res = await fetch('/forgot-password/verify-otp', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        identifier: (this.forgotEmail || this.forgotTarget || '').trim(),
+                        otp: digits
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data?.reset_url) {
+                    this.forgotError = data?.errors?.otp?.[0] || data?.errors?.identifier?.[0] || data?.message || 'Invalid or expired 6-digit code.';
+                    return;
+                }
+                this.forgotResetUrl = data.reset_url;
+                this.forgotStep = 'verified';
+            } catch (e) {
+                this.forgotError = 'Network error. Please try again.';
+            } finally {
+                this.forgotVerifying = false;
             }
         }
     }"
@@ -242,11 +304,11 @@
         </div>
     </div>
 
-    <!-- ── Forgot Password Dialog & Email Sent Confirmation Pop-Up Tile ── -->
+    <!-- ── 3-Step Password Recovery Dialog (Lookup -> In-Modal OTP -> Set New Password CTA) ── -->
     <div
         x-show="forgotModalOpen"
         x-cloak
-        @keydown.escape.window="if (forgotModalOpen && !forgotSending) forgotModalOpen = false"
+        @keydown.escape.window="if (forgotModalOpen && !forgotSending && !forgotVerifying) forgotModalOpen = false"
         class="fixed inset-0 z-[110] flex items-center justify-center p-4"
         role="dialog"
         aria-modal="true"
@@ -261,7 +323,7 @@
             x-transition:leave-start="opacity-100"
             x-transition:leave-end="opacity-0"
             class="absolute inset-0 bg-[#0b1f14]/55 backdrop-blur-sm"
-            @click="if (!forgotSending) forgotModalOpen = false"
+            @click="if (!forgotSending && !forgotVerifying) forgotModalOpen = false"
         ></div>
 
         <div
@@ -276,7 +338,7 @@
         >
             <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-[#214c34] to-emerald-400"></div>
 
-            <!-- Step 1: Enter Email -->
+            <!-- Step 1: Enter Email or Username -->
             <div x-show="forgotStep === 'form'" class="p-7 sm:p-8">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3">
@@ -284,14 +346,14 @@
                             <i class="fa-solid fa-key text-base"></i>
                         </div>
                         <div>
-                            <h2 id="forgot-password-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Reset your password</h2>
-                            <p class="text-xs text-[var(--muted-foreground)]">Receive your username reminder &amp; 6-digit password reset code.</p>
+                            <h2 id="forgot-password-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Reset Password</h2>
+                            <p class="text-xs text-[var(--muted-foreground)]">Enter your email or username for a 6-digit reset code.</p>
                         </div>
                     </div>
                     <button type="button" @click="forgotModalOpen = false" class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-200)] transition" aria-label="Close">✕</button>
                 </div>
 
-                <form @submit.prevent="submitForgotPassword()" class="mt-5 space-y-4">
+                <form @submit.prevent="submitForgotPassword(false)" class="mt-5 space-y-4">
                     <template x-if="forgotError">
                         <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-800 flex items-center gap-2">
                             <i class="fa-solid fa-circle-exclamation text-red-600"></i>
@@ -300,7 +362,7 @@
                     </template>
 
                     <div>
-                        <label class="mb-1.5 block text-xs font-semibold text-[var(--foreground)]">Email address or Username</label>
+                        <label class="mb-1.5 block text-xs font-semibold text-[var(--foreground)]">Email or Username</label>
                         <input
                             type="text"
                             x-model="forgotEmail"
@@ -312,7 +374,7 @@
                     </div>
 
                     <p class="text-[11px] leading-relaxed text-[var(--muted-foreground)]">
-                        Delivery partner with <code class="font-mono font-semibold text-[#214c34]">@meramotbd.com</code>?
+                        Delivery partner?
                         <a href="/delivery/login?recover=1" class="font-bold text-[#214c34] hover:underline">Recover company credentials &rarr;</a>
                     </p>
 
@@ -331,44 +393,128 @@
                             class="inline-flex items-center gap-2 rounded-full bg-[#163625] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
                         >
                             <i class="fa-solid" :class="forgotSending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
-                            <span x-text="forgotSending ? 'Sending...' : 'Send Recovery Code'"></span>
+                            <span x-text="forgotSending ? 'Sending...' : 'Send Code'"></span>
                         </button>
                     </div>
                 </form>
             </div>
 
-            <!-- Step 2: Email Sent Successfully Pop-Up Tile -->
-            <div x-show="forgotStep === 'sent'" class="p-7 sm:p-8 text-center">
-                <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-inner">
+            <!-- Step 2: Enter 6-Digit OTP Inside Modal -->
+            <div x-show="forgotStep === 'otp'" class="p-7 sm:p-8 text-center">
+                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#214c34] shadow-inner">
                     <i class="fa-solid fa-envelope-circle-check text-2xl"></i>
                 </div>
 
-                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]">
-                    Recovery Code Sent
+                <h2 class="text-xl font-extrabold tracking-tight text-[var(--foreground)]">
+                    Enter Verification Code
                 </h2>
 
-                <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                <div class="mt-2.5 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
                     <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
-                    <span class="truncate" x-text="forgotEmail"></span>
+                    <span class="truncate" x-text="forgotTarget || forgotEmail"></span>
                 </div>
 
-                <p class="mt-3.5 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                    If an account matches this email or username, we sent your username reminder and 6-digit password reset code to that inbox.
+                <p class="mt-2.5 text-xs text-[var(--muted-foreground)]">
+                    Enter the 6-digit code sent to your inbox.
+                </p>
+
+                <form @submit.prevent="submitForgotOtp()" class="mt-4 space-y-3.5 text-left">
+                    <template x-if="forgotError">
+                        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-800 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-exclamation text-red-600 shrink-0"></i>
+                            <span x-text="forgotError"></span>
+                        </div>
+                    </template>
+
+                    <template x-if="forgotNotice">
+                        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-900 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-emerald-600 shrink-0"></i>
+                            <span x-text="forgotNotice"></span>
+                        </div>
+                    </template>
+
+                    <div>
+                        <input
+                            type="text"
+                            name="otp"
+                            x-model="forgotOtp"
+                            @input="forgotOtp = (forgotOtp || '').replace(/\D+/g, '').slice(0, 6)"
+                            inputmode="numeric"
+                            pattern="[0-9]{6}"
+                            data-digits-only
+                            maxlength="6"
+                            required
+                            autocomplete="one-time-code"
+                            placeholder="000000"
+                            data-forgot-otp-input
+                            class="w-full rounded-2xl border border-[#c8dac2] bg-white px-4 py-3 text-center font-mono text-2xl font-extrabold tracking-[0.4em] text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        :disabled="forgotVerifying"
+                        data-verify-forgot-otp-btn
+                        class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
+                    >
+                        <i class="fa-solid" :class="forgotVerifying ? 'fa-spinner fa-spin' : 'fa-shield-halved'"></i>
+                        <span x-text="forgotVerifying ? 'Verifying...' : 'Verify Code'"></span>
+                    </button>
+                </form>
+
+                <div class="mt-4 pt-3 border-t border-[var(--border)]/60 flex items-center justify-between text-xs">
+                    <button
+                        type="button"
+                        @click="forgotStep = 'form'; forgotError = ''; forgotNotice = '';"
+                        :disabled="forgotSending || forgotVerifying"
+                        class="font-semibold text-[var(--muted-foreground)] hover:text-[#163625] transition"
+                    >
+                        &larr; Change account
+                    </button>
+                    <button
+                        type="button"
+                        @click="submitForgotPassword(true)"
+                        :disabled="forgotSending || forgotVerifying"
+                        class="font-bold text-[#214c34] hover:underline disabled:opacity-50"
+                    >
+                        <span x-text="forgotSending ? 'Sending...' : 'Resend code'"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: OTP Verified -> Set New Password CTA -->
+            <div x-show="forgotStep === 'verified'" class="p-7 sm:p-8 text-center">
+                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-inner">
+                    <i class="fa-solid fa-circle-check text-2xl"></i>
+                </div>
+
+                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]">
+                    Code Verified
+                </h2>
+
+                <div class="mt-2.5 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                    <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+                    <span class="truncate" x-text="forgotTarget || forgotEmail"></span>
+                </div>
+
+                <p class="mt-3 text-sm text-[var(--muted-foreground)]">
+                    Identity confirmed. Continue below to set your new password.
                 </p>
 
                 <div class="mt-6 space-y-2.5">
                     <a
-                        :href="forgotResetUrl || ('/forgot-password?step=reset&email=' + encodeURIComponent(forgotEmail))"
+                        :href="forgotResetUrl"
+                        data-set-new-password-btn
                         class="block w-full rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
                     >
-                        Enter 6-Digit Code &amp; Reset Password &rarr;
+                        Set New Password &rarr;
                     </a>
                     <button
                         type="button"
                         @click="forgotModalOpen = false"
                         class="w-full rounded-full border border-[var(--border)] bg-[var(--background)] px-6 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
                     >
-                        Close
+                        Cancel
                     </button>
                 </div>
             </div>

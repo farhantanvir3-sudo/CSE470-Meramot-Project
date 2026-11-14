@@ -87,15 +87,14 @@
 
                 <div class="rounded-2xl border border-[#cbe0c2] bg-[#eef5ea] p-4 text-xs text-[#163625] space-y-2 leading-relaxed">
                     <p>
-                        Thank you, <strong>{{ $submittedPopup['name'] ?? 'Applicant' }}</strong>. Your delivery partner application has been queued for administrative verification.
+                        Thank you, <strong>{{ $submittedPopup['name'] ?? 'Applicant' }}</strong>. Your delivery partner application is pending review.
                     </p>
                     <p>
-                        All official updates from <strong>meramotbd.official@gmail.com</strong> will be sent to your personal email:
-                        <strong class="font-mono underline">{{ $submittedPopup['personal_email'] ?? '' }}</strong>
+                        Status updates will be sent to <strong class="font-mono underline">{{ $submittedPopup['personal_email'] ?? '' }}</strong>.
                     </p>
                     <ul class="list-disc pl-5 space-y-1 text-[#163625]/90">
-                        <li><strong>If Accepted:</strong> Your auto-generated unique <code class="font-mono font-bold">@meramotbd.com</code> company email and secure system password will be emailed to your personal email.</li>
-                        <li><strong>If Rejected:</strong> The rejection notice along with the Admin's reason will be emailed to you and displayed on the <strong>Check Application Status</strong> page so you can edit and re-submit anytime.</li>
+                        <li><strong>Approved:</strong> Your <code class="font-mono font-bold">@meramotbd.com</code> login credentials will be emailed to you.</li>
+                        <li><strong>Rejected:</strong> Feedback is emailed and shown under <strong>Check Application Status</strong> for updates.</li>
                     </ul>
                 </div>
 
@@ -150,14 +149,14 @@
                     Delivery Partner Login
                 </h1>
                 <p class="mt-1.5 text-xs md:text-sm text-[#5e6d64]">
-                    Sign in using your approved <code class="font-mono font-semibold text-[#214c34]">@meramotbd.com</code> company email and system-generated password.
+                    Sign in with your <code class="font-mono font-semibold text-[#214c34]">@meramotbd.com</code> company credentials.
                 </p>
             </div>
 
             @if($currentUser)
                 <div class="mb-4 rounded-2xl border border-[#cbe0c2] bg-[#eef5ea] px-4 py-3 text-xs text-[#163625] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span>
-                        Signed in as <strong>{{ $currentUser->name ?? 'User' }}</strong>. Sign in below with a <code class="font-mono font-bold">@meramotbd.com</code> account to switch to the Delivery Workspace.
+                        Signed in as <strong>{{ $currentUser->name ?? 'User' }}</strong>. Enter <code class="font-mono font-bold">@meramotbd.com</code> credentials to switch workspaces.
                     </span>
                     <a href="{{ $backHref }}" class="shrink-0 rounded-full bg-[#214c34] px-3.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90 transition text-center">
                         Return &rarr;
@@ -253,7 +252,7 @@
                         </div>
                         <div>
                             <span class="block text-xs md:text-sm font-extrabold text-[#163625]">Check Application Status</span>
-                            <span class="block text-[11px] text-[#5e6d64]">Verify via OTP, view feedback, edit or resend credentials</span>
+                            <span class="block text-[11px] text-[#5e6d64]">View status, edit documents, or resend credentials</span>
                         </div>
                     </div>
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] transition-all duration-200 group-hover:translate-x-0.5 group-hover:border-[#163625] group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
@@ -356,8 +355,8 @@
                     </div>
 
                     <p class="text-[11px] leading-relaxed text-[var(--muted-foreground)]">
-                        Want to inspect application status or edit documents too?
-                        <a href="/delivery-agent/status" class="font-bold text-[#214c34] hover:underline">Verify personal email via OTP on Check Application Status &rarr;</a>
+                        Need to review status or update documents?
+                        <a href="/delivery-agent/status" class="font-bold text-[#214c34] hover:underline">Check Application Status &rarr;</a>
                     </p>
 
                     <div class="flex items-center justify-end gap-2.5 pt-1">
@@ -397,7 +396,7 @@
                 </div>
 
                 <p class="mt-3.5 text-sm leading-relaxed text-[var(--muted-foreground)]">
-                    If an approved delivery partner account matches your entry, we sent your <code class="font-mono font-bold">@meramotbd.com</code> company email and system password to your personal inbox.
+                    Matching approved accounts receive <code class="font-mono font-bold">@meramotbd.com</code> credentials at their registered personal email.
                 </p>
 
                 <div class="mt-6 space-y-2.5">

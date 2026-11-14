@@ -56,14 +56,33 @@ class InputValidationAndPasswordMeterTest extends TestCase
             ->assertSee('Forgot credentials?')
             ->assertDontSee('data-password-strength-meter', false);
 
-        // New registration / setup / reset pages MUST include password strength meter
+        // Set New Password page MUST be strictly blocked without prior OTP verification
+        $this->get('/forgot-password')->assertRedirect('/login?forgot=1');
+        $this->get('/forgot-password?step=reset')->assertRedirect('/login?forgot=1');
+        $this->get('/forgot-password?token=' . str_repeat('a', 64))->assertRedirect('/login?forgot=1');
+        $this->get('/reset-password')->assertRedirect('/login?forgot=1');
+
+        // New registration / setup pages MUST include password strength meter
         $this->get('/register')
             ->assertStatus(200)
             ->assertSee('data-password-strength-meter', false);
 
-        $this->get('/forgot-password?step=reset')
+        // OTP-verified Set New Password page shows strength meter and NO OTP field
+        $resetUser = User::factory()->create([
+            'role' => 'customer',
+            'email' => 'meter.reset.user@example.com',
+        ]);
+        $this->postJson('/forgot-password', ['identifier' => $resetUser->email])->assertStatus(200);
+        $resetUser->refresh();
+        $verifyResp = $this->postJson('/forgot-password/verify-otp', [
+            'identifier' => $resetUser->email,
+            'otp' => $resetUser->email_otp_code,
+        ])->assertStatus(200);
+        $resetPage = $this->get($verifyResp->json('reset_url'))
             ->assertStatus(200)
+            ->assertSee('Set New Password')
             ->assertSee('data-password-strength-meter', false);
+        $this->assertDoesNotMatchRegularExpression('/<input[^>]*name=["\']otp["\']/i', $resetPage->getContent());
 
         $this->get('/vendor/apply')
             ->assertStatus(200)
@@ -335,6 +354,14 @@ class InputValidationAndPasswordMeterTest extends TestCase
             'password' => Hash::make('OldPassword123!'),
         ]);
 
+        // Unverified direct reset attempt MUST fail without changing password
+        $this->post('/forgot-password/reset', [
+            'reset_token' => str_repeat('b', 64),
+            'password' => 'HackedPass99!',
+            'password_confirmation' => 'HackedPass99!',
+        ])->assertRedirect('/login?forgot=1');
+        $this->assertTrue(Hash::check('OldPassword123!', $user->fresh()->password));
+
         // Request reset by username via JSON modal endpoint
         $resp = $this->postJson('/forgot-password', [
             'identifier' => 'tariq_repair_user',
@@ -356,18 +383,40 @@ class InputValidationAndPasswordMeterTest extends TestCase
             ->first();
         $this->assertNotNull($emailLog);
 
-        // Wrong OTP is rejected
-        $this->post('/forgot-password/reset', [
-            'email' => 'tariq_repair_user',
+        // Wrong OTP is rejected inside popup verification step
+        $this->postJson('/forgot-password/verify-otp', [
+            'identifier' => 'tariq_repair_user',
             'otp' => '000000',
-            'password' => 'ResetStrong99!',
-            'password_confirmation' => 'ResetStrong99!',
-        ])->assertSessionHasErrors(['otp']);
+        ])->assertStatus(422)->assertJsonValidationErrors(['otp']);
 
-        // Valid 6-digit OTP resets password and signs in cleanly
-        $this->post('/forgot-password/reset', [
-            'email' => 'tariq.customer@example.com',
+        // Direct GET /forgot-password stays blocked before OTP verification succeeds
+        $this->get('/forgot-password')->assertRedirect('/login?forgot=1');
+
+        // Valid 6-digit OTP verifies inside modal, consumes OTP, and mints single-use reset URL
+        $verifyResp = $this->postJson('/forgot-password/verify-otp', [
+            'identifier' => 'tariq.customer@example.com',
             'otp' => $user->email_otp_code,
+        ]);
+        $verifyResp->assertStatus(200)->assertJson(['ok' => true]);
+        $resetUrl = (string) $verifyResp->json('reset_url');
+        $this->assertStringStartsWith('/forgot-password?token=', $resetUrl);
+
+        $user->refresh();
+        $this->assertNull($user->email_otp_code);
+
+        // Set New Password page renders WITHOUT an OTP field and WITH strength meter
+        $setPasswordPage = $this->get($resetUrl)
+            ->assertStatus(200)
+            ->assertSee('Set New Password')
+            ->assertSee('data-password-strength-meter', false);
+        $this->assertDoesNotMatchRegularExpression('/<input[^>]*name=["\']otp["\']/i', $setPasswordPage->getContent());
+
+        parse_str((string) parse_url($resetUrl, PHP_URL_QUERY), $resetQuery);
+        $resetToken = $resetQuery['token'] ?? '';
+
+        // Valid token resets password, rotates remember_token, and consumes session authorization
+        $this->post('/forgot-password/reset', [
+            'reset_token' => $resetToken,
             'password' => 'ResetStrong99!',
             'password_confirmation' => 'ResetStrong99!',
         ])->assertRedirect('/login')->assertSessionHasNoErrors();
@@ -376,11 +425,85 @@ class InputValidationAndPasswordMeterTest extends TestCase
         $this->assertNull($user->email_otp_code);
         $this->assertTrue(Hash::check('ResetStrong99!', $user->password));
 
+        // Re-visiting or replaying used reset URL / token is strictly blocked
+        $this->get($resetUrl)->assertRedirect('/login?forgot=1');
+        $this->post('/forgot-password/reset', [
+            'reset_token' => $resetToken,
+            'password' => 'AnotherPass99!',
+            'password_confirmation' => 'AnotherPass99!',
+        ])->assertRedirect('/login?forgot=1');
+        $this->assertTrue(Hash::check('ResetStrong99!', $user->fresh()->password));
+
         $this->post('/login', [
             'identifier' => 'tariq.customer@example.com',
             'password' => 'ResetStrong99!',
         ])->assertRedirect('/');
         $this->assertAuthenticatedAs($user);
+    }
+
+    /** @test */
+    public function security_audit_blocks_otp_bruteforce_oauth_state_bypass_vendor_ato_and_inactive_sessions(): void
+    {
+        // 1. Password reset OTP invalidates itself after 5 failed verification attempts
+        $victim = User::factory()->create([
+            'email' => 'victim.otp@example.com',
+            'role' => 'customer',
+        ]);
+        $this->postJson('/forgot-password', ['identifier' => $victim->email])->assertStatus(200);
+        $victim->refresh();
+        $actualOtp = $victim->email_otp_code;
+        $wrongOtp = $actualOtp === '111111' ? '222222' : '111111';
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->postJson('/forgot-password/verify-otp', [
+                'identifier' => $victim->email,
+                'otp' => $wrongOtp,
+            ])->assertStatus(422);
+        }
+
+        $victim->refresh();
+        $this->assertNull($victim->email_otp_code);
+        $this->postJson('/forgot-password/verify-otp', [
+            'identifier' => $victim->email,
+            'otp' => $actualOtp,
+        ])->assertStatus(422);
+
+        // 2. Google OAuth callback missing `state` parameter MUST fail instead of bypassing CSRF validation
+        $this->get('/auth/google/callback?code=forged-code')
+            ->assertRedirect('/login')
+            ->assertSessionHasErrors('google');
+        $this->assertGuest();
+
+        // 3. Guest POST /vendor/onboarding MUST NOT authenticate into an existing user's email
+        $existingAdmin = User::factory()->create([
+            'email' => 'existing.admin.target@example.com',
+            'role' => 'admin',
+            'password' => Hash::make('AdminSecret99!'),
+        ]);
+        $this->post('/vendor/onboarding', [
+            'owner_name' => 'Attacker',
+            'owner_email' => 'existing.admin.target@example.com',
+            'owner_phone' => '01712345678',
+            'owner_password' => 'AttackerPass99!',
+            'shop_name' => 'Fake Shop',
+            'business_license_no' => 'TRAD/DNCC/999',
+            'nid_number' => '1995123456789',
+            'same_as_gps_location' => '1',
+            'gps_address' => 'Banani, Dhaka',
+            'categories' => ['Laptop'],
+        ])->assertSessionHasErrors('owner_email');
+        $this->assertGuest();
+
+        // 4. Deactivated user with an existing session is forced out on next request
+        $deactivated = User::factory()->create([
+            'role' => 'customer',
+            'is_active' => false,
+            'status' => 'suspended',
+        ]);
+        $this->actingAs($deactivated)
+            ->get('/profile')
+            ->assertRedirect('/login');
+        $this->assertGuest();
     }
 
     /** @test */

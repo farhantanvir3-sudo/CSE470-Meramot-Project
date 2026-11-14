@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -95,7 +96,15 @@ class ProfileController extends Controller
         if ($request->hasFile('avatar')) {
             $avatarUrl = MediaUploadService::fromRequest($request, 'avatar', $avatarUrl, 800, 82);
         } elseif (array_key_exists('avatar_url', $validated) && !empty($validated['avatar_url'])) {
-            $avatarUrl = trim($validated['avatar_url']);
+            $candidateAvatar = trim((string) $validated['avatar_url']);
+            if (
+                str_starts_with($candidateAvatar, 'https://')
+                || str_starts_with($candidateAvatar, 'http://')
+                || (str_starts_with($candidateAvatar, '/') && !str_starts_with($candidateAvatar, '//'))
+                || str_starts_with($candidateAvatar, 'data:image/')
+            ) {
+                $avatarUrl = $candidateAvatar;
+            }
         }
 
         $address = isset($validated['address']) && trim($validated['address']) !== ''
@@ -134,7 +143,7 @@ class ProfileController extends Controller
             ]);
         }
 
-        return redirect()->route('profile.show')->with('success', 'Profile updated successfully. Your phone number and delivery address have been saved for future orders.');
+        return redirect()->route('profile.show')->with('success', 'Profile updated successfully.');
     }
 
     /**
@@ -172,13 +181,17 @@ class ProfileController extends Controller
             ]);
         }
 
-        $user->update([
+        $user->forceFill([
             'password' => Hash::make($validated['password']),
-        ]);
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        AuthController::clearTransientAuthSession($request);
+        $request->session()->regenerate();
 
         $message = $hasExistingPassword
-            ? 'Your account password has been updated.'
-            : 'Password created! You can now sign in with email and password as well.';
+            ? 'Password updated successfully.'
+            : 'Account password created. You can now sign in with email and password.';
 
         if ($request->expectsJson() || $request->is('api/*')) {
             return response()->json([

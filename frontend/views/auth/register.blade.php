@@ -25,7 +25,7 @@
                     Create your account
                 </h1>
                 <p class="mt-1 text-sm text-[#5e6d64]">
-                    Sign up to request repairs, compare shops, and save viewed items.
+                    Sign up to book repairs, compare workshops, and track orders.
                 </p>
             </div>
 

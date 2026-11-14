@@ -245,7 +245,8 @@ class VendorOnboardingController extends Controller
         } elseif ($request->boolean('remove_logo')) {
             $logoUrl = null;
         } elseif (array_key_exists('logo_url', $validated) && $validated['logo_url'] !== null) {
-            $logoUrl = trim((string) $validated['logo_url']) ?: null;
+            $candidateLogo = trim((string) $validated['logo_url']);
+            $logoUrl = $this->isSafeAssetUrl($candidateLogo) ? $candidateLogo : $logoUrl;
         }
 
         $documentsPath = $existingProfile?->documents_path;
@@ -253,6 +254,10 @@ class VendorOnboardingController extends Controller
             $documentsPath = MediaUploadService::fromRequest($request, 'verification_document', $documentsPath);
         } elseif ($request->boolean('remove_document')) {
             $documentsPath = null;
+        }
+
+        if (!$isEditMode) {
+            AuthController::clearTransientAuthSession($request);
         }
 
         $profile = DB::transaction(function () use (
@@ -931,20 +936,27 @@ class VendorOnboardingController extends Controller
                 ? strtolower(trim($validated['owner_email']))
                 : ('vendor.' . Str::slug($validated['shop_name']) . '.' . strtolower(Str::random(4)) . '@meramot.applicant');
 
-            $user = User::firstOrCreate(
-                ['email' => $applicantEmail],
-                [
-                    'name' => trim($validated['owner_name'] ?? ($validated['shop_name'] . ' Owner')),
-                    'username' => 'vendor_' . strtolower(Str::random(8)),
-                    'phone' => $cleanOwnerPhone ?? '+8801700000000',
-                    'password' => Hash::make($validated['owner_password'] ?? 'password123'),
-                    'role' => 'vendor',
-                    'is_active' => true,
-                ]
-            );
+            if (User::whereRaw('LOWER(email) = ?', [$applicantEmail])->where('status', '!=', 'deleted')->exists()) {
+                throw ValidationException::withMessages([
+                    'owner_email' => 'An account with this email already exists. Sign in first before updating your vendor profile.',
+                ]);
+            }
+
+            $user = User::create([
+                'email' => $applicantEmail,
+                'name' => trim($validated['owner_name'] ?? ($validated['shop_name'] . ' Owner')),
+                'username' => 'vendor_' . strtolower(Str::random(8)),
+                'phone' => $cleanOwnerPhone ?? '+8801700000000',
+                'password' => Hash::make($validated['owner_password'] ?? Str::random(24)),
+                'role' => 'vendor',
+                'status' => 'active',
+                'is_active' => true,
+            ]);
 
             if (!$request->expectsJson() && !$request->is('api/*')) {
+                AuthController::clearTransientAuthSession($request);
                 Auth::login($user);
+                $request->session()->regenerate();
             }
         } elseif ($user->role === 'customer') {
             $user->update(['role' => 'vendor']);
@@ -1481,6 +1493,22 @@ class VendorOnboardingController extends Controller
                 ->header('Content-Disposition', 'inline; filename="vendor-' . $profile->id . '-' . $type . '"');
         }
 
+        if (!$this->isSafeAssetUrl($raw)) {
+            abort(400, 'Invalid document URL.');
+        }
+
         return redirect($raw);
+    }
+
+    private function isSafeAssetUrl(?string $url): bool
+    {
+        if (!$url) {
+            return false;
+        }
+        $trimmed = trim($url);
+        return str_starts_with($trimmed, 'https://')
+            || str_starts_with($trimmed, 'http://')
+            || (str_starts_with($trimmed, '/') && !str_starts_with($trimmed, '//'))
+            || str_starts_with($trimmed, 'data:image/');
     }
 }
