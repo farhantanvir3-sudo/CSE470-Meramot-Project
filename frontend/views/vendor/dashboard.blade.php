@@ -9,8 +9,12 @@
 
 @section('content')
 @php
-    $initialTab = in_array(request('tab'), ['overview', 'marketplace', 'direct_orders', 'assigned_jobs', 'branches', 'payouts'], true)
-        ? request('tab')
+    $requestedTab = request('tab');
+    if (!$requestedTab && (request()->has('sp_page') || request()->has('sp_q') || request()->has('sp_filter'))) {
+        $requestedTab = 'spare_parts';
+    }
+    $initialTab = in_array($requestedTab, ['overview', 'marketplace', 'direct_orders', 'assigned_jobs', 'branches', 'spare_parts', 'payouts'], true)
+        ? $requestedTab
         : 'overview';
     $brandTitle = $vendorProfile->canonical_brand_name ?? 'ProTech Solutions';
     $publicPreviewShop = $activeBranch ?? ($branches->first() ?? null);
@@ -162,6 +166,7 @@
                 </span>
                 <a
                     href="/vendor/dashboard?shop_id=all"
+                    :href="'/vendor/dashboard?shop_id=all&tab=' + activeTab"
                     class="shrink-0 whitespace-nowrap rounded-full px-3 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold transition {{ $selectedShopId === 'all' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}"
                 >
                     All Branches ({{ count($branches) }})
@@ -169,6 +174,7 @@
                 @foreach($branches as $bItem)
                     <a
                         href="/vendor/dashboard?shop_id={{ $bItem->id }}"
+                        :href="'/vendor/dashboard?shop_id={{ $bItem->id }}&tab=' + activeTab"
                         class="shrink-0 whitespace-nowrap rounded-full px-3 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold transition flex items-center gap-1 sm:gap-1.5 {{ (string) $selectedShopId === (string) $bItem->id ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}"
                     >
                         <i class="fa-solid fa-code-branch text-[10px]"></i>
@@ -255,6 +261,19 @@
                 <span class="hidden sm:inline">My Repair Jobs</span>
             </span>
             <span class="shrink-0 rounded-full bg-indigo-800 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($activeJobs ?? collect())->count() }}<span class="hidden sm:inline"> Active</span></span>
+        </button>
+
+        <button
+            type="button"
+            @click="activeTab = 'spare_parts'"
+            :class="activeTab === 'spare_parts' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--accent-dark)]/40 sm:border-[var(--border)] shadow-sm' : 'bg-[var(--mint-100)]/60 sm:bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-[var(--border)]/60 sm:border-transparent'"
+            class="justify-between sm:justify-start rounded-xl sm:rounded-full md:rounded-t-2xl px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 transition flex items-center gap-1.5 min-w-0"
+        >
+            <span class="flex items-center gap-1.5 truncate">
+                <i class="fa-solid fa-microchip text-xs text-rose-600 shrink-0"></i>
+                <span class="truncate">Spare Parts</span>
+            </span>
+            <span class="shrink-0 rounded-full bg-rose-600 px-2 py-0.5 text-[10px] text-white font-bold">{{ number_format($vendorSparePartStats['total_count'] ?? 0) }}</span>
         </button>
 
         <button
@@ -1265,6 +1284,9 @@
             </div>
         </div>
     </div>
+
+    <!-- ── TAB 7: SPARE PARTS MARKETPLACE INVENTORY & OFFERS ── -->
+    @include('vendor.partials.spare-parts-tab')
 
 </div>
 @endsection

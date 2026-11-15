@@ -158,6 +158,48 @@ class VendorBranchController extends Controller
         $bangladeshDistricts = array_column(BangladeshLocationResolver::DISTRICTS, 'city');
         sort($bangladeshDistricts);
 
+        // Scoped Spare Parts Inventory for Vendor Dashboard (`tab=spare_parts`)
+        $spQuery = \App\Models\SparePartListing::with('shop')
+            ->whereIn('shop_id', $scopedShopIds);
+
+        $vendorSparePartStats = [
+            'total_count' => (clone $spQuery)->count(),
+            'active_count' => (clone $spQuery)->where('is_active', true)->count(),
+            'wholesale_count' => (clone $spQuery)->where('wholesale_enabled', true)->count(),
+            'offer_count' => (clone $spQuery)->where('offer_enabled', true)->count(),
+        ];
+
+        $spSearch = trim((string) $request->query('sp_q', ''));
+        if ($spSearch !== '') {
+            $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+            $spQuery->where(function ($q) use ($spSearch, $likeOp) {
+                $q->where('title', $likeOp, "%{$spSearch}%")
+                  ->orWhere('sku', $likeOp, "%{$spSearch}%")
+                  ->orWhere('brand', $likeOp, "%{$spSearch}%")
+                  ->orWhere('part_category', $likeOp, "%{$spSearch}%");
+            });
+        }
+
+        $spFilter = trim((string) $request->query('sp_filter', 'all'));
+        if ($spFilter === 'on_sale') {
+            $spQuery->where('offer_enabled', true);
+        } elseif ($spFilter === 'wholesale') {
+            $spQuery->where('wholesale_enabled', true);
+        } elseif ($spFilter === 'specs') {
+            $spQuery->where('has_specs', true);
+        } elseif ($spFilter === 'paused') {
+            $spQuery->where('is_active', false);
+        }
+
+        $vendorSpareParts = $spQuery
+            ->orderByDesc('updated_at')
+            ->orderByDesc('id')
+            ->paginate(18, ['*'], 'sp_page')
+            ->withQueryString();
+
+        $sparePartCategories = SparePartController::PART_CATEGORIES;
+        $sparePartBrands = SparePartController::POPULAR_BRANDS;
+
         return view('vendor.dashboard', compact(
             'vendorProfile',
             'branches',
@@ -168,7 +210,13 @@ class VendorBranchController extends Controller
             'activeJobs',
             'branchMetrics',
             'vendorPayoutHistory',
-            'bangladeshDistricts'
+            'bangladeshDistricts',
+            'vendorSpareParts',
+            'vendorSparePartStats',
+            'sparePartCategories',
+            'sparePartBrands',
+            'spSearch',
+            'spFilter'
         ));
     }
 

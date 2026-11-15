@@ -850,8 +850,8 @@
                     </a>
                     @endif
 
-                    <!-- Mobile Quick Cart Icon (Visible on Mobile Header for Active Customers & Guests) -->
-                    @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
+                    <!-- Mobile Quick Cart Icon (Visible on Mobile Header for Active Customers, Vendors & Guests) -->
+                    @if(!$isAdminAuth && !$isRiderAuth && !$isBannedCustomer)
                     <a
                         href="/cart"
                         class="meramot-cart-btn relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition duration-200 hover:bg-[var(--mint-300)] md:hidden"
@@ -941,6 +941,9 @@
                                             Financial Ledger
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
+                                        <a href="/spare-parts" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Spare Parts Marketplace
+                                        </a>
                                         <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Explore shops
                                         </a>
@@ -965,6 +968,15 @@
                                             Verification &amp; Onboarding
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
+                                        <a href="/spare-parts" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-50)]">
+                                            🔩 Spare Parts Marketplace
+                                        </a>
+                                        <a href="/orders" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            My Spare Part Orders
+                                        </a>
+                                        <a href="/cart" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Spare Parts Cart
+                                        </a>
                                         <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Explore shops
                                         </a>
@@ -985,6 +997,9 @@
                                             <i class="fa-regular fa-id-badge mr-1.5 text-[var(--accent-dark)]"></i> Rider Profile
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
+                                        <a href="/spare-parts" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Spare Parts Marketplace
+                                        </a>
                                         <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Explore shops
                                         </a>
@@ -1002,6 +1017,9 @@
                                         @endif
                                         <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Explore shops
+                                        </a>
+                                        <a href="/spare-parts" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            Spare Parts Marketplace
                                         </a>
                                         <a href="/packages/catalog" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Service Packages
@@ -1066,7 +1084,7 @@
                         </div>
 
                         <!-- Cart Button (Opens Slide-Over Mini-Cart when populated or navigates to `/cart`) -->
-                        @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
+                        @if(!$isAdminAuth && !$isRiderAuth && !$isBannedCustomer)
                         <a
                             href="/cart"
                             @click="if ({{ $navCartCount }} > 0 && !window.location.pathname.startsWith('/cart')) { $event.preventDefault(); miniCartOpen = true; }"
@@ -1096,8 +1114,12 @@
                     >
                         <i class="fa-solid fa-location-dot text-2xl"></i>
                     </button>
-                    <form action="/shops" method="GET" class="relative flex-1">
-                        @if(request('category'))
+                    @php
+                        $isOnSpareParts = request()->is('spare-parts*');
+                        $headerSearchAction = $isOnSpareParts ? '/spare-parts' : '/shops';
+                    @endphp
+                    <form action="{{ $headerSearchAction }}" method="GET" class="relative flex-1">
+                        @if(!$isOnSpareParts && request('category'))
                             <input type="hidden" name="category" value="{{ request('category') }}">
                         @endif
                         @if(request('sort'))
@@ -1111,14 +1133,14 @@
                             type="text"
                             name="q"
                             value="{{ request('q') }}"
-                            placeholder="Search shops, parts..."
+                            placeholder="{{ $isOnSpareParts ? 'Search spare parts, displays, batteries...' : 'Search shops, parts...' }}"
                             class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] py-2.5 pl-4 pr-16 text-[0.9rem] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)]"
                         />
                         <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             @if(request('q'))
-                                <a href="/shops" class="flex h-7 w-7 items-center justify-center rounded-lg text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]" title="Clear search">✕</a>
+                                <a href="{{ $headerSearchAction }}" class="flex h-7 w-7 items-center justify-center rounded-lg text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]" title="Clear search">✕</a>
                             @endif
-                            <button type="submit" aria-label="Search shops" class="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                            <button type="submit" aria-label="Search" class="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                                 <i class="fa-solid fa-magnifying-glass"></i>
                             </button>
                         </div>
@@ -1130,6 +1152,7 @@
             <div class="mt-2 flex flex-col gap-2 md:mt-0 md:flex-row md:items-center md:justify-between md:gap-4">
                 @php
                     $activeCategory = request('category', '');
+                    $isSparePartsNav = request()->is('spare-parts*') || $activeCategory === 'SPARE_PARTS';
                 @endphp
                 <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs font-semibold text-[var(--foreground)] md:flex-nowrap md:shrink-0 md:items-end md:gap-4 md:text-sm lg:gap-6 lg:text-base">
                     <a
@@ -1145,8 +1168,8 @@
                         In-shop Repair
                     </a>
                     <a
-                        href="/shops?category=SPARE_PARTS"
-                        class="inline-flex border-b-[3px] pb-1 transition {{ $activeCategory === 'SPARE_PARTS' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-bold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
+                        href="/spare-parts"
+                        class="inline-flex border-b-[3px] pb-1 transition {{ $isSparePartsNav ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-bold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
                     >
                         Spare Parts
                     </a>
@@ -1158,8 +1181,8 @@
                     </a>
                 </div>
 
-                <form action="/shops" method="GET" class="relative hidden w-full min-w-0 md:block md:flex-1 md:max-w-[640px]">
-                    @if(request('category'))
+                <form action="{{ $headerSearchAction }}" method="GET" class="relative hidden w-full min-w-0 md:block md:flex-1 md:max-w-[640px]">
+                    @if(!$isOnSpareParts && request('category'))
                         <input type="hidden" name="category" value="{{ request('category') }}">
                     @endif
                     @if(request('sort'))
@@ -1173,14 +1196,14 @@
                         type="text"
                         name="q"
                         value="{{ request('q') }}"
-                        placeholder="Search shops, parts, devices..."
+                        placeholder="{{ $isOnSpareParts ? 'Search spare parts, displays, laptop batteries, keyboards...' : 'Search shops, parts, devices...' }}"
                         class="w-full rounded-xl border-2 border-[var(--border)] bg-[var(--mint-300)] py-3 pl-5 pr-20 text-sm text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)] transition"
                     />
                     <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                         @if(request('q'))
-                            <a href="/shops" class="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition" title="Clear search">✕</a>
+                            <a href="{{ $headerSearchAction }}" class="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition" title="Clear search">✕</a>
                         @endif
-                        <button type="submit" aria-label="Search shops" class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                        <button type="submit" aria-label="Search" class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </button>
                     </div>
@@ -1268,6 +1291,15 @@
                         Verification &amp; Onboarding
                     </a>
                     <div class="my-2 border-t border-[var(--border)]"></div>
+                    <a href="/spare-parts" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-50)]">
+                        🔩 Spare Parts Marketplace
+                    </a>
+                    <a href="/orders" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        My Spare Part Orders
+                    </a>
+                    <a href="/cart" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Spare Parts Cart
+                    </a>
                     <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
                         Explore all shops
                     </a>
@@ -1291,6 +1323,9 @@
                 @else
                     <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
                         Explore all shops
+                    </a>
+                    <a href="/spare-parts" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        Spare Parts Marketplace
                     </a>
                     <a href="/requests" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
                         {{ $isBannedCustomer ? 'Ongoing & Past Orders' : 'My Repair Requests' }}
@@ -1934,6 +1969,7 @@
                 <p>&copy; 2026 Meramot (মেরামত) Digital Marketplace. All rights reserved.</p>
                 <div class="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2">
                     <a href="/shops" class="hover:text-[var(--foreground)] hover:underline transition">Explore All Shops</a>
+                    <a href="/spare-parts" class="hover:text-[var(--foreground)] hover:underline transition">Spare Parts Marketplace</a>
                     <a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition">Service Packages</a>
                     @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
                         <a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition">Request Repair</a>
@@ -1949,7 +1985,7 @@
     </footer>
 
     <!-- Slide-Over Mini-Cart Drawer (Feature R8 E-Commerce Quick Cart) -->
-    @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
+    @if(!$isAdminAuth && !$isRiderAuth && !$isBannedCustomer)
         @php
             $miniCartItems = session('cart', []);
             $miniCartSubtotal = array_reduce($miniCartItems, fn ($s, $it) => $s + ((float) ($it['price'] ?? 0) * (int) ($it['quantity'] ?? 1)), 0.0);
@@ -2002,8 +2038,8 @@
                     </div>
                     <p class="text-[11px] text-[var(--muted-foreground)]">Apply promo codes (<span class="font-mono font-bold">MERAMOT10</span>, <span class="font-mono font-bold">FREEDELIVERY</span>) on the cart page.</p>
                     <div class="grid grid-cols-2 gap-2">
-                        <a href="/packages/catalog" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-center text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
-                            + Add Services
+                        <a href="{{ $isVendorAuth ? '/spare-parts' : '/packages/catalog' }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-center text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                            {{ $isVendorAuth ? '+ Add Spare Parts' : '+ Add Services' }}
                         </a>
                         <a href="/cart" class="rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-center text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                             Open Cart &amp; Checkout &rarr;
@@ -2474,8 +2510,9 @@
 
             function syncHeaderState(doc, resolvedUrl) {
                 try {
-                    const currentCatLinks = document.querySelectorAll('header a[href^="/shops?category="], header a[href="/packages/catalog"]');
-                    const nextCatLinks = doc.querySelectorAll('header a[href^="/shops?category="], header a[href="/packages/catalog"]');
+                    const catSelector = 'header a[href^="/shops?category="], header a[href="/spare-parts"], header a[href="/packages/catalog"]';
+                    const currentCatLinks = document.querySelectorAll(catSelector);
+                    const nextCatLinks = doc.querySelectorAll(catSelector);
                     const nextByHref = new Map();
                     nextCatLinks.forEach((link) => {
                         nextByHref.set(link.getAttribute('href'), link.className);
@@ -2488,7 +2525,7 @@
                     });
 
                     const parsed = new URL(resolvedUrl, window.location.href);
-                    document.querySelectorAll('header form[action="/shops"]').forEach((form) => {
+                    document.querySelectorAll('header form[action="/shops"], header form[action="/spare-parts"]').forEach((form) => {
                         ['category', 'sort', 'lat', 'lng'].forEach((param) => {
                             const val = parsed.searchParams.get(param);
                             let input = form.querySelector(`input[name="${param}"]`);
@@ -2715,7 +2752,7 @@
                 }
                 const anchor = e.target.closest('a[href]');
                 if (!anchor) return;
-                if (anchor.hasAttribute('download') || anchor.hasAttribute('data-no-softnav') || anchor.hasAttribute('data-hard-reload')) {
+                if (anchor.hasAttribute('download') || anchor.hasAttribute('data-no-softnav') || anchor.hasAttribute('data-no-soft-nav') || anchor.hasAttribute('data-hard-reload')) {
                     return;
                 }
                 if (anchor.target && anchor.target !== '_self') return;
@@ -2793,6 +2830,23 @@
             window.MeramotSoftNav = {
                 visit
             };
+
+            window.openMeramotLocationModal = function () {
+                window.dispatchEvent(new CustomEvent('meramot-open-location-modal'));
+            };
+
+            window.addEventListener('meramot-location-changed', function (ev) {
+                if (!window.location.pathname.startsWith('/spare-parts')) return;
+                const loc = ev && ev.detail ? ev.detail : null;
+                if (!loc) return;
+                const nextUrl = new URL(window.location.href);
+                if (loc.city) nextUrl.searchParams.set('city', loc.city);
+                if (loc.area) nextUrl.searchParams.set('area', loc.area);
+                if (typeof loc.lat === 'number') nextUrl.searchParams.set('lat', loc.lat.toFixed(6));
+                if (typeof loc.lng === 'number') nextUrl.searchParams.set('lng', loc.lng.toFixed(6));
+                nextUrl.searchParams.delete('page');
+                visit(nextUrl.toString(), { scrollY: window.scrollY });
+            });
         })();
     </script>
 </body>

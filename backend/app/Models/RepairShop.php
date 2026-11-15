@@ -131,6 +131,11 @@ class RepairShop extends Model
         return $this->hasMany(RepairJob::class, 'shop_id');
     }
 
+    public function sparePartListings()
+    {
+        return $this->hasMany(SparePartListing::class, 'shop_id');
+    }
+
     /**
      * Public vendor-provided storefront address.
      * If `same_as_gps_location` is true, returns `gps_address` (which equals `address`).

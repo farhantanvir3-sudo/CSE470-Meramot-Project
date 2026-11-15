@@ -106,6 +106,11 @@ class VendorProfile extends Model
         return $this->hasMany(Bid::class, 'vendor_id');
     }
 
+    public function sparePartListings()
+    {
+        return $this->hasMany(SparePartListing::class, 'vendor_profile_id');
+    }
+
     /**
      * Canonical brand name shared across all branches of this vendor.
      */

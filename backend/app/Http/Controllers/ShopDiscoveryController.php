@@ -100,6 +100,19 @@ class ShopDiscoveryController extends Controller
      */
     public function index(Request $request)
     {
+        // Redirect legacy `/shops?category=SPARE_PARTS` requests directly to the dedicated Spare Parts Marketplace
+        if (strtoupper(trim((string) $request->input('category'))) === 'SPARE_PARTS') {
+            $forward = array_filter([
+                'q' => $request->input('q'),
+                'city' => $request->input('city'),
+                'area' => $request->input('area'),
+                'lat' => $request->input('lat'),
+                'lng' => $request->input('lng'),
+            ], fn ($v) => $v !== null && $v !== '');
+
+            return redirect()->route('spare-parts.index', $forward);
+        }
+
         $query = RepairShop::query()
             ->where('is_active', true)
             ->where('is_public', true);

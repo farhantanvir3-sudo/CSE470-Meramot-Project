@@ -52,7 +52,8 @@ class RepairRequestController extends Controller
                 ->with('warning', 'Please sign in to view your repair requests and past orders.');
         }
 
-        if ($user->role !== 'customer') {
+        // Vendors can purchase spare parts from other vendors and view those purchases on `/orders`
+        if ($user->role !== 'customer' && !($user->role === 'vendor' && $request->is('orders'))) {
             return $this->redirectForNonCustomer($user);
         }
 

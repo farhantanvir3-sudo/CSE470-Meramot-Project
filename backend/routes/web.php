@@ -13,6 +13,7 @@ use App\Http\Controllers\TrackingController;           // R4 - Nafiul
 use App\Http\Controllers\RiderChatController;          // R5 - Nafiul
 
 use App\Http\Controllers\ShopDiscoveryController;      // R6 - Shanid
+use App\Http\Controllers\SparePartController;          // Dedicated Spare Parts Marketplace (Mobile + PC/Laptop)
 use App\Http\Controllers\RepairRequestController;      // R7 - Shanid
 use App\Http\Controllers\StatusTransitionController;   // R7 - Dual-Quote Lifecycle
 use App\Http\Controllers\ServicePackageController;     // R8 - Shanid + Direct Order Cart
@@ -135,6 +136,10 @@ Route::get('/shops', [ShopDiscoveryController::class, 'index'])->name('shops.ind
 Route::get('/shops/explore', [ShopDiscoveryController::class, 'index'])->name('shops.explore');
 Route::get('/shops/{slug}', [ShopDiscoveryController::class, 'show'])->name('shops.show'); // R6
 
+// Dedicated Spare Parts Marketplace (Items w/ Seller Shop, Specs, Wholesale & Sale Offers)
+Route::get('/spare-parts', [SparePartController::class, 'index'])->name('spare-parts.index');
+Route::get('/spare-parts/{slug}', [SparePartController::class, 'show'])->name('spare-parts.show');
+
 Route::get('/requests', [RepairRequestController::class, 'index'])->name('requests.index');            // R7 Customer Hub
 Route::get('/orders', [RepairRequestController::class, 'index'])->name('orders.index');                // R7 Alias
 Route::get('/requests/create', [RepairRequestController::class, 'create'])->name('requests.create');   // R7
@@ -202,6 +207,12 @@ Route::prefix('vendor')->group(function () {
 
     Route::post('/payouts/settings', [VendorPayoutController::class, 'saveVendorSettings'])->name('vendor.payouts.settings'); // R18
     Route::post('/payouts/request', [VendorPayoutController::class, 'requestVendorPayout'])->name('vendor.payouts.request');   // R18
+
+    // Vendor Spare Parts Inventory, Spec Options, Sale Offers & Wholesale Tiers
+    Route::post('/spare-parts', [SparePartController::class, 'store'])->name('vendor.spare-parts.store');
+    Route::put('/spare-parts/{id}', [SparePartController::class, 'update'])->name('vendor.spare-parts.update');
+    Route::post('/spare-parts/{id}/toggle', [SparePartController::class, 'toggleStatus'])->name('vendor.spare-parts.toggle');
+    Route::delete('/spare-parts/{id}', [SparePartController::class, 'destroy'])->name('vendor.spare-parts.destroy');
 });
 
 // -------------------------------------------------------------

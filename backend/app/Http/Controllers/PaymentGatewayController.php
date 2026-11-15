@@ -39,14 +39,20 @@ class PaymentGatewayController extends Controller
         $discountAmount = round(max(0.0, (float) ($repairRequest->discount_amount ?? 0)), 2);
 
         if ($isDirectService) {
-            $deliveryFee = ($repairRequest->delivery_type === 'EXPRESS')
-                ? 150.0
-                : (($repairRequest->preferred_pickup ?? true) ? 80.0 : 0.0);
-            $escrowFee = round((float) ($repairRequest->checkup_fee ?? 0), 2);
-            $storedTotal = round((float) ($repairRequest->quoted_final_amount ?? 0), 2);
             $quoteItems = is_array($repairRequest->repairJob?->final_quote_items)
                 ? $repairRequest->repairJob->final_quote_items
                 : [];
+            $explicitDeliveryFee = isset($quoteItems[0]['delivery_fee']) && is_numeric($quoteItems[0]['delivery_fee'])
+                ? (float) $quoteItems[0]['delivery_fee']
+                : null;
+
+            $deliveryFee = $explicitDeliveryFee !== null
+                ? round($explicitDeliveryFee, 2)
+                : (($repairRequest->delivery_type === 'EXPRESS')
+                    ? 150.0
+                    : (($repairRequest->preferred_pickup ?? true) ? 80.0 : 0.0));
+            $escrowFee = round((float) ($repairRequest->checkup_fee ?? 0), 2);
+            $storedTotal = round((float) ($repairRequest->quoted_final_amount ?? 0), 2);
 
             $servicesSubtotal = !empty($quoteItems)
                 ? round((float) collect($quoteItems)->sum(

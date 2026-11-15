@@ -10,8 +10,10 @@ use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\ServicePackage;
 use App\Models\ShopService;
+use App\Models\SparePartListing;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Models\VendorProfile;
 use App\Services\GeolocationService;
 use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
@@ -138,7 +140,8 @@ class ServicePackageController extends Controller
      */
     public function applyVoucher(Request $request)
     {
-        if ($resp = $this->guardCustomerOrdering($request)) {
+        $cart = session()->get('cart', []);
+        if ($resp = $this->guardCustomerOrdering($request, $this->cartHasSpareParts($cart))) {
             return $resp;
         }
 
@@ -146,11 +149,11 @@ class ServicePackageController extends Controller
             'voucher_code' => 'required|string|max:40',
         ]);
 
-        $cart = session()->get('cart', []);
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0.0);
         $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request) : null;
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $this->resolveCustomerLocation($request), 'REGULAR');
 
-        $eval = self::evaluateVoucher($validated['voucher_code'], $subtotal, self::REGULAR_DELIVERY_FEE, $activeShop);
+        $eval = self::evaluateVoucher($validated['voucher_code'], $subtotal, (float) $deliveryQuote['regular_delivery_fee'], $activeShop);
         if (!$eval['valid']) {
             session()->forget('cart_voucher_code');
             if ($request->expectsJson()) {
@@ -797,26 +800,82 @@ class ServicePackageController extends Controller
     }
 
     /**
-     * Prevent non-customer roles and banned customers from using the Direct-Order Cart or placing orders.
+     * Check whether the active cart contains Spare Part marketplace items.
      */
-    private function guardCustomerOrdering(Request $request)
+    private function cartHasSpareParts(array $cart): bool
+    {
+        foreach ($cart as $item) {
+            if (($item['source'] ?? '') === 'SPARE_PART') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Compute regular/express courier delivery fees (distance-based nationwide for Spare Parts,
+     * fixed metro rates for standard workshop services).
+     */
+    private function resolveCartDeliveryQuote(array $cart, ?RepairShop $shop, array $customerLocation, string $deliveryType = 'REGULAR'): array
+    {
+        if ($this->cartHasSpareParts($cart) && $shop) {
+            $quote = SparePartListing::calculateDeliveryQuote($shop, $customerLocation, $deliveryType);
+            return array_merge($quote, ['is_spare_part' => true]);
+        }
+
+        $reg = (float) self::REGULAR_DELIVERY_FEE;
+        $exp = (float) self::EXPRESS_DELIVERY_FEE;
+        return [
+            'distance_km' => $shop?->distance_km,
+            'distance_formatted' => null,
+            'delivery_fee' => strtoupper($deliveryType) === 'EXPRESS' ? $exp : $reg,
+            'regular_delivery_fee' => $reg,
+            'express_delivery_fee' => $exp,
+            'eta_minutes' => $shop?->eta_minutes ?? 120,
+            'eta_label' => null,
+            'zone_label' => 'Doorstep Courier',
+            'is_same_city' => true,
+            'is_spare_part' => false,
+        ];
+    }
+
+    /**
+     * Prevent non-customer roles and banned users from ordering repair services.
+     * Vendors ARE permitted to purchase Spare Parts from OTHER vendors (`$allowVendorSpareParts = true`),
+     * while remaining blocked from ordering repair services or buying from their own shop.
+     */
+    private function guardCustomerOrdering(Request $request, bool $allowVendorSpareParts = false)
     {
         $user = $request->user();
         if (!$user) {
             return null;
         }
 
+        if ($user->role === 'vendor' && $allowVendorSpareParts) {
+            if ($user->isBanned()) {
+                $msg = 'Account Restricted: Your account is restricted from placing new orders.';
+                return $request->expectsJson()
+                    ? response()->json(['success' => false, 'message' => $msg], 403)
+                    : redirect('/vendor/dashboard')->with('error', $msg);
+            }
+            return null;
+        }
+
         if ($user->role !== 'customer') {
+            $vendorMsg = $user->role === 'vendor'
+                ? 'Vendor accounts can purchase spare parts from other workshops, but cannot book customer repair services.'
+                : 'Only customer accounts can order repair services.';
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only customer accounts can order repair services.',
+                    'message' => $vendorMsg,
                 ], 403);
             }
 
             return match ($user->role) {
                 'admin' => redirect('/admin')->with('warning', 'Only customer accounts can place service orders.'),
-                'vendor' => redirect('/vendor/dashboard')->with('warning', 'Only customer accounts can place service orders.'),
+                'vendor' => redirect('/vendor/dashboard')->with('warning', $vendorMsg),
                 'delivery_agent', 'delivery' => redirect('/delivery')->with('warning', 'Only customer accounts can place service orders.'),
                 default => redirect('/'),
             };
@@ -838,13 +897,18 @@ class ServicePackageController extends Controller
     }
 
     /**
-     * Add either a Fixed Package (`package_id`) or a Shop Service (`service_name` + `shop_id`) to Cart.
+     * Add a Spare Part (`spare_part_id`), Fixed Package (`package_id`), or Shop Service (`service_name` + `shop_id`) to Cart.
      * Route: POST /cart/add
      */
     public function addToCart(Request $request)
     {
-        if ($resp = $this->guardCustomerOrdering($request)) {
+        $isSparePartAdd = $request->filled('spare_part_id');
+        if ($resp = $this->guardCustomerOrdering($request, $isSparePartAdd)) {
             return $resp;
+        }
+
+        if ($isSparePartAdd) {
+            return $this->addSparePartToCart($request);
         }
 
         $validated = $request->validate([
@@ -954,6 +1018,9 @@ class ServicePackageController extends Controller
             : 'Service added to cart';
 
         if (!$request->expectsJson()) {
+            if ($request->boolean('buy_now')) {
+                return redirect()->route('cart.checkout')->with('success', $message);
+            }
             return redirect()->route('cart.view')->with('success', $message);
         }
 
@@ -963,6 +1030,152 @@ class ServicePackageController extends Controller
             'cart_count' => count($cart),
             'shop_id' => $shop?->id,
             'shop_name' => $shop?->name,
+        ]);
+    }
+
+    /**
+     * Add a Spare Part Marketplace item (with optional Spec Option, Sale Offer & Wholesale Discount) to Cart.
+     */
+    private function addSparePartToCart(Request $request)
+    {
+        $validated = $request->validate([
+            'spare_part_id' => 'required|integer|exists:spare_part_listings,id',
+            'spec_code' => 'nullable|string|max:100',
+            'quantity' => 'nullable|integer|min:1|max:10000',
+            'buy_now' => 'nullable|boolean',
+            'customer_lat' => 'nullable|numeric|between:-90,90',
+            'customer_lng' => 'nullable|numeric|between:-180,180',
+            'customer_city' => 'nullable|string|max:100',
+            'customer_area' => 'nullable|string|max:120',
+        ]);
+
+        /** @var SparePartListing $listing */
+        $listing = SparePartListing::with(['shop.vendorProfile', 'vendorProfile'])
+            ->where('is_active', true)
+            ->findOrFail((int) $validated['spare_part_id']);
+
+        $shop = $listing->shop;
+        if (!$shop || !$shop->is_active) {
+            $msg = 'This seller workshop is currently unavailable.';
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $msg], 422)
+                : back()->withErrors(['cart' => $msg]);
+        }
+
+        // Prevent a vendor from purchasing spare parts from their OWN workshop/branch
+        $buyer = $request->user();
+        if ($buyer && $buyer->role === 'vendor') {
+            $ownedProfileId = VendorProfile::where('user_id', $buyer->id)->value('id');
+            if (
+                ($ownedProfileId && (int) $shop->vendor_profile_id === (int) $ownedProfileId)
+                || ($shop->vendorProfile && (int) $shop->vendorProfile->user_id === (int) $buyer->id)
+            ) {
+                $msg = 'You cannot order spare parts from your own workshop listing. Please select another competing seller.';
+                return $request->expectsJson()
+                    ? response()->json(['success' => false, 'message' => $msg], 422)
+                    : back()->with('error', $msg);
+            }
+        }
+
+        // Enforce required specification selection when `has_specs` is true (Etel / LaptopWorld UX)
+        $selectedSpec = null;
+        $specCode = trim((string) ($validated['spec_code'] ?? ''));
+        if ($listing->has_specs) {
+            $selectedSpec = $listing->resolveSpecOption($specCode);
+            if (!$selectedSpec) {
+                $label = $listing->spec_label ?: 'Quality';
+                $msg = "Please choose a {$label} option before ordering.";
+                return $request->expectsJson()
+                    ? response()->json(['success' => false, 'message' => $msg, 'errors' => ['spec_code' => [$msg]]], 422)
+                    : back()->withErrors(['spec_code' => $msg])->withInput();
+            }
+        }
+
+        $maxStock = max(1, (int) ($selectedSpec['stock'] ?? $listing->stock_quantity ?: 1000));
+        $requestedQty = max(1, (int) ($validated['quantity'] ?? 1));
+
+        $cart = session()->get('cart', []);
+
+        // Scope cart to this spare-part seller shop (clear if switching sellers or switching from repair services)
+        if (
+            (session('cart_shop_id') && (int) session('cart_shop_id') !== (int) $shop->id)
+            || (!empty($cart) && !$this->cartHasSpareParts($cart))
+        ) {
+            $cart = [];
+        }
+
+        session()->put('cart_shop_id', $shop->id);
+        session()->put('cart_shop_locked', true);
+        session()->put('cart_shop_manual', true);
+
+        $itemKey = 'sp_' . $listing->id . ($selectedSpec ? ('_' . $selectedSpec['code']) : '');
+        $existingQty = isset($cart[$itemKey]) && !$request->boolean('buy_now')
+            ? (int) $cart[$itemKey]['quantity']
+            : 0;
+        $finalQty = min($maxStock, $existingQty + $requestedQty);
+
+        $breakdown = $listing->calculatePricingBreakdown($finalQty, $selectedSpec['code'] ?? null);
+        $specSuffix = $selectedSpec ? (' (' . ($listing->spec_label ?: 'Spec') . ': ' . $selectedSpec['name'] . ')') : '';
+        $displayTitle = $listing->title . $specSuffix;
+
+        $descParts = [
+            $listing->part_category,
+            'Seller: ' . $shop->name . ($shop->display_branch_tag ? " [{$shop->display_branch_tag}]" : ''),
+        ];
+        if ($breakdown['has_active_offer']) {
+            $descParts[] = 'Sale Offer (Normal ৳' . number_format($breakdown['normal_unit_price'], 0) . ')';
+        }
+        if ($breakdown['is_wholesale_applied']) {
+            $descParts[] = 'Wholesale -' . rtrim(rtrim(number_format($breakdown['wholesale_discount_pct'], 2), '0'), '.') . '% applied';
+        }
+
+        $cart[$itemKey] = [
+            'id' => $itemKey,
+            'spare_part_id' => $listing->id,
+            'slug' => $listing->slug,
+            'title' => $displayTitle,
+            'description' => implode(' • ', $descParts),
+            'price' => (float) $breakdown['effective_unit_price'],
+            'normal_unit_price' => (float) $breakdown['normal_unit_price'],
+            'raw_unit_price' => (float) $breakdown['raw_unit_price'],
+            'has_active_offer' => (bool) $breakdown['has_active_offer'],
+            'wholesale_enabled' => (bool) $listing->wholesale_enabled,
+            'wholesale_min_qty' => (int) ($listing->wholesale_min_qty ?: 100),
+            'wholesale_discount_pct' => (float) $breakdown['wholesale_discount_pct'],
+            'wholesale_savings' => (float) $breakdown['wholesale_savings'],
+            'spec_code' => $selectedSpec['code'] ?? null,
+            'spec_name' => $selectedSpec['name'] ?? null,
+            'image_url' => $listing->image_url,
+            'category' => 'Spare Parts • ' . $listing->part_category,
+            'duration' => max(1, (int) ($listing->handling_hours ?: 1)),
+            'warranty_months' => max(0, (int) round(($listing->warranty_days ?: 30) / 30)),
+            'max_stock' => $maxStock,
+            'quantity' => $finalQty,
+            'source' => 'SPARE_PART',
+        ];
+
+        session()->put('cart', $cart);
+        $this->syncDatabaseCart($request->user(), $shop, $cart);
+
+        $wholesaleNote = $breakdown['is_wholesale_applied']
+            ? ' (Wholesale ' . rtrim(rtrim(number_format($breakdown['wholesale_discount_pct'], 2), '0'), '.') . '% discount applied!)'
+            : '';
+        $message = "Added {$finalQty} × {$displayTitle} from {$shop->name}{$wholesaleNote}";
+
+        if (!$request->expectsJson()) {
+            if ($request->boolean('buy_now')) {
+                return redirect()->route('cart.checkout')->with('success', $message);
+            }
+            return redirect()->route('cart.view')->with('success', $message);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'cart_count' => count($cart),
+            'shop_id' => $shop->id,
+            'shop_name' => $shop->name,
+            'item' => $cart[$itemKey],
         ]);
     }
 
@@ -1009,11 +1222,13 @@ class ServicePackageController extends Controller
      */
     public function viewCart(Request $request)
     {
-        if ($resp = $this->guardCustomerOrdering($request)) {
+        $cart = session()->get('cart', []);
+        $isSparePartCart = $this->cartHasSpareParts($cart);
+        // Allow vendors into /cart when ordering spare parts or viewing an empty spare-parts cart
+        if ($resp = $this->guardCustomerOrdering($request, $isSparePartCart || empty($cart))) {
             return $resp;
         }
 
-        $cart = session()->get('cart', []);
         $total = array_reduce($cart, function ($sum, $item) {
             return $sum + ((float) $item['price'] * (int) $item['quantity']);
         }, 0);
@@ -1024,7 +1239,11 @@ class ServicePackageController extends Controller
         $shopLocked = (bool) session('cart_shop_locked', false);
         $shopManuallySelected = (bool) session('cart_shop_manual', false);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
-        $voucherEval = self::evaluateVoucher(session('cart_voucher_code'), (float) $total, self::REGULAR_DELIVERY_FEE, $activeShop);
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
+        $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
+        $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
+
+        $voucherEval = self::evaluateVoucher(session('cart_voucher_code'), (float) $total, $regularDeliveryFee, $activeShop);
         $appliedVoucher = $voucherEval['valid'] ? $voucherEval['code'] : null;
         $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
         $voucherLabel = $voucherEval['valid'] ? $voucherEval['label'] : null;
@@ -1040,7 +1259,11 @@ class ServicePackageController extends Controller
             'customerLocation',
             'appliedVoucher',
             'discountAmount',
-            'voucherLabel'
+            'voucherLabel',
+            'isSparePartCart',
+            'deliveryQuote',
+            'regularDeliveryFee',
+            'expressDeliveryFee'
         ));
     }
 
@@ -1050,11 +1273,11 @@ class ServicePackageController extends Controller
      */
     public function removeFromCart(Request $request, $packageId)
     {
-        if ($resp = $this->guardCustomerOrdering($request)) {
+        $packageId = rawurldecode((string) $packageId);
+        $cart = session()->get('cart', []);
+        if ($resp = $this->guardCustomerOrdering($request, $this->cartHasSpareParts($cart))) {
             return $resp;
         }
-
-        $cart = session()->get('cart', []);
 
         if (isset($cart[$packageId])) {
             unset($cart[$packageId]);
@@ -1089,18 +1312,38 @@ class ServicePackageController extends Controller
      */
     public function updateCartQuantity(Request $request, $packageId)
     {
-        if ($resp = $this->guardCustomerOrdering($request)) {
+        $packageId = rawurldecode((string) $packageId);
+        $cart = session()->get('cart', []);
+        $isSparePartCart = $this->cartHasSpareParts($cart);
+        if ($resp = $this->guardCustomerOrdering($request, $isSparePartCart)) {
             return $resp;
         }
 
+        $isSpareItem = isset($cart[$packageId]) && (($cart[$packageId]['source'] ?? '') === 'SPARE_PART');
+        $maxAllowed = $isSpareItem ? max(1, (int) ($cart[$packageId]['max_stock'] ?? 10000)) : 10;
+
         $validated = $request->validate([
-            'quantity' => 'required|integer|min:1|max:10',
+            'quantity' => "required|integer|min:1|max:{$maxAllowed}",
         ]);
 
-        $cart = session()->get('cart', []);
-
         if (isset($cart[$packageId])) {
-            $cart[$packageId]['quantity'] = (int) $validated['quantity'];
+            $newQty = (int) $validated['quantity'];
+            $cart[$packageId]['quantity'] = $newQty;
+
+            // Recalculate AliExpress progressive wholesale & active offer price for Spare Parts
+            if ($isSpareItem && !empty($cart[$packageId]['spare_part_id'])) {
+                $spListing = SparePartListing::with('shop')->find((int) $cart[$packageId]['spare_part_id']);
+                if ($spListing) {
+                    $breakdown = $spListing->calculatePricingBreakdown($newQty, $cart[$packageId]['spec_code'] ?? null);
+                    $cart[$packageId]['price'] = (float) $breakdown['effective_unit_price'];
+                    $cart[$packageId]['normal_unit_price'] = (float) $breakdown['normal_unit_price'];
+                    $cart[$packageId]['raw_unit_price'] = (float) $breakdown['raw_unit_price'];
+                    $cart[$packageId]['has_active_offer'] = (bool) $breakdown['has_active_offer'];
+                    $cart[$packageId]['wholesale_discount_pct'] = (float) $breakdown['wholesale_discount_pct'];
+                    $cart[$packageId]['wholesale_savings'] = (float) $breakdown['wholesale_savings'];
+                }
+            }
+
             session()->put('cart', $cart);
             $this->syncDatabaseCart($request->user(), $this->resolveTargetShop(null, $request), $cart);
         }
@@ -1117,6 +1360,7 @@ class ServicePackageController extends Controller
             'cart_count' => count($cart),
             'subtotal' => $subtotal,
             'service_charge' => self::calculateServiceCharge($subtotal),
+            'item' => $cart[$packageId] ?? null,
         ]);
     }
 
@@ -1126,12 +1370,17 @@ class ServicePackageController extends Controller
      */
     public function clearCart(Request $request)
     {
-        if ($resp = $this->guardCustomerOrdering($request)) {
+        $wasSparePartCart = $this->cartHasSpareParts(session()->get('cart', []));
+        if ($resp = $this->guardCustomerOrdering($request, $wasSparePartCart)) {
             return $resp;
         }
 
         session()->forget(['cart', 'cart_shop_id', 'cart_shop_locked', 'cart_shop_manual', 'cart_voucher_code']);
         $this->syncDatabaseCart($request->user(), null, []);
+
+        if ($wasSparePartCart) {
+            return redirect()->route('spare-parts.index')->with('success', 'Your spare parts cart has been cleared.');
+        }
 
         return redirect()->route('packages.catalog')->with('success', 'Your cart has been cleared.');
     }
@@ -1142,11 +1391,11 @@ class ServicePackageController extends Controller
      */
     public function checkout(Request $request)
     {
-        if ($resp = $this->guardCustomerOrdering($request)) {
+        $cart = session()->get('cart', []);
+        $isSparePartCart = $this->cartHasSpareParts($cart);
+        if ($resp = $this->guardCustomerOrdering($request, $isSparePartCart)) {
             return $resp;
         }
-
-        $cart = session()->get('cart', []);
 
         if (empty($cart)) {
             return redirect()->route('packages.catalog')
@@ -1160,13 +1409,33 @@ class ServicePackageController extends Controller
         $serviceCharge = self::calculateServiceCharge($total);
         $customerLocation = $this->resolveCustomerLocation($request);
         $activeShop = $this->resolveTargetShop(null, $request);
+        $shopLocked = (bool) session('cart_shop_locked', false);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
-        $voucherEval = self::evaluateVoucher(session('cart_voucher_code'), (float) $total, self::REGULAR_DELIVERY_FEE, $activeShop);
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
+        $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
+        $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
+
+        $voucherEval = self::evaluateVoucher(session('cart_voucher_code'), (float) $total, $regularDeliveryFee, $activeShop);
         $appliedVoucher = $voucherEval['valid'] ? $voucherEval['code'] : null;
         $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
         $voucherLabel = $voucherEval['valid'] ? $voucherEval['label'] : null;
 
-        return view('packages.checkout', compact('cart', 'total', 'serviceCharge', 'activeShop', 'verifiedShops', 'customerLocation', 'appliedVoucher', 'discountAmount', 'voucherLabel'));
+        return view('packages.checkout', compact(
+            'cart',
+            'total',
+            'serviceCharge',
+            'activeShop',
+            'shopLocked',
+            'verifiedShops',
+            'customerLocation',
+            'appliedVoucher',
+            'discountAmount',
+            'voucherLabel',
+            'isSparePartCart',
+            'deliveryQuote',
+            'regularDeliveryFee',
+            'expressDeliveryFee'
+        ));
     }
 
     /**
@@ -1177,11 +1446,12 @@ class ServicePackageController extends Controller
      */
     public function placeDirectOrder(Request $request)
     {
-        if ($resp = $this->guardCustomerOrdering($request)) {
+        $cart = session()->get('cart', []);
+        $isSparePartCart = $this->cartHasSpareParts($cart);
+        if ($resp = $this->guardCustomerOrdering($request, $isSparePartCart)) {
             return $resp;
         }
 
-        $cart = session()->get('cart', []);
         if (empty($cart)) {
             return redirect()->route('packages.catalog')->with('error', 'Your cart is empty');
         }
@@ -1218,6 +1488,17 @@ class ServicePackageController extends Controller
         }
         $shop->loadMissing('vendorProfile');
 
+        // Re-verify that a vendor buyer cannot place a Spare Parts order against their own workshop
+        if ($request->user() && $request->user()->role === 'vendor') {
+            $ownedProfileId = VendorProfile::where('user_id', $request->user()->id)->value('id');
+            if (
+                ($ownedProfileId && (int) $shop->vendor_profile_id === (int) $ownedProfileId)
+                || ($shop->vendorProfile && (int) $shop->vendorProfile->user_id === (int) $request->user()->id)
+            ) {
+                return back()->with('error', 'You cannot place a spare parts order with your own workshop.');
+            }
+        }
+
         $user = $request->user() ?? User::where('role', 'customer')->firstOrFail();
         if ($request->user()) {
             $syncProfile = [];
@@ -1234,9 +1515,33 @@ class ServicePackageController extends Controller
                 $request->user()->update($syncProfile);
             }
         }
+
+        // Recompute authoritative server-side pricing for Spare Parts (active offers + wholesale discounts)
+        if ($isSparePartCart) {
+            foreach ($cart as $cKey => &$cItem) {
+                if (($cItem['source'] ?? '') === 'SPARE_PART' && !empty($cItem['spare_part_id'])) {
+                    $spListing = SparePartListing::find((int) $cItem['spare_part_id']);
+                    if ($spListing) {
+                        $b = $spListing->calculatePricingBreakdown((int) $cItem['quantity'], $cItem['spec_code'] ?? null);
+                        $cItem['price'] = (float) $b['effective_unit_price'];
+                        $cItem['wholesale_discount_pct'] = (float) $b['wholesale_discount_pct'];
+                        $cItem['wholesale_savings'] = (float) $b['wholesale_savings'];
+                    }
+                }
+            }
+            unset($cItem);
+        }
+
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0);
         $serviceCharge = self::calculateServiceCharge($subtotal);
-        $deliveryFee = $validated['delivery_type'] === 'EXPRESS' ? self::EXPRESS_DELIVERY_FEE : self::REGULAR_DELIVERY_FEE;
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $shop, $customerLocation, $validated['delivery_type']);
+        $deliveryFee = (float) $deliveryQuote['delivery_fee'];
+
+        // Attach computed delivery fee onto quote items so online checkout & PDF invoices reflect exact courier fee
+        foreach ($cart as &$qItem) {
+            $qItem['delivery_fee'] = $deliveryFee;
+        }
+        unset($qItem);
 
         $requestedVoucher = $validated['voucher_code'] ?? session('cart_voucher_code');
         $voucherEval = self::evaluateVoucher($requestedVoucher, (float) $subtotal, (float) $deliveryFee, $shop);
@@ -1337,6 +1642,12 @@ class ServicePackageController extends Controller
             foreach ($cart as $key => $item) {
                 if (is_numeric($key)) {
                     ServicePackage::where('id', (int) $key)->increment('order_count', (int) $item['quantity']);
+                } elseif (($item['source'] ?? '') === 'SPARE_PART' && !empty($item['spare_part_id'])) {
+                    $qtyBought = max(1, (int) $item['quantity']);
+                    SparePartListing::where('id', (int) $item['spare_part_id'])->update([
+                        'stock_quantity' => DB::raw("GREATEST(0, stock_quantity - {$qtyBought})"),
+                        'sold_count' => DB::raw("sold_count + {$qtyBought}"),
+                    ]);
                 }
             }
 

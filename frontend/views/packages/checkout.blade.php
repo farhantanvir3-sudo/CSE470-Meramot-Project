@@ -9,6 +9,10 @@
      ========================================================================== --}}
 
 @section('content')
+@php
+    $regCourierFee = (float) ($regularDeliveryFee ?? 80);
+    $expCourierFee = (float) ($expressDeliveryFee ?? 150);
+@endphp
 <div class="mx-auto max-w-5xl px-4 py-6 md:px-6" x-data="{
     scheduleType: '{{ old('schedule_type', 'NOW') }}',
     deliveryType: '{{ old('delivery_type', 'REGULAR') }}',
@@ -17,12 +21,14 @@
     checkoutArea: @js(old('area', auth()->user()->area ?? ($customerLocation['area'] ?? 'Banani'))),
     subtotal: {{ (float) ($total ?? 0) }},
     serviceCharge: {{ (float) ($serviceCharge ?? 30) }},
+    regularFee: {{ $regCourierFee }},
+    expressFee: {{ $expCourierFee }},
     appliedVoucher: @js($appliedVoucher ?? ''),
     baseDiscount: {{ (float) ($discountAmount ?? 0) }},
-    get deliveryFee() { return this.deliveryType === 'EXPRESS' ? 150 : 80; },
+    get deliveryFee() { return this.deliveryType === 'EXPRESS' ? this.expressFee : this.regularFee; },
     get activeDiscount() {
         if (this.appliedVoucher === 'FREEDELIVERY') return this.deliveryFee;
-        if (this.appliedVoucher === 'SHOPFREE') return Math.min(this.deliveryFee, 80);
+        if (this.appliedVoucher === 'SHOPFREE') return Math.min(this.deliveryFee, this.regularFee);
         return this.baseDiscount;
     },
     get grandTotal() { return Math.max(0, this.subtotal + this.serviceCharge + this.deliveryFee - this.activeDiscount); },
@@ -77,31 +83,45 @@
                 </h2>
 
                 <div class="min-w-0">
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Assigned Local Workshop</label>
-                    <select name="shop_id" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
-                        @forelse($verifiedShops ?? [] as $vShop)
-                            <option value="{{ $vShop->id }}" {{ (isset($activeShop) && $activeShop && $activeShop->id === $vShop->id) ? 'selected' : '' }}>
-                                {{ \Illuminate\Support\Str::limit($vShop->name, 26) }}{{ $vShop->display_branch_tag ? ' [' . \Illuminate\Support\Str::limit($vShop->display_branch_tag, 18) . ']' : ' (' . \Illuminate\Support\Str::limit($vShop->area ?: $vShop->city, 16) . ')' }} • ★{{ number_format($vShop->rating, 1) }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
-                            </option>
-                        @empty
-                            <option value="">Auto-match nearest workshop</option>
-                        @endforelse
-                    </select>
+                    <label class="block font-bold text-[var(--foreground)] mb-1">
+                        {{ !empty($isSparePartCart) ? 'Dispatched By Seller Workshop' : 'Assigned Local Workshop' }}
+                    </label>
+                    @if((!empty($shopLocked) || !empty($isSparePartCart)) && isset($activeShop) && $activeShop)
+                        <input type="hidden" name="shop_id" value="{{ $activeShop->id }}">
+                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--foreground)] flex flex-wrap items-center justify-between gap-2">
+                            <span>
+                                ✔ {{ $activeShop->name }}{{ $activeShop->display_branch_tag ? ' [' . $activeShop->display_branch_tag . ']' : '' }}
+                            </span>
+                            <span class="text-[11px] text-[var(--muted-foreground)]">
+                                📍 {{ collect([$activeShop->area, $activeShop->city])->filter()->unique()->implode(', ') }}
+                            </span>
+                        </div>
+                    @else
+                        <select name="shop_id" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
+                            @forelse($verifiedShops ?? [] as $vShop)
+                                <option value="{{ $vShop->id }}" {{ (isset($activeShop) && $activeShop && $activeShop->id === $vShop->id) ? 'selected' : '' }}>
+                                    {{ \Illuminate\Support\Str::limit($vShop->name, 26) }}{{ $vShop->display_branch_tag ? ' [' . \Illuminate\Support\Str::limit($vShop->display_branch_tag, 18) . ']' : ' (' . \Illuminate\Support\Str::limit($vShop->area ?: $vShop->city, 16) . ')' }} • ★{{ number_format($vShop->rating, 1) }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
+                                </option>
+                            @empty
+                                <option value="">Auto-match nearest workshop</option>
+                            @endforelse
+                        </select>
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Pickup Schedule *</label>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Pickup / Dispatch Schedule *</label>
                         <select name="schedule_type" x-model="scheduleType" class="w-full min-w-0 max-w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
-                            <option value="NOW">Pickup Now</option>
+                            <option value="NOW">Dispatch Now</option>
                             <option value="LATER">Schedule for Later</option>
                         </select>
                     </div>
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Courier Tier *</label>
                         <select name="delivery_type" x-model="deliveryType" class="w-full min-w-0 max-w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
-                            <option value="REGULAR">Regular Courier (৳80)</option>
-                            <option value="EXPRESS">Express Priority (৳150)</option>
+                            <option value="REGULAR">Regular Courier (৳{{ number_format($regCourierFee, 0) }})</option>
+                            <option value="EXPRESS">Express Priority (৳{{ number_format($expCourierFee, 0) }})</option>
                         </select>
                     </div>
                 </div>
@@ -208,8 +228,8 @@
                     <span class="shrink-0">৳{{ number_format($serviceCharge ?? 30) }}</span>
                 </div>
                 <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                    <span>Two-Way Courier (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
-                    <span class="shrink-0">৳<span x-text="deliveryFee">80</span></span>
+                    <span>{{ !empty($isSparePartCart) ? 'Courier Delivery' : 'Two-Way Courier' }} (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
+                    <span class="shrink-0">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
                 </div>
                 <template x-if="activeDiscount > 0">
                     <div class="flex justify-between gap-2 text-emerald-800 font-bold">
@@ -219,7 +239,7 @@
                 </template>
                 <div class="pt-2 border-t border-[var(--border)] flex justify-between gap-2 text-base font-black text-[var(--foreground)]">
                     <span>Total</span>
-                    <span class="text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 30) + 80 - ($discountAmount ?? 0))) }}</span></span>
+                    <span class="text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 30) + $regCourierFee - ($discountAmount ?? 0))) }}</span></span>
                 </div>
             </div>
 

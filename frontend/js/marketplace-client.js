@@ -125,7 +125,11 @@
         },
 
         async updateQuantity(itemKey, newQuantity) {
-            if (newQuantity < 1 || newQuantity > 10) return;
+            const qty = parseInt(newQuantity, 10);
+            const keyStr = String(itemKey || '');
+            const isSparePart = keyStr.startsWith('sp_') || keyStr.startsWith('sp:');
+            const maxCap = isSparePart ? 10000 : 10;
+            if (!Number.isFinite(qty) || qty < 1 || qty > maxCap) return;
 
             try {
                 const res = await fetch(`/cart/update/${encodeURIComponent(itemKey)}`, {
@@ -135,7 +139,7 @@
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': getCsrfToken()
                     },
-                    body: JSON.stringify({ quantity: newQuantity })
+                    body: JSON.stringify({ quantity: qty })
                 });
                 const data = await res.json();
                 if (data.success) {

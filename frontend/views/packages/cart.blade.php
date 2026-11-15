@@ -10,6 +10,11 @@
      ========================================================================== --}}
 
 @section('content')
+@php
+    $regCourierFee = (float) ($regularDeliveryFee ?? 80);
+    $expCourierFee = (float) ($expressDeliveryFee ?? 150);
+    $isVendorViewer = auth()->check() && auth()->user()->role === 'vendor';
+@endphp
 <div class="mx-auto max-w-6xl px-4 py-6 md:px-6" x-data="{
     scheduleType: '{{ old('schedule_type', 'NOW') }}',
     deliveryType: '{{ old('delivery_type', 'REGULAR') }}',
@@ -20,14 +25,16 @@
     selectedArea: @js(old('area', auth()->user()->area ?? ($customerLocation['area'] ?? 'Banani'))),
     subtotal: {{ (float) ($total ?? 0) }},
     serviceCharge: {{ (float) ($serviceCharge ?? 0) }},
+    regularFee: {{ $regCourierFee }},
+    expressFee: {{ $expCourierFee }},
     appliedVoucher: @js($appliedVoucher ?? ''),
     baseDiscount: {{ (float) ($discountAmount ?? 0) }},
     get deliveryFee() {
-        return this.deliveryType === 'EXPRESS' ? 150 : 80;
+        return this.deliveryType === 'EXPRESS' ? this.expressFee : this.regularFee;
     },
     get activeDiscount() {
         if (this.appliedVoucher === 'FREEDELIVERY') return this.deliveryFee;
-        if (this.appliedVoucher === 'SHOPFREE') return Math.min(this.deliveryFee, 80);
+        if (this.appliedVoucher === 'SHOPFREE') return Math.min(this.deliveryFee, this.regularFee);
         return this.baseDiscount;
     },
     get grandTotal() {
@@ -99,12 +106,14 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
-            <a href="/shops" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
-                Browse Shops
+            <a href="{{ route('spare-parts.index') }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
+                + Add Spare Parts
             </a>
-            <a href="{{ route('packages.catalog') }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition whitespace-nowrap">
-                + Add Packages
-            </a>
+            @if(!$isVendorViewer)
+                <a href="{{ route('packages.catalog') }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition whitespace-nowrap">
+                    + Add Packages
+                </a>
+            @endif
         </div>
     </div>
 
@@ -148,12 +157,14 @@
                 Choose a fixed-price repair package or add services directly from a verified workshop.
             </p>
             <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
-                <a href="{{ route('packages.catalog') }}" class="rounded-full bg-[var(--accent-dark)] px-6 py-3 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
-                    Browse Fixed Packages
+                <a href="{{ route('spare-parts.index') }}" class="rounded-full bg-[var(--accent-dark)] px-6 py-3 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                    Browse Spare Parts Marketplace
                 </a>
-                <a href="/shops" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-6 py-3 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
-                    Explore Shops
-                </a>
+                @if(!$isVendorViewer)
+                    <a href="{{ route('packages.catalog') }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-6 py-3 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                        Browse Fixed Packages
+                    </a>
+                @endif
             </div>
         </div>
     @else
@@ -292,31 +303,61 @@
                         @foreach($cart as $id => $item)
                             @php
                                 $qty = (int) ($item['quantity'] ?? 1);
+                                $isSpareItem = ($item['source'] ?? '') === 'SPARE_PART';
+                                $maxStock = $isSpareItem ? max(1, (int) ($item['max_stock'] ?? 10000)) : 10;
+                                $itemNormalUnit = (float) ($item['normal_unit_price'] ?? $item['price']);
+                                $itemUnit = (float) ($item['price'] ?? 0);
+                                $itemWsPct = (float) ($item['wholesale_discount_pct'] ?? 0);
                             @endphp
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4">
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex flex-wrap items-center gap-2 mb-1">
-                                        <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] whitespace-nowrap">
-                                            {{ $item['category'] ?? 'Repair Service' }}
-                                        </span>
-                                        @if(!empty($item['duration']))
-                                            <span class="text-[11px] text-[var(--muted-foreground)] whitespace-nowrap">
-                                                <i class="fa-regular fa-clock mr-1"></i>{{ $item['duration'] }}h est.
+                                <div class="flex items-start gap-3 min-w-0 flex-1">
+                                    @if($isSpareItem && !empty($item['image_url']))
+                                        <div class="relative w-16 h-16 rounded-xl border border-[var(--border)] bg-white p-1.5 shrink-0 overflow-hidden">
+                                            @if(!empty($item['has_active_offer']))
+                                                <span class="absolute top-1 left-1 z-10 w-7 h-7 rounded-full bg-red-600 text-white text-[8px] font-extrabold flex items-center justify-center shadow">
+                                                    Sale!
+                                                </span>
+                                            @endif
+                                            <img src="{{ $item['image_url'] }}" alt="{{ $item['title'] }}" class="w-full h-full object-contain">
+                                        </div>
+                                    @endif
+
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                                            <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] whitespace-nowrap">
+                                                {{ $item['category'] ?? 'Repair Service' }}
                                             </span>
-                                        @endif
-                                        @if(!empty($item['warranty_months']))
-                                            <span class="text-[11px] text-emerald-700 font-semibold whitespace-nowrap">
-                                                <i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i>{{ $item['warranty_months'] }}-mo warranty
+                                            @if($itemWsPct > 0)
+                                                <span class="rounded-full bg-emerald-900 text-white px-2.5 py-0.5 text-[10px] font-extrabold whitespace-nowrap">
+                                                    📦 -{{ rtrim(rtrim(number_format($itemWsPct, 2), '0'), '.') }}% Wholesale
+                                                </span>
+                                            @elseif($isSpareItem && !empty($item['wholesale_enabled']))
+                                                <span class="text-[10px] font-bold text-amber-900 whitespace-nowrap">
+                                                    📦 Wholesale at {{ (int) ($item['wholesale_min_qty'] ?? 100) }}+ pcs
+                                                </span>
+                                            @endif
+                                            @if(!empty($item['duration']))
+                                                <span class="text-[11px] text-[var(--muted-foreground)] whitespace-nowrap">
+                                                    <i class="fa-regular fa-clock mr-1"></i>{{ $item['duration'] }}h {{ $isSpareItem ? 'prep' : 'est.' }}
+                                                </span>
+                                            @endif
+                                            @if(!empty($item['warranty_months']))
+                                                <span class="text-[11px] text-emerald-700 font-semibold whitespace-nowrap">
+                                                    <i class="fa-solid fa-shield-halved mr-1 text-[10px]"></i>{{ $item['warranty_months'] }}-mo warranty
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <h3 class="text-sm font-bold text-[var(--foreground)] break-words">{{ $item['title'] }}</h3>
+                                        <p class="mt-1 text-sm font-black {{ !empty($item['has_active_offer']) ? 'text-red-600' : 'text-[var(--accent-dark)]' }}">
+                                            @if($itemNormalUnit > $itemUnit)
+                                                <span class="text-xs font-semibold text-slate-400 line-through mr-1">৳{{ number_format($itemNormalUnit) }}</span>
+                                            @endif
+                                            ৳{{ number_format($itemUnit, 2) }} × {{ $qty }}
+                                            <span class="ml-1 text-xs font-semibold text-[var(--muted-foreground)]">
+                                                (৳{{ number_format($itemUnit * $qty, 2) }})
                                             </span>
-                                        @endif
+                                        </p>
                                     </div>
-                                    <h3 class="text-sm font-bold text-[var(--foreground)] break-words">{{ $item['title'] }}</h3>
-                                    <p class="mt-1 text-sm font-black text-[var(--accent-dark)]">
-                                        ৳{{ number_format($item['price']) }} × {{ $qty }}
-                                        <span class="ml-1 text-xs font-semibold text-[var(--muted-foreground)]">
-                                            (৳{{ number_format($item['price'] * $qty) }})
-                                        </span>
-                                    </p>
                                 </div>
 
                                 <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0">
@@ -328,10 +369,20 @@
                                             onclick="updateQuantity(@js((string) $id), {{ $qty - 1 }})"
                                             class="h-7 w-7 rounded-full text-xs font-black text-[var(--foreground)] hover:bg-[var(--mint-200)] transition disabled:opacity-35 disabled:cursor-not-allowed"
                                         >−</button>
-                                        <span class="w-8 text-center text-xs font-bold text-[var(--foreground)]">{{ $qty }}</span>
+                                        @if($isSpareItem)
+                                            <input type="number"
+                                                   min="1"
+                                                   max="{{ $maxStock }}"
+                                                   value="{{ $qty }}"
+                                                   aria-label="Quantity of {{ $item['title'] }}"
+                                                   onchange="updateQuantity(@js((string) $id), this.value)"
+                                                   class="w-16 text-center text-xs font-extrabold text-[var(--foreground)] bg-transparent outline-none">
+                                        @else
+                                            <span class="w-8 text-center text-xs font-bold text-[var(--foreground)]">{{ $qty }}</span>
+                                        @endif
                                         <button
                                             type="button"
-                                            @disabled($qty >= 10)
+                                            @disabled($qty >= $maxStock)
                                             aria-label="Increase quantity of {{ $item['title'] }}"
                                             onclick="updateQuantity(@js((string) $id), {{ $qty + 1 }})"
                                             class="h-7 w-7 rounded-full text-xs font-black text-[var(--foreground)] hover:bg-[var(--mint-200)] transition disabled:opacity-35 disabled:cursor-not-allowed"
@@ -343,7 +394,7 @@
                                         aria-label="Remove {{ $item['title'] }}"
                                         onclick="removeFromCart(@js((string) $id))"
                                         class="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100 text-rose-700 hover:bg-rose-200 transition"
-                                        title="Remove service"
+                                        title="Remove item"
                                     >
                                         <i class="fa-solid fa-trash-can text-xs"></i>
                                     </button>
@@ -396,19 +447,26 @@
                         </div>
                     </div>
 
-                    <!-- Delivery Type: REGULAR (৳80) vs EXPRESS (৳150) -->
+                    <!-- Delivery Type: REGULAR vs EXPRESS (Distance-Calculated for Spare Parts!) -->
                     <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-2">2. Two-Way Courier Tier *</label>
+                        <label class="block font-bold text-[var(--foreground)] mb-2">
+                            2. {{ !empty($isSparePartCart) ? 'Distance-Based Courier Delivery *' : 'Two-Way Courier Tier *' }}
+                            @if(!empty($isSparePartCart) && !empty($deliveryQuote['distance_formatted']))
+                                <span class="font-normal text-[var(--muted-foreground)]">
+                                    ({{ $deliveryQuote['distance_formatted'] }} • ETA {{ $deliveryQuote['eta_label'] ?? 'Same day' }})
+                                </span>
+                            @endif
+                        </label>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label class="cursor-pointer rounded-2xl border-2 p-3.5 transition flex items-center justify-between gap-3" :class="deliveryType === 'REGULAR' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'">
                                 <div class="flex items-start gap-2.5 min-w-0">
                                     <input type="radio" name="delivery_type" value="REGULAR" x-model="deliveryType" class="mt-0.5 accent-[#244229]">
                                     <div class="min-w-0">
                                         <span class="font-bold text-[var(--foreground)] block">Regular Courier</span>
-                                        <span class="text-[11px] text-[var(--muted-foreground)]">Standard insured pickup &amp; return</span>
+                                        <span class="text-[11px] text-[var(--muted-foreground)]">{{ !empty($isSparePartCart) ? ($deliveryQuote['eta_label'] ?? 'Standard insured dispatch') : 'Standard insured pickup & return' }}</span>
                                     </div>
                                 </div>
-                                <span class="font-black text-sm text-[var(--accent-dark)] shrink-0">৳80</span>
+                                <span class="font-black text-sm text-[var(--accent-dark)] shrink-0">৳{{ number_format($regCourierFee, 0) }}</span>
                             </label>
 
                             <label class="cursor-pointer rounded-2xl border-2 p-3.5 transition flex items-center justify-between gap-3" :class="deliveryType === 'EXPRESS' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'">
@@ -419,7 +477,7 @@
                                         <span class="text-[11px] text-[var(--muted-foreground)]">Priority direct dispatch</span>
                                     </div>
                                 </div>
-                                <span class="font-black text-sm text-[var(--accent-dark)] shrink-0">৳150</span>
+                                <span class="font-black text-sm text-[var(--accent-dark)] shrink-0">৳{{ number_format($expCourierFee, 0) }}</span>
                             </label>
                         </div>
                     </div>
@@ -626,8 +684,8 @@
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($serviceCharge ?? 0) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">Two-Way Courier (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
-                        <span class="font-bold text-[var(--foreground)] shrink-0">৳<span x-text="deliveryFee">80</span></span>
+                        <span class="text-[var(--muted-foreground)]">{{ !empty($isSparePartCart) ? 'Courier Delivery' : 'Two-Way Courier' }} (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
+                        <span class="font-bold text-[var(--foreground)] shrink-0">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
                     </div>
                     <template x-if="activeDiscount > 0">
                         <div class="flex items-center justify-between gap-2 text-emerald-800 font-bold">
@@ -637,7 +695,7 @@
                     </template>
                     <div class="pt-2 border-t border-[var(--border)] flex items-center justify-between gap-2 text-base">
                         <span class="font-black text-[var(--foreground)]">Total Payable</span>
-                        <span class="text-2xl font-black text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 0) + 80 - ($discountAmount ?? 0))) }}</span></span>
+                        <span class="text-2xl font-black text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 0) + $regCourierFee - ($discountAmount ?? 0))) }}</span></span>
                     </div>
                 </div>
 

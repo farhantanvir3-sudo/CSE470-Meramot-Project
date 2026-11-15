@@ -1,0 +1,2026 @@
+[
+  {
+    "src": "etel",
+    "ext_id": 9443,
+    "product_group_key": "samsung-galaxy-s21-fe-5g-display",
+    "title": "Original Samsung Galaxy S21 FE 5G Display",
+    "brand": "Samsung",
+    "compatible_model": "Samsung Galaxy S21 FE 5G",
+    "part_category": "Display & Touch",
+    "image_url": "/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp",
+    "gallery_urls": [
+      "/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp",
+      "https://etel.com.bd/wp-content/uploads/2022/12/Samsung-Galaxy-S21-FE-5G-Display.webp"
+    ],
+    "highlights": [
+      "IPS Display 1749tk ( LCD TFT)",
+      "High-Quality Display 4499tk (OLED)",
+      "Original Display 11099tk (Dynamic AMOLED)",
+      "All colors with full frame",
+      "Assemble Charge 300tk (Optional workshop installation available)",
+      "3-6 months warranty ( T&C ) Extended workshop warranty option available",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Original Samsung Galaxy S21 FE 5G Display Replacement in Bangladesh Replace your Samsung Galaxy S21 FE 5G with a brand-new Dynamic AMOLED 2X display for vibrant FHD+ visuals and smooth 120Hz performance. Enjoy sharp 1080×2340 resolution on a 6.4-inch Infinity-O screen, perfect for gaming, streaming, and daily multitasking. Fully tested for quality and perfectly compatible with Samsung Galaxy S21 FE 5G ....",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "ips",
+        "name": "IPS",
+        "subtitle": "LCD TFT",
+        "price": 1749,
+        "regular_price": 2011,
+        "stock": 320
+      },
+      {
+        "code": "market-original",
+        "name": "High Quality",
+        "subtitle": "OLED",
+        "price": 4499,
+        "regular_price": 5174,
+        "stock": 320
+      },
+      {
+        "code": "original",
+        "name": "Original",
+        "subtitle": "Dynamic AMOLED",
+        "price": 11099,
+        "regular_price": 12764,
+        "stock": 140
+      }
+    ],
+    "base_price": 1749,
+    "max_price": 11099,
+    "regular_price": 2499,
+    "assembly_fee": 300,
+    "warranty_days": 180
+  },
+  {
+    "src": "etel",
+    "ext_id": 169534,
+    "product_group_key": "oppo-reno15-pro-mini-backshell",
+    "title": "Oppo Reno15 Pro Mini Backshell",
+    "brand": "Oppo",
+    "compatible_model": "Oppo Reno15 Pro Mini",
+    "part_category": "Backshell & Housing",
+    "image_url": "/images/spare-parts/oppo-reno15-pro-mini-backshell.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-reno15-pro-mini-backshell.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-Reno15-Pro-Mini-Backshell.webp"
+    ],
+    "highlights": [
+      "Original Quality Backshell 1399tk",
+      "Color : All Colors Available",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Oppo Reno15 Pro Mini Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Product Description: Condition : New: A brand-new, unused, unopened, undamaged item in its original packaging Type : Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Materials : Plastic/Glass Brand : Unbranded Compatible Brand : For Oppo Compatible Model : For Oppo Reno15 Pro Mini Color : All Colors available",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1399,
+    "max_price": null,
+    "regular_price": 1799,
+    "assembly_fee": 200,
+    "warranty_days": 30
+  },
+  {
+    "src": "etel",
+    "ext_id": 169533,
+    "product_group_key": "oppo-reno15-pro-mini-battery",
+    "title": "Oppo Reno15 Pro Mini Battery",
+    "brand": "Oppo",
+    "compatible_model": "Oppo Reno15 Pro Mini",
+    "part_category": "Battery",
+    "image_url": "/images/spare-parts/oppo-reno15-pro-mini-battery.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-reno15-pro-mini-battery.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-Reno15-Pro-Mini-Battery.webp"
+    ],
+    "highlights": [
+      "Brand : Oppo",
+      "Battery Capacity : 6200 mAh",
+      "Warranty : 6 Months Replacement Guarantee",
+      "Battery Model :",
+      "Compatible Model : Oppo Reno15 Pro Mini",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Check before delivery",
+      "Easy Refund and Return Policy"
+    ],
+    "description": "Oppo Reno15 Pro Mini Battery in Bangladesh Restore your Oppo Reno15 Pro Mini’s battery life to its original glory! This original quality replacement battery comes with 6-months warranty, ensuring reliable performance and longevity. Specifications of Oppo Reno15 Pro Mini Battery Brand : Oppo Compatible Model : Oppo Reno15 Pro Mini Battery Type : Li-Po (Lithium-Polymer) Battery Capacity : 6200 mAh Charging : 80W...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1899,
+    "max_price": null,
+    "regular_price": 2299,
+    "assembly_fee": 200,
+    "warranty_days": 180
+  },
+  {
+    "src": "etel",
+    "ext_id": 169532,
+    "product_group_key": "oppo-reno15-pro-mini-display",
+    "title": "Oppo Reno15 Pro Mini Display",
+    "brand": "Oppo",
+    "compatible_model": "Oppo Reno15 Pro Mini",
+    "part_category": "Display & Touch",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-Reno15-Pro-Mini-Display.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-Reno15-Pro-Mini-Display.webp"
+    ],
+    "highlights": [
+      "High Quality Display 5799tk (OLED)",
+      "Original Display 14799tk (AMOLED)",
+      "100% Authentic Display",
+      "Assemble Charge 300tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Original Oppo Reno15 Pro Mini Display in Bangladesh Upgrade your Oppo Reno15 Pro Mini broken or damaged display with an Original high-quality replacement screen . We offer competitive prices on original Oppo Reno15 Pro Mini displays in Bangladesh, so you can enjoy clear and vivid visuals on your phone. Browse our selection today and give your phone the display it deserves! Specification of Oppo Reno15 Pro Mini...",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "market-original",
+        "name": "High Quality",
+        "subtitle": "High-Contrast Grade",
+        "price": 5799,
+        "regular_price": 8999,
+        "stock": 320
+      },
+      {
+        "code": "original-quality",
+        "name": "Original Quality",
+        "subtitle": "100% Genuine Service Pack",
+        "price": 14799,
+        "regular_price": 17999,
+        "stock": 140
+      }
+    ],
+    "base_price": 5799,
+    "max_price": 14799,
+    "regular_price": 8999,
+    "assembly_fee": 300,
+    "warranty_days": 90
+  },
+  {
+    "src": "etel",
+    "ext_id": 168785,
+    "product_group_key": "oppo-a6s-backshell",
+    "title": "Oppo A6s Backshell",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6s",
+    "part_category": "Backshell & Housing",
+    "image_url": "/images/spare-parts/oppo-a6s-backshell.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6s-backshell.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6s-Display.webp"
+    ],
+    "highlights": [
+      "Original Quality Backshell 1099tk",
+      "Color : All Colors Available",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Oppo A6s Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Product Description: Condition : New: A brand-new, unused, unopened, undamaged item in its original packaging Type : Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Materials : Plastic/Glass Brand : Unbranded Compatible Brand : For Oppo Compatible Model : For Oppo A6s Color : All Colors available",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1099,
+    "max_price": null,
+    "regular_price": 1499,
+    "assembly_fee": 200,
+    "warranty_days": 30
+  },
+  {
+    "src": "etel",
+    "ext_id": 168784,
+    "product_group_key": "oppo-a6s-battery",
+    "title": "Oppo A6s Battery",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6s",
+    "part_category": "Battery",
+    "image_url": "/images/spare-parts/oppo-a6s-battery.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6s-battery.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6s-Battery.webp"
+    ],
+    "highlights": [
+      "Brand : Oppo",
+      "Battery Capacity : 7000 mAh",
+      "Warranty : 6 Months Replacement Guarantee",
+      "Battery Model :",
+      "Compatible Model : Oppo A6s",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Check before delivery",
+      "Easy Refund and Return Policy"
+    ],
+    "description": "Oppo A6s Battery in Bangladesh Restore your Oppo A6s ’s battery life to its original glory! This original quality replacement battery comes with 6-months warranty, ensuring reliable performance and longevity. Specifications of Oppo A6s Battery Brand : Oppo Compatible Model : Oppo A6s Battery Type : Li-Ion (Lithium-Ion) Battery Capacity : 7000 mAh Charging : 80W wired, 33W PPS, 13.5W PD, 54% in 30 min 5W reverse...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1599,
+    "max_price": null,
+    "regular_price": 1999,
+    "assembly_fee": 200,
+    "warranty_days": 180
+  },
+  {
+    "src": "etel",
+    "ext_id": 168783,
+    "product_group_key": "oppo-a6s-display",
+    "title": "Oppo A6s Display",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6s",
+    "part_category": "Display & Touch",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6s-Dispaly.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6s-Dispaly.webp"
+    ],
+    "highlights": [
+      "Copy Display 1999tk (IPS)",
+      "Original Display 4799tk (IPS)",
+      "100% Authentic Display",
+      "Assemble Charge 300tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Original Oppo A6s Display in Bangladesh Upgrade your Oppo A6s broken or damaged display with an Original high-quality replacement screen . We offer competitive prices on original Oppo A6s displays in Bangladesh, so you can enjoy clear and vivid visuals on your phone. Browse our selection today and give your phone the display it deserves! Specification of Oppo A6s Display Type : IPS LCD Refresh Rate : 120Hz Size :...",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "copy",
+        "name": "Copy",
+        "subtitle": "",
+        "price": 1999,
+        "regular_price": 2499,
+        "stock": 320
+      },
+      {
+        "code": "original-quality",
+        "name": "Original Quality",
+        "subtitle": "100% Genuine Service Pack",
+        "price": 4799,
+        "regular_price": 5499,
+        "stock": 140
+      }
+    ],
+    "base_price": 1999,
+    "max_price": 4799,
+    "regular_price": 2499,
+    "assembly_fee": 300,
+    "warranty_days": 90
+  },
+  {
+    "src": "etel",
+    "ext_id": 168506,
+    "product_group_key": "oppo-a6s-4g-backshell",
+    "title": "Oppo A6s 4G Backshell",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6s 4G",
+    "part_category": "Backshell & Housing",
+    "image_url": "/images/spare-parts/oppo-a6s-4g-backshell.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6s-4g-backshell.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6s-4G-Backshell.webp"
+    ],
+    "highlights": [
+      "Original Quality Backshell 1099tk",
+      "Color : All Colors Available",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Oppo A6s 4G Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Product Description: Condition : New: A brand-new, unused, unopened, undamaged item in its original packaging Type : Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Materials : Plastic/Glass Brand : Unbranded Compatible Brand : For Oppo Compatible Model : For Oppo A6s 4G Color : All Colors available",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1099,
+    "max_price": null,
+    "regular_price": 1499,
+    "assembly_fee": 200,
+    "warranty_days": 30
+  },
+  {
+    "src": "etel",
+    "ext_id": 168505,
+    "product_group_key": "oppo-a6s-4g-battery",
+    "title": "Oppo A6s 4G Battery",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6s 4G",
+    "part_category": "Battery",
+    "image_url": "/images/spare-parts/oppo-a6s-4g-battery.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6s-4g-battery.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6s-4G-Battery.webp"
+    ],
+    "highlights": [
+      "Brand : Oppo",
+      "Battery Capacity : 7000 mAh",
+      "Warranty : 6 Months Replacement Guarantee",
+      "Battery Model :",
+      "Compatible Model : Oppo A6s 4G",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Check before delivery",
+      "Easy Refund and Return Policy"
+    ],
+    "description": "Oppo A6s 4G Battery in Bangladesh Restore your Oppo A6s 4G ’s battery life to its original glory! This original quality replacement battery comes with 6-months warranty, ensuring reliable performance and longevity. Specifications of Oppo A6s 4G Battery Brand : Oppo Compatible Model : Oppo A6s 4G Battery Type : Li-Ion (Lithium-Ion) Battery Capacity : 7000 mAh Charging : 80W wired, 33W PPS, 13.5W PD, 56% in 30 min...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1699,
+    "max_price": null,
+    "regular_price": 2299,
+    "assembly_fee": 200,
+    "warranty_days": 180
+  },
+  {
+    "src": "etel",
+    "ext_id": 168504,
+    "product_group_key": "oppo-a6s-4g-display",
+    "title": "Oppo A6s 4G Display",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6s 4G",
+    "part_category": "Display & Touch",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6s-4G-Display.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6s-4G-Display.webp"
+    ],
+    "highlights": [
+      "Copy Display 2099tk (IPS)",
+      "Original Display 4999tk (IPS)",
+      "100% Authentic Display",
+      "Assemble Charge 300tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Original Oppo A6s 4G Display in Bangladesh Upgrade your Oppo A6s 4G broken or damaged display with an Original high-quality replacement screen . We offer competitive prices on original Oppo A6s 4G displays in Bangladesh, so you can enjoy clear and vivid visuals on your phone. Browse our selection today and give your phone the display it deserves! Specification of Oppo A6s 4G Display Type : IPS LCD Refresh Rate :...",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "copy",
+        "name": "Copy",
+        "subtitle": "",
+        "price": 2099,
+        "regular_price": 2499,
+        "stock": 320
+      },
+      {
+        "code": "original-quality",
+        "name": "Original Quality",
+        "subtitle": "100% Genuine Service Pack",
+        "price": 4999,
+        "regular_price": 5999,
+        "stock": 140
+      }
+    ],
+    "base_price": 2099,
+    "max_price": 4999,
+    "regular_price": 2499,
+    "assembly_fee": 300,
+    "warranty_days": 90
+  },
+  {
+    "src": "etel",
+    "ext_id": 168434,
+    "product_group_key": "oppo-a6-4g-backshell",
+    "title": "Oppo A6 4G Backshell",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6 4G",
+    "part_category": "Backshell & Housing",
+    "image_url": "/images/spare-parts/oppo-a6-4g-backshell.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6-4g-backshell.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6-4G-Backshell.webp"
+    ],
+    "highlights": [
+      "Original Quality Backshell 1099tk",
+      "Color : All Colors Available",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Oppo A6 4G Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Product Description: Condition : New: A brand-new, unused, unopened, undamaged item in its original packaging Type : Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Materials : Plastic/Glass Brand : Unbranded Compatible Brand : For Oppo Compatible Model : For Oppo A6 4G Color : All Colors available",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1099,
+    "max_price": null,
+    "regular_price": 1499,
+    "assembly_fee": 200,
+    "warranty_days": 30
+  },
+  {
+    "src": "etel",
+    "ext_id": 168433,
+    "product_group_key": "oppo-a6-4g-battery",
+    "title": "Oppo A6 4G Battery",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6 4G",
+    "part_category": "Battery",
+    "image_url": "/images/spare-parts/oppo-a6-4g-battery.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6-4g-battery.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6-4G-Battery.webp"
+    ],
+    "highlights": [
+      "Brand : Oppo",
+      "Battery Capacity : 7000 mAh",
+      "Warranty : 6 Months Replacement Guarantee",
+      "Battery Model :",
+      "Compatible Model : Oppo A6 4G",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Check before delivery",
+      "Easy Refund and Return Policy"
+    ],
+    "description": "Oppo A6 4G Battery in Bangladesh Restore your Oppo A6 4G ’s battery life to its original glory! This original quality replacement battery comes with 6-months warranty, ensuring reliable performance and longevity. Specifications of Oppo A6 4G Battery Brand : Oppo Compatible Model : Oppo A6 4G Battery Type : Li-Ion (Lithium-Ion) Battery Capacity : 7000 mAh Charging : 45W wired, 33W PPS, 13.5W PD, 36% in 30 min 5W...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1699,
+    "max_price": null,
+    "regular_price": 2299,
+    "assembly_fee": 200,
+    "warranty_days": 180
+  },
+  {
+    "src": "etel",
+    "ext_id": 168432,
+    "product_group_key": "oppo-a6-4g-display",
+    "title": "Oppo A6 4G Display",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6 4G",
+    "part_category": "Display & Touch",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6-4G-Display.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6-4G-Display.webp"
+    ],
+    "highlights": [
+      "Copy Display 2099tk (IPS)",
+      "Original Display 4999tk (IPS)",
+      "100% Authentic Display",
+      "Assemble Charge 300tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Original Oppo A6 4G Display in Bangladesh Upgrade your Oppo A6 4G broken or damaged display with an Original high-quality replacement screen . We offer competitive prices on original Oppo A6 4G displays in Bangladesh, so you can enjoy clear and vivid visuals on your phone. Browse our selection today and give your phone the display it deserves! Specification of Oppo A6 4G Display Type : IPS LCD Refresh Rate :...",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "copy",
+        "name": "Copy",
+        "subtitle": "",
+        "price": 2099,
+        "regular_price": 2499,
+        "stock": 320
+      },
+      {
+        "code": "original-quality",
+        "name": "Original Quality",
+        "subtitle": "100% Genuine Service Pack",
+        "price": 4999,
+        "regular_price": 5999,
+        "stock": 140
+      }
+    ],
+    "base_price": 2099,
+    "max_price": 4999,
+    "regular_price": 2499,
+    "assembly_fee": 300,
+    "warranty_days": 90
+  },
+  {
+    "src": "etel",
+    "ext_id": 168411,
+    "product_group_key": "oppo-a6-backshell",
+    "title": "Oppo A6 Backshell",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6",
+    "part_category": "Backshell & Housing",
+    "image_url": "/images/spare-parts/oppo-a6-backshell.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6-backshell.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6-Backshell.webp"
+    ],
+    "highlights": [
+      "Original Quality Backshell 1199tk",
+      "Color : All Colors Available",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Oppo A6 Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Product Description: Condition : New: A brand-new, unused, unopened, undamaged item in its original packaging Type : Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Materials : Plastic/Glass Brand : Unbranded Compatible Brand : For Oppo Compatible Model : For Oppo A6 Color : All Colors available",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1199,
+    "max_price": null,
+    "regular_price": 1499,
+    "assembly_fee": 200,
+    "warranty_days": 30
+  },
+  {
+    "src": "etel",
+    "ext_id": 168410,
+    "product_group_key": "oppo-a6-battery",
+    "title": "Oppo A6 Battery",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6",
+    "part_category": "Battery",
+    "image_url": "/images/spare-parts/oppo-a6-battery.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6-battery.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6-Battery.webp"
+    ],
+    "highlights": [
+      "Brand : Oppo",
+      "Battery Capacity : 7000 mAh",
+      "Warranty : 6 Months Replacement Guarantee",
+      "Battery Model :",
+      "Compatible Model : Oppo A6",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Check before delivery",
+      "Easy Refund and Return Policy"
+    ],
+    "description": "Oppo A6 Battery in Bangladesh Restore your Oppo A6 ’s battery life to its original glory! This original quality replacement battery comes with 6-months warranty, ensuring reliable performance and longevity. Specifications of Oppo A6 Battery Brand : Oppo Compatible Model : Oppo A6 Battery Type : Li-Ion (Lithium-Ion) Battery Capacity : 7000 mAh Charging : 45W wired, 33W PPS, 13.5W PD, 37% in 30 min 5W reverse wired...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1699,
+    "max_price": null,
+    "regular_price": 2299,
+    "assembly_fee": 200,
+    "warranty_days": 180
+  },
+  {
+    "src": "etel",
+    "ext_id": 168409,
+    "product_group_key": "oppo-a6-display",
+    "title": "Oppo A6 Display",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6",
+    "part_category": "Display & Touch",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6-Display.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6-Display.webp"
+    ],
+    "highlights": [
+      "Copy Display 2099tk (IPS)",
+      "Original Display 4999tk (IPS)",
+      "100% Authentic Display",
+      "Assemble Charge 300tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Original Oppo A6 Display in Bangladesh Upgrade your Oppo A6 broken or damaged display with an Original high-quality replacement screen . We offer competitive prices on original Oppo A6 displays in Bangladesh, so you can enjoy clear and vivid visuals on your phone. Browse our selection today and give your phone the display it deserves! Specification of Oppo A6 Display Type : IPS LCD Refresh Rate : 120Hz Size :...",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "copy",
+        "name": "Copy",
+        "subtitle": "",
+        "price": 2099,
+        "regular_price": 2499,
+        "stock": 320
+      },
+      {
+        "code": "original-quality",
+        "name": "Original Quality",
+        "subtitle": "100% Genuine Service Pack",
+        "price": 4999,
+        "regular_price": 5999,
+        "stock": 140
+      }
+    ],
+    "base_price": 2099,
+    "max_price": 4999,
+    "regular_price": 2499,
+    "assembly_fee": 300,
+    "warranty_days": 90
+  },
+  {
+    "src": "etel",
+    "ext_id": 168344,
+    "product_group_key": "oppo-a6t-4g-backshell",
+    "title": "Oppo A6t 4G Backshell",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6t 4G",
+    "part_category": "Backshell & Housing",
+    "image_url": "/images/spare-parts/oppo-a6t-4g-backshell.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6t-4g-backshell.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-4G-Backshell.webp"
+    ],
+    "highlights": [
+      "Original Quality Backshell 1099tk",
+      "Color : All Colors Available",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Oppo A6t 4G Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Product Description: Condition : New: A brand-new, unused, unopened, undamaged item in its original packaging Type : Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Materials : Plastic/Glass Brand : Unbranded Compatible Brand : For Oppo Compatible Model : For Oppo A6t 4G Color : All Colors available",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1099,
+    "max_price": null,
+    "regular_price": 1499,
+    "assembly_fee": 200,
+    "warranty_days": 30
+  },
+  {
+    "src": "etel",
+    "ext_id": 168343,
+    "product_group_key": "oppo-a6t-4g-battery",
+    "title": "Oppo A6t 4G Battery",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6t 4G",
+    "part_category": "Battery",
+    "image_url": "/images/spare-parts/oppo-a6t-4g-battery.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6t-4g-battery.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-4G-Battery.webp"
+    ],
+    "highlights": [
+      "Brand : Oppo",
+      "Battery Capacity : 6500 mAh",
+      "Warranty : 6 Months Replacement Guarantee",
+      "Battery Model :",
+      "Compatible Model : Oppo A6t 4G",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Check before delivery",
+      "Easy Refund and Return Policy"
+    ],
+    "description": "Oppo A6t 4G Battery in Bangladesh Restore your Oppo A6t 4G ’s battery life to its original glory! This original quality replacement battery comes with 6-months warranty, ensuring reliable performance and longevity. Specifications of Oppo A6t 4G Battery Brand : Oppo Compatible Model : Oppo A6t 4G Battery Type : Li-Ion (Lithium-Ion) Battery Capacity : 6500 mAh Charging : Wired 5W reverse wired Battery Model :...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1599,
+    "max_price": null,
+    "regular_price": 1999,
+    "assembly_fee": 200,
+    "warranty_days": 180
+  },
+  {
+    "src": "etel",
+    "ext_id": 168342,
+    "product_group_key": "oppo-a6t-4g-display",
+    "title": "Oppo A6t 4G Display",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6t 4G",
+    "part_category": "Display & Touch",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-4G-Display.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-4G-Display.webp"
+    ],
+    "highlights": [
+      "Copy Display 1999tk (IPS)",
+      "Original Display 4799tk (IPS)",
+      "100% Authentic Display",
+      "Assemble Charge 300tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Original Oppo A6t 4G Display in Bangladesh Upgrade your Oppo A6t 4G broken or damaged display with an Original high-quality replacement screen . We offer competitive prices on original Oppo A6t 4G displays in Bangladesh, so you can enjoy clear and vivid visuals on your phone. Browse our selection today and give your phone the display it deserves! Specification of Oppo A6t 4G Display Type : IPS LCD Refresh Rate :...",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "copy",
+        "name": "Copy",
+        "subtitle": "",
+        "price": 1999,
+        "regular_price": 2499,
+        "stock": 320
+      },
+      {
+        "code": "original-quality",
+        "name": "Original Quality",
+        "subtitle": "100% Genuine Service Pack",
+        "price": 4799,
+        "regular_price": 5499,
+        "stock": 140
+      }
+    ],
+    "base_price": 1999,
+    "max_price": 4799,
+    "regular_price": 2499,
+    "assembly_fee": 300,
+    "warranty_days": 90
+  },
+  {
+    "src": "etel",
+    "ext_id": 168312,
+    "product_group_key": "oppo-a6t-backshell",
+    "title": "Oppo A6t Backshell",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6t",
+    "part_category": "Backshell & Housing",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Backshell.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Backshell.webp"
+    ],
+    "highlights": [
+      "Original Quality Backshell 1099tk",
+      "Color : All Colors Available",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Oppo A6t Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Product Description: Condition : New: A brand-new, unused, unopened, undamaged item in its original packaging Type : Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Materials : Plastic/Glass Brand : Unbranded Compatible Brand : For Oppo Compatible Model : For Oppo A6t Color : All Colors available",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1099,
+    "max_price": null,
+    "regular_price": 1499,
+    "assembly_fee": 200,
+    "warranty_days": 30
+  },
+  {
+    "src": "etel",
+    "ext_id": 168311,
+    "product_group_key": "oppo-a6t-battery",
+    "title": "Oppo A6t Battery",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6t",
+    "part_category": "Battery",
+    "image_url": "/images/spare-parts/oppo-a6t-battery.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6t-battery.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Battery.webp"
+    ],
+    "highlights": [
+      "Brand : Oppo",
+      "Battery Capacity : 5000 mAh",
+      "Warranty : 6 Months Replacement Guarantee",
+      "Battery Model :",
+      "Compatible Model : Oppo A6t",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Check before delivery",
+      "Easy Refund and Return Policy"
+    ],
+    "description": "Oppo A6t Battery in Bangladesh Restore your Oppo A6t ’s battery life to its original glory! This original quality replacement battery comes with 6-months warranty, ensuring reliable performance and longevity. Specifications of Oppo A6t Battery Brand : Oppo Compatible Model : Oppo A6t Battery Type : Li-Po (Lithium-Polymer) Battery Capacity : 6500 mAh Charging : 45W wired 5W reverse wired Battery Model : Design :...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1599,
+    "max_price": null,
+    "regular_price": 1999,
+    "assembly_fee": 200,
+    "warranty_days": 180
+  },
+  {
+    "src": "etel",
+    "ext_id": 168310,
+    "product_group_key": "oppo-a6t-display",
+    "title": "Oppo A6t Display",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6t",
+    "part_category": "Display & Touch",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Display.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Display.webp"
+    ],
+    "highlights": [
+      "Copy Display 1999tk (IPS)",
+      "Original Display 4799tk (IPS)",
+      "100% Authentic Display",
+      "Assemble Charge 300tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Original Oppo A6t Display in Bangladesh Upgrade your Oppo A6t broken or damaged display with an Original high-quality replacement screen . We offer competitive prices on original Oppo A6t displays in Bangladesh, so you can enjoy clear and vivid visuals on your phone. Browse our selection today and give your phone the display it deserves! Specification of Oppo A6t Display Type : IPS LCD Refresh Rate : 120Hz Size :...",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "copy",
+        "name": "Copy",
+        "subtitle": "",
+        "price": 1999,
+        "regular_price": 2499,
+        "stock": 320
+      },
+      {
+        "code": "original-quality",
+        "name": "Original Quality",
+        "subtitle": "100% Genuine Service Pack",
+        "price": 4799,
+        "regular_price": 5999,
+        "stock": 140
+      }
+    ],
+    "base_price": 1999,
+    "max_price": 4799,
+    "regular_price": 2499,
+    "assembly_fee": 300,
+    "warranty_days": 90
+  },
+  {
+    "src": "etel",
+    "ext_id": 168290,
+    "product_group_key": "oppo-a6t-pro-4g-backshell",
+    "title": "Oppo A6t Pro 4G Backshell",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6t Pro 4G",
+    "part_category": "Backshell & Housing",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Pro-4G-Backshell.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Pro-4G-Backshell.webp"
+    ],
+    "highlights": [
+      "Original Quality Backshell 1099tk",
+      "Color : All Colors Available",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Oppo A6t Pro 4G Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Product Description: Condition : New: A brand-new, unused, unopened, undamaged item in its original packaging Type : Battery Backshell/Back Panel/Battery Cover Door/Back Glass/Back Part Materials : Plastic/Glass Brand : Unbranded Compatible Brand : For Oppo Compatible Model : For Oppo A6t Pro 4G Color : All Colors available",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1099,
+    "max_price": null,
+    "regular_price": 1499,
+    "assembly_fee": 200,
+    "warranty_days": 30
+  },
+  {
+    "src": "etel",
+    "ext_id": 168289,
+    "product_group_key": "oppo-a6t-pro-4g-battery",
+    "title": "Oppo A6t Pro 4G Battery",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6t Pro 4G",
+    "part_category": "Battery",
+    "image_url": "/images/spare-parts/oppo-a6t-pro-4g-battery.webp",
+    "gallery_urls": [
+      "/images/spare-parts/oppo-a6t-pro-4g-battery.webp",
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Pro-4G-Battery.webp"
+    ],
+    "highlights": [
+      "Brand : Oppo",
+      "Battery Capacity : 7000 mAh",
+      "Warranty : 6 Months Replacement Guarantee",
+      "Battery Model :",
+      "Compatible Model : Oppo A6t Pro 4G",
+      "Service Charge 200tk (Optional workshop installation available)",
+      "Check before delivery",
+      "Easy Refund and Return Policy"
+    ],
+    "description": "Oppo A6t Pro 4G Battery in Bangladesh Restore your Oppo A6t Pro 4G ’s battery life to its original glory! This original quality replacement battery comes with 6-months warranty, ensuring reliable performance and longevity. Specifications of Oppo A6t Pro 4G Battery Brand : Oppo Compatible Model : Oppo A6t Pro 4G Battery Type : Li-Ion (Lithium-Ion) Battery Capacity : 7000 mAh Charging : 45W wired, 33W PPS, 13.5W...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1699,
+    "max_price": null,
+    "regular_price": 2199,
+    "assembly_fee": 200,
+    "warranty_days": 180
+  },
+  {
+    "src": "etel",
+    "ext_id": 168288,
+    "product_group_key": "oppo-a6t-pro-4g-display",
+    "title": "Oppo A6t Pro 4G Display",
+    "brand": "Oppo",
+    "compatible_model": "Oppo A6t Pro 4G",
+    "part_category": "Display & Touch",
+    "image_url": "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Pro-4G-Display.webp",
+    "gallery_urls": [
+      "https://etel.com.bd/wp-content/uploads/2026/11/Oppo-A6t-Pro-4G-Display.webp"
+    ],
+    "highlights": [
+      "Copy Display 2099tk (IPS)",
+      "Original Display 4899tk (IPS)",
+      "100% Authentic Display",
+      "Assemble Charge 300tk (Optional workshop installation available)",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Original Oppo A6t Pro 4G Display in Bangladesh Upgrade your Oppo A6t Pro 4G broken or damaged display with an Original high-quality replacement screen . We offer competitive prices on original Oppo A6t Pro 4G displays in Bangladesh, so you can enjoy clear and vivid visuals on your phone. Browse our selection today and give your phone the display it deserves! Specification of Oppo A6t Pro 4G Display Type : IPS LCD...",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "copy",
+        "name": "Copy",
+        "subtitle": "",
+        "price": 2099,
+        "regular_price": 2499,
+        "stock": 320
+      },
+      {
+        "code": "original-quality",
+        "name": "Original Quality",
+        "subtitle": "100% Genuine Service Pack",
+        "price": 4899,
+        "regular_price": 5999,
+        "stock": 140
+      }
+    ],
+    "base_price": 2099,
+    "max_price": 4899,
+    "regular_price": 2499,
+    "assembly_fee": 300,
+    "warranty_days": 90
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5869,
+    "product_group_key": "3dddg-battery-for-dell-latitude-5280-5290-5480-5490-5580-5590-series-laptops",
+    "title": "3DDDG Battery for Dell Latitude 5280, 5290, 5480, 5490, 5580 & 5590 Series  Laptops",
+    "brand": "Dell",
+    "compatible_model": "3DDDG",
+    "part_category": "Laptop Battery",
+    "image_url": "/images/spare-parts/3dddg-battery-for-dell-latitude-5280-5290-5480-5490-5580-5590-series-laptops.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/3dddg-battery-for-dell-latitude-5280-5290-5480-5490-5580-5590-series-laptops.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/3dddg-high-quality-battery.jpg"
+    ],
+    "highlights": [
+      "Battery Model: 3DDDG",
+      "Battery Type: Lithium-Ion",
+      "Cell: 3-Cell",
+      "Voltage: 11.4V",
+      "Capacity: 42Wh",
+      "Rated Capacity: Approximately 3500mAh",
+      "Color: Black",
+      "Replacement Battery: Designed for compatible Dell Latitude laptops"
+    ],
+    "description": "Dell 3DDDG Laptop Battery for Latitude 5280, 5290, 5480, 5490, 5580 & 5590 Series Key Features Battery Model: 3DDDG Battery Type: Lithium-Ion Cell: 3-Cell Voltage: 11.4V Capacity: 42Wh Rated Capacity: Approximately 3500mAh Color: Black Replacement Battery: Designed for compatible Dell Latitude laptops Compatible Dell Latitude Models This 3DDDG replacement battery is compatible with the following Dell Latitude...",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "oem",
+        "name": "OEM",
+        "subtitle": "OEM Replacement Grade",
+        "price": 1850,
+        "regular_price": 2128,
+        "stock": 140
+      },
+      {
+        "code": "high-quality",
+        "name": "High Quality",
+        "subtitle": "High-Contrast Grade",
+        "price": 2850,
+        "regular_price": 3277,
+        "stock": 320
+      }
+    ],
+    "base_price": 1850,
+    "max_price": 2850,
+    "regular_price": 2128,
+    "assembly_fee": null,
+    "warranty_days": 90
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 3241,
+    "product_group_key": "asus-vivobook-15-x515da-x515ea-x515ep-x515ja-x515jf-x515jp-x515ma-x515ua-speaker",
+    "title": "ASUS VivoBook 15 X515DA X515EA X515EP X515JA X515JF X515JP X515MA X515UA Speaker",
+    "brand": "Asus",
+    "compatible_model": "ASUS VivoBook 15 X515DA X515EA X515EP X515JA X515JF X515JP X515MA X515UA",
+    "part_category": "Laptop Speaker",
+    "image_url": "https://laptopworlddhaka.com/wp-content/uploads/2024/02/ASUS-VivoBook-15-X515DA-X515EA-X515EP-X515JA-X515JF-X515JP-X515MA-X515UA-speaker.jpg",
+    "gallery_urls": [
+      "https://laptopworlddhaka.com/wp-content/uploads/2024/02/ASUS-VivoBook-15-X515DA-X515EA-X515EP-X515JA-X515JF-X515JP-X515MA-X515UA-speaker.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2024/02/Asus-x515-speaker.jpg"
+    ],
+    "highlights": [
+      "MODEL: X515",
+      "SERIES: ASUS VIVOBOOK 15",
+      "BRAND: ASUS",
+      "CONDITION: NEW",
+      "QUALITY: A GRADE (COPY)",
+      "PAIR: LEFT + RIGHT",
+      "BODY: PLASTIC",
+      "CONNECTOR: 04 PIN"
+    ],
+    "description": "X515 speaker for ASUS VivoBook 15 X515DA X515EA X515EP X515JA X515JF X515JP X515MA X515UA Series. MODEL: X515 SERIES: ASUS VIVOBOOK 15 BRAND: ASUS CONDITION: NEW QUALITY: A GRADE (COPY) PAIR: LEFT + RIGHT BODY: PLASTIC CONNECTOR: 04 PIN SOUND QUALITY: GOOD WARRANTY: 07 DAYS MADE IN CHINA Warranty Policy Warranty voied if any kinds of physical damage wet or burned. Warranty acceptable in warranty period At least...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1250,
+    "max_price": null,
+    "regular_price": 1500,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5876,
+    "product_group_key": "dell-4gvmp-3hwpp-04gvmp-battery-for-latitude-precision-inspiron",
+    "title": "Dell 4GVMP 3HWPP 04GVMP Battery for Latitude, Precision & Inspiron",
+    "brand": "Dell",
+    "compatible_model": "Dell 4GVMP 3HWPP 04GVMP",
+    "part_category": "Laptop Battery",
+    "image_url": "/images/spare-parts/dell-4gvmp-3hwpp-04gvmp-battery-for-latitude-precision-inspiron.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/dell-4gvmp-3hwpp-04gvmp-battery-for-latitude-precision-inspiron.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/4GVMP-HIGH-QUALITY-BATTERY.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/4gvmp.jpg"
+    ],
+    "highlights": [
+      "Condition: New",
+      "Quality: High Quality",
+      "Warranty: 180 days"
+    ],
+    "description": "Dell 4GVMP / 3HWPP / 04GVMP Battery for Latitude, Precision & Inspiron Replace your worn-out laptop battery with this Dell 4GVMP / 3HWPP / 04GVMP replacement battery , designed for selected Dell Latitude, Precision, and Inspiron laptop models. If your original battery no longer holds charge, shuts down unexpectedly, or provides very short backup time, this replacement battery can help restore reliable mobile use....",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 2850,
+    "max_price": null,
+    "regular_price": 3000,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5843,
+    "product_group_key": "apple-a1706-a1819-battery",
+    "title": "APPLE A1706 A1819 BATTERY",
+    "brand": "Apple",
+    "compatible_model": "APPLE A1706 A1819",
+    "part_category": "Laptop Battery",
+    "image_url": "/images/spare-parts/apple-a1706-a1819-battery.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/apple-a1706-a1819-battery.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/Apple-A1706-Battery.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/Apple-A1706-Battery-1.jpg"
+    ],
+    "highlights": [
+      "Battery for: Apple MackBook",
+      "Condition: New",
+      "Quality: A grade",
+      "Voltage: 11.41V",
+      "Capacity: 49.2Wh",
+      "Battery Capacity: 4300mAh/49.02Wh",
+      "Number of Cells: 6 cells",
+      "Cell Type: Li-Polymer"
+    ],
+    "description": "Apple A1706 A1819 MacBook Pro Battery – Replacement Battery Replace your old, weak, or damaged MacBook Pro battery with this Apple A1706 A1819 Replacement Battery , designed for compatible MacBook Pro models. If your MacBook is experiencing short battery life, unexpected shutdowns, charging issues, or battery swelling, replacing the battery can help restore reliable portable performance. This replacement battery...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 4500,
+    "max_price": null,
+    "regular_price": 5000,
+    "assembly_fee": null,
+    "warranty_days": 90
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5800,
+    "product_group_key": "hp-probook-440-g8-g9-g10-445-g8-g9-g10-laptop-keyboard",
+    "title": "HP ProBook 440 G8 G9 G10 445 G8 G9 G10 Laptop Keyboard",
+    "brand": "HP",
+    "compatible_model": "HP ProBook 440 G8 G9 G10 445 G8 G9 G10 Laptop",
+    "part_category": "Laptop Keyboard",
+    "image_url": "/images/spare-parts/hp-probook-440-g8-g9-g10-445-g8-g9-g10-laptop-keyboard.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/hp-probook-440-g8-g9-g10-445-g8-g9-g10-laptop-keyboard.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/hp-440-g8-440-g9-440-g10-445-g8-445-g9-445-g10-laptop-original-with-backlight-keyboard.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/hp-440-g8-440-g9-440-g10-445-g8-445-g9-445-g10-laptop-uk-original-with-backlight-keyboard.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/hp-440-g8-440-g9-440-g10-445-g8-445-g9-445-g10-laptop-without-backlight-keyboard.jpg"
+    ],
+    "highlights": [
+      "Compatible Model: HP ProBook 440 G8 G9 G10 445 G8 G9 G10 Laptop",
+      "Category: Laptop Keyboard",
+      "100% bench-tested replacement spare part"
+    ],
+    "description": "HP ProBook 440 G8 / G9 / G10 & 445 G8 / G9 / G10 Original Quality Backlit Laptop Keyboard US OEM US ORIGINAL UK ORIGINAL Condition New New New Quality Copy High Quality High Quality Layout US US UK Backlight No Yes Yes Color Black Black Black Warranty 90 days 90 dyas 90 days Made in China China China Upgrade or replace your damaged laptop keyboard with this Original Quality Backlit Keyboard designed for HP...",
+    "has_specs": true,
+    "spec_label": "Layout",
+    "spec_options": [
+      {
+        "code": "us-layout",
+        "name": "US Layout",
+        "subtitle": "",
+        "price": 950,
+        "regular_price": 1093,
+        "stock": 320
+      },
+      {
+        "code": "us-layout",
+        "name": "US Layout",
+        "subtitle": "",
+        "price": 1650,
+        "regular_price": 1897,
+        "stock": 320
+      },
+      {
+        "code": "uk-layout",
+        "name": "UK Layout",
+        "subtitle": "",
+        "price": 1800,
+        "regular_price": 2070,
+        "stock": 320
+      }
+    ],
+    "base_price": 950,
+    "max_price": 1800,
+    "regular_price": 1093,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5792,
+    "product_group_key": "hp-pavilion-15-eg-15-eh-15-fc-15-fd-15-er-laptop-keyboard-us-layout-silver-color",
+    "title": "HP Pavilion 15-EG 15-EH 15-FC 15-FD 15-ER Laptop Keyboard – US Layout, Silver Color",
+    "brand": "HP",
+    "compatible_model": "HP Pavilion 15-EG 15-EH 15-FC 15-FD 15-ER Laptop",
+    "part_category": "Laptop Keyboard",
+    "image_url": "/images/spare-parts/hp-pavilion-15-eg-15-eh-15-fc-15-fd-15-er-laptop-keyboard-us-layout-silver-color.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/hp-pavilion-15-eg-15-eh-15-fc-15-fd-15-er-laptop-keyboard-us-layout-silver-color.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/hp-pavilion-15-eg-15-eh-15-fc-15-fd-15-er-series-laptop-silver-color-keyboard.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/15-eh-keyboard.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/15-eg-keyboard.jpg"
+    ],
+    "highlights": [
+      "Keyboard for: HP Pavilion Series",
+      "Condition: New",
+      "Color: Silver",
+      "Layout: US Layout",
+      "Backlight: Available",
+      "Warranty: 90 days replacement"
+    ],
+    "description": "HP Pavilion 15-EG / 15-EH / 15-FC / 15-FD / 15-ER Laptop Keyboard – US Layout, Silver Replace your damaged or unresponsive laptop keyboard with this Original Quality Silver US Layout Keyboard for HP Pavilion 15-EG, 15-EH, 15-FC, 15-FD, and 15-ER series laptops . It provides a comfortable typing experience and works as a reliable replacement for keyboards with broken keys, missing keycaps, or unresponsive buttons....",
+    "has_specs": true,
+    "spec_label": "Quality",
+    "spec_options": [
+      {
+        "code": "oem",
+        "name": "OEM",
+        "subtitle": "OEM Replacement Grade",
+        "price": 1200,
+        "regular_price": 1380,
+        "stock": 140
+      },
+      {
+        "code": "original-quality",
+        "name": "Original Quality",
+        "subtitle": "100% Genuine Service Pack",
+        "price": 1850,
+        "regular_price": 2128,
+        "stock": 140
+      }
+    ],
+    "base_price": 1200,
+    "max_price": 1850,
+    "regular_price": 1380,
+    "assembly_fee": null,
+    "warranty_days": 90
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5785,
+    "product_group_key": "hp-pavilion-250-g7-255-g7-15-da-15-db-laptop-internal-speaker-set-left-right",
+    "title": "HP Pavilion 250 g7 255 g7 15-da 15-db laptop internal speaker set left + right",
+    "brand": "HP",
+    "compatible_model": "HP Pavilion 250 g7 255 g7 15-da 15-db laptop internal",
+    "part_category": "Laptop Speaker",
+    "image_url": "/images/spare-parts/hp-pavilion-250-g7-255-g7-15-da-15-db-laptop-internal-speaker-set-left-right.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/hp-pavilion-250-g7-255-g7-15-da-15-db-laptop-internal-speaker-set-left-right.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/hp-pavilion-15s-du-speaker.jpg"
+    ],
+    "highlights": [
+      "Replacement speaker set for : HP",
+      "Condition: New",
+      "Quality: A grade",
+      "Pair: Left + Right",
+      "Connector: 04 pin, 04 wire",
+      "Rating: 5v",
+      "Warranty: 30 days replacement",
+      "Made in China."
+    ],
+    "description": "HP Pavilion 250 G7, 255 G7, 15-DA, 15-DB Laptop Internal Speaker Set – Left + Right Restore clear and reliable audio performance with this HP Pavilion laptop internal speaker set , designed for compatible HP Pavilion 250 G7, 255 G7, 15-DA, and 15-DB series laptops. This replacement speaker set includes both the left and right internal speakers , providing a complete solution when your original speakers become...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 950,
+    "max_price": null,
+    "regular_price": 1102,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5768,
+    "product_group_key": "hp-elitbook-660-g11-laptop-speaker-set-left-right",
+    "title": "HP ElitBook 660 G11 Laptop Speaker set Left + Right",
+    "brand": "HP",
+    "compatible_model": "HP ElitBook 660 G11 Laptop",
+    "part_category": "Laptop Speaker",
+    "image_url": "/images/spare-parts/hp-elitbook-660-g11-laptop-speaker-set-left-right.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/hp-elitbook-660-g11-laptop-speaker-set-left-right.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/hp-elitebook-660-g11-speaker.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/660-g11-speaker.jpg"
+    ],
+    "highlights": [
+      "Speaker for: HP",
+      "Model: 660 G11",
+      "Series: EliteBook",
+      "Condition: New",
+      "Quality: Original Quality / A grade",
+      "Pair: Left + right",
+      "Connector: 4-pin",
+      "Sound Quality: Like Original"
+    ],
+    "description": "HP EliteBook 660 G11 Laptop Speaker Set – Left & Right Speaker Replacement Restore clear and reliable audio to your HP EliteBook 660 G11 with this high-quality replacement laptop speaker set. Designed as a left + right internal speaker assembly , this replacement is ideal for replacing speakers that produce distorted, low, crackling, buzzing, or no sound. The speaker set is designed to fit inside the laptop...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1450,
+    "max_price": null,
+    "regular_price": 1682,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5764,
+    "product_group_key": "hp-probook-g11-cpu-cooler-5v-0-5a-4-pin-fan-for-probook-440-g11-445-g11-460-g11-465-g11-elitebook-640-g11-645-g11-660-g11-665-g11-series",
+    "title": "HP ProBook G11 CPU Cooler 5V 0.5A 4-Pin Fan for ProBook 440 G11, 445 G11, 460 G11, 465 G11, EliteBook 640 G11, 645 G11, 660 G11 & 665 G11 Series",
+    "brand": "HP",
+    "compatible_model": "HP ProBook G11 CPU Cooler 5V 0.5A 4-Pin Fan for ProBook 440 G11, 445 G11, 460 G11, 465 G11, EliteBook 640 G11, 645 G11, 660 G11 & 665 G",
+    "part_category": "Laptop Cooling Fan",
+    "image_url": "/images/spare-parts/hp-probook-g11-cpu-cooler-5v-0-5a-4-pin-fan-for-probook-440-g11-445-g11-460-g11-465-g11-el.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/hp-probook-g11-cpu-cooler-5v-0-5a-4-pin-fan-for-probook-440-g11-445-g11-460-g11-465-g11-el.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/hp-640-g11-cooling-fan.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/HP-Probook-440-g11-445-g11-460-g11-465-g11-cooling-fan.jpg"
+    ],
+    "highlights": [
+      "Cooling fan for: HP",
+      "Condition: New",
+      "Series: ProBook & EliteBook",
+      "Voltage: 5V",
+      "Current: 0.5A",
+      "Connector: 4-Pin & 4 wire",
+      "Compatible Series: HP ProBook G11 Series",
+      "Compatible Models: HP ProBook 440 G11, 445 G11, 460 G11, 465 G11, 640 G11, 645 G11, 660 G11 & 665 G11"
+    ],
+    "description": "HP ProBook G11 Series Laptop CPU Cooler – 5V 0.5A 4-Pin Keep your HP ProBook running cool and stable with this CPU Cooling Fan / Laptop CPU Cooler , designed for selected HP ProBook G11 series laptops. It provides efficient airflow around the processor and helps manage heat during everyday computing, office work, browsing, multimedia, and other demanding tasks. This CPU cooler is compatible with selected HP...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1750,
+    "max_price": null,
+    "regular_price": 2030,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5761,
+    "product_group_key": "rx03xl-original-quality-battery-for-hp-probook-440-g11-445-g11-460-g11-465-g11-630-g11-640-g11-645-g11-660-g11",
+    "title": "RX03XL Original Quality Battery for HP ProBook 440 G11, 445 G11, 460 G11, 465 G11, 630 G11, 640 G11, 645 G11 & 660 G11",
+    "brand": "HP",
+    "compatible_model": "RX03XL Original Quality",
+    "part_category": "Laptop Battery",
+    "image_url": "/images/spare-parts/rx03xl-original-quality-battery-for-hp-probook-440-g11-445-g11-460-g11-465-g11-630-g11-640.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/rx03xl-original-quality-battery-for-hp-probook-440-g11-445-g11-460-g11-465-g11-630-g11-640.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/rx03xl-battery.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/rx03xl-original-battery.jpg"
+    ],
+    "highlights": [
+      "Battery Type: RX03XL",
+      "Battery for: HP ProBook Series",
+      "Condition: New",
+      "Quality: Original OEM / A grade",
+      "Battery Voltage: 11.58V",
+      "Capacity: 4646mAh / 56.04Wh (up to )",
+      "Battery Type: Li-Polymer",
+      "Number of Cells: 3-Cell"
+    ],
+    "description": "RX03XL Original Quality Battery for HP ProBook G11 Series Product Highlights Part Number: RX03XL Product Type: Laptop Replacement Battery Quality: Original Quality Designed for: HP ProBook G11 Series Compatible Models: 440 G11, 445 G11, 460 G11, 465 G11, 630 G11, 640 G11, 645 G11 & 660 G11 Reliable replacement for an aging or faulty battery Suitable for office, business, study, browsing, and everyday computing...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 2850,
+    "max_price": null,
+    "regular_price": 3306,
+    "assembly_fee": null,
+    "warranty_days": 90
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5754,
+    "product_group_key": "dc-charging-port-for-asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-laptops-dc-jack",
+    "title": "Dc charging port for ASUS ZenBook UX430, UX430U, UX430UQ, UX430UA, U4100U & U4100UQ Laptops DC Jack",
+    "brand": "Asus",
+    "compatible_model": "Dc",
+    "part_category": "Adapter & Charger",
+    "image_url": "/images/spare-parts/dc-charging-port-for-asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-laptops-dc-j.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/dc-charging-port-for-asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-laptops-dc-j.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/dc-charging-port-for-ASUS-ZenBook-UX430-UX430U-UX430UQ-UX430UA-U4100U-U4100UQ-Laptops.jpg"
+    ],
+    "highlights": [
+      "Compatible with ASUS ZenBook UX430U series",
+      "Durable and reliable replacement part",
+      "Helps solve loose or intermittent charging problems",
+      "Designed for proper fit and easy replacement",
+      "Perfect for laptop repair and maintenance"
+    ],
+    "description": "ASUS ZenBook UX430 Series DC Charging Port / DC Jack Replace a damaged or faulty charging port with this DC Charging Port for ASUS ZenBook UX430, UX430U, UX430UQ, UX430UA, U4100U & U4100UQ laptops . This replacement DC jack helps restore stable power input and reliable laptop charging when the original port becomes loose, damaged, or stops working properly. Designed for compatible ASUS ZenBook models, this DC...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 600,
+    "max_price": null,
+    "regular_price": 696,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5752,
+    "product_group_key": "c31n1620-battery-for-asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-laptops",
+    "title": "C31N1620 Battery for ASUS ZenBook UX430, UX430U, UX430UQ, UX430UA, U4100U & U4100UQ Laptops",
+    "brand": "Asus",
+    "compatible_model": "C31N1620",
+    "part_category": "Laptop Battery",
+    "image_url": "/images/spare-parts/c31n1620-battery-for-asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-laptops.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/c31n1620-battery-for-asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-laptops.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/c31n1620-original-battery.jpg"
+    ],
+    "highlights": [
+      "Battery for: Asus",
+      "Model: C31N1620",
+      "Condition: New",
+      "Quality: Original OEM",
+      "Capacity: 50Wh / 4,335mAh (More or Less)",
+      "Voltage: 11.55V",
+      "Cells: 4-cell Lithium-Ion",
+      "Warranty: 180 days"
+    ],
+    "description": "ASUS C31N1620 Laptop Battery for ZenBook UX430 Series Restore your ASUS ZenBook’s portability and dependable battery performance with the ASUS C31N1620 Laptop Battery . This replacement battery fits selected ASUS ZenBook UX430, UX430U, UX430UQ, UX430UA, U4100U, and U4100UQ series laptops. It provides a practical solution when your original battery drains quickly, fails to hold a charge, shuts down unexpectedly,...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 2850,
+    "max_price": null,
+    "regular_price": 3200,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5749,
+    "product_group_key": "asus-ux430-ux430ua-ux430uq-ux430uar-series-laptops-30-pin-display-lvds-cable",
+    "title": "Asus ux430 ux430ua ux430uq ux430uar series Laptop's 30 pin Display LVDS Cable",
+    "brand": "Asus",
+    "compatible_model": "Asus ux430 ux430ua ux430uq ux430uar series Laptop's 30 pin",
+    "part_category": "PC Display, Cable & Board",
+    "image_url": "/images/spare-parts/asus-ux430-ux430ua-ux430uq-ux430uar-series-laptops-30-pin-display-lvds-cable.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/asus-ux430-ux430ua-ux430uq-ux430uar-series-laptops-30-pin-display-lvds-cable.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/asus-ux430-30-pin-display-lvds.jpg"
+    ],
+    "highlights": [
+      "LVDS Cable For: Asus",
+      "Models: UX430 UX430UA UX430UQ UX430UAR",
+      "Condition: New",
+      "Display pin size: 30 pin",
+      "Camera cable: No",
+      "Cable warranty: 07 days replacement or money back",
+      "Made in China."
+    ],
+    "description": "ASUS UX430 Series Laptop Display LVDS Cable The ASUS UX430 UX430UA UX430UQ UX430UAR Series Laptop Display LVDS Cable is a high-quality replacement cable designed to connect your laptop’s LCD display panel to the motherboard. If your ASUS laptop is experiencing display problems such as flickering, horizontal or vertical lines, intermittent screen connection, blank display, or screen signal issues, a damaged or...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1300,
+    "max_price": null,
+    "regular_price": 1508,
+    "assembly_fee": null,
+    "warranty_days": 7
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5745,
+    "product_group_key": "asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-series-laptop-cooler",
+    "title": "Asus ZenBook UX430 UX430U UX430UQ UX430UA U4100U U4100UQ Series Laptop Cooler",
+    "brand": "Asus",
+    "compatible_model": "Asus ZenBook UX430 UX430U UX430UQ UX430UA U4100U U4100UQ Series Laptop Cooler",
+    "part_category": "Laptop Cooling Fan",
+    "image_url": "/images/spare-parts/asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-series-laptop-cooler.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-series-laptop-cooler.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/asus-zenbook-ux430-cooling-fan.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/asus-ux430-cooling-fan.jpg"
+    ],
+    "highlights": [
+      "Cooler for: Asus ZenBook",
+      "Models: UX430 UX430U UX430UA UX430UQ U4100 U4100UQ",
+      "Condition: New",
+      "Quality: A grade",
+      "Body: Metal",
+      "Connection: 04 pin 04 wire",
+      "Rating: 5 Volt",
+      "Warranty: 30 Days"
+    ],
+    "description": "ASUS ZenBook UX430 Series Laptop Cooler – Reliable CPU Cooling Fan Keep your ASUS ZenBook running cooler and more efficiently with this ASUS ZenBook UX430 Series Laptop Cooler , designed for compatible UX430 and U4100U series laptops. This replacement CPU cooling fan helps maintain proper airflow and efficiently dissipates heat generated during everyday computing, multitasking, and demanding workloads. The laptop...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1350,
+    "max_price": null,
+    "regular_price": 1566,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "laptopworld",
+    "ext_id": 5736,
+    "product_group_key": "dell-latitude-e7240-laptop-cpu-cooling-fan",
+    "title": "Dell Latitude E7240 Laptop CPU Cooling Fan",
+    "brand": "Dell",
+    "compatible_model": "Dell Latitude E7240 Laptop CPU",
+    "part_category": "Laptop Cooling Fan",
+    "image_url": "/images/spare-parts/dell-latitude-e7240-laptop-cpu-cooling-fan.jpg",
+    "gallery_urls": [
+      "/images/spare-parts/dell-latitude-e7240-laptop-cpu-cooling-fan.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/dell-latitude-e7240-cooling-fan.jpg",
+      "https://laptopworlddhaka.com/wp-content/uploads/2026/09/Dell-Latitude-E7240-Laptop-CPU-Cooling-Fan.jpg"
+    ],
+    "highlights": [
+      "Model : E7240",
+      "Fan for: Dell Latitude",
+      "Condition: New",
+      "Quality: A grade",
+      "Motor: Brushless",
+      "Body: Meta",
+      "Connector: 04 pin 04 wire",
+      "Rating: 05v 0.5a"
+    ],
+    "description": "Dell Latitude E7240 Laptop CPU Cooling Fan The Dell Latitude E7240 Laptop CPU Cooling Fan is a reliable replacement cooling component designed to help maintain proper operating temperatures and stable performance. If your laptop fan is making unusual noise, running intermittently, becoming excessively hot, or failing to spin properly, replacing the cooling fan can help restore effective airflow and heat...",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 790,
+    "max_price": null,
+    "regular_price": 916,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8316,
+    "product_group_key": "lenovo-ideapad-thin-port-20v-2-25a-45w-laptop-charger",
+    "title": "Lenovo IdeaPad Thin Port 20V 2.25A 45W Laptop Charger",
+    "brand": "Lenovo",
+    "compatible_model": "Lenovo IdeaPad Thin Port 20V 2.25A 45W Laptop Charger",
+    "part_category": "Adapter & Charger",
+    "image_url": "https://dearit.com.bd/assets/c/Lenovo/lenovo-ideapad-thin-port-20v-2.25a-45w-laptop-charger-500x500fill.webp?v=1793620902",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/Lenovo/lenovo-ideapad-thin-port-20v-2.25a-45w-laptop-charger-500x500fill.webp?v=1793620902"
+    ],
+    "highlights": [
+      "Brand: Lenovo",
+      "Category: Adapter & Charger",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Lenovo IdeaPad Thin Port 20V 2.25A 45W Laptop Charger — quality-inspected adapter & charger fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1250,
+    "max_price": null,
+    "regular_price": 1438,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8315,
+    "product_group_key": "lenovo-big-port-20v-3-25a-65w-laptop-charger-adapter",
+    "title": "Lenovo Big Port 20V 3.25A 65W Laptop Charger Adapter",
+    "brand": "Lenovo",
+    "compatible_model": "Lenovo Big Port 20V 3.25A 65W Laptop Charger Adapter",
+    "part_category": "Adapter & Charger",
+    "image_url": "https://dearit.com.bd/assets/c/Lenovo/lenovo-big-port-20v-3.25a-65w-laptop-charger-adapter-500x500fill.webp?v=1793622217",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/Lenovo/lenovo-big-port-20v-3.25a-65w-laptop-charger-adapter-500x500fill.webp?v=1793622217"
+    ],
+    "highlights": [
+      "Brand: Lenovo",
+      "Category: Adapter & Charger",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Lenovo Big Port 20V 3.25A 65W Laptop Charger Adapter — quality-inspected adapter & charger fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 1199,
+    "max_price": null,
+    "regular_price": 1379,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8314,
+    "product_group_key": "13-3-fhd-laptop-display-20mm-30-pin-connector",
+    "title": "13.3\" FHD Laptop Display 20mm 30-Pin Connector",
+    "brand": "PC / Laptop",
+    "compatible_model": "13.3\" FHD Laptop Display 20mm 30-Pin Connector",
+    "part_category": "PC Display, Cable & Board",
+    "image_url": "https://dearit.com.bd/assets/c/products_2026/13-3-fhd-laptop-display-20mm-30-pin-connector-1-500x500fill.webp?v=1793623031",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/products_2026/13-3-fhd-laptop-display-20mm-30-pin-connector-1-500x500fill.webp?v=1793623031"
+    ],
+    "highlights": [
+      "Brand: PC / Laptop",
+      "Category: PC Display, Cable & Board",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "13.3\" FHD Laptop Display 20mm 30-Pin Connector — quality-inspected pc display, cable & board fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 6600,
+    "max_price": null,
+    "regular_price": 7590,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8300,
+    "product_group_key": "hp-445-g8-da0x9mmb8f0-r5-5600-laptop-motherboard",
+    "title": "HP 445 G8 DA0X9MMB8F0 R5-5600 Laptop Motherboard",
+    "brand": "HP",
+    "compatible_model": "HP 445 G8 DA0X9MMB8F0 R5-5600 Laptop Motherboard",
+    "part_category": "PC Display, Cable & Board",
+    "image_url": "https://dearit.com.bd/assets/c/HP/hp-445-g8-da0x9mmb8f0-r5-5600-laptop-motherboard--500x500fill.webp?v=1793617798",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/HP/hp-445-g8-da0x9mmb8f0-r5-5600-laptop-motherboard--500x500fill.webp?v=1793617798"
+    ],
+    "highlights": [
+      "Brand: HP",
+      "Category: PC Display, Cable & Board",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "HP 445 G8 DA0X9MMB8F0 R5-5600 Laptop Motherboard — quality-inspected pc display, cable & board fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 40000,
+    "max_price": null,
+    "regular_price": 46000,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8299,
+    "product_group_key": "hp-445-g7-da0x9mmb8f0-r5-4500-laptop-motherboard",
+    "title": "HP 445 G7 DA0X9MMB8F0 R5-4500 Laptop Motherboard",
+    "brand": "HP",
+    "compatible_model": "HP 445 G7 DA0X9MMB8F0 R5-4500 Laptop Motherboard",
+    "part_category": "PC Display, Cable & Board",
+    "image_url": "https://dearit.com.bd/assets/c/HP/hp-445-g7-da0x9mmb8f0-r5-4500-laptop-motherboard-500x500fill.webp?v=1793617798",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/HP/hp-445-g7-da0x9mmb8f0-r5-4500-laptop-motherboard-500x500fill.webp?v=1793617798"
+    ],
+    "highlights": [
+      "Brand: HP",
+      "Category: PC Display, Cable & Board",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "HP 445 G7 DA0X9MMB8F0 R5-4500 Laptop Motherboard — quality-inspected pc display, cable & board fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 26000,
+    "max_price": null,
+    "regular_price": 29900,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8298,
+    "product_group_key": "lenovo-s145-15ast-nm-c171-a6-laptop-motherboard",
+    "title": "Lenovo S145-15AST NM-C171 A6 Laptop Motherboard",
+    "brand": "Lenovo",
+    "compatible_model": "Lenovo S145-15AST NM-C171 A6 Laptop Motherboard",
+    "part_category": "PC Display, Cable & Board",
+    "image_url": "https://dearit.com.bd/assets/c/Lenovo/lenovo-s145-15ast-nm-c171-a6-laptop-motherboard-500x500fill.webp?v=1793617553",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/Lenovo/lenovo-s145-15ast-nm-c171-a6-laptop-motherboard-500x500fill.webp?v=1793617553"
+    ],
+    "highlights": [
+      "Brand: Lenovo",
+      "Category: PC Display, Cable & Board",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "Lenovo S145-15AST NM-C171 A6 Laptop Motherboard — quality-inspected pc display, cable & board fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 8000,
+    "max_price": null,
+    "regular_price": 9200,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8297,
+    "product_group_key": "hp-14-dq-14-fq-da0padmb8f0-i5-10th-laptop-motherboard",
+    "title": "HP 14-DQ / 14-FQ DA0PADMB8F0 I5 10th Laptop Motherboard",
+    "brand": "HP",
+    "compatible_model": "HP 14-DQ / 14-FQ DA0PADMB8F0 I5 10th Laptop Motherboard",
+    "part_category": "PC Display, Cable & Board",
+    "image_url": "https://dearit.com.bd/assets/c/HP/hp-14-dq-14-fq-da0padmb8f0-i5-10th-laptop-motherboard-500x500fill.webp?v=1793617798",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/HP/hp-14-dq-14-fq-da0padmb8f0-i5-10th-laptop-motherboard-500x500fill.webp?v=1793617798"
+    ],
+    "highlights": [
+      "Brand: HP",
+      "Category: PC Display, Cable & Board",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "HP 14-DQ / 14-FQ DA0PADMB8F0 I5 10th Laptop Motherboard — quality-inspected pc display, cable & board fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 31000,
+    "max_price": null,
+    "regular_price": 35650,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8296,
+    "product_group_key": "hp-14-dq-14-fq-da0pamb16a0-da0paemb6d0-ym3150-laptop-motherboard",
+    "title": "HP 14-DQ / 14-FQ DA0PAMB16A0 / DA0PAEMB6D0 YM3150 Laptop Motherboard",
+    "brand": "HP",
+    "compatible_model": "HP 14-DQ / 14-FQ DA0PAMB16A0 / DA0PAEMB6D0 YM3150 Laptop Motherboard",
+    "part_category": "PC Display, Cable & Board",
+    "image_url": "https://dearit.com.bd/assets/c/HP/hp-14-dq-14-fq-da0pamb16a0-da0paemb6d0-ym3150-laptop-motherboard-500x500fill.webp?v=1793617799",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/HP/hp-14-dq-14-fq-da0pamb16a0-da0paemb6d0-ym3150-laptop-motherboard-500x500fill.webp?v=1793617799"
+    ],
+    "highlights": [
+      "Brand: HP",
+      "Category: PC Display, Cable & Board",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "HP 14-DQ / 14-FQ DA0PAMB16A0 / DA0PAEMB6D0 YM3150 Laptop Motherboard — quality-inspected pc display, cable & board fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 10800,
+    "max_price": null,
+    "regular_price": 12420,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8295,
+    "product_group_key": "hp-15-db-255-g7-la-g078p-a6-laptop-motherboard",
+    "title": "HP 15-DB / 255 G7 LA-G078P A6 Laptop Motherboard",
+    "brand": "HP",
+    "compatible_model": "HP 15-DB / 255 G7 LA-G078P A6 Laptop Motherboard",
+    "part_category": "PC Display, Cable & Board",
+    "image_url": "https://dearit.com.bd/assets/c/HP/hp-15-db-255-g7-la-g078p-a6-laptop-motherboard-500x500fill.webp?v=1793617799",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/HP/hp-15-db-255-g7-la-g078p-a6-laptop-motherboard-500x500fill.webp?v=1793617799"
+    ],
+    "highlights": [
+      "Brand: HP",
+      "Category: PC Display, Cable & Board",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "HP 15-DB / 255 G7 LA-G078P A6 Laptop Motherboard — quality-inspected pc display, cable & board fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 6400,
+    "max_price": null,
+    "regular_price": 7360,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "dearit",
+    "ext_id": 8294,
+    "product_group_key": "hp-840-g2-850-g2-i7-laptop-motherboard",
+    "title": "HP 840 G2 / 850 G2 I7 Laptop Motherboard",
+    "brand": "HP",
+    "compatible_model": "HP 840 G2 / 850 G2 I7 Laptop Motherboard",
+    "part_category": "PC Display, Cable & Board",
+    "image_url": "https://dearit.com.bd/assets/c/HP/hp-840-g2-850-g2-i7-laptop-motherboard-500x500fill.webp?v=1793617799",
+    "gallery_urls": [
+      "https://dearit.com.bd/assets/c/HP/hp-840-g2-850-g2-i7-laptop-motherboard-500x500fill.webp?v=1793617799"
+    ],
+    "highlights": [
+      "Brand: HP",
+      "Category: PC Display, Cable & Board",
+      "Condition: Brand New Replacement / Accessory",
+      "Covered by Meramot Escrow Inspection & Return Protection"
+    ],
+    "description": "HP 840 G2 / 850 G2 I7 Laptop Motherboard — quality-inspected pc display, cable & board fulfilled by verified Meramot PC & laptop workshops across Bangladesh.",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 12500,
+    "max_price": null,
+    "regular_price": 14375,
+    "assembly_fee": null,
+    "warranty_days": 30
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23512,
+    "product_group_key": "hp-pavilion-plus-14-i7-1355u-16gb-512gb-rtx-2050",
+    "title": "HP Pavilion Plus 14-eh1xxx Laptop | Core i7-1355U | 16GB RAM | 512GB SSD | RTX 2050 4GB",
+    "brand": "HP",
+    "compatible_model": "HP Pavilion Plus 14-eh1xxx Laptop | Core i7-1355U | 16GB RAM | 512GB SSD | RTX 2050 4GB",
+    "part_category": "SSD, RAM & Storage",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/10/hp-pavilion-plus-14-i7-1355u-rtx-2050-front.png",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/10/hp-pavilion-plus-14-i7-1355u-rtx-2050-front.png",
+      "https://laptopbd.net/wp-content/uploads/2026/10/hp-pavilion-plus-14-right-side-ports.png",
+      "https://laptopbd.net/wp-content/uploads/2026/10/hp-pavilion-plus-14-keyboard-touchpad.png"
+    ],
+    "highlights": [
+      "Brand: HP",
+      "Category: SSD, RAM & Storage",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "The HP Pavilion Plus 14-eh1xxx combines a 13th Gen Intel Core i7-1355U processor, 16GB RAM and a Samsung 512GB NVMe SSD in a compact 14-inch laptop. Its NVIDIA GeForce RTX 2050 GPU includes 4GB of dedicated graphics memory for supported creative applications and gaming. This configuration is suited to office work, online study, content creation and everyday multitasking. Specification Details Brand HP Series Pavilion",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 65500,
+    "max_price": null,
+    "regular_price": 75325,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23507,
+    "product_group_key": "lenovo-legion-5-16irx9-i7-14650hx-32gb-rtx-4060",
+    "title": "Lenovo Legion 5i 16IRX9 Gaming Laptop | Core i7-14650HX | 32GB RAM | RTX 4060 8GB",
+    "brand": "Lenovo",
+    "compatible_model": "Lenovo Legion 5i 16IRX9 Gaming Laptop | Core i7-14650HX | 32GB RAM | RTX 4060 8GB",
+    "part_category": "SSD, RAM & Storage",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/10/lenovo-legion-5i-16irx9-rtx-4060-front.png",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/10/lenovo-legion-5i-16irx9-rtx-4060-front.png",
+      "https://laptopbd.net/wp-content/uploads/2026/10/lenovo-legion-5i-left-side-ports.png",
+      "https://laptopbd.net/wp-content/uploads/2026/10/lenovo-legion-5i-keyboard-touchpad.png",
+      "https://laptopbd.net/wp-content/uploads/2026/10/lenovo-legion-5i-16irx9-rtx-4060-front.png"
+    ],
+    "highlights": [
+      "Brand: Lenovo",
+      "Category: SSD, RAM & Storage",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "The Lenovo Legion 5i 16IRX9 combines a 14th Gen Intel Core i7-14650HX processor, 32GB DDR5 RAM and NVIDIA GeForce RTX 4060 8GB graphics in a 16-inch gaming laptop. It is suited to gaming, video editing, creative applications and demanding multitasking. Its WQXGA IPS display provides a detailed workspace for both entertainment and productivity, while Windows 11 Home supports everyday Windows applications. Specificatio",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 165000,
+    "max_price": null,
+    "regular_price": 189750,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23503,
+    "product_group_key": "hp-spectre-x360-14-ef0xxx-i7-1255u-32gb",
+    "title": "HP Spectre x360 14-ef0xxx 2-in-1 Laptop | Core i7-1255U | 32GB RAM",
+    "brand": "HP",
+    "compatible_model": "HP Spectre x360 14-ef0xxx 2-in-1 Laptop | Core i7-1255U | 32GB RAM",
+    "part_category": "SSD, RAM & Storage",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/10/hp-spectre-x360-i7-1255u-32gb-front.png",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/10/hp-spectre-x360-i7-1255u-32gb-front.png",
+      "https://laptopbd.net/wp-content/uploads/2026/10/hp-spectre-x360-i7-1255u-32gb-back.png"
+    ],
+    "highlights": [
+      "Brand: HP",
+      "Category: SSD, RAM & Storage",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "The HP Spectre x360 14-ef0xxx combines a 12th Gen Intel Core i7-1255U processor, 32GB RAM and a 13.5-inch touchscreen in a convertible Windows laptop. Its 360-degree hinge and pen input support give you flexible ways to type, read and annotate documents. This configuration is suited to office tasks, online study, content management and everyday multitasking. View more HP laptops Specification Details Brand HP Series ",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 95500,
+    "max_price": null,
+    "regular_price": 109825,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23424,
+    "product_group_key": "lenovo-thinkpad-t14-gen-1-core-i5-16gb-512gb",
+    "title": "Lenovo ThinkPad T14 Gen 1 Core i5 10th Gen 16GB RAM 512GB SSD",
+    "brand": "Lenovo",
+    "compatible_model": "Lenovo ThinkPad T14 Gen 1 Core i5 10th Gen 16GB RAM 512GB SSD",
+    "part_category": "SSD, RAM & Storage",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/09/Lenovo-ThinkPad-T14s-Gen-1.jpg",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/09/Lenovo-ThinkPad-T14s-Gen-1.jpg"
+    ],
+    "highlights": [
+      "Brand: Lenovo",
+      "Category: SSD, RAM & Storage",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "The Lenovo ThinkPad T14 Gen 1 is a business-focused laptop built for users who need dependable performance for daily productivity. Its 10th Generation Intel Core i5 platform provides four processor cores and eight threads, making it well suited to common office and study workloads. Lenovo offered this model with Core i5-10210U and Core i5-10310U processors, both using a 4-core, 8-thread design. For practical use, thi",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 37500,
+    "max_price": null,
+    "regular_price": 43125,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23404,
+    "product_group_key": "hp-zbook-firefly-14-g8-core-i5-256gb-ssd",
+    "title": "HP ZBook Firefly 14 G8 Core i5 11th Gen 256GB SSD",
+    "brand": "HP",
+    "compatible_model": "HP ZBook Firefly 14 G8 Core i5 11th Gen 256GB SSD",
+    "part_category": "SSD, RAM & Storage",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/09/HP-ZBook-Firefly-14-G8-Core-i5-11th-Gen-256GB-SSD.png",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/09/HP-ZBook-Firefly-14-G8-Core-i5-11th-Gen-256GB-SSD.png"
+    ],
+    "highlights": [
+      "Brand: HP",
+      "Category: SSD, RAM & Storage",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "The HP ZBook Firefly 14 G8 is a compact mobile workstation powered by an 11th Gen Intel Core i5-1135G7 processor and a 256GB PCIe NVMe SSD. Its 14-inch Full HD IPS anti-glare display provides a comfortable workspace for everyday productivity, while integrated Intel UHD Graphics handles standard visual and office workloads. With its professional ZBook design and portable 14-inch form factor, it is well suited to stude",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 38500,
+    "max_price": null,
+    "regular_price": 44275,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23396,
+    "product_group_key": "lenovo-thinkpad-l14-core-i5-11th-gen-16gb",
+    "title": "Lenovo ThinkPad L14 Core i5 11th Gen 16GB RAM",
+    "brand": "Lenovo",
+    "compatible_model": "Lenovo ThinkPad L14 Core i5 11th Gen 16GB RAM",
+    "part_category": "SSD, RAM & Storage",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/09/Lenovo-ThinkPad-L14-Core-i5-11th-Gen-16GB-RAM.png",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/09/Lenovo-ThinkPad-L14-Core-i5-11th-Gen-16GB-RAM.png"
+    ],
+    "highlights": [
+      "Brand: Lenovo",
+      "Category: SSD, RAM & Storage",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "The Lenovo ThinkPad L14 Core i5 11th Gen 16GB RAM Laptop is a practical business laptop for professionals, students, office users and everyday productivity. It combines an 11th Generation Intel Core i5 processor with 16GB DDR4 RAM and a 512GB PCIe NVMe SSD for responsive multitasking and fast file access. The 14-inch Full HD display provides a comfortable workspace, while the classic ThinkPad design, business-focused",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 32000,
+    "max_price": null,
+    "regular_price": 36800,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23388,
+    "product_group_key": "dell-latitude-5320-core-i7-11th-gen-32gb-512gb",
+    "title": "Dell Latitude 5320 Core i7 11th Gen 32GB RAM 512GB SSD",
+    "brand": "Dell",
+    "compatible_model": "Dell Latitude 5320 Core i7 11th Gen 32GB RAM 512GB SSD",
+    "part_category": "SSD, RAM & Storage",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/09/Dell-Latitude-5320-Core-i7-11th-Gen-32GB-RAM-512GB-SSD-.png",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/09/Dell-Latitude-5320-Core-i7-11th-Gen-32GB-RAM-512GB-SSD-.png"
+    ],
+    "highlights": [
+      "Brand: Dell",
+      "Category: SSD, RAM & Storage",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "The Dell Latitude 5320 combines an 11th Gen Intel Core i7 processor with 32GB DDR4 memory and a 512GB SSD for responsive everyday computing and demanding multitasking. Its 13.3-inch Full HD display provides a compact workspace, while integrated Intel Iris Xe Graphics handles everyday graphics and media tasks without a dedicated GPU. With its compact business-laptop design and strong memory and storage configuration, ",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 48000,
+    "max_price": null,
+    "regular_price": 55200,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23384,
+    "product_group_key": "asus-expertbook-b1-core-i3-11th-gen-8gb-256gb",
+    "title": "Asus ExpertBook B1 Core i3 11th Gen 8GB RAM 256GB SSD",
+    "brand": "Asus",
+    "compatible_model": "Asus ExpertBook B1 Core i3 11th Gen 8GB RAM 256GB SSD",
+    "part_category": "SSD, RAM & Storage",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/09/Asus-ExpertBook-B1-Core-i3-11th-Gen-8GB-RAM-256GB-SSD-.png",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/09/Asus-ExpertBook-B1-Core-i3-11th-Gen-8GB-RAM-256GB-SSD-.png"
+    ],
+    "highlights": [
+      "Brand: Asus",
+      "Category: SSD, RAM & Storage",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "The Asus ExpertBook B1 with Intel Core i3 11th Gen processor, 8GB RAM, and 256GB SSD is designed for everyday productivity, study, office work, web browsing, and business tasks. The Intel Core i3-1115G4 processor delivers speeds of up to 4.1GHz, while 8GB DDR4 memory supports everyday multitasking. The 256GB SSD provides faster storage access and responsive everyday use. Integrated Intel UHD Graphics handles standard",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 32500,
+    "max_price": null,
+    "regular_price": 37375,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23364,
+    "product_group_key": "macbook-air-m4-15-2025-16gb-512gb",
+    "title": "MacBook Air M4 15 2025 16GB RAM & 512GB SSD",
+    "brand": "Apple",
+    "compatible_model": "MacBook Air M4 15 2025 16GB RAM & 512GB SSD",
+    "part_category": "SSD, RAM & Storage",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/09/MacBook-Air-M4-.png",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/09/MacBook-Air-M4-.png"
+    ],
+    "highlights": [
+      "Brand: Apple",
+      "Category: SSD, RAM & Storage",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "The MacBook Air M4 15-inch (2025) combines Apple’s M4 chip with 16GB unified memory and a 512GB SSD for fast, responsive everyday computing. Its 15.3-inch Liquid Retina display delivers 2880 × 1864 resolution, 500 nits brightness, wide P3 colour, and True Tone technology. The 10-core CPU and 10-core GPU handle productivity, coding, creative work, and everyday multitasking efficiently. At 1.51 kg, it offers a large-sc",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 145000,
+    "max_price": null,
+    "regular_price": 166750,
+    "assembly_fee": null,
+    "warranty_days": 180
+  },
+  {
+    "src": "laptopbd",
+    "ext_id": 23349,
+    "product_group_key": "asus-tuf-gaming-f15-core-i5-11th-gen-rtx-3050ti",
+    "title": "ASUS TUF Gaming F15 Core i5 11th Gen RTX 3050 Ti 4GB Dedicated GPU",
+    "brand": "Asus",
+    "compatible_model": "ASUS TUF Gaming F15 Core i5 11th Gen RTX 3050 Ti 4GB Dedicated GPU",
+    "part_category": "Accessories & Chargers",
+    "image_url": "https://laptopbd.net/wp-content/uploads/2026/09/Asus-TUF-Gaming-F15-Core-i5-11th-Gen-RTX-3050Ti-4GB-Dedicated-GPU.png",
+    "gallery_urls": [
+      "https://laptopbd.net/wp-content/uploads/2026/09/Asus-TUF-Gaming-F15-Core-i5-11th-Gen-RTX-3050Ti-4GB-Dedicated-GPU.png"
+    ],
+    "highlights": [
+      "Brand: Asus",
+      "Category: Accessories & Chargers",
+      "100% bench-tested PC/laptop replacement component"
+    ],
+    "description": "ASUS TUF Gaming F15 combines an Intel Core i5-11400H 11th Gen processor with NVIDIA GeForce RTX 3050 Ti 4GB GDDR6 dedicated graphics. Its 15.6-inch Full HD 144Hz anti-glare display is designed for smooth gaming and everyday viewing, while the TUF Gaming chassis is built around a performance-focused design. It is suitable for gamers, students, creators, programmers, and users who need stronger graphics performance for",
+    "has_specs": false,
+    "spec_label": null,
+    "spec_options": [],
+    "base_price": 75000,
+    "max_price": null,
+    "regular_price": 86250,
+    "assembly_fee": null,
+    "warranty_days": 60
+  }
+]
