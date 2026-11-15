@@ -139,7 +139,11 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    window.location.reload();
+                    if (window.MeramotSoftNav) {
+                        window.MeramotSoftNav.visit(window.location.href, { replace: true });
+                    } else {
+                        window.location.reload();
+                    }
                 } else {
                     MeramotToast.show(data.message || 'Could not update quantity.', 'error');
                 }
@@ -160,7 +164,11 @@
                 const data = await res.json();
                 if (data.success) {
                     syncCartBadges(data.cart_count ?? 0);
-                    window.location.reload();
+                    if (window.MeramotSoftNav) {
+                        window.MeramotSoftNav.visit(window.location.href, { replace: true });
+                    } else {
+                        window.location.reload();
+                    }
                 } else {
                     MeramotToast.show(data.message || 'Could not remove item.', 'error');
                 }

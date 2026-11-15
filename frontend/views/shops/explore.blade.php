@@ -109,7 +109,12 @@
                             params.set('lng', stored.lng.toFixed(5));
                         }
                     }
-                    window.location.href = '/shops?' + params.toString();
+                    const nextUrl = '/shops?' + params.toString();
+                    if (window.MeramotSoftNav) {
+                        window.MeramotSoftNav.visit(nextUrl);
+                    } else {
+                        window.location.href = nextUrl;
+                    }
                 }
             }">
                 <div class="mb-3 flex items-center justify-between">
@@ -138,13 +143,18 @@
                         <i class="fa-solid fa-map-location-dot"></i>
                         <span>Pin Location on Map</span>
                     </button>
+                    @php
+                        $isDesktopNearMeActive = request()->filled('maxDistanceKm') || ($currSort === 'distance' && request()->filled('lat') && request()->filled('lng'));
+                    @endphp
                     <button
                         type="button"
                         id="use-my-location-btn"
-                        class="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]"
+                        data-near-me-active="{{ $isDesktopNearMeActive ? 'true' : 'false' }}"
+                        aria-pressed="{{ $isDesktopNearMeActive ? 'true' : 'false' }}"
+                        class="w-full select-none inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition {{ $isDesktopNearMeActive ? 'bg-[var(--accent-dark)] text-white border-[var(--accent-dark)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)] text-[var(--accent-dark)] hover:bg-[var(--mint-200)]' }}"
                     >
                         <i class="fa-solid fa-location-crosshairs"></i>
-                        <span>Use My GPS / Pin</span>
+                        <span>{{ $isDesktopNearMeActive ? 'Near Me Active (Tap to Clear)' : 'Use My GPS / Pin' }}</span>
                     </button>
                 </div>
                 <p class="mt-2.5 text-xs text-[var(--muted-foreground)]">
@@ -219,7 +229,7 @@
                             @endphp
                             <a href="/shops?{{ http_build_query(array_filter($cityParams)) }}"
                                @if($isCityActive) data-active-pill="true" @endif
-                               class="shrink-0 whitespace-nowrap px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition {{ $isCityActive ? 'bg-[var(--accent-dark)] text-white font-bold shadow-sm' : 'bg-[var(--mint-50)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
+                               class="shrink-0 whitespace-nowrap select-none px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition {{ $isCityActive ? 'bg-[var(--accent-dark)] text-white font-bold shadow-sm' : 'bg-[var(--mint-50)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
                                 {{ $cityItem }}
                             </a>
                         @endforeach
@@ -250,7 +260,7 @@
                             @endphp
                             <a href="/shops?{{ http_build_query(array_filter($areaParams)) }}"
                                @if($isAreaActive) data-active-pill="true" @endif
-                               class="shrink-0 whitespace-nowrap px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition {{ $isAreaActive ? 'bg-[var(--accent-dark)] text-white font-bold shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
+                               class="shrink-0 whitespace-nowrap select-none px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition {{ $isAreaActive ? 'bg-[var(--accent-dark)] text-white font-bold shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
                                 {{ $area }}
                             </a>
                         @endforeach
@@ -277,7 +287,7 @@
                                 @endphp
                                 <a href="/shops?{{ http_build_query($sortParams) }}"
                                    data-sort-link="{{ $st['value'] }}"
-                                   class="shrink-0 whitespace-nowrap px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs transition flex items-center gap-1.5 {{ $currSort === $st['value'] ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-50)]' }}">
+                                   class="shrink-0 whitespace-nowrap select-none px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs transition flex items-center gap-1.5 {{ $currSort === $st['value'] ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-50)]' }}">
                                     <i class="fa-solid {{ $st['icon'] }} text-[10px]"></i>
                                     <span>{{ $st['label'] }}</span>
                                 </a>
@@ -291,6 +301,8 @@
                             <i class="fa-solid fa-sliders text-[var(--accent-dark)] mr-1"></i>Filter:
                         </span>
                         @php
+                            $isNearMeActive = request()->filled('maxDistanceKm') || ($currSort === 'distance' && request()->filled('lat') && request()->filled('lng'));
+
                             $hasBranched = request()->boolean('branched');
                             $branchedParams = array_merge(request()->query(), ['branched' => $hasBranched ? null : 'true', 'page' => 1]);
 
@@ -307,7 +319,7 @@
                             <button
                                 type="button"
                                 @click="$dispatch('meramot-open-location-modal')"
-                                class="lg:hidden shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold transition flex items-center gap-1.5 text-[11px] hover:opacity-90"
+                                class="lg:hidden shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--accent-dark)]/40 bg-[var(--mint-50)] text-[var(--accent-dark)] font-bold transition flex items-center gap-1.5 text-[11px] hover:bg-[var(--mint-200)]"
                             >
                                 <i class="fa-solid fa-map-location-dot text-[10px]"></i>
                                 <span>Pin on Map</span>
@@ -316,38 +328,40 @@
                             <button
                                 type="button"
                                 data-detect-location
-                                class="lg:hidden shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold transition flex items-center gap-1.5 text-[11px] hover:bg-[var(--mint-200)]"
+                                data-near-me-active="{{ $isNearMeActive ? 'true' : 'false' }}"
+                                aria-pressed="{{ $isNearMeActive ? 'true' : 'false' }}"
+                                class="lg:hidden shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border transition flex items-center gap-1.5 text-[11px] font-bold {{ $isNearMeActive ? 'bg-[var(--accent-dark)] text-white shadow-sm border-[var(--accent-dark)]' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border-[var(--border)] hover:bg-[var(--mint-200)]' }}"
                             >
                                 <i class="fa-solid fa-location-crosshairs text-[10px]"></i>
                                 <span>Near Me</span>
                             </button>
 
                             <a href="/shops?{{ http_build_query(array_filter($branchedParams)) }}"
-                               class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasBranched ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                               class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasBranched ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-code-branch text-[10px] {{ $hasBranched ? 'text-emerald-200' : 'text-[var(--accent-dark)]' }}"></i>
                                 <span>Multi-Branch</span>
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($voucherParams)) }}"
-                               class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasVoucher ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                               class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasVoucher ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-ticket text-[10px] text-amber-600"></i>
                                 <span>Vouchers</span>
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($delParams)) }}"
-                               class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasFreeDel ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                               class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasFreeDel ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-truck-fast text-[10px] text-emerald-700"></i>
                                 <span>Free Delivery</span>
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($dealsParams)) }}"
-                               class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasDeals ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                               class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasDeals ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-fire text-[10px] text-rose-600"></i>
                                 <span>Deals</span>
                             </a>
 
-                            @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm']))
-                                <a href="/shops" class="shrink-0 whitespace-nowrap text-[11px] text-rose-700 font-bold hover:underline px-1.5">
+                            @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm', 'lat']))
+                                <a href="/shops" class="shrink-0 whitespace-nowrap select-none text-[11px] text-rose-700 font-bold hover:underline px-1.5">
                                     Reset
                                 </a>
                             @endif
@@ -380,8 +394,8 @@
                     @if(request('q'))
                         <span>Search: <strong class="text-[var(--foreground)]">"{{ request('q') }}"</strong></span>
                     @endif
-                    @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm']))
-                        <a href="/shops" class="font-bold text-rose-700 hover:underline">Clear all filters</a>
+                    @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm', 'lat']))
+                        <a href="/shops" class="select-none font-bold text-rose-700 hover:underline">Clear all filters</a>
                     @endif
                 </div>
             </div>

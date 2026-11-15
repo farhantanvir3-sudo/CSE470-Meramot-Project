@@ -460,10 +460,12 @@ const MeramotGeolocation = {
     /**
      * Get user's current GPS coordinates
      */
-    async getCurrentPosition() {
+    requestPosition(options) {
         return new Promise((resolve, reject) => {
             if (!this.isSupported()) {
-                reject(new Error('GPS is not available in this browser.'));
+                const err = new Error('GPS is not available in this browser.');
+                err.code = 0;
+                reject(err);
                 return;
             }
 
@@ -479,24 +481,42 @@ const MeramotGeolocation = {
                     let message = 'Unable to get your location.';
                     switch (error.code) {
                         case error.PERMISSION_DENIED:
-                            message = 'Location access is disabled. Click anywhere on the map or search an area to set your address.';
+                            message = 'Location access is disabled. Tap anywhere on the map or search an area to set your address.';
                             break;
                         case error.POSITION_UNAVAILABLE:
-                            message = 'Current location is unavailable. Click anywhere on the map to set your pickup address.';
+                            message = 'Current location is unavailable. Tap anywhere on the map to pin your location.';
                             break;
                         case error.TIMEOUT:
-                            message = 'Location lookup timed out. Click anywhere on the map to pin your pickup address.';
+                            message = 'Location lookup timed out. Tap anywhere on the map to pin your location.';
                             break;
                     }
-                    reject(new Error(message));
+                    const err = new Error(message);
+                    err.code = error.code;
+                    reject(err);
                 },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 300000 // 5 minutes cache
-                }
+                options
             );
         });
+    },
+
+    async getCurrentPosition() {
+        try {
+            return await this.requestPosition({
+                enableHighAccuracy: true,
+                timeout: 4500,
+                maximumAge: 300000 // 5 minutes cache
+            });
+        } catch (primaryError) {
+            if (primaryError && primaryError.code === 1) {
+                throw primaryError;
+            }
+            // Indoor / mobile coarse network-based fallback when high-accuracy GPS times out or fails
+            return await this.requestPosition({
+                enableHighAccuracy: false,
+                timeout: 5000,
+                maximumAge: 600000 // 10 minutes cache
+            });
+        }
     },
 
     /**
@@ -550,28 +570,92 @@ const MeramotGeolocation = {
         return await response.json();
     },
 
-    updateUrlWithLocation(lat, lng, maxDistanceKm = 12) {
-        const url = new URL(window.location);
+    buildShopsUrlWithLocation(lat, lng, maxDistanceKm = null) {
+        const url = new URL(window.location.href);
+        if (!url.pathname.startsWith('/shops')) {
+            url.pathname = '/shops';
+            url.search = '';
+        }
+        const resolvedRadius = maxDistanceKm !== null && maxDistanceKm !== undefined
+            ? maxDistanceKm
+            : (url.searchParams.get('maxDistanceKm') || 12);
+
+        // Clear confining district/area text filters so Near Me includes all nearby shops across boundaries
+        url.searchParams.delete('city');
+        url.searchParams.delete('area');
         url.searchParams.set('lat', Number(lat).toFixed(5));
         url.searchParams.set('lng', Number(lng).toFixed(5));
-        url.searchParams.set('maxDistanceKm', maxDistanceKm);
+        url.searchParams.set('maxDistanceKm', String(resolvedRadius));
         url.searchParams.set('sort', 'distance');
-        window.location.href = url.toString();
+        url.searchParams.set('page', '1');
+        return url.toString();
     },
 
-    async enableDistanceFilter() {
+    updateUrlWithLocation(lat, lng, maxDistanceKm = 12) {
+        const nextUrl = this.buildShopsUrlWithLocation(lat, lng, maxDistanceKm);
+        if (window.MeramotSoftNav && window.location.pathname.startsWith('/shops')) {
+            window.MeramotSoftNav.visit(nextUrl);
+        } else {
+            window.location.href = nextUrl;
+        }
+    },
+
+    clearNearMeFilter() {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('maxDistanceKm');
+        url.searchParams.delete('max_distance_km');
+        url.searchParams.delete('lat');
+        url.searchParams.delete('lng');
+        if (url.searchParams.get('sort') === 'distance') {
+            url.searchParams.delete('sort');
+        }
+        url.searchParams.set('page', '1');
+        const nextUrl = url.toString();
+        if (window.MeramotSoftNav && window.location.pathname.startsWith('/shops')) {
+            window.MeramotSoftNav.visit(nextUrl);
+        } else {
+            window.location.href = nextUrl;
+        }
+    },
+
+    async enableDistanceFilter(triggerBtn = null) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const alreadyActive = triggerBtn?.dataset?.nearMeActive === 'true'
+            || (window.location.pathname.startsWith('/shops')
+                && (urlParams.has('maxDistanceKm')
+                    || (urlParams.get('sort') === 'distance' && urlParams.has('lat') && urlParams.has('lng'))));
+
+        if (alreadyActive && window.location.pathname.startsWith('/shops')) {
+            this.clearNearMeFilter();
+            return;
+        }
+
         try {
             const position = await this.getCurrentPosition();
             this.updateUrlWithLocation(position.lat, position.lng);
+            // Persist resolved coordinates & neighborhood asynchronously without triggering a second reload
+            if (window.MeramotLocationPicker && typeof MeramotLocationPicker.reverseGeocode === 'function') {
+                MeramotLocationPicker.reverseGeocode(position.lat, position.lng, 'gps')
+                    .then((loc) => {
+                        if (loc) {
+                            MeramotLocationPicker.saveLocation({ ...loc, _skipUrlSync: true });
+                        }
+                    })
+                    .catch(() => {});
+            }
         } catch (error) {
             const stored = MeramotLocationPicker.parseStoredLocation();
             if (stored && typeof stored.lat === 'number' && typeof stored.lng === 'number') {
+                if (window.MeramotToast) {
+                    window.MeramotToast.show('Using your pinned location for nearby shops.', 'info');
+                }
                 this.updateUrlWithLocation(stored.lat, stored.lng);
                 return;
             }
             if (window.MeramotToast) {
-                window.MeramotToast.show(error.message, 'warning');
+                window.MeramotToast.show(error.message || 'Please pin your location on the map to find nearby shops.', 'warning');
             }
+            window.dispatchEvent(new CustomEvent('meramot-open-location-modal'));
         }
     }
 };
@@ -914,7 +998,11 @@ const MeramotLocationPicker = {
             if (res.ok && reloadOnCartOrCatalog) {
                 const path = window.location.pathname || '';
                 if (path === '/cart' || path === '/cart/checkout' || path.startsWith('/packages/catalog')) {
-                    window.location.reload();
+                    if (window.MeramotSoftNav) {
+                        window.MeramotSoftNav.visit(window.location.href, { replace: true });
+                    } else {
+                        window.location.reload();
+                    }
                 }
             }
         } catch (e) {}
@@ -936,9 +1024,10 @@ const MeramotLocationPicker = {
             source: nextLocation.source || 'map'
         };
 
+        const eventDetail = nextLocation._skipUrlSync ? { ...normalized, _skipUrlSync: true } : normalized;
         localStorage.setItem(LOCATION_STORAGE_KEY, JSON.stringify(normalized));
-        window.dispatchEvent(new CustomEvent('meramot-location-changed', { detail: normalized }));
-        this.syncLocationWithServer(normalized, true);
+        window.dispatchEvent(new CustomEvent('meramot-location-changed', { detail: eventDetail }));
+        this.syncLocationWithServer(normalized, !nextLocation._skipUrlSync);
         return normalized;
     },
 
@@ -1128,21 +1217,7 @@ function renderShopDistanceBadges(userLat, userLng) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    document.querySelectorAll('#use-my-location-btn, [data-detect-location]').forEach((btn) => {
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            const originalHtml = this.innerHTML;
-            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i>Locating...';
-            this.disabled = true;
-
-            MeramotGeolocation.enableDistanceFilter().finally(() => {
-                this.innerHTML = originalHtml;
-                this.disabled = false;
-            });
-        });
-    });
-
+function refreshShopDistanceState() {
     const urlParams = new URLSearchParams(window.location.search);
     const stored = MeramotLocationPicker.parseStoredLocation();
 
@@ -1168,22 +1243,64 @@ document.addEventListener('DOMContentLoaded', function () {
             const nextUrl = new URL(window.location.href);
             nextUrl.searchParams.set('lat', stored.lat.toFixed(5));
             nextUrl.searchParams.set('lng', stored.lng.toFixed(5));
-            window.location.replace(nextUrl.toString());
+            if (window.MeramotSoftNav) {
+                window.MeramotSoftNav.visit(nextUrl.toString(), { replace: true });
+            } else {
+                window.location.replace(nextUrl.toString());
+            }
             return;
         }
         renderShopDistanceBadges(stored.lat, stored.lng);
     }
+}
+
+MeramotGeolocation.refreshPageBindings = refreshShopDistanceState;
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('#use-my-location-btn, [data-detect-location]');
+        if (!btn) return;
+        e.preventDefault();
+        if (btn.dataset.locating === 'true') return;
+        btn.dataset.locating = 'true';
+
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i><span>Locating...</span>';
+        btn.disabled = true;
+
+        MeramotGeolocation.enableDistanceFilter(btn).finally(() => {
+            delete btn.dataset.locating;
+            if (document.body.contains(btn)) {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        });
+    });
+
+    refreshShopDistanceState();
 
     window.addEventListener('meramot-location-changed', function (e) {
         const loc = e.detail;
         if (loc && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
-            const currentParams = new URLSearchParams(window.location.search);
-            if ((currentParams.get('sort') === 'distance' || currentParams.has('maxDistanceKm')) && window.location.pathname.startsWith('/shops')) {
-                const nextUrl = new URL(window.location.href);
-                nextUrl.searchParams.set('lat', loc.lat.toFixed(5));
-                nextUrl.searchParams.set('lng', loc.lng.toFixed(5));
-                window.location.href = nextUrl.toString();
+            if (loc._skipUrlSync) {
+                renderShopDistanceBadges(loc.lat, loc.lng);
                 return;
+            }
+            const currentParams = new URLSearchParams(window.location.search);
+            const nextLat = loc.lat.toFixed(5);
+            const nextLng = loc.lng.toFixed(5);
+            if ((currentParams.get('sort') === 'distance' || currentParams.has('maxDistanceKm')) && window.location.pathname.startsWith('/shops')) {
+                if (currentParams.get('lat') !== nextLat || currentParams.get('lng') !== nextLng) {
+                    const nextUrl = new URL(window.location.href);
+                    nextUrl.searchParams.set('lat', nextLat);
+                    nextUrl.searchParams.set('lng', nextLng);
+                    if (window.MeramotSoftNav) {
+                        window.MeramotSoftNav.visit(nextUrl.toString());
+                    } else {
+                        window.location.href = nextUrl.toString();
+                    }
+                    return;
+                }
             }
             renderShopDistanceBadges(loc.lat, loc.lng);
         }

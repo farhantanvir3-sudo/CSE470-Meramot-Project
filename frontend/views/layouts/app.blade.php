@@ -136,13 +136,12 @@
         }
 
         html, body {
-            overflow-x: hidden;
+            overflow-x: clip;
             max-width: 100vw;
             width: 100%;
             background-color: var(--background);
             color: var(--foreground);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            scroll-behavior: smooth;
         }
 
         [x-cloak] { display: none !important; }
@@ -1871,7 +1870,7 @@
     @endif
 
     <!-- Main Dynamic Content Slot -->
-    <main class="flex-grow w-full min-w-0">
+    <main id="meramot-main-content" class="flex-grow w-full min-w-0">
         @yield('content')
     </main>
 
@@ -2426,6 +2425,373 @@
                 sanitizeNumericString,
                 cleanUnicodeDigits,
                 applyFieldAttributes
+            };
+        })();
+
+        /**
+         * In-place Soft Navigation Engine (No Forced Full-Page Reload / Scroll-to-Top Jumps)
+         * Keeps page filters, branch scopes, sorting, pagination, and cart actions responsive in place.
+         */
+        (function () {
+            if (window.MeramotSoftNav) return;
+
+            const MAIN_SELECTOR = '#meramot-main-content';
+            const SCROLL_RESTORE_KEY = 'meramot.scrollRestore';
+            let activeController = null;
+            let navSequence = 0;
+
+            function isSoftNavExcludedPath(pathname) {
+                return /^\/(auth|login|register|logout|delivery\/login|vendor\/apply)/i.test(pathname)
+                    || /\/(receipt|invoice|export|download|pdf)(\/|$)/i.test(pathname);
+            }
+
+            function canSoftHandleUrl(rawHref) {
+                if (!rawHref) return null;
+                let targetUrl;
+                try {
+                    targetUrl = new URL(rawHref, window.location.href);
+                } catch (e) {
+                    return null;
+                }
+                if (targetUrl.origin !== window.location.origin) return null;
+                if (isSoftNavExcludedPath(targetUrl.pathname)) return null;
+
+                const currentUrl = new URL(window.location.href);
+                // Only skip if purely an in-page hash jump with identical path & query
+                if (targetUrl.pathname === currentUrl.pathname
+                    && targetUrl.search === currentUrl.search
+                    && targetUrl.hash) {
+                    return null;
+                }
+
+                // Swap in place when filtering/sorting/paginating on the same route
+                if (targetUrl.pathname === currentUrl.pathname) {
+                    return targetUrl;
+                }
+
+                return null;
+            }
+
+            function syncHeaderState(doc, resolvedUrl) {
+                try {
+                    const currentCatLinks = document.querySelectorAll('header a[href^="/shops?category="], header a[href="/packages/catalog"]');
+                    const nextCatLinks = doc.querySelectorAll('header a[href^="/shops?category="], header a[href="/packages/catalog"]');
+                    const nextByHref = new Map();
+                    nextCatLinks.forEach((link) => {
+                        nextByHref.set(link.getAttribute('href'), link.className);
+                    });
+                    currentCatLinks.forEach((link) => {
+                        const cls = nextByHref.get(link.getAttribute('href'));
+                        if (typeof cls === 'string') {
+                            link.className = cls;
+                        }
+                    });
+
+                    const parsed = new URL(resolvedUrl, window.location.href);
+                    document.querySelectorAll('header form[action="/shops"]').forEach((form) => {
+                        ['category', 'sort', 'lat', 'lng'].forEach((param) => {
+                            const val = parsed.searchParams.get(param);
+                            let input = form.querySelector(`input[name="${param}"]`);
+                            if (val) {
+                                if (!input) {
+                                    input = document.createElement('input');
+                                    input.type = 'hidden';
+                                    input.name = param;
+                                    form.prepend(input);
+                                }
+                                input.value = val;
+                            } else if (input && input.type === 'hidden') {
+                                input.remove();
+                            }
+                        });
+                        const qInput = form.querySelector('input[name="q"]');
+                        if (qInput && document.activeElement !== qInput) {
+                            qInput.value = parsed.searchParams.get('q') || '';
+                        }
+                    });
+                } catch (e) {}
+            }
+
+            function captureAlpineTabs(mainEl) {
+                const tabs = [];
+                if (!window.Alpine || typeof window.Alpine.$data !== 'function') return tabs;
+                mainEl.querySelectorAll('[x-data]').forEach((el, index) => {
+                    try {
+                        const data = window.Alpine.$data(el);
+                        if (data && typeof data === 'object' && 'activeTab' in data) {
+                            tabs.push({ index, activeTab: data.activeTab });
+                        }
+                    } catch (e) {}
+                });
+                return tabs;
+            }
+
+            function restoreAlpineTabs(mainEl, savedTabs) {
+                if (!savedTabs.length || !window.Alpine || typeof window.Alpine.$data !== 'function') return;
+                const nodes = mainEl.querySelectorAll('[x-data]');
+                savedTabs.forEach((entry) => {
+                    const el = nodes[entry.index];
+                    if (!el) return;
+                    try {
+                        const data = window.Alpine.$data(el);
+                        if (data && typeof data === 'object' && 'activeTab' in data && data.activeTab !== entry.activeTab) {
+                            data.activeTab = entry.activeTab;
+                        }
+                    } catch (e) {}
+                });
+            }
+
+            function setScrollYInstant(y) {
+                const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+                const targetY = Math.min(Math.max(0, y), maxScroll);
+                window.scrollTo({ top: targetY, left: 0, behavior: 'instant' });
+            }
+
+            async function visit(targetHref, options = {}) {
+                const mainEl = document.querySelector(MAIN_SELECTOR);
+                if (!mainEl) {
+                    window.location.href = targetHref;
+                    return false;
+                }
+
+                let targetUrl;
+                try {
+                    targetUrl = new URL(targetHref, window.location.href);
+                } catch (e) {
+                    window.location.href = targetHref;
+                    return false;
+                }
+
+                if (targetUrl.origin !== window.location.origin || isSoftNavExcludedPath(targetUrl.pathname)) {
+                    window.location.href = targetUrl.toString();
+                    return false;
+                }
+
+                if (activeController) {
+                    activeController.abort();
+                }
+                activeController = new AbortController();
+                const seq = ++navSequence;
+
+                const currentUrl = new URL(window.location.href);
+                const samePath = targetUrl.pathname === currentUrl.pathname;
+                const preserveScroll = options.preserveScroll !== undefined ? options.preserveScroll : samePath;
+
+                const prevScrollY = typeof options.scrollY === 'number' ? options.scrollY : window.scrollY;
+                const prevHScrolls = Array.from(mainEl.querySelectorAll('.overflow-x-auto')).map((el) => el.scrollLeft);
+                const shouldKeepTab = samePath && !targetUrl.searchParams.has('tab') && !targetUrl.hash;
+                const savedTabs = shouldKeepTab ? captureAlpineTabs(mainEl) : [];
+
+                mainEl.style.transition = 'opacity 120ms ease';
+                mainEl.style.opacity = '0.72';
+
+                try {
+                    const response = await fetch(targetUrl.toString(), {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'text/html,application/xhtml+xml',
+                            'X-Meramot-SoftNav': '1'
+                        },
+                        credentials: 'same-origin',
+                        signal: activeController.signal
+                    });
+
+                    if (seq !== navSequence) return false;
+
+                    const contentType = response.headers.get('content-type') || '';
+                    if (!response.ok || !contentType.includes('text/html')) {
+                        window.location.href = targetUrl.toString();
+                        return false;
+                    }
+
+                    const resolvedUrl = response.url || targetUrl.toString();
+                    const resolvedParsed = new URL(resolvedUrl, window.location.href);
+                    if (isSoftNavExcludedPath(resolvedParsed.pathname)) {
+                        window.location.href = resolvedUrl;
+                        return false;
+                    }
+
+                    const html = await response.text();
+                    const doc = new DOMParser().parseFromString(html, 'text/html');
+                    const incomingMain = doc.querySelector(MAIN_SELECTOR);
+                    if (!incomingMain) {
+                        window.location.href = resolvedUrl;
+                        return false;
+                    }
+
+                    mainEl.style.minHeight = mainEl.offsetHeight + 'px';
+                    mainEl.innerHTML = incomingMain.innerHTML;
+                    if (preserveScroll) {
+                        setScrollYInstant(prevScrollY);
+                    }
+                    if (doc.title) {
+                        document.title = doc.title;
+                    }
+
+                    if (!options.skipHistory) {
+                        if (options.replace) {
+                            window.history.replaceState({ meramotSoftNav: true, url: resolvedUrl }, '', resolvedUrl);
+                        } else if (resolvedUrl !== window.location.href) {
+                            window.history.pushState({ meramotSoftNav: true, url: resolvedUrl }, '', resolvedUrl);
+                        }
+                    }
+
+                    syncHeaderState(doc, resolvedUrl);
+
+                    if (window.MeramotGeolocation && typeof window.MeramotGeolocation.refreshPageBindings === 'function') {
+                        window.MeramotGeolocation.refreshPageBindings();
+                    }
+                    if (window.MeramotInputGuard && typeof window.MeramotInputGuard.applyFieldAttributes === 'function') {
+                        window.MeramotInputGuard.applyFieldAttributes(mainEl);
+                    }
+
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            if (seq !== navSequence) return;
+                            if (shouldKeepTab && savedTabs.length) {
+                                restoreAlpineTabs(mainEl, savedTabs);
+                            }
+                            mainEl.style.minHeight = '';
+                            if (preserveScroll) {
+                                setScrollYInstant(prevScrollY);
+                                const nextHScrolls = mainEl.querySelectorAll('.overflow-x-auto');
+                                prevHScrolls.forEach((left, i) => {
+                                    const container = nextHScrolls[i];
+                                    if (container && left > 0) {
+                                        container.scrollLeft = Math.min(left, Math.max(0, container.scrollWidth - container.clientWidth));
+                                    }
+                                });
+                            } else {
+                                setScrollYInstant(0);
+                            }
+                            mainEl.style.opacity = '1';
+                        });
+                    });
+
+                    window.dispatchEvent(new CustomEvent('meramot-softnav-complete', { detail: { url: resolvedUrl } }));
+                    return true;
+                } catch (err) {
+                    if (err && err.name === 'AbortError') {
+                        return false;
+                    }
+                    mainEl.style.minHeight = '';
+                    mainEl.style.opacity = '1';
+                    window.location.href = targetUrl.toString();
+                    return false;
+                }
+            }
+
+            function buildGetFormUrl(form, submitter = null) {
+                const actionAttr = form.getAttribute('action') || window.location.href;
+                const url = new URL(actionAttr, window.location.href);
+                const formData = new FormData(form);
+                if (submitter && submitter.name) {
+                    formData.append(submitter.name, submitter.value || '');
+                }
+                const params = new URLSearchParams();
+                for (const [k, v] of formData.entries()) {
+                    if (typeof v === 'string') {
+                        params.append(k, v);
+                    }
+                }
+                url.search = params.toString();
+                return url;
+            }
+
+            function saveScrollRestore() {
+                try {
+                    sessionStorage.setItem(SCROLL_RESTORE_KEY, JSON.stringify({
+                        path: window.location.pathname,
+                        y: window.scrollY,
+                        ts: Date.now()
+                    }));
+                } catch (e) {}
+            }
+
+            // Intercept same-page links (filters, sort tabs, areas, branches, pagination, resets)
+            document.addEventListener('click', function (e) {
+                if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+                    return;
+                }
+                const anchor = e.target.closest('a[href]');
+                if (!anchor) return;
+                if (anchor.hasAttribute('download') || anchor.hasAttribute('data-no-softnav') || anchor.hasAttribute('data-hard-reload')) {
+                    return;
+                }
+                if (anchor.target && anchor.target !== '_self') return;
+
+                const href = anchor.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) {
+                    return;
+                }
+
+                const targetUrl = canSoftHandleUrl(anchor.href);
+                if (!targetUrl) return;
+
+                const capturedScrollY = window.scrollY;
+                e.preventDefault();
+                visit(targetUrl.toString(), { scrollY: capturedScrollY });
+            });
+
+            // Intercept same-page GET forms & preserve scroll across POST/PATCH/DELETE redirects
+            document.addEventListener('submit', function (e) {
+                if (e.defaultPrevented) return;
+                const form = e.target;
+                if (!form || form.tagName !== 'FORM' || form.hasAttribute('data-no-softnav')) return;
+
+                const method = (form.getAttribute('method') || 'GET').toUpperCase();
+                if (method === 'GET') {
+                    const targetUrl = buildGetFormUrl(form, e.submitter || null);
+                    const softTarget = canSoftHandleUrl(targetUrl.toString());
+                    if (softTarget) {
+                        const capturedScrollY = window.scrollY;
+                        e.preventDefault();
+                        visit(softTarget.toString(), { scrollY: capturedScrollY });
+                    }
+                } else {
+                    saveScrollRestore();
+                }
+            });
+
+            // Also catch inline onchange="this.form.submit()" calls used on filter checkboxes/selects
+            const nativeFormSubmit = HTMLFormElement.prototype.submit;
+            HTMLFormElement.prototype.submit = function () {
+                const method = (this.getAttribute('method') || 'GET').toUpperCase();
+                if (!this.hasAttribute('data-no-softnav')) {
+                    if (method === 'GET') {
+                        const targetUrl = buildGetFormUrl(this);
+                        const softTarget = canSoftHandleUrl(targetUrl.toString());
+                        if (softTarget) {
+                            visit(softTarget.toString(), { scrollY: window.scrollY });
+                            return;
+                        }
+                    } else {
+                        saveScrollRestore();
+                    }
+                }
+                return nativeFormSubmit.apply(this, arguments);
+            };
+
+            window.addEventListener('popstate', function () {
+                visit(window.location.href, { skipHistory: true, preserveScroll: true });
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                try {
+                    const raw = sessionStorage.getItem(SCROLL_RESTORE_KEY);
+                    if (!raw) return;
+                    sessionStorage.removeItem(SCROLL_RESTORE_KEY);
+                    const saved = JSON.parse(raw);
+                    if (saved && saved.path === window.location.pathname && (Date.now() - saved.ts) < 15000 && saved.y > 0) {
+                        requestAnimationFrame(() => {
+                            setScrollYInstant(saved.y);
+                        });
+                    }
+                } catch (e) {}
+            });
+
+            window.MeramotSoftNav = {
+                visit
             };
         })();
     </script>
