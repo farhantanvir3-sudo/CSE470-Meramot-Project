@@ -16,7 +16,7 @@
     $publicPreviewShop = $activeBranch ?? ($branches->first() ?? null);
 @endphp
 <div
-    class="mx-auto max-w-7xl px-4 py-6 md:px-6"
+    class="mx-auto max-w-7xl px-3 py-3 sm:px-4 sm:py-6 md:px-6"
     x-data="{
         activeTab: @js($initialTab),
         mapTarget: 'new',
@@ -60,26 +60,33 @@
 >
 
     <!-- Header -->
-    <div class="mb-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
-                <a href="/" class="hover:underline">Home</a>
-                <span>/</span>
-                <span class="text-[var(--foreground)] font-semibold">Vendor Portal</span>
-                <span>/</span>
-                <span class="text-[var(--accent-dark)] font-bold capitalize" x-text="activeTab.replace('_', ' ')">Overview</span>
-            </div>
-            <h1 class="text-2xl font-black text-[var(--foreground)] flex flex-wrap items-center gap-2">
-                <i class="fa-solid fa-store text-[var(--accent-dark)]"></i>
-                <span>{{ $brandTitle }} — Operations Dashboard</span>
+    <div class="mb-3 sm:mb-5 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 sm:gap-4">
+        <div class="min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1">
+                <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[var(--muted-foreground)] min-w-0 truncate">
+                    <a href="/" class="hover:underline">Home</a>
+                    <span>/</span>
+                    <span class="text-[var(--foreground)] font-semibold">Vendor Portal</span>
+                    <span>/</span>
+                    <span class="text-[var(--accent-dark)] font-bold capitalize" x-text="activeTab.replace('_', ' ')">Overview</span>
+                </div>
                 @if($vendorProfile->is_branched)
-                    <span class="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dark)] px-3 py-0.5 text-xs font-bold text-[var(--accent-foreground)]">
+                    <span class="sm:hidden inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-foreground)]">
+                        <i class="fa-solid fa-code-branch text-[9px]"></i>
+                        <span>{{ count($branches) }} Branches</span>
+                    </span>
+                @endif
+            </div>
+            <h1 class="text-lg sm:text-2xl font-black text-[var(--foreground)] leading-tight flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span><i class="fa-solid fa-store text-[var(--accent-dark)] mr-1.5 text-base sm:text-xl"></i>{{ $brandTitle }} — Operations Dashboard</span>
+                @if($vendorProfile->is_branched)
+                    <span class="hidden sm:inline-flex items-center gap-1 rounded-full bg-[var(--accent-dark)] px-3 py-0.5 text-xs font-bold text-[var(--accent-foreground)]">
                         <i class="fa-solid fa-code-branch text-[10px]"></i>
                         <span>Multi-Branch Brand ({{ count($branches) }} Shops)</span>
                     </span>
                 @endif
             </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-2">
+            <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R11 &amp; R15 • Assigned: Farhan Tanvir [22299179] (Lead)
                 </span>
@@ -92,21 +99,25 @@
             </p>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2.5">
+        <div class="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 sm:gap-2.5 shrink-0">
             <button
                 type="button"
                 @click="activeTab = 'branches'"
-                class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-bold px-4 py-2 flex items-center gap-1.5 shadow-sm hover:opacity-90 transition"
+                class="justify-center rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-[11px] sm:text-xs font-bold px-2.5 py-1.5 sm:px-4 sm:py-2 flex items-center gap-1 sm:gap-1.5 shadow-sm hover:opacity-90 transition whitespace-nowrap"
             >
                 <i class="fa-solid fa-code-branch"></i>
-                <span>Manage Branches</span>
+                <span class="sm:hidden">Branches</span>
+                <span class="hidden sm:inline">Manage Branches</span>
             </button>
-            <a href="{{ $activeBranch ? '/vendor/setup-shop?shop_id=' . $activeBranch->id : '/vendor/setup-shop' }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
-                <i class="fa-solid fa-sliders mr-1"></i> Pricing &amp; Services
+            <a href="{{ $activeBranch ? '/vendor/setup-shop?shop_id=' . $activeBranch->id : '/vendor/setup-shop' }}" class="justify-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition flex items-center gap-1 whitespace-nowrap">
+                <i class="fa-solid fa-sliders"></i>
+                <span class="sm:hidden">Pricing</span>
+                <span class="hidden sm:inline">Pricing &amp; Services</span>
             </a>
             @if($publicPreviewShop)
-                <a href="/shops/{{ $publicPreviewShop->slug }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition">
-                    View Public Shop &rarr;
+                <a href="/shops/{{ $publicPreviewShop->slug }}" class="justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition flex items-center whitespace-nowrap">
+                    <span class="sm:hidden">Public Shop &rarr;</span>
+                    <span class="hidden sm:inline">View Public Shop &rarr;</span>
                 </a>
             @endif
         </div>
@@ -114,16 +125,16 @@
 
     <!-- Flash & Error Messages -->
     @if(session('success'))
-        <div class="mb-5 rounded-2xl border border-emerald-400 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center justify-between gap-2 shadow-sm">
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-circle-check text-emerald-700"></i>
-                <span>{{ session('success') }}</span>
+        <div class="mb-2.5 sm:mb-5 rounded-xl sm:rounded-2xl border border-emerald-400 bg-emerald-50 px-3 py-2 sm:px-4 sm:py-3 text-[11px] sm:text-xs font-bold text-emerald-900 flex items-center justify-between gap-2 shadow-sm">
+            <div class="flex items-center gap-2 min-w-0">
+                <i class="fa-solid fa-circle-check text-emerald-700 shrink-0"></i>
+                <span class="truncate sm:whitespace-normal">{{ session('success') }}</span>
             </div>
         </div>
     @endif
 
     @if($errors->any())
-        <div class="mb-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1">
+        <div class="mb-2.5 sm:mb-5 rounded-xl sm:rounded-2xl border border-rose-300 bg-rose-50 px-3 py-2 sm:px-4 sm:py-3 text-[11px] sm:text-xs text-rose-800 space-y-1">
             @foreach($errors->all() as $err)
                 <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $err }}</div>
             @endforeach
@@ -131,150 +142,180 @@
     @endif
 
     <!-- ── Multi-Branch Switcher Bar ── -->
-    <div class="mb-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3.5 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 max-w-full">
-            <span class="font-bold uppercase tracking-wider text-[10px] text-[var(--muted-foreground)] shrink-0">
+    <div class="mb-3 sm:mb-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-2.5 sm:p-3.5 shadow-sm text-xs">
+        <div class="flex items-center justify-between gap-2 mb-1.5 md:hidden">
+            <span class="font-bold uppercase tracking-wider text-[10px] text-[var(--muted-foreground)]">
                 <i class="fa-solid fa-building-circle-check text-[var(--accent-dark)] mr-1"></i>Active Scope:
             </span>
-            <a
-                href="/vendor/dashboard?shop_id=all"
-                class="shrink-0 rounded-full px-3.5 py-1.5 font-bold transition {{ $selectedShopId === 'all' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}"
+            <button
+                type="button"
+                @click="activeTab = 'branches'"
+                class="text-[11px] font-bold text-[var(--accent-dark)] hover:underline shrink-0"
             >
-                All Branches ({{ count($branches) }})
-            </a>
-            @foreach($branches as $bItem)
-                <a
-                    href="/vendor/dashboard?shop_id={{ $bItem->id }}"
-                    class="shrink-0 rounded-full px-3.5 py-1.5 font-semibold transition flex items-center gap-1.5 {{ (string) $selectedShopId === (string) $bItem->id ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}"
-                >
-                    <i class="fa-solid fa-code-branch text-[10px]"></i>
-                    <span>{{ $bItem->display_branch_tag ?: ($bItem->area . ' Shop') }}</span>
-                    <span class="opacity-75 text-[10px]">({{ $bItem->city }})</span>
-                </a>
-            @endforeach
+                + Add / Manage
+            </button>
         </div>
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto md:flex-wrap no-scrollbar max-w-full pb-0.5 md:pb-0">
+                <span class="hidden md:inline-flex items-center font-bold uppercase tracking-wider text-[10px] text-[var(--muted-foreground)] shrink-0">
+                    <i class="fa-solid fa-building-circle-check text-[var(--accent-dark)] mr-1"></i>Active Scope:
+                </span>
+                <a
+                    href="/vendor/dashboard?shop_id=all"
+                    class="shrink-0 whitespace-nowrap rounded-full px-3 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold transition {{ $selectedShopId === 'all' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}"
+                >
+                    All Branches ({{ count($branches) }})
+                </a>
+                @foreach($branches as $bItem)
+                    <a
+                        href="/vendor/dashboard?shop_id={{ $bItem->id }}"
+                        class="shrink-0 whitespace-nowrap rounded-full px-3 sm:px-3.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold transition flex items-center gap-1 sm:gap-1.5 {{ (string) $selectedShopId === (string) $bItem->id ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}"
+                    >
+                        <i class="fa-solid fa-code-branch text-[10px]"></i>
+                        <span>{{ $bItem->display_branch_tag ?: ($bItem->area . ' Shop') }}</span>
+                        <span class="opacity-75 text-[10px]">({{ $bItem->city }})</span>
+                    </a>
+                @endforeach
+            </div>
 
-        <button
-            type="button"
-            @click="activeTab = 'branches'"
-            class="text-[11px] font-bold text-[var(--accent-dark)] hover:underline shrink-0"
-        >
-            + Add Branch / Manage Locations
-        </button>
+            <button
+                type="button"
+                @click="activeTab = 'branches'"
+                class="hidden md:inline-block text-[11px] font-bold text-[var(--accent-dark)] hover:underline shrink-0"
+            >
+                + Add Branch / Manage Locations
+            </button>
+        </div>
     </div>
 
     <!-- ── Dashboard Navigation Tabs ── -->
-    <div class="flex flex-wrap gap-1.5 sm:gap-2 border-b border-[var(--border)] pb-3 mb-6 text-xs sm:text-sm">
+    <div class="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:gap-1.5 lg:gap-2 border-b border-[var(--border)] pb-2.5 sm:pb-3 mb-3.5 sm:mb-6 text-[11px] sm:text-xs xl:text-sm">
         <button
             type="button"
             @click="activeTab = 'overview'"
-            :class="activeTab === 'overview' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
-            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
+            :class="activeTab === 'overview' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--accent-dark)]/40 sm:border-[var(--border)] shadow-sm' : 'bg-[var(--mint-100)]/60 sm:bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-[var(--border)]/60 sm:border-transparent'"
+            class="justify-between sm:justify-start rounded-xl sm:rounded-full md:rounded-t-2xl px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 transition flex items-center gap-1.5 min-w-0"
         >
-            <i class="fa-solid fa-chart-pie text-xs"></i>
-            <span>Overview</span>
+            <span class="flex items-center gap-1.5 truncate">
+                <i class="fa-solid fa-chart-pie text-xs shrink-0"></i>
+                <span class="truncate">Overview</span>
+            </span>
         </button>
 
         <button
             type="button"
             @click="activeTab = 'branches'"
-            :class="activeTab === 'branches' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
-            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
+            :class="activeTab === 'branches' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--accent-dark)]/40 sm:border-[var(--border)] shadow-sm' : 'bg-[var(--mint-100)]/60 sm:bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-[var(--border)]/60 sm:border-transparent'"
+            class="justify-between sm:justify-start rounded-xl sm:rounded-full md:rounded-t-2xl px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 transition flex items-center gap-1.5 min-w-0"
         >
-            <i class="fa-solid fa-code-branch text-xs text-[var(--accent-dark)]"></i>
-            <span>Branches &amp; Dual Locations</span>
-            <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-[var(--accent-foreground)] font-bold">{{ count($branches) }}</span>
+            <span class="flex items-center gap-1.5 truncate">
+                <i class="fa-solid fa-code-branch text-xs text-[var(--accent-dark)] shrink-0"></i>
+                <span class="sm:hidden truncate">Branches</span>
+                <span class="hidden sm:inline">Branches &amp; Dual Locations</span>
+            </span>
+            <span class="shrink-0 rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-[var(--accent-foreground)] font-bold">{{ count($branches) }}</span>
         </button>
 
         <button
             type="button"
             @click="activeTab = 'marketplace'"
-            :class="activeTab === 'marketplace' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
-            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
+            :class="activeTab === 'marketplace' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--accent-dark)]/40 sm:border-[var(--border)] shadow-sm' : 'bg-[var(--mint-100)]/60 sm:bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-[var(--border)]/60 sm:border-transparent'"
+            class="justify-between sm:justify-start rounded-xl sm:rounded-full md:rounded-t-2xl px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 transition flex items-center gap-1.5 min-w-0"
         >
-            <i class="fa-solid fa-gavel text-xs text-amber-600"></i>
-            <span>Marketplace Bids</span>
-            <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-[var(--accent-foreground)] font-bold">{{ ($marketplaceRequests ?? collect())->count() }} Live</span>
+            <span class="flex items-center gap-1.5 truncate">
+                <i class="fa-solid fa-gavel text-xs text-amber-600 shrink-0"></i>
+                <span class="sm:hidden truncate">Market Bids</span>
+                <span class="hidden sm:inline">Marketplace Bids</span>
+            </span>
+            <span class="shrink-0 rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-[var(--accent-foreground)] font-bold">{{ ($marketplaceRequests ?? collect())->count() }} Live</span>
         </button>
 
         <button
             type="button"
             @click="activeTab = 'direct_orders'"
-            :class="activeTab === 'direct_orders' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
-            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
+            :class="activeTab === 'direct_orders' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--accent-dark)]/40 sm:border-[var(--border)] shadow-sm' : 'bg-[var(--mint-100)]/60 sm:bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-[var(--border)]/60 sm:border-transparent'"
+            class="justify-between sm:justify-start rounded-xl sm:rounded-full md:rounded-t-2xl px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 transition flex items-center gap-1.5 min-w-0"
         >
-            <i class="fa-solid fa-box text-xs text-emerald-700"></i>
-            <span>Direct Orders</span>
-            <span class="rounded-full bg-emerald-800 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($directOrders ?? collect())->count() }}</span>
+            <span class="flex items-center gap-1.5 truncate">
+                <i class="fa-solid fa-box text-xs text-emerald-700 shrink-0"></i>
+                <span class="truncate">Direct Orders</span>
+            </span>
+            <span class="shrink-0 rounded-full bg-emerald-800 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($directOrders ?? collect())->count() }}</span>
         </button>
 
         <button
             type="button"
             @click="activeTab = 'assigned_jobs'"
-            :class="activeTab === 'assigned_jobs' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
-            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
+            :class="activeTab === 'assigned_jobs' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--accent-dark)]/40 sm:border-[var(--border)] shadow-sm' : 'bg-[var(--mint-100)]/60 sm:bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-[var(--border)]/60 sm:border-transparent'"
+            class="justify-between sm:justify-start rounded-xl sm:rounded-full md:rounded-t-2xl px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 transition flex items-center gap-1.5 min-w-0"
         >
-            <i class="fa-solid fa-screwdriver-wrench text-xs text-[var(--accent-dark)]"></i>
-            <span>My Repair Jobs</span>
-            <span class="rounded-full bg-indigo-800 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($activeJobs ?? collect())->count() }} Active</span>
+            <span class="flex items-center gap-1.5 truncate">
+                <i class="fa-solid fa-screwdriver-wrench text-xs text-[var(--accent-dark)] shrink-0"></i>
+                <span class="sm:hidden truncate">Repair Jobs</span>
+                <span class="hidden sm:inline">My Repair Jobs</span>
+            </span>
+            <span class="shrink-0 rounded-full bg-indigo-800 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($activeJobs ?? collect())->count() }}<span class="hidden sm:inline"> Active</span></span>
         </button>
 
         <button
             type="button"
             @click="activeTab = 'payouts'"
-            :class="activeTab === 'payouts' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--border)] shadow-sm' : 'text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-transparent'"
-            class="rounded-full sm:rounded-t-2xl px-3.5 sm:px-5 py-2 sm:py-2.5 transition flex items-center gap-1.5 sm:gap-2"
+            :class="activeTab === 'payouts' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--accent-dark)]/40 sm:border-[var(--border)] shadow-sm' : 'bg-[var(--mint-100)]/60 sm:bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-[var(--border)]/60 sm:border-transparent'"
+            class="justify-between sm:justify-start rounded-xl sm:rounded-full md:rounded-t-2xl px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 transition flex items-center gap-1.5 min-w-0"
         >
-            <i class="fa-solid fa-money-bill-transfer text-xs text-emerald-700"></i>
-            <span>Earnings &amp; Payouts</span>
-            <span class="rounded-full bg-emerald-700 px-2 py-0.5 text-[10px] text-white font-bold">৳{{ number_format($branchMetrics['available_to_request'] ?? 0, 0) }}</span>
+            <span class="flex items-center gap-1.5 truncate">
+                <i class="fa-solid fa-money-bill-transfer text-xs text-emerald-700 shrink-0"></i>
+                <span class="sm:hidden truncate">Payouts</span>
+                <span class="hidden sm:inline">Earnings &amp; Payouts</span>
+            </span>
+            <span class="shrink-0 rounded-full bg-emerald-700 px-2 py-0.5 text-[10px] text-white font-bold">৳{{ number_format($branchMetrics['available_to_request'] ?? 0, 0) }}</span>
         </button>
     </div>
 
     <!-- ── TAB 1: OVERVIEW ── -->
-    <div x-show="activeTab === 'overview'" class="space-y-6">
+    <div x-show="activeTab === 'overview'" class="space-y-4 sm:space-y-6">
         <!-- 4 Summary KPI Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-            <div class="meramot-card p-4 sm:p-5 min-w-0 shadow-sm">
-                <div class="flex items-center justify-between gap-2 mb-1.5">
-                    <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Gross Inflow</span>
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-sack-dollar text-xs"></i></span>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <div class="meramot-card p-3 sm:p-5 min-w-0 shadow-sm">
+                <div class="flex items-center justify-between gap-1.5 mb-1">
+                    <span class="text-[10px] sm:text-xs text-[var(--muted-foreground)] uppercase font-bold leading-tight">Gross Inflow</span>
+                    <span class="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-sack-dollar text-[10px] sm:text-xs"></i></span>
                 </div>
-                <span class="text-2xl font-black text-[var(--accent-dark)] whitespace-nowrap">৳{{ number_format($branchMetrics['gross_inflow'] ?? 48500) }}</span>
-                <span class="text-[10px] text-[var(--muted-foreground)] block mt-1"><i class="fa-solid fa-arrow-trend-up text-[var(--accent-dark)]"></i> {{ $activeBranch ? ($activeBranch->display_branch_tag ?: $activeBranch->area) : 'Across ' . count($branches) . ' branches' }}</span>
+                <span class="text-lg sm:text-2xl font-black text-[var(--accent-dark)] whitespace-nowrap">৳{{ number_format($branchMetrics['gross_inflow'] ?? 48500) }}</span>
+                <span class="text-[10px] text-[var(--muted-foreground)] block mt-0.5 sm:mt-1 truncate"><i class="fa-solid fa-arrow-trend-up text-[var(--accent-dark)]"></i> {{ $activeBranch ? ($activeBranch->display_branch_tag ?: $activeBranch->area) : 'Across ' . count($branches) . ' branches' }}</span>
             </div>
-            <div class="meramot-card p-4 sm:p-5 min-w-0 shadow-sm">
-                <div class="flex items-center justify-between gap-2 mb-1.5">
-                    <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Active Repair Jobs</span>
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-screwdriver-wrench text-xs"></i></span>
+            <div class="meramot-card p-3 sm:p-5 min-w-0 shadow-sm">
+                <div class="flex items-center justify-between gap-1.5 mb-1">
+                    <span class="text-[10px] sm:text-xs text-[var(--muted-foreground)] uppercase font-bold leading-tight">Active Repair Jobs</span>
+                    <span class="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-screwdriver-wrench text-[10px] sm:text-xs"></i></span>
                 </div>
-                <span class="text-2xl font-black text-[var(--foreground)]">{{ $branchMetrics['active_jobs_count'] ?? 8 }}</span>
-                <span class="text-[10px] text-[var(--muted-foreground)] block mt-1">Bench &amp; rider queue</span>
+                <span class="text-lg sm:text-2xl font-black text-[var(--foreground)]">{{ $branchMetrics['active_jobs_count'] ?? 8 }}</span>
+                <span class="text-[10px] text-[var(--muted-foreground)] block mt-0.5 sm:mt-1 truncate">Bench &amp; rider queue</span>
             </div>
-            <div class="meramot-card p-4 sm:p-5 min-w-0 shadow-sm">
-                <div class="flex items-center justify-between gap-2 mb-1.5">
-                    <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Active Shop Branches</span>
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-code-branch text-xs"></i></span>
+            <div class="meramot-card p-3 sm:p-5 min-w-0 shadow-sm">
+                <div class="flex items-center justify-between gap-1.5 mb-1">
+                    <span class="text-[10px] sm:text-xs text-[var(--muted-foreground)] uppercase font-bold leading-tight">Active Shop Branches</span>
+                    <span class="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-[var(--mint-100)] text-[var(--accent-dark)]"><i class="fa-solid fa-code-branch text-[10px] sm:text-xs"></i></span>
                 </div>
-                <span class="text-2xl font-black text-[var(--foreground)]">{{ count($branches) }}</span>
-                <span class="text-[10px] text-[var(--accent-dark)] font-semibold block mt-1">{{ $vendorProfile->is_branched ? 'Branch Tags Active on Tiles' : 'Single Storefront Mode' }}</span>
+                <span class="text-lg sm:text-2xl font-black text-[var(--foreground)]">{{ count($branches) }}</span>
+                <span class="text-[10px] text-[var(--accent-dark)] font-semibold block mt-0.5 sm:mt-1 truncate">{{ $vendorProfile->is_branched ? 'Branch Tags Active on Tiles' : 'Single Storefront Mode' }}</span>
             </div>
-            <div class="meramot-card p-4 sm:p-5 min-w-0 shadow-sm">
-                <div class="flex items-center justify-between gap-2 mb-1.5">
-                    <span class="text-xs text-[var(--muted-foreground)] uppercase font-bold">Customer Rating</span>
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-star text-xs"></i></span>
+            <div class="meramot-card p-3 sm:p-5 min-w-0 shadow-sm">
+                <div class="flex items-center justify-between gap-1.5 mb-1">
+                    <span class="text-[10px] sm:text-xs text-[var(--muted-foreground)] uppercase font-bold leading-tight">Customer Rating</span>
+                    <span class="flex h-6 w-6 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg sm:rounded-xl bg-amber-100 text-amber-700"><i class="fa-solid fa-star text-[10px] sm:text-xs"></i></span>
                 </div>
-                <span class="text-2xl font-black text-amber-500 whitespace-nowrap">★ {{ number_format($branchMetrics['avg_rating'] ?? 4.9, 1) }}</span>
-                <span class="text-[10px] text-[var(--muted-foreground)] block mt-1">Based on {{ number_format($branchMetrics['total_reviews'] ?? 84) }} reviews</span>
+                <span class="text-lg sm:text-2xl font-black text-amber-500 whitespace-nowrap">★ {{ number_format($branchMetrics['avg_rating'] ?? 4.9, 1) }}</span>
+                <span class="text-[10px] text-[var(--muted-foreground)] block mt-0.5 sm:mt-1 truncate">Based on {{ number_format($branchMetrics['total_reviews'] ?? 84) }} reviews</span>
             </div>
         </div>
 
         <!-- Recent Performance Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="meramot-card p-6 shadow-sm lg:col-span-2">
-                <h3 class="font-bold text-base text-[var(--foreground)] mb-3 flex items-center justify-between">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div class="meramot-card p-4 sm:p-6 shadow-sm lg:col-span-2">
+                <h3 class="font-bold text-sm sm:text-base text-[var(--foreground)] mb-3 flex items-center justify-between gap-2">
                     <span>Recent Repair Activity &amp; Completed Milestones</span>
-                    <button type="button" @click="activeTab = 'assigned_jobs'" class="text-xs font-bold text-[var(--accent-dark)] hover:underline">View All &rarr;</button>
+                    <button type="button" @click="activeTab = 'assigned_jobs'" class="text-xs font-bold text-[var(--accent-dark)] hover:underline whitespace-nowrap shrink-0">View All &rarr;</button>
                 </h3>
                 <div class="divide-y divide-[var(--border)] text-xs">
                     @forelse(($activeJobs ?? collect())->take(4) as $rJob)
@@ -300,7 +341,7 @@
             </div>
 
             <!-- Selected Shop Location Summary -->
-            <div class="meramot-card p-6 shadow-sm space-y-4">
+            <div class="meramot-card p-4 sm:p-6 shadow-sm space-y-3 sm:space-y-4">
                 <h3 class="font-bold text-base text-[var(--foreground)]">
                     {{ $publicPreviewShop ? ($publicPreviewShop->display_branch_tag ?: $publicPreviewShop->name) : 'Shop Settings' }}
                 </h3>
@@ -338,10 +379,10 @@
     </div>
 
     <!-- ── TAB 5: MULTI-BRANCH EXPANSION & DUAL SHOP ADDRESSES ── -->
-    <div x-show="activeTab === 'branches'" x-cloak class="space-y-6">
+    <div x-show="activeTab === 'branches'" x-cloak class="space-y-4 sm:space-y-6">
 
         <!-- Section A: Branching Option Control Banner -->
-        <div class="meramot-card p-6 shadow-sm">
+        <div class="meramot-card p-4 sm:p-6 shadow-sm">
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
                     <span class="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]">
@@ -381,10 +422,10 @@
         </div>
 
         <!-- Section B: Existing Shops / Branches & Dual-Address Editors -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             @foreach($branches as $branch)
                 <div
-                    class="meramot-card p-5 shadow-sm flex flex-col justify-between space-y-4"
+                    class="meramot-card p-3.5 sm:p-5 shadow-sm flex flex-col justify-between space-y-3 sm:space-y-4"
                     x-data="{
                         editing: false,
                         bName: @js($branch->branch_name ?? ''),
@@ -586,8 +627,8 @@
         </div>
 
         <!-- Section C: Spread Business — Open a New Shop Branch Anywhere in Bangladesh -->
-        <div class="meramot-card p-6 md:p-7 shadow-sm">
-            <div class="mb-5 border-b border-[var(--border)] pb-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="meramot-card p-3.5 sm:p-6 md:p-7 shadow-sm">
+            <div class="mb-4 sm:mb-5 border-b border-[var(--border)] pb-3 sm:pb-4 flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Business Expansion</span>
                     <h3 class="text-lg font-black text-[var(--foreground)]">Open a New Shop Branch Under "{{ $brandTitle }}"</h3>
@@ -738,8 +779,8 @@
     </div>
 
     <!-- ── TAB 2: MARKETPLACE LIVE BIDDING (Real Database Tickets & Bid Persistence) ── -->
-    <div x-show="activeTab === 'marketplace'" x-cloak class="space-y-6">
-        <div class="rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+    <div x-show="activeTab === 'marketplace'" x-cloak class="space-y-4 sm:space-y-6">
+        <div class="rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
             <div class="flex items-center gap-3">
                 <i class="fa-solid fa-bullhorn text-amber-700 text-lg"></i>
                 <span>Marketplace Estimating: Submit itemized parts cost, labor fees, and turnaround days directly to customer repair tickets.</span>
@@ -754,9 +795,9 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             @forelse($marketplaceRequests ?? [] as $mReq)
-                <div class="meramot-card p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+                <div class="meramot-card p-4 sm:p-6 shadow-sm flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between mb-2 gap-2">
                             <span class="text-[10px] font-black uppercase tracking-wider bg-emerald-800 text-white px-2.5 py-0.5 rounded-full">
@@ -795,7 +836,7 @@
 
     <!-- ── TAB 3: DIRECT ORDERS (Direct-Order Cart Queue) ── -->
     <div x-show="activeTab === 'direct_orders'" x-cloak class="space-y-4">
-        <div class="meramot-card p-5 sm:p-6 shadow-sm">
+        <div class="meramot-card p-4 sm:p-6 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div>
                     <h3 class="font-bold text-base text-[var(--foreground)]">Incoming Direct Orders</h3>
@@ -803,9 +844,9 @@
                 </div>
                 <a href="/packages/catalog" class="text-xs font-bold text-[var(--accent-dark)] hover:underline whitespace-nowrap">View Service Packages &rarr;</a>
             </div>
-            <div class="space-y-4 text-xs">
+            <div class="space-y-3 sm:space-y-4 text-xs">
                 @forelse($directOrders ?? [] as $order)
-                    <div class="p-4 rounded-2xl bg-[var(--mint-100)] border-2 border-emerald-600 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+                    <div class="p-3.5 sm:p-4 rounded-2xl bg-[var(--mint-100)] border-2 border-emerald-600 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="rounded bg-emerald-800 text-white font-bold text-[10px] px-2 py-0.5 uppercase whitespace-nowrap">Direct Order #{{ $order->id }}</span>
@@ -820,18 +861,18 @@
                             </p>
                             <span class="font-extrabold text-[var(--accent-dark)] text-sm">৳{{ number_format($order->quoted_final_amount ?? 0, 2) }}</span>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
+                        <div class="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
                             <form method="POST" action="{{ route('vendor.direct-orders.respond', $order->id) }}" class="w-full sm:w-auto">
                                 @csrf
                                 <input type="hidden" name="decision" value="accept">
-                                <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-4 py-2 hover:opacity-90 shadow-sm transition whitespace-nowrap">
+                                <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-3 sm:px-4 py-2 hover:opacity-90 shadow-sm transition whitespace-nowrap text-[11px] sm:text-xs">
                                     Accept &amp; Dispatch Rider
                                 </button>
                             </form>
                             <form method="POST" action="{{ route('vendor.direct-orders.respond', $order->id) }}" class="w-full sm:w-auto">
                                 @csrf
                                 <input type="hidden" name="decision" value="decline">
-                                <button type="submit" class="w-full sm:w-auto rounded-full border border-rose-300 bg-white text-rose-700 font-bold px-4 py-2 hover:bg-rose-50 transition whitespace-nowrap">
+                                <button type="submit" class="w-full sm:w-auto rounded-full border border-rose-300 bg-white text-rose-700 font-bold px-3 sm:px-4 py-2 hover:bg-rose-50 transition whitespace-nowrap text-[11px] sm:text-xs">
                                     Decline
                                 </button>
                             </form>
@@ -848,7 +889,7 @@
 
     <!-- ── TAB 4: MY REPAIR JOBS (Real Database Bench Workflow & Quote 2 Dispatch) ── -->
     <div x-show="activeTab === 'assigned_jobs'" x-cloak class="space-y-4">
-        <div class="meramot-card p-4 sm:p-6 shadow-sm">
+        <div class="meramot-card p-3.5 sm:p-6 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div>
                     <h3 class="font-bold text-base text-[var(--foreground)]">Active Repair Queue &amp; Bench Milestones</h3>
@@ -953,11 +994,11 @@
                                         type="button"
                                         x-show="chosenStatus !== 'WAITING_APPROVAL'"
                                         @click="toggleQuoteEditor()"
-                                        class="w-full sm:w-auto rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition shrink-0"
+                                        class="flex-1 sm:flex-initial rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition shrink-0 whitespace-nowrap"
                                         x-text="editingQuote ? 'Hide Quote Editor' : 'Edit Final Quote'"
                                     ></button>
 
-                                    <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition shrink-0">
+                                    <button type="submit" class="flex-1 sm:flex-initial rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-white hover:opacity-90 transition shrink-0 whitespace-nowrap">
                                         Save Status
                                     </button>
                                 </div>
@@ -1056,33 +1097,33 @@
     </div>
 
     <!-- ── TAB 6: EARNINGS & PAYOUTS (Feature R18) ── -->
-    <div x-show="activeTab === 'payouts'" x-cloak class="space-y-6">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-xs">
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Gross Customer Inflow</p>
-                <p class="text-xl font-black text-[var(--foreground)] mt-1">৳{{ number_format($branchMetrics['gross_inflow'] ?? 0, 2) }}</p>
+    <div x-show="activeTab === 'payouts'" x-cloak class="space-y-4 sm:space-y-6">
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4 text-xs">
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">Gross Customer Inflow</p>
+                <p class="text-base sm:text-xl font-black text-[var(--foreground)] mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['gross_inflow'] ?? 0, 2) }}</p>
             </div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">10% Platform Fee</p>
-                <p class="text-xl font-black text-amber-800 mt-1">৳{{ number_format($branchMetrics['commission_deducted'] ?? 0, 2) }}</p>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">10% Platform Fee</p>
+                <p class="text-base sm:text-xl font-black text-amber-800 mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['commission_deducted'] ?? 0, 2) }}</p>
             </div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">90% Net Allocated</p>
-                <p class="text-xl font-black text-[var(--accent-dark)] mt-1">৳{{ number_format($branchMetrics['net_allocated'] ?? 0, 2) }}</p>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">90% Net Allocated</p>
+                <p class="text-base sm:text-xl font-black text-[var(--accent-dark)] mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['net_allocated'] ?? 0, 2) }}</p>
             </div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Already Disbursed</p>
-                <p class="text-xl font-black text-[var(--foreground)] mt-1">৳{{ number_format($branchMetrics['paid_out'] ?? 0, 2) }}</p>
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">Already Disbursed</p>
+                <p class="text-base sm:text-xl font-black text-[var(--foreground)] mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['paid_out'] ?? 0, 2) }}</p>
             </div>
-            <div class="rounded-2xl border border-emerald-400 bg-emerald-50 p-4 shadow-sm">
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900">Available to Withdraw</p>
-                <p class="text-xl font-black text-emerald-800 mt-1">৳{{ number_format($branchMetrics['available_to_request'] ?? 0, 2) }}</p>
+            <div class="col-span-2 lg:col-span-1 rounded-2xl border border-emerald-400 bg-emerald-50 p-3 sm:p-4 shadow-sm min-w-0">
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 leading-tight">Available to Withdraw</p>
+                <p class="text-lg sm:text-xl font-black text-emerald-800 mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['available_to_request'] ?? 0, 2) }}</p>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 text-xs">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 text-xs">
             <!-- Request Payout Form -->
-            <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+            <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4">
                 <div class="flex items-center justify-between gap-2">
                     <div>
                         <h2 class="text-base font-black text-[var(--foreground)]">Request Net Escrow Withdrawal</h2>
@@ -1133,7 +1174,7 @@
             </div>
 
             <!-- Default Payout Account Settings -->
-            <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+            <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4">
                 <div>
                     <h2 class="text-base font-black text-[var(--foreground)]">Saved Settlement Destination</h2>
                     <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Used for automated batch settlements and 1-click withdrawals.</p>
@@ -1183,7 +1224,7 @@
         </div>
 
         <!-- Workshop Payout History -->
-        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-3 text-xs">
+        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-3 text-xs">
             <h2 class="text-base font-black text-[var(--foreground)]">Workshop Payout History</h2>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
