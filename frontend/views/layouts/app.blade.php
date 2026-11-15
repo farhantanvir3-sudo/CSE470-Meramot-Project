@@ -1122,6 +1122,20 @@
                         @if(!$isOnSpareParts && request('category'))
                             <input type="hidden" name="category" value="{{ request('category') }}">
                         @endif
+                        @if($isOnSpareParts)
+                            @if(request('device_type'))
+                                <input type="hidden" name="device_type" value="{{ request('device_type') }}">
+                            @endif
+                            @if(request('part_category'))
+                                <input type="hidden" name="part_category" value="{{ request('part_category') }}">
+                            @endif
+                            @if(request('brand'))
+                                <input type="hidden" name="brand" value="{{ request('brand') }}">
+                            @endif
+                            @if(request('on_sale'))
+                                <input type="hidden" name="on_sale" value="{{ request('on_sale') }}">
+                            @endif
+                        @endif
                         @if(request('sort'))
                             <input type="hidden" name="sort" value="{{ request('sort') }}">
                         @endif
@@ -1154,7 +1168,7 @@
                     $activeCategory = request('category', '');
                     $isSparePartsNav = request()->is('spare-parts*') || $activeCategory === 'SPARE_PARTS';
                 @endphp
-                <div class="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 text-xs font-semibold text-[var(--foreground)] md:flex-nowrap md:shrink-0 md:items-end md:gap-4 md:text-sm lg:gap-6 lg:text-base">
+                <div class="flex items-center justify-between sm:justify-start gap-x-2.5 sm:gap-x-4 overflow-x-auto no-scrollbar whitespace-nowrap text-[11px] sm:text-xs font-semibold text-[var(--foreground)] md:flex-nowrap md:shrink-0 md:items-end md:gap-4 md:text-sm lg:gap-6 lg:text-base">
                     <a
                         href="/shops?category=COURIER_PICKUP"
                         class="inline-flex border-b-[3px] pb-1 transition {{ $activeCategory === 'COURIER_PICKUP' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-bold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"

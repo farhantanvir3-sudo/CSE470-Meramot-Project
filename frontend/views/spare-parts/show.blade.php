@@ -72,70 +72,74 @@
     ];
 @endphp
 
-<div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-7">
+<div class="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-3 sm:py-6">
     {{-- Breadcrumb --}}
-    <nav class="text-xs font-medium text-emerald-900/75 mb-4 flex flex-wrap items-center gap-1.5">
-        <a href="{{ url('/') }}" class="hover:text-emerald-950 transition">Home</a>
-        <span>/</span>
-        <a href="{{ route('spare-parts.index') }}" class="hover:text-emerald-950 transition">Spare Parts</a>
-        <span>/</span>
-        <a href="{{ route('spare-parts.index', ['part_category' => $listing->part_category]) }}" class="hover:text-emerald-950 transition">
+    <nav class="text-[11px] sm:text-xs font-medium text-[var(--muted-foreground)] mb-2.5 sm:mb-4 flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap">
+        <a href="{{ url('/') }}" class="hover:underline shrink-0">Home</a>
+        <span class="shrink-0">/</span>
+        <a href="{{ route('spare-parts.index') }}" class="hover:underline shrink-0">Spare Parts</a>
+        <span class="shrink-0">/</span>
+        <a href="{{ route('spare-parts.index', ['part_category' => $listing->part_category]) }}" class="hover:underline shrink-0">
             {{ $listing->part_category }}
         </a>
-        <span>/</span>
-        <span class="text-emerald-950 font-bold truncate max-w-[260px] sm:max-w-md">{{ $listing->title }}</span>
+        <span class="shrink-0">/</span>
+        <span class="text-[var(--foreground)] font-bold truncate max-w-[180px] sm:max-w-md">{{ $listing->title }}</span>
     </nav>
 
     {{-- Top Destination Switcher Bar (Shows live Courier & Best-Deal impact) --}}
-    <div class="rounded-2xl bg-[#cde7c7]/85 border border-emerald-900/15 px-3.5 py-2.5 mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div class="flex items-center gap-2 text-xs text-emerald-950 flex-wrap">
-            <span class="font-extrabold text-emerald-800">📍 Delivering to:</span>
-            <strong class="px-2.5 py-0.5 rounded-full bg-white/90 border border-emerald-900/15 font-extrabold">{{ $locLabel }}</strong>
-            <span class="text-emerald-900/75">
-                • Courier from {{ $shop?->city ?? 'Dhaka' }}:
-                <strong class="text-emerald-950">+৳{{ number_format($deliveryFee, 0) }}</strong>
-                ({{ $activeQuote['distance_formatted'] ?? '—' }}, ETA {{ $activeQuote['eta_label'] ?? 'Same day' }})
+    <div class="rounded-2xl bg-[var(--card)] border border-[var(--border)] px-3 py-2 sm:px-3.5 sm:py-2.5 mb-3.5 sm:mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-xs">
+        <div class="flex items-center justify-between sm:justify-start gap-2 text-[11px] sm:text-xs text-[var(--foreground)] min-w-0">
+            <div class="flex items-center gap-1.5 min-w-0">
+                <span class="font-extrabold text-emerald-800 shrink-0">📍 To:</span>
+                <strong class="px-2 py-0.5 rounded-full bg-[var(--mint-50)] border border-[var(--border)] font-extrabold truncate max-w-[130px] sm:max-w-none">{{ $locLabel }}</strong>
+            </div>
+            <span class="text-[var(--muted-foreground)] shrink-0">
+                🚚 <strong class="text-[var(--foreground)]">+৳{{ number_format($deliveryFee, 0) }}</strong>
+                <span class="hidden sm:inline">({{ $activeQuote['distance_formatted'] ?? '—' }}, ETA {{ $activeQuote['eta_label'] ?? 'Same day' }})</span>
+                <span class="sm:hidden">({{ $activeQuote['eta_label'] ?? 'Same day' }})</span>
             </span>
         </div>
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar select-none">
-            <span class="text-[11px] font-bold text-emerald-900/70 shrink-0">Switch City:</span>
-            @foreach($quickLocations as $ql)
-                @php
-                    $isActiveCity = strcasecmp((string) ($customerLocation['city'] ?? ''), $ql['city']) === 0;
-                    $locUrl = route('spare-parts.show', array_filter([
-                        'slug' => $listing->slug,
-                        'city' => $ql['city'],
-                        'area' => $ql['area'],
-                        'lat' => $ql['lat'],
-                        'lng' => $ql['lng'],
-                        'spec' => $selectedSpec['code'] ?? null,
-                    ]));
-                @endphp
-                <a href="{{ $locUrl }}"
-                   class="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-bold border transition {{ $isActiveCity ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-white/85 text-emerald-950 border-emerald-900/15 hover:bg-white' }}">
-                    {{ $ql['city'] }}
-                </a>
-            @endforeach
+        <div class="flex items-center gap-1.5 min-w-0 select-none">
+            <span class="text-[10px] sm:text-[11px] font-bold text-[var(--muted-foreground)] shrink-0">City:</span>
+            <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                @foreach($quickLocations as $ql)
+                    @php
+                        $isActiveCity = strcasecmp((string) ($customerLocation['city'] ?? ''), $ql['city']) === 0;
+                        $locUrl = route('spare-parts.show', array_filter([
+                            'slug' => $listing->slug,
+                            'city' => $ql['city'],
+                            'area' => $ql['area'],
+                            'lat' => $ql['lat'],
+                            'lng' => $ql['lng'],
+                            'spec' => $selectedSpec['code'] ?? null,
+                        ]));
+                    @endphp
+                    <a href="{{ $locUrl }}"
+                       class="shrink-0 px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] font-bold border transition {{ $isActiveCity ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
+                        {{ $ql['city'] }}
+                    </a>
+                @endforeach
+            </div>
         </div>
     </div>
 
     {{-- Main 2-Column Product Showcase --}}
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {{-- Left Column: Product Gallery + Seller Card --}}
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-6">
+        {{-- Left Column: Product Gallery + Seller Card (Desktop) --}}
         <div class="lg:col-span-5 space-y-4">
-            <div class="rounded-2xl bg-white border border-emerald-900/15 p-4 shadow-sm">
+            <div class="rounded-2xl bg-white border border-emerald-900/15 p-3 sm:p-4 shadow-sm">
                 {{-- Main Image Frame with Circular Red "Sale!" Banner on Top-Left --}}
-                <div class="relative aspect-square rounded-xl bg-white border border-emerald-900/10 overflow-hidden flex items-center justify-center p-4">
+                <div class="relative aspect-[4/3] sm:aspect-square rounded-xl bg-white border border-emerald-900/10 overflow-hidden flex items-center justify-center p-3 sm:p-4">
                     @if($offerActive)
                         <span id="spSaleCircleBadge"
-                              class="absolute top-3 left-3 z-20 w-14 h-14 rounded-full bg-red-600 text-white text-xs sm:text-sm font-extrabold tracking-tight flex items-center justify-center shadow-lg ring-2 ring-white select-none"
+                              class="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 z-20 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-red-600 text-white text-xs sm:text-sm font-extrabold tracking-tight flex items-center justify-center shadow-lg ring-2 ring-white select-none"
                               title="{{ $offerWindow }}">
                             Sale!
                         </span>
                     @endif
 
                     @if($listing->is_best_deal && $competingListings->count() > 1)
-                        <span class="absolute top-3 right-3 z-20 px-3 py-1 rounded-full bg-emerald-900 text-white text-xs font-extrabold shadow-sm">
+                        <span class="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-20 px-2.5 py-1 rounded-full bg-emerald-900 text-white text-[10px] sm:text-xs font-extrabold shadow-sm">
                             ★ Best Deal in {{ $customerLocation['city'] ?? 'Dhaka' }}
                         </span>
                     @endif
@@ -164,9 +168,9 @@
                 @endif
             </div>
 
-            {{-- Attached Seller / Workshop Card --}}
+            {{-- Attached Seller / Workshop Card (Desktop Left Column) --}}
             @if($shop)
-                <div class="rounded-2xl bg-white/95 border border-emerald-900/15 p-4 shadow-sm space-y-3">
+                <div class="hidden lg:block rounded-2xl bg-white/95 border border-emerald-900/15 p-4 shadow-sm space-y-3">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <div class="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800">Sold &amp; Dispatched By</div>
@@ -554,21 +558,61 @@
                             </div>
                         @endif
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-2 gap-2 sm:gap-3">
                             <button type="submit"
                                     onclick="return window.spPrepareSubmit(false)"
-                                    class="w-full py-3 px-5 rounded-full bg-white border-2 border-emerald-900 text-emerald-950 hover:bg-emerald-50 text-sm font-extrabold transition shadow-xs">
+                                    class="w-full py-2.5 sm:py-3 px-3 sm:px-5 rounded-full bg-white border-2 border-emerald-900 text-emerald-950 hover:bg-emerald-50 text-xs sm:text-sm font-extrabold transition shadow-xs">
                                 🛒 Add to Cart
                             </button>
                             <button type="submit"
                                     onclick="return window.spPrepareSubmit(true)"
-                                    class="w-full py-3 px-5 rounded-full bg-emerald-900 hover:bg-emerald-800 text-white text-sm font-extrabold transition shadow-sm">
+                                    class="w-full py-2.5 sm:py-3 px-3 sm:px-5 rounded-full bg-emerald-900 hover:bg-emerald-800 text-white text-xs sm:text-sm font-extrabold transition shadow-sm">
                                 ⚡ Order Now
                             </button>
                         </div>
                     @endif
                 </form>
             </div>
+
+            {{-- Attached Seller / Workshop Card (Mobile — placed cleanly after CTA) --}}
+            @if($shop)
+                <div class="lg:hidden rounded-2xl bg-[var(--card)] border border-[var(--border)] p-3.5 shadow-sm space-y-2.5">
+                    <div class="flex items-start justify-between gap-2.5">
+                        <div class="min-w-0">
+                            <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800">Sold &amp; Dispatched By</div>
+                            <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                <span class="text-emerald-700 font-bold">✔</span>
+                                <h2 class="text-sm font-extrabold text-[var(--foreground)]">{{ $shop->name }}</h2>
+                                @if($branchTag)
+                                    <span class="px-1.5 py-0.5 rounded bg-emerald-900 text-white text-[10px] font-bold">
+                                        {{ $branchTag }}
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5 truncate">
+                                📍 {{ collect([$shop->area, $shop->city])->filter()->unique()->implode(', ') }}
+                            </p>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-extrabold text-amber-900">
+                                ★ {{ number_format((float) ($shop->rating ?: 4.8), 1) }}
+                            </span>
+                            <div class="text-[10px] text-[var(--muted-foreground)] mt-0.5">{{ $activeQuote['distance_formatted'] ?? '' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <a href="{{ route('spare-parts.index', ['seller_shop_id' => $shop->id]) }}"
+                           class="text-center px-3 py-1.5 rounded-full bg-[var(--mint-50)] text-[var(--foreground)] text-[11px] font-bold border border-[var(--border)]">
+                            🔩 Seller's Parts
+                        </a>
+                        <a href="{{ route('shops.show', ['slug' => $shop->slug]) }}"
+                           class="text-center px-3 py-1.5 rounded-full bg-white text-emerald-950 text-[11px] font-bold border border-emerald-900/20">
+                            🏪 Workshop Profile
+                        </a>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 

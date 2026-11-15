@@ -84,6 +84,18 @@ if [ "${AUTO_MIGRATE:-true}" = "true" ]; then
             DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --class=Database\\Seeders\\UserSeeder --force
             DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --class=Database\\Seeders\\SprintOneDemoSeeder --force
         fi
+
+        SPARE_PARTS_COUNT=$(php -r '
+            require "vendor/autoload.php";
+            $app = require_once "bootstrap/app.php";
+            $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            echo \App\Models\SparePartListing::count();
+        ' 2>/dev/null || echo "0")
+
+        if [ "${SPARE_PARTS_COUNT:-0}" -lt 1000 ]; then
+            echo "Seeding cloned multi-vendor Mobile & PC Spare Parts catalog into Neon PostgreSQL..."
+            DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --class=Database\\Seeders\\SparePartSeeder --force
+        fi
     fi
 fi
 

@@ -30,6 +30,7 @@ class SparePartSeeder extends Seeder
     public function run(): void
     {
         @ini_set('memory_limit', '512M');
+        DB::disableQueryLog();
 
         $useCompactTestSample = app()->runningUnitTests();
         $gzPath = database_path('seeders/data/full_spare_parts_catalog.json.gz');
@@ -38,7 +39,9 @@ class SparePartSeeder extends Seeder
         if (!$useCompactTestSample && file_exists($gzPath)) {
             $rawGz = file_get_contents($gzPath);
             $decodedStr = $rawGz !== false ? @gzdecode($rawGz) : false;
+            unset($rawGz);
             $catalog = is_string($decodedStr) ? json_decode($decodedStr, true) : null;
+            unset($decodedStr);
         } elseif (file_exists($samplePath)) {
             $catalog = json_decode((string) file_get_contents($samplePath), true);
         } else {
