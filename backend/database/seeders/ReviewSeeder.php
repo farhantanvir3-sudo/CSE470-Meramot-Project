@@ -55,19 +55,19 @@ class ReviewSeeder extends Seeder
         // Tailored authentic review copy keyed by `slug:customer_email`
         $curatedComments = [
             'protech-solutions:customer@meramot.demo' => [5, 'Replaced my iPhone 13 Pro OLED display assembly in under 3 hours. True Tone and Face ID work flawlessly with a 90-day warranty card.'],
-            'protech-solutions:nusrat.jahan@meramot.demo' => [5, 'Booked the Laptop High-Capacity Battery Replacement package for my MacBook Air M2. Cycle count 1 verified and doorstep Banani pickup was right on schedule.'],
+            'protech-solutions:nusrat.jahan@meramot.demo' => [5, 'Booked the Thermal Repasting & Internal Dust Deep Clean package for my MacBook Air M2. Temperatures dropped 16°C and doorstep Banani pickup was right on schedule.'],
             'protech-solutions:sadia.afrin@meramot.demo' => [5, 'Fixed a severe Thunderbolt logic board short after a coffee spill. Ultrasonic cleaning and microscope soldering saved my thesis data.'],
             'protech-solutions:mehedi.hasan@meramot.demo' => [5, 'Genuine OEM battery cell installed on my MacBook Pro M2 with transparent itemized invoice and escrow receipt.'],
             'protech-solutions:tahmid.chowdhury@meramot.demo' => [5, 'Dell XPS 15 dual fans replaced and vapor chamber repasted cleanly — runs 18°C cooler under load.'],
             'protech-solutions:tanvir.hasan@meramot.demo' => [4, 'Top-tier charging flex & Tristar IC repair on my iPhone 14 Pro Max; evening courier traffic added 25 minutes, otherwise faultless.'],
 
             'protech-solutions-uttara:sadia.afrin@meramot.demo' => [5, 'So glad ProTech opened an Uttara Sector 7 branch! Restored my HP Spectre USB-C PD charging rail without crossing Airport Road traffic.'],
-            'protech-solutions-uttara:mehedi.hasan@meramot.demo' => [5, 'MacBook Air M1 battery package completed in 90 minutes with Uttara courier return.'],
+            'protech-solutions-uttara:mehedi.hasan@meramot.demo' => [5, 'MacBook Air M1 Clean OS & Drivers Setup package completed in 90 minutes with Uttara courier return.'],
             'protech-solutions-uttara:tahmid.chowdhury@meramot.demo' => [5, 'Crisp backlit keyboard replacement on my Lenovo Yoga Slim 7i at North Tower bench.'],
             'protech-solutions-uttara:tasnim.akter@meramot.demo' => [4, 'Solid Galaxy S23+ AMOLED calibration and waterproof seal; slightly busy on Thursday evening.'],
 
             'protech-solutions-agrabad:rafiul.alam@meramot.demo' => [5, 'Agrabad branch handled our ThinkPad X1 Carbon power rail repair with complete corporate professionalism.'],
-            'protech-solutions-agrabad:nusrat.jahan@meramot.demo' => [5, 'Original Display Panel package on my Galaxy S22 in Chattogram looks factory-fresh with courier return.'],
+            'protech-solutions-agrabad:nusrat.jahan@meramot.demo' => [5, 'Android Rooting & Firmware Flash package on my Galaxy S22 in Chattogram with clean EFS backup and courier return.'],
             'protech-solutions-agrabad:farzana.yasmin@meramot.demo' => [5, 'Fast MacBook Pro servicing on Sheikh Mujib Road with digital 90-day warranty receipt.'],
 
             'dhaka-device-doctors:rafiul.alam@meramot.demo' => [5, 'Saved my Dell XPS 13 motherboard with precision PMIC re-soldering! Transparent ৳6,200 invoice and fast Dhanmondi courier return.'],

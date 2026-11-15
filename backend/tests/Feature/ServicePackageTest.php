@@ -733,8 +733,8 @@ class ServicePackageTest extends TestCase
         $this->assertNotNull($createdReq);
         $placeRes->assertRedirect(route('requests.track', $createdReq->id));
 
-        // Expected total: (2800 * 2 = 5600) + 8% default platform fee (448) + EXPRESS (150) = 6198
-        $this->assertEquals(6198.0, (float) $createdReq->quoted_final_amount);
+        // Expected total: (2800 * 2 = 5600) + 7.65% Panthapath hub fee (428.40) + EXPRESS (150) = 6178.40
+        $this->assertEquals(6178.4, (float) $createdReq->quoted_final_amount);
         $this->assertEquals(2, $package->fresh()->order_count);
         $this->assertDatabaseHas('carts', [
             'user_id' => $customer->id,
@@ -791,7 +791,7 @@ class ServicePackageTest extends TestCase
     public function it_calculates_exact_direct_order_total_on_sslcommerz_checkout_without_double_delivery_fee()
     {
         $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
-        $shop = RepairShop::factory()->create(['name' => 'Banani Tech Lab']);
+        $shop = RepairShop::factory()->create(['name' => 'Banani Tech Lab', 'area' => 'Banani']);
         $package = ServicePackage::factory()->create([
             'title' => 'Type-C Port Microsoldering Fix',
             'fixed_price' => 1200,

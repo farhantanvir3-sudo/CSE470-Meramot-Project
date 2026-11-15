@@ -212,15 +212,15 @@
 
                     <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)]/80 px-4 py-3 text-xs space-y-1.5">
                         <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                            <span>Vendor Services &amp; Parts (100% Vendor)</span>
+                            <span>Services &amp; Parts Subtotal</span>
                             <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedSubtotal, 2) }}</span>
                         </div>
                         <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                            <span>Meramot Platform Fee ({{ $bookedRatePct }}%, excl. courier)</span>
+                            <span>Service &amp; Protection Fee</span>
                             <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedEscrowFee, 2) }}</span>
                         </div>
                         <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                            <span>Platform Pickup &amp; Delivery ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }})</span>
+                            <span>Doorstep Pickup &amp; Delivery ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }})</span>
                             <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedCourierFee, 2) }}</span>
                         </div>
                     </div>

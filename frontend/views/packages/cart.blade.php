@@ -671,21 +671,30 @@
                                     </button>
                                 </form>
                             @endif
+                            @if(!empty($firstShopPromoEligible) && ($total ?? 0) >= 500)
+                                <form method="POST" action="{{ route('cart.voucher.apply') }}" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="voucher_code" value="FIRSTSHOP1">
+                                    <button type="submit" class="rounded-full border border-amber-400 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-900 hover:bg-amber-100 transition">
+                                        FIRSTSHOP1 · First Order at Shop
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     @endif
                 </div>
 
                 <div class="space-y-2.5 text-xs border-y border-[var(--border)] py-4">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">{{ !empty($isSparePartCart) ? 'Seller Parts Subtotal (100% Seller)' : 'Services Subtotal (100% Vendor)' }}</span>
+                        <span class="text-[var(--muted-foreground)]">{{ !empty($isSparePartCart) ? 'Parts Subtotal' : 'Services Subtotal' }}</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($total, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">Meramot Platform Fee ({{ $ratePctLabel }}%, excl. courier)</span>
+                        <span class="text-[var(--muted-foreground)]">Service &amp; Buyer Protection Fee</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($serviceCharge ?? 0, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">Platform Pickup &amp; Delivery (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
+                        <span class="text-[var(--muted-foreground)]">Doorstep Pickup &amp; Delivery (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
                     </div>
                     <template x-if="activeDiscount > 0">

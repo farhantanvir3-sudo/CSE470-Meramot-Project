@@ -137,6 +137,8 @@ Route::get('/shops/explore', [ShopDiscoveryController::class, 'index'])->name('s
 Route::get('/shops/{slug}', [ShopDiscoveryController::class, 'show'])->name('shops.show'); // R6
 
 // Dedicated Spare Parts Marketplace (Items w/ Seller Shop, Specs, Wholesale & Sale Offers)
+Route::get('/search', [SparePartController::class, 'smartSearch'])->name('search.smart');
+Route::get('/api/search/suggest', [SparePartController::class, 'suggest'])->middleware('throttle:60,1')->name('api.search.suggest');
 Route::get('/spare-parts', [SparePartController::class, 'index'])->name('spare-parts.index');
 Route::get('/spare-parts/{slug}', [SparePartController::class, 'show'])->name('spare-parts.show');
 

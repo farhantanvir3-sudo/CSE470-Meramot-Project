@@ -1115,30 +1115,15 @@
                         <i class="fa-solid fa-location-dot text-2xl"></i>
                     </button>
                     @php
-                        $isOnSpareParts = request()->is('spare-parts*');
-                        $headerSearchAction = $isOnSpareParts ? '/spare-parts' : '/shops';
+                        $headerSearchAction = '/search';
+                        $headerScope = 'all';
                     @endphp
-                    <form action="{{ $headerSearchAction }}" method="GET" class="relative flex-1">
-                        @if(!$isOnSpareParts && request('category'))
-                            <input type="hidden" name="category" value="{{ request('category') }}">
-                        @endif
-                        @if($isOnSpareParts)
-                            @if(request('device_type'))
-                                <input type="hidden" name="device_type" value="{{ request('device_type') }}">
-                            @endif
-                            @if(request('part_category'))
-                                <input type="hidden" name="part_category" value="{{ request('part_category') }}">
-                            @endif
-                            @if(request('brand'))
-                                <input type="hidden" name="brand" value="{{ request('brand') }}">
-                            @endif
-                            @if(request('on_sale'))
-                                <input type="hidden" name="on_sale" value="{{ request('on_sale') }}">
-                            @endif
-                        @endif
-                        @if(request('sort'))
-                            <input type="hidden" name="sort" value="{{ request('sort') }}">
-                        @endif
+                    <form action="{{ $headerSearchAction }}"
+                          method="GET"
+                          x-data="meramotTypeahead(@js(request('q', '')), @js($headerScope))"
+                          @click.outside="close()"
+                          @submit="close()"
+                          class="relative flex-1">
                         @if(request('lat') && request('lng'))
                             <input type="hidden" name="lat" value="{{ request('lat') }}">
                             <input type="hidden" name="lng" value="{{ request('lng') }}">
@@ -1147,17 +1132,26 @@
                             type="text"
                             name="q"
                             value="{{ request('q') }}"
-                            placeholder="{{ $isOnSpareParts ? 'Search spare parts, displays, batteries...' : 'Search shops, parts...' }}"
+                            x-model="query"
+                            autocomplete="off"
+                            @input.debounce.180ms="fetchSuggestions()"
+                            @focus="onFocus()"
+                            @keydown.down.prevent="moveSelection(1)"
+                            @keydown.up.prevent="moveSelection(-1)"
+                            @keydown.enter="onEnter($event)"
+                            @keydown.escape="close()"
+                            placeholder="Search spare parts, workshops, or fixed packages..."
                             class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] py-2.5 pl-4 pr-16 text-[0.9rem] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)]"
                         />
                         <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             @if(request('q'))
-                                <a href="{{ $headerSearchAction }}" class="flex h-7 w-7 items-center justify-center rounded-lg text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]" title="Clear search">✕</a>
+                                <a href="{{ url()->current() }}" class="flex h-7 w-7 items-center justify-center rounded-lg text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]" title="Clear search">✕</a>
                             @endif
                             <button type="submit" aria-label="Search" class="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                                 <i class="fa-solid fa-magnifying-glass"></i>
                             </button>
                         </div>
+                        @include('partials.search-suggest-dropdown')
                     </form>
                 </div>
             </div>
@@ -1195,13 +1189,12 @@
                     </a>
                 </div>
 
-                <form action="{{ $headerSearchAction }}" method="GET" class="relative hidden w-full min-w-0 md:block md:flex-1 md:max-w-[640px]">
-                    @if(!$isOnSpareParts && request('category'))
-                        <input type="hidden" name="category" value="{{ request('category') }}">
-                    @endif
-                    @if(request('sort'))
-                        <input type="hidden" name="sort" value="{{ request('sort') }}">
-                    @endif
+                <form action="{{ $headerSearchAction }}"
+                      method="GET"
+                      x-data="meramotTypeahead(@js(request('q', '')), @js($headerScope))"
+                      @click.outside="close()"
+                      @submit="close()"
+                      class="relative hidden w-full min-w-0 md:block md:flex-1 md:max-w-[640px]">
                     @if(request('lat') && request('lng'))
                         <input type="hidden" name="lat" value="{{ request('lat') }}">
                         <input type="hidden" name="lng" value="{{ request('lng') }}">
@@ -1210,17 +1203,26 @@
                         type="text"
                         name="q"
                         value="{{ request('q') }}"
-                        placeholder="{{ $isOnSpareParts ? 'Search spare parts, displays, laptop batteries, keyboards...' : 'Search shops, parts, devices...' }}"
+                        x-model="query"
+                        autocomplete="off"
+                        @input.debounce.180ms="fetchSuggestions()"
+                        @focus="onFocus()"
+                        @keydown.down.prevent="moveSelection(1)"
+                        @keydown.up.prevent="moveSelection(-1)"
+                        @keydown.enter="onEnter($event)"
+                        @keydown.escape="close()"
+                        placeholder="Search spare parts, workshops, or fixed packages..."
                         class="w-full rounded-xl border-2 border-[var(--border)] bg-[var(--mint-300)] py-3 pl-5 pr-20 text-sm text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)] transition"
                     />
                     <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                         @if(request('q'))
-                            <a href="{{ $headerSearchAction }}" class="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition" title="Clear search">✕</a>
+                            <a href="{{ url()->current() }}" class="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition" title="Clear search">✕</a>
                         @endif
                         <button type="submit" aria-label="Search" class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </button>
                     </div>
+                    @include('partials.search-suggest-dropdown')
                 </form>
             </div>
         </div>
@@ -2868,6 +2870,189 @@
                 nextUrl.searchParams.delete('page');
                 visit(nextUrl.toString(), { scrollY: window.scrollY });
             });
+        })();
+
+        (function () {
+            const suggestCache = new Map();
+
+            window.meramotTypeahead = function (initialQuery, scope) {
+                return {
+                    query: typeof initialQuery === 'string' ? initialQuery : '',
+                    scope: scope || 'all',
+                    open: false,
+                    loading: false,
+                    fetchedOnce: false,
+                    primarySection: 'spare-parts',
+                    packages: [],
+                    categories: [],
+                    parts: [],
+                    shops: [],
+                    activeIndex: -1,
+                    abortController: null,
+
+                    get hasResults() {
+                        return this.packages.length > 0 || this.categories.length > 0 || this.parts.length > 0 || this.shops.length > 0;
+                    },
+
+                    get flatItems() {
+                        const list = [];
+                        if (this.primarySection === 'packages') {
+                            this.packages.forEach((item, idx) => list.push({ type: 'pkg', idx, url: item.url }));
+                            this.categories.forEach((item, idx) => list.push({ type: 'cat', idx, url: item.url }));
+                            this.parts.forEach((item, idx) => list.push({ type: 'part', idx, url: item.url }));
+                            this.shops.forEach((item, idx) => list.push({ type: 'shop', idx, url: item.url }));
+                        } else if (this.primarySection === 'shops') {
+                            this.shops.forEach((item, idx) => list.push({ type: 'shop', idx, url: item.url }));
+                            this.categories.forEach((item, idx) => list.push({ type: 'cat', idx, url: item.url }));
+                            this.parts.forEach((item, idx) => list.push({ type: 'part', idx, url: item.url }));
+                            this.packages.forEach((item, idx) => list.push({ type: 'pkg', idx, url: item.url }));
+                        } else {
+                            this.categories.forEach((item, idx) => list.push({ type: 'cat', idx, url: item.url }));
+                            this.parts.forEach((item, idx) => list.push({ type: 'part', idx, url: item.url }));
+                            this.shops.forEach((item, idx) => list.push({ type: 'shop', idx, url: item.url }));
+                            this.packages.forEach((item, idx) => list.push({ type: 'pkg', idx, url: item.url }));
+                        }
+                        return list;
+                    },
+
+                    isItemActive(type, idx) {
+                        const active = this.flatItems[this.activeIndex];
+                        return Boolean(active && active.type === type && active.idx === idx);
+                    },
+
+                    onFocus() {
+                        const trimmed = (this.query || '').trim();
+                        if (trimmed.length >= 2) {
+                            if (this.hasResults || this.fetchedOnce) {
+                                this.open = true;
+                            } else {
+                                this.fetchSuggestions();
+                            }
+                        }
+                    },
+
+                    close() {
+                        this.open = false;
+                        this.activeIndex = -1;
+                    },
+
+                    moveSelection(delta) {
+                        const total = this.flatItems.length;
+                        if (total === 0) {
+                            this.activeIndex = -1;
+                            return;
+                        }
+                        if (!this.open) {
+                            this.open = true;
+                        }
+                        if (this.activeIndex < 0) {
+                            this.activeIndex = delta > 0 ? 0 : total - 1;
+                        } else {
+                            this.activeIndex = (this.activeIndex + delta + total) % total;
+                        }
+                    },
+
+                    onEnter(event) {
+                        const active = this.flatItems[this.activeIndex];
+                        if (this.open && active && active.url) {
+                            event.preventDefault();
+                            this.close();
+                            window.location.assign(active.url);
+                            return;
+                        }
+                        this.close();
+                    },
+
+                    submitParentForm(el) {
+                        this.close();
+                        const form = el ? el.closest('form') : null;
+                        if (form) {
+                            if (typeof form.requestSubmit === 'function') {
+                                form.requestSubmit();
+                            } else {
+                                form.submit();
+                            }
+                        }
+                    },
+
+                    async fetchSuggestions() {
+                        const trimmed = (this.query || '').trim();
+                        if (trimmed.length < 2) {
+                            this.open = false;
+                            this.loading = false;
+                            this.fetchedOnce = false;
+                            this.primarySection = 'spare-parts';
+                            this.packages = [];
+                            this.categories = [];
+                            this.parts = [];
+                            this.shops = [];
+                            this.activeIndex = -1;
+                            return;
+                        }
+
+                        const cacheKey = this.scope + '::' + trimmed.toLowerCase();
+                        if (suggestCache.has(cacheKey)) {
+                            const cached = suggestCache.get(cacheKey);
+                            this.primarySection = cached.primary_section || 'spare-parts';
+                            this.packages = cached.packages || [];
+                            this.categories = cached.categories || [];
+                            this.parts = cached.parts || [];
+                            this.shops = cached.shops || [];
+                            this.fetchedOnce = true;
+                            this.loading = false;
+                            this.activeIndex = -1;
+                            this.open = true;
+                            return;
+                        }
+
+                        if (this.abortController) {
+                            this.abortController.abort();
+                        }
+                        this.abortController = new AbortController();
+                        this.loading = true;
+                        this.open = true;
+
+                        try {
+                            const res = await fetch('/api/search/suggest?q=' + encodeURIComponent(trimmed), {
+                                headers: { 'Accept': 'application/json' },
+                                signal: this.abortController.signal,
+                            });
+                            if (!res.ok) {
+                                this.loading = false;
+                                return;
+                            }
+                            const data = await res.json();
+                            if ((this.query || '').trim() !== trimmed) {
+                                return;
+                            }
+                            const normalized = {
+                                primary_section: typeof data.primary_section === 'string' ? data.primary_section : 'spare-parts',
+                                packages: Array.isArray(data.packages) ? data.packages : [],
+                                categories: Array.isArray(data.categories) ? data.categories : [],
+                                parts: Array.isArray(data.parts) ? data.parts : [],
+                                shops: Array.isArray(data.shops) ? data.shops : [],
+                            };
+                            if (suggestCache.size > 60) {
+                                suggestCache.clear();
+                            }
+                            suggestCache.set(cacheKey, normalized);
+                            this.primarySection = normalized.primary_section;
+                            this.packages = normalized.packages;
+                            this.categories = normalized.categories;
+                            this.parts = normalized.parts;
+                            this.shops = normalized.shops;
+                            this.fetchedOnce = true;
+                            this.activeIndex = -1;
+                        } catch (err) {
+                            if (err && err.name !== 'AbortError') {
+                                this.fetchedOnce = true;
+                            }
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+                };
+            };
         })();
     </script>
 </body>

@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\RepairShop;
+use App\Models\ServicePackage;
 use App\Models\SparePartListing;
 use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
 use App\Services\GeolocationService;
+use App\Services\MarketplacePricingService;
 use App\Services\MarketplaceSearchEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -533,8 +535,9 @@ class SparePartController extends Controller
         // Distinct product count before pagination
         $distinctProductCount = (clone $query)->distinct('spare_part_listings.product_group_key')->count('spare_part_listings.product_group_key');
 
-        // Determine search context: "Best Deal" winner tags highlight when searching,
-        // while ALL sort options (including lowest-first and highest-first prices) are always available!
+        // Determine search context: "Best Deal" winner tags highlight ONLY when actively searching (`q`),
+        // while `best_match` defaults for typed queries (`$search !== ''`) and ALL sort options remain available.
+        $hasActiveSearchQuery = ($search !== '');
         $hasSearchContext = ($search !== '' || $selectedGroup !== '');
         $requestedSort = strtolower(trim((string) $request->input('sort', '')));
         if ($requestedSort === 'fastest_delivery') {
@@ -545,13 +548,15 @@ class SparePartController extends Controller
             $requestedSort = 'lowest_price';
         } elseif ($requestedSort === 'price_high') {
             $requestedSort = 'highest_price';
+        } elseif ($requestedSort === 'relevance') {
+            $requestedSort = 'best_match';
         }
 
-        $allowedSorts = ['best_deal', 'lowest_price', 'highest_price', 'distance', 'fastest_eta', 'popular', 'wholesale', 'alphabetical'];
-        $defaultSort = $hasSearchContext ? 'best_deal' : 'alphabetical';
+        $allowedSorts = ['best_match', 'best_deal', 'lowest_price', 'highest_price', 'distance', 'fastest_eta', 'popular', 'wholesale', 'alphabetical'];
+        $defaultSort = $hasActiveSearchQuery ? 'best_match' : ($hasSearchContext ? 'best_deal' : 'alphabetical');
         $sort = in_array($requestedSort, $allowedSorts, true) ? $requestedSort : $defaultSort;
 
-        if ($searchRelevanceOrder !== null && ($sort === 'best_deal' || !($searchRelevanceOrder['all_matched'] ?? true))) {
+        if ($searchRelevanceOrder !== null && ($sort === 'best_match' || !($searchRelevanceOrder['all_matched'] ?? true))) {
             $query->orderByRaw($searchRelevanceOrder['sql'], $searchRelevanceOrder['bindings']);
         }
 
@@ -710,7 +715,13 @@ class SparePartController extends Controller
             $item->setAttribute('best_landed_total', $bench['best_landed_total']);
             $item->setAttribute('min_raw_price', $bench['min_raw_price']);
             $item->setAttribute('is_cheapest_raw_but_far', ($hasSearchContext && $isBestRawPrice && !$isBestDeal));
-            $item->setAttribute('commission_rate_pct', $item->shop?->effectiveCommissionRatePct() ?? VendorProfile::DEFAULT_COMMISSION_RATE);
+            $item->setAttribute(
+                'commission_rate_pct',
+                MarketplacePricingService::resolveOrderFeeRatePct($item->shop, $customerLocation, [
+                    'item_type' => 'spare_part',
+                    'part_category' => $item->part_category,
+                ])
+            );
         }
 
         // Minimalistic 3-level Hierarchical Folder Directory: Root Group -> Category Folder -> Sub-Categories & Brands
@@ -894,6 +905,7 @@ class SparePartController extends Controller
             'sort' => $sort,
             'search' => $search,
             'hasSearchContext' => $hasSearchContext,
+            'hasActiveSearchQuery' => $hasActiveSearchQuery,
             'wholesaleOnly' => $wholesaleOnly,
             'specsOnly' => $specsOnly,
             'localOnly' => $localOnly,
@@ -1026,6 +1038,9 @@ class SparePartController extends Controller
                 ? ['key' => 'mobile', 'label' => 'Mobile Parts']
                 : ['key' => 'others', 'label' => 'Repair Tools & Soldering']);
 
+        $activeSearchQuery = trim((string) $request->input('q', ''));
+        $hasActiveSearchQuery = ($activeSearchQuery !== '');
+
         return view('spare-parts.show', [
             'listing' => $listing,
             'specOptions' => $specOptions,
@@ -1039,7 +1054,225 @@ class SparePartController extends Controller
             'quickLocations' => $quickLocations,
             'commissionRatePct' => $commissionRatePct,
             'deviceSegment' => $deviceSegment,
+            'activeSearchQuery' => $activeSearchQuery,
+            'hasActiveSearchQuery' => $hasActiveSearchQuery,
         ]);
+    }
+
+    /**
+     * Instant Typeahead Suggestions for Header & Catalog Search Bars.
+     * Route: GET /api/search/suggest
+     */
+    public function suggest(Request $request)
+    {
+        $raw = trim((string) $request->input('q', ''));
+        if (mb_strlen($raw, 'UTF-8') < 2) {
+            return response()->json([
+                'query' => $raw,
+                'categories' => [],
+                'parts' => [],
+                'shops' => [],
+            ]);
+        }
+
+        $qLower = mb_strtolower($raw, 'UTF-8');
+        $categories = [];
+        foreach (self::directorySchema() as $rootDef) {
+            foreach ($rootDef['categories'] as $catKey => $catMeta) {
+                $catLabel = $catMeta['label'] ?? $catKey;
+                if (str_contains(mb_strtolower($catLabel, 'UTF-8'), $qLower) || str_contains(mb_strtolower($catKey, 'UTF-8'), $qLower)) {
+                    $categories[] = [
+                        'label' => $catLabel,
+                        'url' => route('spare-parts.index', ['part_category' => $catKey, 'q' => $raw]),
+                    ];
+                }
+                foreach ($catMeta['sub_categories'] ?? [] as $subKey => $subLabel) {
+                    if (str_contains(mb_strtolower($subLabel, 'UTF-8'), $qLower)) {
+                        $categories[] = [
+                            'label' => $catLabel . ' > ' . $subLabel,
+                            'url' => route('spare-parts.index', ['part_category' => $catKey, 'sub_category' => $subKey]),
+                        ];
+                    }
+                }
+                if (count($categories) >= 3) {
+                    break 2;
+                }
+            }
+        }
+
+        $partQuery = SparePartListing::query()
+            ->join('repair_shops', 'spare_part_listings.shop_id', '=', 'repair_shops.id')
+            ->where('spare_part_listings.is_active', true)
+            ->where('repair_shops.is_active', true)
+            ->select([
+                'spare_part_listings.id',
+                'spare_part_listings.slug',
+                'spare_part_listings.product_group_key',
+                'spare_part_listings.title',
+                'spare_part_listings.part_category',
+                'spare_part_listings.brand',
+                'spare_part_listings.base_price',
+                'spare_part_listings.normal_price',
+                'spare_part_listings.offer_enabled',
+                'spare_part_listings.offer_price',
+                'spare_part_listings.offer_discount_pct',
+                'spare_part_listings.offer_starts_at',
+                'spare_part_listings.offer_ends_at',
+                'spare_part_listings.image_url',
+            ]);
+
+        $rel = MarketplaceSearchEngine::applySparePartSearch($partQuery, $raw);
+        if ($rel !== null) {
+            $partQuery->orderByRaw($rel['sql'], $rel['bindings']);
+        }
+        $partQuery->orderBy('spare_part_listings.base_price', 'asc');
+
+        $seenGroups = [];
+        $parts = [];
+        foreach ($partQuery->limit(18)->get() as $p) {
+            $gk = $p->product_group_key ?: ('id_' . $p->id);
+            if (isset($seenGroups[$gk])) {
+                continue;
+            }
+            $seenGroups[$gk] = true;
+            $parts[] = [
+                'title' => $p->title,
+                'slug' => $p->slug,
+                'part_category' => $p->part_category,
+                'brand' => $p->brand,
+                'price' => round($p->effectiveBasePrice(), 0),
+                'image_url' => $p->image_url,
+                'url' => route('spare-parts.show', ['slug' => $p->slug, 'q' => $raw]),
+            ];
+            if (count($parts) >= 5) {
+                break;
+            }
+        }
+
+        $shopQuery = RepairShop::query()
+            ->where('is_active', true)
+            ->where('is_public', true)
+            ->select(['id', 'name', 'slug', 'area', 'city', 'rating']);
+        $shopRel = MarketplaceSearchEngine::applyShopSearch($shopQuery, $raw);
+        if ($shopRel !== null) {
+            $shopQuery->orderByRaw($shopRel['sql'], $shopRel['bindings']);
+        }
+        $shopQuery->orderByDesc('rating');
+
+        $shops = $shopQuery->limit(3)->get()->map(fn (RepairShop $s) => [
+            'name' => $s->name,
+            'slug' => $s->slug,
+            'area' => $s->area,
+            'city' => $s->city,
+            'rating' => ((float) ($s->rating ?? 0)) > 0 ? number_format((float) $s->rating, 1) : '4.8',
+            'url' => url('/shops/' . $s->slug),
+        ])->values()->all();
+
+        $packages = ServicePackage::where('is_active', true)
+            ->orderByDesc('is_popular')
+            ->orderByDesc('order_count')
+            ->get()
+            ->filter(fn (ServicePackage $pkg) => MarketplaceSearchEngine::matchesServicePackageQuery($pkg, $raw))
+            ->sortByDesc(fn (ServicePackage $pkg) => MarketplaceSearchEngine::scoreServicePackageQuery($pkg, $raw))
+            ->take(4)
+            ->map(fn (ServicePackage $pkg) => [
+                'id' => $pkg->id,
+                'title' => $pkg->title,
+                'device_category' => $pkg->device_category,
+                'fixed_price' => (float) $pkg->fixed_price,
+                'url' => route('packages.catalog', ['q' => $pkg->title]),
+            ])
+            ->values()
+            ->all();
+
+        // Clear noisy Stage-2 OR-fallback parts when shops or packages matched all query tokens
+        if ($rel !== null && !($rel['all_matched'] ?? true) && (!empty($shops) || !empty($packages))) {
+            $parts = [];
+        }
+
+        // Compute global route directly without passing Stage-2 `has_parts` noise
+        $routing = MarketplaceSearchEngine::resolveGlobalSearchDestination($raw, [
+            'has_packages' => !empty($packages),
+            'has_shops' => !empty($shops),
+        ]);
+
+        // Populate category-filtered shop suggestions when typing tab shortcuts ("courier pickup", "in-shop repair")
+        $routedCategory = $routing['params']['category'] ?? null;
+        if ($routedCategory !== null && empty($shops)) {
+            $tabShopQuery = RepairShop::query()
+                ->where('is_active', true)
+                ->where('is_public', true)
+                ->whereRaw('LOWER(CAST(categories AS TEXT)) LIKE ?', ['%' . strtolower((string) $routedCategory) . '%']);
+
+            $cleanRoutedQ = trim((string) ($routing['clean_q'] ?? ''));
+            if ($cleanRoutedQ !== '') {
+                $tabShopRel = MarketplaceSearchEngine::applyShopSearch($tabShopQuery, $cleanRoutedQ);
+                if ($tabShopRel !== null) {
+                    $tabShopQuery->orderByRaw($tabShopRel['sql'], $tabShopRel['bindings']);
+                }
+            }
+
+            $shops = $tabShopQuery->orderByDesc('rating')
+                ->limit(3)
+                ->get(['id', 'name', 'slug', 'area', 'city', 'rating'])
+                ->map(fn (RepairShop $s) => [
+                    'name' => $s->name,
+                    'slug' => $s->slug,
+                    'area' => $s->area,
+                    'city' => $s->city,
+                    'rating' => ((float) ($s->rating ?? 0)) > 0 ? number_format((float) $s->rating, 1) : '4.8',
+                    'url' => url('/shops/' . $s->slug),
+                ])
+                ->values()
+                ->all();
+        }
+
+        return response()->json([
+            'query' => $raw,
+            'primary_section' => $routing['section'],
+            'packages' => $packages,
+            'categories' => array_slice($categories, 0, 3),
+            'parts' => $parts,
+            'shops' => $shops,
+        ]);
+    }
+
+    /**
+     * Global Smart Search Router: directs queries from Home / header search across all verticals
+     * (Courier Pickup, In-Shop Repair, Fixed Packages, Spare Parts, and Verified Repair Shops).
+     * Route: GET /search
+     */
+    public function smartSearch(Request $request)
+    {
+        $raw = trim((string) $request->input('q', ''));
+        $params = array_filter([
+            'q' => $raw !== '' ? $raw : null,
+            'sort' => $request->input('sort'),
+            'lat' => $request->input('lat'),
+            'lng' => $request->input('lng'),
+        ], fn ($v) => $v !== null && $v !== '');
+
+        if ($raw === '') {
+            return redirect()->route('spare-parts.index', $params);
+        }
+
+        $destination = MarketplaceSearchEngine::resolveGlobalSearchDestination($raw);
+        $cleanQ = trim((string) ($destination['clean_q'] ?? $raw));
+        $destParams = array_merge($params, $destination['params'] ?? []);
+        if ($cleanQ !== '') {
+            $destParams['q'] = $cleanQ;
+        } else {
+            unset($destParams['q']);
+        }
+
+        if ($destination['route'] === 'packages.catalog') {
+            return redirect()->route('packages.catalog', $destParams);
+        }
+        if ($destination['route'] === 'shops.index') {
+            return redirect()->route('shops.index', $destParams);
+        }
+
+        return redirect()->route('spare-parts.index', $destParams);
     }
 
     /**

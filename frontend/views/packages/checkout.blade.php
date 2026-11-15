@@ -221,15 +221,15 @@
 
             <div class="space-y-1.5">
                 <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                    <span>{{ !empty($isSparePartCart) ? 'Seller Parts Subtotal (100% Seller)' : 'Services Subtotal (100% Vendor)' }}</span>
+                    <span>{{ !empty($isSparePartCart) ? 'Parts Subtotal' : 'Services Subtotal' }}</span>
                     <span class="shrink-0 font-semibold text-[var(--foreground)]">৳{{ number_format($total, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                    <span>Meramot Platform Fee ({{ $ratePctLabel }}%, excl. courier)</span>
+                    <span>Service &amp; Buyer Protection Fee</span>
                     <span class="shrink-0 font-semibold text-[var(--foreground)]">৳{{ number_format($serviceCharge ?? 0, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                    <span>Platform Pickup &amp; Delivery (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
+                    <span>Doorstep Pickup &amp; Delivery (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
                     <span class="shrink-0 font-semibold text-[var(--foreground)]">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
                 </div>
                 <template x-if="activeDiscount > 0">

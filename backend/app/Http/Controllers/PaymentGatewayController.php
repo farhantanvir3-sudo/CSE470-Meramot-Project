@@ -90,7 +90,7 @@ class PaymentGatewayController extends Controller
                 $lineItems[] = [
                     'shop_service_id' => isset($it['service_id']) ? (int) $it['service_id'] : null,
                     'title' => (string) ($it['title'] ?? 'Booked Workshop Service'),
-                    'description' => '100% Vendor listed price (excl. platform fee & courier)',
+                    'description' => 'Verified workshop service & hardware listing',
                     'quantity' => $qty,
                     'unit_price' => $unit,
                     'total_price' => round($unit * $qty, 2),
@@ -100,7 +100,7 @@ class PaymentGatewayController extends Controller
                 $lineItems[] = [
                     'shop_service_id' => $repairRequest->requested_service_id,
                     'title' => $repairRequest->title ?: 'Direct-Order Workshop Service',
-                    'description' => '100% Vendor listed price (excl. platform fee & courier)',
+                    'description' => 'Verified workshop service & hardware listing',
                     'quantity' => 1,
                     'unit_price' => $servicesSubtotal,
                     'total_price' => $servicesSubtotal,
@@ -182,7 +182,7 @@ class PaymentGatewayController extends Controller
             $lineItems[] = [
                 'shop_service_id' => null,
                 'title' => $repairRequest->title ?: 'Verified Electronics Repair',
-                'description' => $job?->diagnosis_notes ?: '100% Vendor quoted price (excl. platform fee & courier)',
+                'description' => $job?->diagnosis_notes ?: 'Approved technician repair quote',
                 'quantity' => 1,
                 'unit_price' => $acceptedBidCost,
                 'total_price' => $acceptedBidCost,
@@ -667,7 +667,7 @@ class PaymentGatewayController extends Controller
                     'line_items' => [[
                         'shop_service_id' => null,
                         'title' => $req?->title ?: 'Escrow Repair Payment',
-                        'description' => '100% Vendor price (excl. platform fee & courier)',
+                        'description' => 'Verified workshop service & hardware listing',
                         'quantity' => 1,
                         'unit_price' => (float) $payment->amount,
                         'total_price' => (float) $payment->amount,

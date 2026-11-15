@@ -75,7 +75,7 @@
                     type="text"
                     name="q"
                     value="{{ request('q') }}"
-                    placeholder="Search screen, battery, thermal clean, port fix..."
+                    placeholder="Search virus troubleshoot, device rooting, OS install, thermal clean..."
                     class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] pl-10 pr-4 py-2.5 text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none transition"
                 >
             </div>

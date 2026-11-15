@@ -737,12 +737,12 @@ class SprintOneDemoSeeder extends Seeder
 
             // 2C. Demo Request C: Incoming Direct-Service Cart Order for ProTech Solutions (`PENDING`)
             //     Interconnected with `ServicePackage` (`order_count`), `Cart` (`CHECKED_OUT`), `RepairJob`, `PaymentTransaction` & `DeliveryJob`!
-            $directPkg = ServicePackage::where('title', 'Laptop High-Capacity Battery Replacement')->first()
+            $directPkg = ServicePackage::where('title', 'Thermal Repasting & Internal Dust Deep Clean')->first()
                 ?? ServicePackage::first();
-            $directGross = $directPkg ? (float) $directPkg->fixed_price : 3200.00;
+            $directGross = $directPkg ? (float) $directPkg->fixed_price : 1500.00;
 
             $alreadySeededDirect = RepairRequest::where('customer_id', $customer->id)
-                ->where('title', 'Direct Service Order — Laptop High-Capacity Battery Replacement')
+                ->where('title', 'Direct Service Order — Thermal Repasting & Internal Dust Deep Clean')
                 ->exists();
 
             $directCart = Cart::updateOrCreate(
@@ -759,7 +759,7 @@ class SprintOneDemoSeeder extends Seeder
             CartItem::where('cart_id', $directCart->id)->delete();
             CartItem::create([
                 'cart_id' => $directCart->id,
-                'service_name' => $directPkg ? $directPkg->title : 'Laptop High-Capacity Battery Replacement',
+                'service_name' => $directPkg ? $directPkg->title : 'Thermal Repasting & Internal Dust Deep Clean',
                 'description' => 'Direct fixed-price package booking via Quickmatch Service Cart',
                 'price' => $directGross,
                 'quantity' => 1,
@@ -776,7 +776,7 @@ class SprintOneDemoSeeder extends Seeder
             $directOrderReq = RepairRequest::updateOrCreate(
                 [
                     'customer_id' => $customer->id,
-                    'title' => 'Direct Service Order — Laptop High-Capacity Battery Replacement',
+                    'title' => 'Direct Service Order — Thermal Repasting & Internal Dust Deep Clean',
                 ],
                 [
                     'source' => 'DIRECT_SERVICE',
@@ -787,7 +787,7 @@ class SprintOneDemoSeeder extends Seeder
                     'model_name' => 'ThinkPad T14 Gen 3',
                     'issue_category' => 'Fixed-Price Package Booking',
                     'description' => 'Direct fixed-price package booking placed via Quickmatch Service Cart.',
-                    'problem' => "[Direct Service Cart Booking]\n• " . ($directPkg ? $directPkg->title : 'Laptop High-Capacity Battery Replacement') . " x1 — ৳" . number_format($directGross, 0) . "\n\nCustomer Notes: Please pick up between 2 PM and 5 PM from Banani Road 11.",
+                    'problem' => "[Direct Service Cart Booking]\n• " . ($directPkg ? $directPkg->title : 'Thermal Repasting & Internal Dust Deep Clean') . " x1 — ৳" . number_format($directGross, 0) . "\n\nCustomer Notes: Please pick up between 2 PM and 5 PM from Banani Road 11.",
                     'mode' => 'DIRECT_REPAIR',
                     'status' => 'PENDING',
                     'preferred_pickup' => true,
@@ -808,7 +808,7 @@ class SprintOneDemoSeeder extends Seeder
                     'final_quoted_amount' => $directGross,
                     'final_quote_items' => [
                         [
-                            'title' => $directPkg ? $directPkg->title : 'Laptop High-Capacity Battery Replacement',
+                            'title' => $directPkg ? $directPkg->title : 'Thermal Repasting & Internal Dust Deep Clean',
                             'amount' => $directGross,
                         ],
                     ],

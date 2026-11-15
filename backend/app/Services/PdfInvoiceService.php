@@ -127,9 +127,9 @@ class PdfInvoiceService
         $grandTotal = (float) ($invoice->total_amount ?? max(0.0, $subtotal + $commissionAmt + $delivery - $discount));
 
         $summaryRows = [
-            ['Vendor Services & Parts (100% Vendor):', 'BDT ' . number_format($subtotal, 2)],
-            ['Meramot Platform Fee (' . $rateLabelPct . '%, Excl. Delivery):', 'BDT ' . number_format($commissionAmt, 2)],
-            ['Platform Pickup & Delivery Logistics:', 'BDT ' . number_format($delivery, 2)],
+            ['Services & Parts Subtotal:', 'BDT ' . number_format($subtotal, 2)],
+            ['Service & Escrow Protection Fee:', 'BDT ' . number_format($commissionAmt, 2)],
+            ['Doorstep Pickup & Delivery:', 'BDT ' . number_format($delivery, 2)],
         ];
         if ($discount > 0) {
             $voucherSuffix = !empty($req?->voucher_code) ? ' (' . $this->cleanText($req->voucher_code) . ')' : '';
@@ -152,7 +152,7 @@ class PdfInvoiceService
 
         $payMethod = $paidTxn ? strtoupper((string) $paidTxn->payment_method) : 'PENDING SETTLEMENT';
         $txnRef = $paidTxn ? $this->cleanText((string) ($paidTxn->transaction_reference ?: ('TXN-' . $paidTxn->id))) : 'N/A';
-        $commissionNote = 'Pricing Policy: 100% Listed Price goes to Workshop (BDT ' . number_format($subtotal, 2) . ') | ' . $rateLabelPct . '% Platform Fee (BDT ' . number_format($commissionAmt, 2) . ') excl. Platform Logistics.';
+        $commissionNote = 'Buyer Protection: Funds remain safeguarded in Meramot Escrow until verified completion and handover.';
         $warrantyNote = $warranty
             ? ('Active Warranty: ' . (int) $warranty->duration_days . ' days coverage (Ends: ' . optional($warranty->ends_at)->format('d M Y') . '). ' . mb_substr($this->cleanText((string) ($warranty->details ?: $warranty->title)), 0, 68))
             : 'Warranty Protection: Activated automatically upon workshop completion and customer handover verification.';

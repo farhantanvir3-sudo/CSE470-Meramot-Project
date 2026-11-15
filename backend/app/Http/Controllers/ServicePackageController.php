@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Models\VendorProfile;
 use App\Services\GeolocationService;
+use App\Services\MarketplacePricingService;
 use App\Services\MarketplaceSearchEngine;
 use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
@@ -47,19 +48,25 @@ class ServicePackageController extends Controller
     public const MAX_QUICKMATCH_RADIUS_KM = 20.0;
     public const PROXIMITY_BAND_KM = 1.0;
 
-    public static function resolveCommissionRatePct(?RepairShop $shop = null): float
+    public static function resolveCommissionRatePct(?RepairShop $shop = null, array $customerLocation = [], array $cart = []): float
     {
-        return $shop
-            ? $shop->effectiveCommissionRatePct()
-            : VendorProfile::DEFAULT_COMMISSION_RATE;
+        if (empty($customerLocation) && empty($cart)) {
+            return $shop
+                ? $shop->effectiveCommissionRatePct()
+                : VendorProfile::DEFAULT_COMMISSION_RATE;
+        }
+
+        return MarketplacePricingService::resolveOrderFeeRatePct($shop, $customerLocation, [
+            'cart' => $cart,
+        ]);
     }
 
-    public static function calculateServiceCharge(float $subtotal, ?RepairShop $shop = null): float
+    public static function calculateServiceCharge(float $subtotal, ?RepairShop $shop = null, array $customerLocation = [], array $cart = []): float
     {
         if ($subtotal <= 0) {
             return 0.0;
         }
-        $ratePct = self::resolveCommissionRatePct($shop);
+        $ratePct = self::resolveCommissionRatePct($shop, $customerLocation, $cart);
         return round($subtotal * ($ratePct / 100.0), 2);
     }
 
@@ -68,8 +75,14 @@ class ServicePackageController extends Controller
      *
      * @return array{valid: bool, code: ?string, discount: float, label: string, error: ?string}
      */
-    public static function evaluateVoucher(?string $rawCode, float $subtotal, float $deliveryFee = 80.0, ?RepairShop $shop = null): array
-    {
+    public static function evaluateVoucher(
+        ?string $rawCode,
+        float $subtotal,
+        float $deliveryFee = 80.0,
+        ?RepairShop $shop = null,
+        ?User $user = null,
+        ?float $activeFeeRatePct = null
+    ): array {
         $code = strtoupper(trim((string) $rawCode));
         if ($code === '' || $subtotal <= 0) {
             return ['valid' => false, 'code' => null, 'discount' => 0.0, 'label' => '', 'error' => null];
@@ -134,6 +147,56 @@ class ServicePackageController extends Controller
             ];
         }
 
+        if (in_array($code, ['FIRSTSHOP1', 'WELCOME1'], true)) {
+            if (!$user) {
+                return [
+                    'valid' => false,
+                    'code' => null,
+                    'discount' => 0.0,
+                    'label' => '',
+                    'error' => 'Sign in to redeem this first-order workshop offer.',
+                ];
+            }
+            if (!$shop) {
+                return [
+                    'valid' => false,
+                    'code' => null,
+                    'discount' => 0.0,
+                    'label' => '',
+                    'error' => 'Select a workshop first to verify first-order eligibility.',
+                ];
+            }
+            if ($subtotal < MarketplacePricingService::FIRST_SHOP_PROMO_MIN_SUBTOTAL) {
+                return [
+                    'valid' => false,
+                    'code' => null,
+                    'discount' => 0.0,
+                    'label' => '',
+                    'error' => $code . ' requires a minimum order subtotal of ৳' . number_format(MarketplacePricingService::FIRST_SHOP_PROMO_MIN_SUBTOTAL, 0) . '.',
+                ];
+            }
+            if (!MarketplacePricingService::isEligibleForFirstShopOrderPromo($user, $shop)) {
+                return [
+                    'valid' => false,
+                    'code' => null,
+                    'discount' => 0.0,
+                    'label' => '',
+                    'error' => 'This welcome offer is valid only on your very first order with this workshop.',
+                ];
+            }
+
+            $ratePct = $activeFeeRatePct ?? self::resolveCommissionRatePct($shop);
+            $promo = MarketplacePricingService::calculateFirstShopPromoDiscount($subtotal, $ratePct);
+
+            return [
+                'valid' => true,
+                'code' => $code,
+                'discount' => (float) $promo['discount_amount'],
+                'label' => 'First Order at Workshop — Reduced Service Fee Offer',
+                'error' => null,
+            ];
+        }
+
         return [
             'valid' => false,
             'code' => null,
@@ -160,9 +223,18 @@ class ServicePackageController extends Controller
 
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0.0);
         $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request) : null;
-        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $this->resolveCustomerLocation($request), 'REGULAR');
+        $customerLocation = $this->resolveCustomerLocation($request);
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
+        $commissionRatePct = self::resolveCommissionRatePct($activeShop, $customerLocation, $cart);
 
-        $eval = self::evaluateVoucher($validated['voucher_code'], $subtotal, (float) $deliveryQuote['regular_delivery_fee'], $activeShop);
+        $eval = self::evaluateVoucher(
+            $validated['voucher_code'],
+            $subtotal,
+            (float) $deliveryQuote['regular_delivery_fee'],
+            $activeShop,
+            $request->user(),
+            $commissionRatePct
+        );
         if (!$eval['valid']) {
             session()->forget('cart_voucher_code');
             if ($request->expectsJson()) {
@@ -1183,6 +1255,7 @@ class ServicePackageController extends Controller
             'spec_code' => $selectedSpec['code'] ?? null,
             'spec_name' => $selectedSpec['name'] ?? null,
             'image_url' => $listing->image_url,
+            'part_category' => $listing->part_category,
             'category' => 'Spare Parts • ' . $listing->part_category,
             'duration' => max(1, (int) ($listing->handling_hours ?: 1)),
             'warranty_months' => max(0, (int) round(($listing->warranty_days ?: 30) / 30)),
@@ -1272,8 +1345,8 @@ class ServicePackageController extends Controller
 
         $customerLocation = $this->resolveCustomerLocation($request);
         $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request) : null;
-        $commissionRatePct = self::resolveCommissionRatePct($activeShop);
-        $serviceCharge = self::calculateServiceCharge($total, $activeShop);
+        $commissionRatePct = self::resolveCommissionRatePct($activeShop, $customerLocation, $cart);
+        $serviceCharge = self::calculateServiceCharge($total, $activeShop, $customerLocation, $cart);
         $shopLocked = (bool) session('cart_shop_locked', false);
         $shopManuallySelected = (bool) session('cart_shop_manual', false);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
@@ -1281,10 +1354,18 @@ class ServicePackageController extends Controller
         $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
         $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
 
-        $voucherEval = self::evaluateVoucher(session('cart_voucher_code'), (float) $total, $regularDeliveryFee, $activeShop);
+        $voucherEval = self::evaluateVoucher(
+            session('cart_voucher_code'),
+            (float) $total,
+            $regularDeliveryFee,
+            $activeShop,
+            $request->user(),
+            $commissionRatePct
+        );
         $appliedVoucher = $voucherEval['valid'] ? $voucherEval['code'] : null;
         $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
         $voucherLabel = $voucherEval['valid'] ? $voucherEval['label'] : null;
+        $firstShopPromoEligible = MarketplacePricingService::isEligibleForFirstShopOrderPromo($request->user(), $activeShop);
 
         return view('packages.cart', compact(
             'cart',
@@ -1299,6 +1380,7 @@ class ServicePackageController extends Controller
             'appliedVoucher',
             'discountAmount',
             'voucherLabel',
+            'firstShopPromoEligible',
             'isSparePartCart',
             'deliveryQuote',
             'regularDeliveryFee',
@@ -1335,14 +1417,15 @@ class ServicePackageController extends Controller
         }
 
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0.0);
+        $customerLocation = $this->resolveCustomerLocation($request);
 
         return response()->json([
             'success' => true,
             'message' => 'Service removed from cart',
             'cart_count' => count($cart),
             'subtotal' => $subtotal,
-            'commission_rate_pct' => self::resolveCommissionRatePct($targetShop),
-            'service_charge' => self::calculateServiceCharge($subtotal, $targetShop),
+            'commission_rate_pct' => self::resolveCommissionRatePct($targetShop, $customerLocation, $cart),
+            'service_charge' => self::calculateServiceCharge($subtotal, $targetShop, $customerLocation, $cart),
         ]);
     }
 
@@ -1405,14 +1488,15 @@ class ServicePackageController extends Controller
 
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0.0);
         $activeShop = $this->resolveTargetShop(null, $request);
+        $customerLocation = $this->resolveCustomerLocation($request);
 
         return response()->json([
             'success' => true,
             'message' => 'Cart quantity updated',
             'cart_count' => count($cart),
             'subtotal' => $subtotal,
-            'commission_rate_pct' => self::resolveCommissionRatePct($activeShop),
-            'service_charge' => self::calculateServiceCharge($subtotal, $activeShop),
+            'commission_rate_pct' => self::resolveCommissionRatePct($activeShop, $customerLocation, $cart),
+            'service_charge' => self::calculateServiceCharge($subtotal, $activeShop, $customerLocation, $cart),
             'item' => $cart[$packageId] ?? null,
         ]);
     }
@@ -1461,15 +1545,22 @@ class ServicePackageController extends Controller
 
         $customerLocation = $this->resolveCustomerLocation($request);
         $activeShop = $this->resolveTargetShop(null, $request);
-        $commissionRatePct = self::resolveCommissionRatePct($activeShop);
-        $serviceCharge = self::calculateServiceCharge($total, $activeShop);
+        $commissionRatePct = self::resolveCommissionRatePct($activeShop, $customerLocation, $cart);
+        $serviceCharge = self::calculateServiceCharge($total, $activeShop, $customerLocation, $cart);
         $shopLocked = (bool) session('cart_shop_locked', false);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
         $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
         $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
         $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
 
-        $voucherEval = self::evaluateVoucher(session('cart_voucher_code'), (float) $total, $regularDeliveryFee, $activeShop);
+        $voucherEval = self::evaluateVoucher(
+            session('cart_voucher_code'),
+            (float) $total,
+            $regularDeliveryFee,
+            $activeShop,
+            $request->user(),
+            $commissionRatePct
+        );
         $appliedVoucher = $voucherEval['valid'] ? $voucherEval['code'] : null;
         $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
         $voucherLabel = $voucherEval['valid'] ? $voucherEval['label'] : null;
@@ -1536,6 +1627,9 @@ class ServicePackageController extends Controller
         }
 
         $customerLocation = $this->resolveCustomerLocation($request);
+        if (!empty($validated['area'])) {
+            $customerLocation['area'] = trim((string) $validated['area']);
+        }
         $shop = $this->resolveTargetShop(isset($validated['shop_id']) ? (int) $validated['shop_id'] : null, $request);
         if (!$shop) {
             $cityLabel = $customerLocation['city'] ?? 'your selected area';
@@ -1588,8 +1682,8 @@ class ServicePackageController extends Controller
         }
 
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0);
-        $commissionRatePct = self::resolveCommissionRatePct($shop);
-        $serviceCharge = self::calculateServiceCharge($subtotal, $shop);
+        $commissionRatePct = self::resolveCommissionRatePct($shop, $customerLocation, $cart);
+        $serviceCharge = self::calculateServiceCharge($subtotal, $shop, $customerLocation, $cart);
         $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $shop, $customerLocation, $validated['delivery_type']);
         $deliveryFee = (float) $deliveryQuote['delivery_fee'];
 
@@ -1600,7 +1694,14 @@ class ServicePackageController extends Controller
         unset($qItem);
 
         $requestedVoucher = $validated['voucher_code'] ?? session('cart_voucher_code');
-        $voucherEval = self::evaluateVoucher($requestedVoucher, (float) $subtotal, (float) $deliveryFee, $shop);
+        $voucherEval = self::evaluateVoucher(
+            $requestedVoucher,
+            (float) $subtotal,
+            (float) $deliveryFee,
+            $shop,
+            $request->user(),
+            $commissionRatePct
+        );
         $appliedVoucherCode = $voucherEval['valid'] ? $voucherEval['code'] : null;
         $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
         $totalAmount = max(0.0, ($subtotal + $serviceCharge + $deliveryFee) - $discountAmount);
@@ -1648,7 +1749,7 @@ class ServicePackageController extends Controller
                     . "Schedule: {$scheduleLabel}\n"
                     . "Platform Pickup & Delivery Logistics: {$validated['delivery_type']} (৳{$deliveryFee})\n"
                     . "Payment: {$validated['payment_method']}\n"
-                    . "Workshop Net (100% Listed Price): ৳" . number_format($subtotal, 2) . " | Platform Fee ({$commissionRatePct}% excl. pickup & delivery): ৳" . number_format($serviceCharge, 2) . $discountLine . " | Total: ৳" . number_format($totalAmount, 2) . "\n\n"
+                    . "Order Subtotal: ৳" . number_format($subtotal, 2) . " | Service & Protection Fee: ৳" . number_format($serviceCharge, 2) . $discountLine . " | Total: ৳" . number_format($totalAmount, 2) . "\n\n"
                     . "Selected Services:\n{$serviceLines}",
                 'problem' => !empty($validated['problem_note'])
                     ? trim($validated['problem_note']) . "\n\nBooked Services:\n" . $serviceLines

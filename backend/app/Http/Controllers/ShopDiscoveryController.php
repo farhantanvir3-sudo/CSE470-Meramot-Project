@@ -78,8 +78,8 @@ class ShopDiscoveryController extends Controller
         ];
 
         $recentlyViewed = [
-            ['label' => 'MacBook Air M2 battery replacement', 'href' => '/shops?q=MacBook%20Air%20M2%20Repair'],
-            ['label' => 'iPhone 13 display set', 'href' => '/shops?q=iPhone%2013%20display'],
+            ['label' => 'MacBook Air M2 battery replacement', 'href' => '/spare-parts?q=MacBook%20Air%20M2%20Battery'],
+            ['label' => 'iPhone 13 display set', 'href' => '/spare-parts?q=iPhone%2013%20Display'],
             ['label' => 'ThinkPad keyboard repair', 'href' => '/shops?q=ThinkPad%20keyboard%20repair'],
             ['label' => 'Sony PlayStation 5 HDMI port', 'href' => '/shops?q=PlayStation%205%20HDMI'],
             ['label' => 'iPad Pro 11-inch digitizer', 'href' => '/shops?q=iPad%20Pro%20digitizer'],

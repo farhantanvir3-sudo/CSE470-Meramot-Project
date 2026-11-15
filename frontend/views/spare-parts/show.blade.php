@@ -50,7 +50,10 @@
 
     $initialQty = max(1, min((int) ($listing->stock_quantity ?: 1), (int) request('qty', 1)));
     $deliveryFee = (float) ($activeQuote['delivery_fee'] ?? 60);
-    $commissionRatePct = (float) ($commissionRatePct ?? $shop?->effectiveCommissionRatePct() ?? \App\Models\VendorProfile::DEFAULT_COMMISSION_RATE);
+    $commissionRatePct = (float) ($commissionRatePct ?? \App\Services\MarketplacePricingService::resolveOrderFeeRatePct($shop, $customerLocation ?? [], [
+        'item_type' => 'spare_part',
+        'part_category' => $listing->part_category,
+    ]));
     $initialSubtotal = (float) ($activeQuote['subtotal'] ?? ($effBase * $initialQty));
     $initialPlatformFee = $initialSubtotal > 0 ? round($initialSubtotal * ($commissionRatePct / 100), 2) : 0.0;
     $initialCheckoutTotal = round($initialSubtotal + $initialPlatformFee + $deliveryFee, 2);
@@ -128,9 +131,9 @@
                         </span>
                     @endif
 
-                    @if($listing->is_best_deal && $competingListings->count() > 1)
+                    @if(!empty($hasActiveSearchQuery) && $listing->is_best_deal && $competingListings->count() > 1)
                         <span class="absolute top-2.5 right-2.5 sm:top-3 sm:right-3 z-20 px-2.5 py-1 rounded-full bg-emerald-900 text-white text-[10px] sm:text-xs font-extrabold shadow-sm">
-                            ★ Best Deal in {{ $customerLocation['city'] ?? 'Dhaka' }}
+                            Best Deal
                         </span>
                     @endif
 
@@ -324,10 +327,10 @@
                         <span class="text-xs font-semibold text-emerald-900/70" id="spPerUnitHint">per unit</span>
                     </div>
 
-                    @if(!$listing->is_best_deal && $bestDealListing)
+                    @if(!empty($hasActiveSearchQuery) && !$listing->is_best_deal && $bestDealListing)
                         <div class="pt-1 text-xs text-amber-900 font-semibold flex flex-wrap items-center gap-2">
-                            <span>💡 Tip: <strong>{{ $bestDealListing->shop?->name }}</strong> delivers this part to {{ $locLabel }} for <strong>৳{{ number_format($bestDealListing->landed_quote['landed_total'], 0) }} total</strong> (incl. courier).</span>
-                            <a href="{{ route('spare-parts.show', ['slug' => $bestDealListing->slug]) }}" class="underline font-extrabold text-emerald-900">
+                            <span>💡 Tip: <strong>{{ $bestDealListing->shop?->name }}</strong> delivers this part for <strong>৳{{ number_format($bestDealListing->landed_quote['landed_total'], 0) }} total</strong> (incl. courier).</span>
+                            <a href="{{ route('spare-parts.show', array_filter(['slug' => $bestDealListing->slug, 'q' => $activeSearchQuery ?? null])) }}" class="underline font-extrabold text-emerald-900">
                                 View Best Deal →
                             </a>
                         </div>
@@ -442,7 +445,7 @@
                                     </span>
                                 </div>
                                 <p class="text-[11px] text-emerald-900/75 mt-0.5">
-                                    Fitted at {{ $shop?->name ?? 'seller workshop' }} (100% goes to workshop) • Limited to retail orders of 1–{{ $maxInstallQty }} units.
+                                    Fitted at {{ $shop?->name ?? 'seller workshop' }} by certified technicians • Limited to retail orders of 1–{{ $maxInstallQty }} units.
                                 </p>
                                 <p id="spInstallLimitNotice" class="{{ $initialQty > $maxInstallQty ? '' : 'hidden' }} text-[11px] font-bold text-amber-800 mt-1">
                                     Workshop installation is capped at {{ $maxInstallQty }} units and is automatically disabled for bulk/wholesale quantities.
@@ -488,18 +491,18 @@
                         {{-- Foodpanda-Style Live Transparent Fee Breakdown --}}
                         <div class="rounded-xl bg-white/90 border border-emerald-900/10 p-3 space-y-1.5 text-xs">
                             <div class="flex items-center justify-between">
-                                <span class="text-emerald-900/80">Seller Unit Price (100% to Workshop):</span>
+                                <span class="text-emerald-900/80">Unit Price:</span>
                                 <span class="font-extrabold text-emerald-950">
                                     <span id="spLiveUnitPrice">৳{{ number_format((float) $activeQuote['effective_unit_price'], 2) }}</span>
                                     <span id="spWholesaleActivePill" class="hidden ml-1 px-2 py-0.5 rounded-full bg-emerald-900 text-white text-[10px] font-extrabold"></span>
                                 </span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="text-emerald-900/80">Part Subtotal (<span id="spLiveQtyLabel">{{ $initialQty }}</span> pcs — 100% Workshop Earning):</span>
+                                <span class="text-emerald-900/80">Items Subtotal (<span id="spLiveQtyLabel">{{ $initialQty }}</span> pcs):</span>
                                 <span class="font-bold text-emerald-950" id="spLiveSubtotal">৳{{ number_format($initialSubtotal, 2) }}</span>
                             </div>
                             <div id="spLiveInstallRow" class="hidden items-center justify-between text-emerald-900 font-semibold">
-                                <span>Workshop Installation (<span id="spLiveInstallQty">0</span> × ৳{{ number_format($installationFeePerUnit, 0) }} — 100% Workshop):</span>
+                                <span>Workshop Installation (<span id="spLiveInstallQty">0</span> × ৳{{ number_format($installationFeePerUnit, 0) }}):</span>
                                 <span id="spLiveInstallFee">৳0.00</span>
                             </div>
                             <div id="spLiveSavingsRow" class="{{ (($activeQuote['wholesale_savings'] ?? 0) + ($activeQuote['offer_savings'] ?? 0)) > 0 ? 'flex' : 'hidden' }} items-center justify-between text-red-600 font-bold">
@@ -507,11 +510,11 @@
                                 <span id="spLiveSavingsAmount">−৳{{ number_format((float) (($activeQuote['wholesale_savings'] ?? 0) + ($activeQuote['offer_savings'] ?? 0)), 2) }}</span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="text-emerald-900/80">Meramot Platform Fee (<span id="spLiveCommissionPct">{{ rtrim(rtrim(number_format($commissionRatePct, 2), '0'), '.') }}</span>% of workshop total, excl. courier):</span>
+                                <span class="text-emerald-900/80">Service &amp; Buyer Protection Fee:</span>
                                 <span class="font-bold text-amber-800" id="spLivePlatformFee">৳{{ number_format($initialPlatformFee, 2) }}</span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="text-emerald-900/80">Platform Pickup &amp; Delivery Logistics ({{ $locLabel }}):</span>
+                                <span class="text-emerald-900/80">Doorstep Pickup &amp; Delivery ({{ $locLabel }}):</span>
                                 <span class="font-bold text-emerald-950">৳{{ number_format($deliveryFee, 2) }}</span>
                             </div>
                             <div class="flex items-center justify-between pt-1.5 border-t border-emerald-900/10 text-sm">
@@ -624,7 +627,7 @@
     <section id="compare-sellers" class="mt-8 rounded-2xl bg-white/95 border border-emerald-900/15 p-4 sm:p-6 shadow-sm">
         <div class="mb-4">
             <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">
-                Compare All {{ $competingListings->count() }} {{ Str::plural('Seller', $competingListings->count()) }} for {{ $locLabel }}
+                Compare All {{ $competingListings->count() }} {{ Str::plural('Seller', $competingListings->count()) }}
             </h2>
             <p class="text-xs text-emerald-900/75">
                 Ranked automatically by <strong>Part Price + Distance Courier Fee</strong> to your active location ({{ $locLabel }}).
@@ -641,16 +644,22 @@
                     $cNormal = (float) ($cQuote['normal_unit_price'] ?? $sellerListing->resolvedNormalBasePrice());
                     $cRaw = (float) ($cQuote['raw_unit_price'] ?? $sellerListing->effectiveBasePrice());
                     $cBranch = $cShop?->display_branch_tag;
-                    $cRate = $cShop?->effectiveCommissionRatePct() ?? \App\Models\VendorProfile::DEFAULT_COMMISSION_RATE;
+                    $cRate = \App\Services\MarketplacePricingService::resolveOrderFeeRatePct($cShop, $customerLocation ?? [], [
+                        'item_type' => 'spare_part',
+                        'part_category' => $sellerListing->part_category,
+                    ]);
                     $cPlatformFee = round($cRaw * ($cRate / 100), 2);
                     $cCheckoutTotal = round((float) $cQuote['landed_total'] + $cPlatformFee, 2);
                 @endphp
-                <div class="rounded-2xl p-3.5 sm:p-4 border transition flex flex-col lg:flex-row lg:items-center justify-between gap-3 {{ $sellerListing->is_best_deal ? 'bg-emerald-50/75 border-emerald-700 ring-1 ring-emerald-700/25' : 'bg-white border-emerald-900/15' }}">
+                @php
+                    $showRowBestDeal = !empty($hasActiveSearchQuery) && $sellerListing->is_best_deal && $competingListings->count() > 1;
+                @endphp
+                <div class="rounded-2xl p-3.5 sm:p-4 border transition flex flex-col lg:flex-row lg:items-center justify-between gap-3 {{ $showRowBestDeal ? 'bg-emerald-50/75 border-emerald-700 ring-1 ring-emerald-700/25' : 'bg-white border-emerald-900/15' }}">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2 flex-wrap">
-                            @if($sellerListing->is_best_deal)
+                            @if($showRowBestDeal)
                                 <span class="px-2.5 py-0.5 rounded-full bg-emerald-900 text-white text-[10px] font-extrabold uppercase">
-                                    ★ Best Deal for {{ $customerLocation['city'] ?? 'You' }}
+                                    Best Deal
                                 </span>
                             @endif
                             @if($cOffer)
@@ -689,7 +698,7 @@
                                     <span class="line-through text-slate-400">৳{{ number_format($cNormal, 0) }}</span>
                                 @endif
                                 <strong class="{{ $cOffer ? 'text-red-600' : 'text-emerald-950' }}">৳{{ number_format($cRaw, 0) }}</strong>
-                                + Fee ({{ rtrim(rtrim(number_format($cRate, 2), '0'), '.') }}%): <strong>৳{{ number_format($cPlatformFee, 0) }}</strong>
+                                + Service Fee: <strong>৳{{ number_format($cPlatformFee, 0) }}</strong>
                                 + Courier: <strong>৳{{ number_format((float) $cQuote['delivery_fee'], 0) }}</strong>
                             </div>
                             <div class="text-base font-extrabold text-emerald-950">
@@ -702,7 +711,7 @@
                                 Selected Seller
                             </span>
                         @else
-                            <a href="{{ route('spare-parts.show', array_filter(['slug' => $sellerListing->slug, 'spec' => $selectedSpec['code'] ?? null])) }}"
+                            <a href="{{ route('spare-parts.show', array_filter(['slug' => $sellerListing->slug, 'spec' => $selectedSpec['code'] ?? null, 'q' => $activeSearchQuery ?? null])) }}"
                                class="px-4 py-2 rounded-full bg-emerald-900 hover:bg-emerald-800 text-white text-xs font-extrabold transition shrink-0">
                                 Switch Seller →
                             </a>

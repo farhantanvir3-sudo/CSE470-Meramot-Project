@@ -147,7 +147,7 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
                         <i class="fa-solid fa-scale-balanced mr-1"></i> Transparent Pricing &amp; Warranty Audit Record
                     </p>
                     <p class="text-[11px] text-[var(--muted-foreground)]">
-                        <strong>Pricing Breakdown:</strong> 100% Listed Workshop Price goes to Seller/Workshop (৳{{ number_format($invSubtotal, 2) }}) • {{ $invRatePct }}% Meramot Platform Fee (৳{{ number_format($invCommission, 2) }}, excluding pickup &amp; delivery) • Pickup &amp; Delivery handled by Meramot Platform.
+                        <strong>Escrow &amp; Protection Summary:</strong> Payments are safeguarded under Meramot Escrow until verified completion or handover.
                     </p>
                     @if($warranty)
                         <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-[11px] text-emerald-950">
@@ -163,15 +163,15 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
 
                 <div class="md:col-span-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 space-y-2">
                     <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                        <span>Vendor Services &amp; Parts (100% Workshop):</span>
+                        <span>Services &amp; Parts Subtotal:</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invSubtotal, 2) }}</span>
                     </div>
                     <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                        <span>Meramot Platform Fee ({{ $invRatePct }}%, excl. courier):</span>
+                        <span>Service &amp; Escrow Protection Fee:</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invCommission, 2) }}</span>
                     </div>
                     <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                        <span>Platform Pickup &amp; Delivery Logistics:</span>
+                        <span>Doorstep Pickup &amp; Delivery:</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invDelivery, 2) }}</span>
                     </div>
                     @if($invDiscount > 0)

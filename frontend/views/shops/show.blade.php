@@ -304,14 +304,14 @@
                         </div>
                         <p x-show="catalogTab === 'services'" class="text-xs md:text-sm text-[var(--muted-foreground)]">
                             @if($isOperational)
-                                Book fixed-price services directly with {{ $shop->name }} (listed prices go 100% to workshop), or request a custom quote.
+                                Book fixed-price services directly with {{ $shop->name }}, or request a custom technician quote.
                             @else
                                 Proposed service catalog submitted with {{ $shop->name }}'s onboarding application (read-only until verification is complete).
                             @endif
                         </p>
                         @if($shopSpareParts->isNotEmpty())
                             <p x-show="catalogTab === 'spare_parts'" x-cloak class="text-xs md:text-sm text-[var(--muted-foreground)]">
-                                Genuine spare parts stocked and dispatched by {{ $shop->name }} (prices exclude platform fee &amp; courier).
+                                Genuine spare parts stocked and dispatched by {{ $shop->name }} with doorstep delivery calculated at checkout.
                             </p>
                         @endif
                     </div>

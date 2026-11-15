@@ -1094,4 +1094,522 @@ class SparePartsMarketplaceTest extends TestCase
             ->assertSee('Magnetic &amp; Slim-Tip PSU', false)
             ->assertSee('sub_category=magnetic_slim_adapter', false);
     }
+
+    /** @test */
+    public function best_deal_badge_renders_only_for_active_search_and_without_location_suffix(): void
+    {
+        [, $profileA, $shopA] = $this->createApprovedVendorWithShop(['city' => 'Dhaka', 'area' => 'Banani'], 'Seller Alpha');
+        [, $profileB, $shopB] = $this->createApprovedVendorWithShop(['city' => 'Dhaka', 'area' => 'Dhanmondi'], 'Seller Beta');
+
+        $cheapest = SparePartListing::create([
+            'shop_id' => $shopA->id,
+            'vendor_profile_id' => $profileA->id,
+            'title' => 'Google Pixel 11 Battery',
+            'slug' => 'google-pixel-11-battery-alpha-' . uniqid(),
+            'product_group_key' => 'pixel-11-battery',
+            'part_category' => 'Battery',
+            'brand' => 'Google',
+            'is_active' => true,
+            'stock_quantity' => 10,
+            'base_price' => 2500,
+            'normal_price' => 2500,
+        ]);
+
+        $pricier = SparePartListing::create([
+            'shop_id' => $shopB->id,
+            'vendor_profile_id' => $profileB->id,
+            'title' => 'Google Pixel 11 Battery',
+            'slug' => 'google-pixel-11-battery-beta-' . uniqid(),
+            'product_group_key' => 'pixel-11-battery',
+            'part_category' => 'Battery',
+            'brand' => 'Google',
+            'is_active' => true,
+            'stock_quantity' => 10,
+            'base_price' => 3200,
+            'normal_price' => 3200,
+        ]);
+
+        // Unsearched catalog and detail views must NOT display Best Deal pills or location suffixes
+        $indexUnsearched = $this->get('/spare-parts');
+        $indexUnsearched->assertStatus(200)
+            ->assertSee('Google Pixel 11 Battery')
+            ->assertDontSee('★ Best Deal')
+            ->assertDontSee('Best Deal in')
+            ->assertDontSee('Best Deal for')
+            ->assertDontSee('>Best Deal<', false);
+
+        $showUnsearched = $this->get('/spare-parts/' . $cheapest->slug);
+        $showUnsearched->assertStatus(200);
+        $this->assertTrue((bool) $showUnsearched->viewData('listing')->is_best_deal);
+        $showUnsearched
+            ->assertDontSee('★ Best Deal')
+            ->assertDontSee('Best Deal in Dhaka')
+            ->assertDontSee('Best Deal for Dhaka')
+            ->assertDontSee('Compare All 2 Sellers for')
+            ->assertDontSee('>Best Deal<', false);
+
+        $pricierUnsearched = $this->get('/spare-parts/' . $pricier->slug);
+        $pricierUnsearched->assertStatus(200)
+            ->assertDontSee('View Best Deal');
+
+        // Active search query propagates to detail URLs and shows clean "Best Deal" without star or city
+        $indexSearched = $this->get('/spare-parts?q=pixel+11+battery');
+        $indexSearched->assertStatus(200)
+            ->assertSee('Google Pixel 11 Battery')
+            ->assertSee('q=pixel%2011%20battery', false)
+            ->assertDontSee('★ Best Deal');
+
+        $showSearched = $this->get('/spare-parts/' . $cheapest->slug . '?q=pixel+11+battery');
+        $showSearched->assertStatus(200)
+            ->assertSee('Best Deal')
+            ->assertDontSee('★ Best Deal')
+            ->assertDontSee('Best Deal in Dhaka')
+            ->assertDontSee('Best Deal for Dhaka')
+            ->assertDontSee('Best Deal for You')
+            ->assertSee('q=pixel%2011%20battery', false);
+
+        $pricierSearched = $this->get('/spare-parts/' . $pricier->slug . '?q=pixel+11+battery');
+        $pricierSearched->assertStatus(200)
+            ->assertSee('View Best Deal')
+            ->assertDontSee('delivers this part to Dhaka')
+            ->assertSee('q=pixel%2011%20battery', false);
+    }
+
+    /** @test */
+    public function search_engine_handles_precision_relevance_ranking_suggest_and_smart_routing(): void
+    {
+        [, $profile, $shop] = $this->createApprovedVendorWithShop([], 'Precision Parts Hub');
+
+        $parts = [
+            ['Mechanic B-7000 110ml Multi-Purpose Glue', 'b7000-glue', 'Repair Tools & Adhesives', 'Mechanic', 'B7000-110ML', 350],
+            ['MacBook Pro 13 A1708 Battery', 'mbp-a1708-bat', 'Battery', 'Apple', 'MBP-A1708', 4800],
+            ['Apple iPhone 13 Pro Battery', 'ip13p-bat', 'Battery', 'Apple', 'IP13P-BAT', 2600],
+            ['Samsung 980 Pro 512GB M.2 NVMe SSD', 'nvme-512', 'SSD & Storage', 'Samsung', 'MZ-V8P500', 7900],
+            ['KingSpec 512GB SATA III 2.5-inch SSD', 'sata-512', 'SSD & Storage', 'KingSpec', 'KS-SATA512', 4200],
+            ['Kingston 8GB DDR4-3200 SO-DIMM RAM', 'ddr4-8gb', 'RAM & Memory', 'Kingston', 'KVR32S22', 2400],
+            ['Samsung 4GB DDR3L-1600 SO-DIMM RAM', 'ddr3l-4gb', 'RAM & Memory', 'Samsung', 'M471B5173', 1200],
+            ['Google Pixel 7 Replacement Battery', 'pixel-7-bat', 'Battery', 'Google', 'GP7-BAT', 2900],
+            ['Google Pixel 2 Replacement Battery', 'pixel-2-bat', 'Battery', 'Google', 'GP2-BAT', 1700],
+            ['Apple iPhone 13 OLED Display Assembly', 'ip13-oled', 'Display & Touch', 'Apple', 'IP13-OLED', 9800],
+            ['Apple iPhone 13 Mini Camera Glass Lens', 'ip13m-camglass', 'Camera & Lens', 'Apple', 'IP13M-GLS', 450],
+            ['Apple iPhone 13 Upper Outer Glass', 'ip13-glass', 'Display & Touch', 'Apple', 'IP13-GLS', 900],
+        ];
+
+        foreach ($parts as [$title, $groupKey, $category, $brand, $sku, $price]) {
+            SparePartListing::create([
+                'shop_id' => $shop->id,
+                'vendor_profile_id' => $profile->id,
+                'title' => $title,
+                'slug' => strtolower(preg_replace('/[^a-zA-Z0-9]+/', '-', $groupKey . '-' . uniqid())),
+                'sku' => $sku,
+                'product_group_key' => $groupKey,
+                'part_category' => $category,
+                'brand' => $brand,
+                'is_active' => true,
+                'stock_quantity' => 8,
+                'base_price' => $price,
+                'normal_price' => $price,
+            ]);
+        }
+
+        // B-7000 matches b7000 compact query
+        $this->get('/spare-parts?q=b7000')
+            ->assertStatus(200)
+            ->assertSee('Mechanic B-7000 110ml Multi-Purpose Glue');
+
+        // MacBook Pro query must not bleed into iPhone parts
+        $this->get('/spare-parts?q=macbook+pro+battery')
+            ->assertStatus(200)
+            ->assertSee('MacBook Pro 13 A1708 Battery')
+            ->assertDontSee('Apple iPhone 13 Pro Battery');
+
+        // NVMe 512GB must exclude SATA SSD
+        $this->get('/spare-parts?q=nvme+512gb')
+            ->assertStatus(200)
+            ->assertSee('Samsung 980 Pro 512GB M.2 NVMe SSD')
+            ->assertDontSee('KingSpec 512GB SATA III 2.5-inch SSD');
+
+        // DDR4 8GB RAM must exclude DDR3L 4GB
+        $this->get('/spare-parts?q=ddr4+8gb+ram')
+            ->assertStatus(200)
+            ->assertSee('Kingston 8GB DDR4-3200 SO-DIMM RAM')
+            ->assertDontSee('Samsung 4GB DDR3L-1600 SO-DIMM RAM');
+
+        // Pixel 7 must exclude Pixel 2
+        $this->get('/spare-parts?q=pixel+7+battery')
+            ->assertStatus(200)
+            ->assertSee('Google Pixel 7 Replacement Battery')
+            ->assertDontSee('Google Pixel 2 Replacement Battery');
+
+        // Full assembly ranks ahead of unrequested Mini variant and Upper Outer Glass
+        $displayRes = $this->get('/spare-parts?q=iphone+13+display');
+        $displayRes->assertStatus(200)
+            ->assertSeeInOrder([
+                'Apple iPhone 13 OLED Display Assembly',
+                'Apple iPhone 13 Upper Outer Glass',
+            ]);
+
+        // Typeahead suggest JSON endpoint
+        $suggest = $this->getJson('/api/search/suggest?q=macbook');
+        $suggest->assertStatus(200)
+            ->assertJsonStructure(['query', 'categories', 'parts', 'shops'])
+            ->assertJsonFragment(['title' => 'MacBook Pro 13 A1708 Battery']);
+
+        // Smart header search routes hardware queries directly to /spare-parts
+        $smart = $this->get('/search?q=macbook+pro+battery');
+        $smart->assertRedirectContains('/spare-parts');
+    }
+
+    public function test_cross_section_smart_search_routing_handles_packages_shops_and_parts(): void
+    {
+        $this->seed(\Database\Seeders\ServicePackageSeeder::class);
+
+        [, $sonyProfile, $sonyShop] = $this->createApprovedVendorWithShop([
+            'city' => 'Dhaka',
+            'area' => 'Paltan',
+        ], 'Sony Shawroom');
+
+        [, $mbProfile, $mbShop] = $this->createApprovedVendorWithShop([
+            'city' => 'Dhaka',
+            'area' => 'Banani',
+        ], 'Motherboard Masters');
+
+        [, $toshibaProfile, $toshibaShop] = $this->createApprovedVendorWithShop([
+            'city' => 'Dhaka',
+            'area' => 'Mirpur',
+        ], 'Toshiba Display Center');
+
+        [, $partsProfile, $partsShop] = $this->createApprovedVendorWithShop([
+            'city' => 'Dhaka',
+            'area' => 'Banani',
+        ], 'Precision Mobile Care');
+
+        $catalog = [
+            ['Samsung Galaxy S21 FE Display Assembly', 's21fe-disp', 'Display & Touch', 'Samsung', 'SAM-S21FE-DSP', 'Galaxy S21 FE', 8900],
+            ['Apple iPhone 13 Pro Super Retina Display', 'ip13p-disp', 'Display & Touch', 'Apple', 'APL-IP13P-DSP', 'iPhone 13 Pro', 14200],
+            ['Sony Xperia 1 IV OLED Display Assembly', 'sony-x1-disp', 'Display & Touch', 'Sony', 'SNY-X1IV-DSP', 'Xperia 1 IV', 11500],
+            ['Google Pixel 11 Replacement Battery', 'pixel-11-bat', 'Battery', 'Google', 'GOO-PX11-BAT', 'Pixel 11', 2799],
+            ['ThinkPad T480 Backlit Replacement Keyboard', 't480-kbd', 'Laptop Keyboard', 'Lenovo', 'LEN-T480-KBD', 'ThinkPad T480', 3400],
+            ['Galaxy S23 Ultra Type-C Charging Port Flex', 's23u-port', 'Charging Port & Flex', 'Samsung', 'SAM-S23U-PRT', 'Galaxy S23 Ultra', 1650],
+            ['HP Pavilion 15 LA-K201P Motherboard Replacement', 'hp15-mb', 'PC Display, Cable & Board', 'HP', 'HP-PAV15-MB', 'Pavilion 15', 16500],
+            ['3M 300LSE Double-Sided Display & Battery Mounting Tape', '3m-300lse-tape', 'Tools, Consumables & Soldering', 'Universal', 'TOOL-3M-300LSE', 'All Phones & Tablets', 220],
+            ['GD900 High-Conductivity Thermal Paste Syringe', 'gd900-paste', 'Tools, Consumables & Soldering', 'Universal', 'TOOL-GD900-PST', 'Laptops & Desktops', 350],
+        ];
+
+        foreach ($catalog as [$title, $groupKey, $cat, $brand, $sku, $compat, $price]) {
+            SparePartListing::create([
+                'shop_id' => $partsShop->id,
+                'vendor_profile_id' => $partsProfile->id,
+                'title' => $title,
+                'slug' => strtolower(preg_replace('/[^a-z0-9]+/i', '-', $groupKey . '-' . uniqid())),
+                'sku' => $sku,
+                'product_group_key' => $groupKey,
+                'part_category' => $cat,
+                'brand' => $brand,
+                'compatible_model' => $compat,
+                'is_active' => true,
+                'stock_quantity' => 12,
+                'base_price' => $price,
+                'normal_price' => $price,
+            ]);
+        }
+
+        // 1. Model-independent Fixed Packages only (including natural-language intents)
+        $this->assertDatabaseMissing('service_packages', ['title' => 'Original Display Panel Replacement']);
+        $this->get('/search?q=virus+troubleshoot')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=virus+removal')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=device+rooting')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=water+damage')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=windows+11+install')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=data+recovery')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=thermal+repasting')->assertRedirectContains('/packages/catalog');
+
+        // 2. Explicit Vertical / Fulfillment Tab Shortcuts
+        $courierResp = $this->get('/search?q=courier+pickup');
+        $courierResp->assertRedirectContains('/shops');
+        $courierResp->assertRedirectContains('category=COURIER_PICKUP');
+
+        $inShopResp = $this->get('/search?q=in-shop+repair');
+        $inShopResp->assertRedirectContains('/shops');
+        $inShopResp->assertRedirectContains('category=IN_SHOP_REPAIR');
+
+        $this->get('/search?q=fixed+packages')->assertRedirectContains('/packages/catalog');
+
+        // 3. Entity Shops with hardware nouns vs actual hardware replacement searches
+        $this->get('/search?q=Motherboard+Masters')->assertRedirectContains('/shops');
+        $this->get('/search?q=Toshiba+Display+Center')->assertRedirectContains('/shops');
+        $this->get('/search?q=motherboard+replacement')->assertRedirectContains('/spare-parts');
+        $this->get('/search?q=thermal+paste')->assertRedirectContains('/spare-parts');
+
+        // 4. Single-brand "sony" matches Sony shop/vendor FIRST -> /shops; unknown shop brand -> /spare-parts
+        $this->get('/search?q=sony')->assertRedirectContains('/shops');
+        $this->get('/search?q=google')->assertRedirectContains('/spare-parts');
+
+        // 5. Brand + extra part/model modifier ALWAYS prioritizes Spare Parts
+        $this->get('/search?q=sony+display')->assertRedirectContains('/spare-parts');
+        $this->get('/search?q=sony+xperia')->assertRedirectContains('/spare-parts');
+        $this->get('/search?q=iphone+13')->assertRedirectContains('/spare-parts');
+        $this->get('/search?q=samsung+galaxy+s21+fe+display')->assertRedirectContains('/spare-parts');
+
+        // 6. All-vertical Spare Parts routing + clean result ranking across categories
+        $this->get('/search?q=Display+replacement')->assertRedirectContains('/spare-parts');
+        $dispResp = $this->get('/spare-parts?q=Display+replacement')->assertStatus(200);
+        foreach ([
+            'Samsung Galaxy S21 FE Display Assembly',
+            'Apple iPhone 13 Pro Super Retina Display',
+            'Sony Xperia 1 IV OLED Display Assembly',
+        ] as $displayTitle) {
+            $dispResp->assertSeeInOrder([
+                $displayTitle,
+                '3M 300LSE Double-Sided Display',
+            ]);
+        }
+
+        $this->get('/search?q=keyboard+replacement')->assertRedirectContains('/spare-parts');
+        $this->get('/spare-parts?q=keyboard+replacement')
+            ->assertStatus(200)
+            ->assertSee('ThinkPad T480 Backlit Replacement Keyboard');
+
+        $this->get('/search?q=charging+port+replacement')->assertRedirectContains('/spare-parts');
+        $this->get('/spare-parts?q=charging+port+replacement')
+            ->assertStatus(200)
+            ->assertSee('Galaxy S23 Ultra Type-C Charging Port Flex');
+
+        // 7. Multi-section typeahead reports correct primary_section without Stage-2 noise
+        $this->getJson('/api/search/suggest?q=virus')
+            ->assertStatus(200)
+            ->assertJsonPath('primary_section', 'packages')
+            ->assertJsonFragment(['title' => 'Virus, Malware & Adware Troubleshoot']);
+
+        $this->getJson('/api/search/suggest?q=water+damage')
+            ->assertStatus(200)
+            ->assertJsonPath('primary_section', 'packages')
+            ->assertJsonFragment(['title' => 'Ultrasonic Liquid-Spill Chemical Cleaning']);
+
+        $this->getJson('/api/search/suggest?q=sony')
+            ->assertStatus(200)
+            ->assertJsonPath('primary_section', 'shops')
+            ->assertJsonFragment(['name' => 'Sony Shawroom']);
+
+        $this->getJson('/api/search/suggest?q=Motherboard+Masters')
+            ->assertStatus(200)
+            ->assertJsonPath('primary_section', 'shops')
+            ->assertJsonFragment(['name' => 'Motherboard Masters']);
+
+        $this->getJson('/api/search/suggest?q=Display+replacement')
+            ->assertStatus(200)
+            ->assertJsonPath('primary_section', 'spare-parts');
+
+        $this->getJson('/api/search/suggest?q=keyboard+replacement')
+            ->assertStatus(200)
+            ->assertJsonPath('primary_section', 'spare-parts');
+    }
+
+    public function test_dynamic_four_factor_pricing_and_rare_first_shop_1_percent_promo(): void
+    {
+        [, $lowProfile, $hubShop] = $this->createApprovedVendorWithShop([
+            'city' => 'Dhaka',
+            'area' => 'Panthapath',
+        ], 'Hub Repair Lab');
+        $lowProfile->update(['commission_rate' => 6.00]);
+        $hubShop->refresh();
+
+        [, $highProfile, $bananiShop] = $this->createApprovedVendorWithShop([
+            'city' => 'Dhaka',
+            'area' => 'Banani',
+        ], 'Banani Care Studio');
+        $highProfile->update(['commission_rate' => 8.00]);
+        $bananiShop->refresh();
+
+        // Baseline: Banani/Dhaka ServicePackage on default 8.00% shop preserves exact 8.00%
+        $this->assertSame(8.00, \App\Services\MarketplacePricingService::resolveOrderFeeRatePct(
+            $bananiShop,
+            ['city' => 'Dhaka', 'area' => 'Banani'],
+            ['item_type' => 'service_package']
+        ));
+
+        // 1. Varies by Shop
+        $rateLowShop = \App\Services\MarketplacePricingService::resolveOrderFeeRatePct(
+            $hubShop,
+            ['city' => 'Dhaka', 'area' => 'Banani'],
+            ['item_type' => 'service_package']
+        );
+        $this->assertNotEquals(8.00, $rateLowShop);
+
+        // 2. Varies by Product Category (Display +0.75 vs Battery +0.25 vs SIM Tray -0.75)
+        $rateDisplay = \App\Services\MarketplacePricingService::resolveOrderFeeRatePct(
+            $bananiShop,
+            ['city' => 'Dhaka', 'area' => 'Banani'],
+            ['item_type' => 'spare_part', 'part_category' => 'Display & Touch']
+        );
+        $rateSmallPart = \App\Services\MarketplacePricingService::resolveOrderFeeRatePct(
+            $bananiShop,
+            ['city' => 'Dhaka', 'area' => 'Banani'],
+            ['item_type' => 'spare_part', 'part_category' => 'SIM Tray & Small Parts']
+        );
+        $this->assertGreaterThan($rateSmallPart, $rateDisplay);
+
+        // 3. Varies by Location (Dhaka vs Chattogram cross-city)
+        $rateChattogram = \App\Services\MarketplacePricingService::resolveOrderFeeRatePct(
+            $bananiShop,
+            ['city' => 'Chattogram', 'area' => 'Agrabad'],
+            ['item_type' => 'spare_part', 'part_category' => 'Battery']
+        );
+        $rateDhaka = \App\Services\MarketplacePricingService::resolveOrderFeeRatePct(
+            $bananiShop,
+            ['city' => 'Dhaka', 'area' => 'Banani'],
+            ['item_type' => 'spare_part', 'part_category' => 'Battery']
+        );
+        $this->assertGreaterThan($rateDhaka, $rateChattogram);
+
+        // 4. Varies by Area (Panthapath hub vs Uttara extended)
+        $rateHubArea = \App\Services\MarketplacePricingService::resolveOrderFeeRatePct(
+            $bananiShop,
+            ['city' => 'Dhaka', 'area' => 'Panthapath'],
+            ['item_type' => 'spare_part', 'part_category' => 'Battery']
+        );
+        $rateExtendedArea = \App\Services\MarketplacePricingService::resolveOrderFeeRatePct(
+            $bananiShop,
+            ['city' => 'Dhaka', 'area' => 'Uttara'],
+            ['item_type' => 'spare_part', 'part_category' => 'Battery']
+        );
+        $this->assertGreaterThan($rateHubArea, $rateExtendedArea);
+
+        // 5. Rare FIRSTSHOP1 promo brings effective fee to exact 1.00% floor ONLY on customer's first shop order
+        $customer = \App\Models\User::factory()->create(['role' => 'customer', 'city' => 'Dhaka', 'area' => 'Banani']);
+
+        $listing1 = SparePartListing::create([
+            'shop_id' => $bananiShop->id,
+            'vendor_profile_id' => $highProfile->id,
+            'title' => 'Samsung Galaxy S23 OLED Display Panel',
+            'slug' => 's23-oled-' . uniqid(),
+            'sku' => 'S23-OLED-01',
+            'product_group_key' => 's23-oled-test',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Samsung',
+            'is_active' => true,
+            'stock_quantity' => 10,
+            'base_price' => 2000.00,
+            'normal_price' => 2000.00,
+        ]);
+
+        $this->actingAs($customer)->postJson('/cart/add', [
+            'spare_part_id' => $listing1->id,
+            'quantity' => 1,
+        ])->assertStatus(200);
+
+        $standardRate = \App\Services\MarketplacePricingService::resolveOrderFeeRatePct(
+            $bananiShop,
+            ['city' => 'Dhaka', 'area' => 'Banani'],
+            ['item_type' => 'spare_part', 'part_category' => 'Display & Touch']
+        );
+        $expectedStandardFee = round(2000.00 * ($standardRate / 100), 2);
+        $expected1PctFee = round(2000.00 * 0.01, 2); // Exact 1.00% floor (৳20.00)
+        $expectedPromoDiscount = round($expectedStandardFee - $expected1PctFee, 2);
+
+        $promoOk = $this->actingAs($customer)->postJson('/cart/voucher/apply', ['voucher_code' => 'FIRSTSHOP1']);
+        $promoOk->assertStatus(200)
+            ->assertJsonPath('success', true);
+        $this->assertEqualsWithDelta($expectedPromoDiscount, (float) $promoOk->json('discount'), 0.02);
+
+        // Once customer has a non-cancelled order at $bananiShop, FIRSTSHOP1 is rejected
+        \App\Models\RepairRequest::create([
+            'customer_id' => $customer->id,
+            'source' => 'DIRECT_SERVICE',
+            'requested_shop_id' => $bananiShop->id,
+            'title' => 'Prior Banani Order',
+            'description' => 'Prior order',
+            'device_type' => 'Smartphone',
+            'brand' => 'Samsung',
+            'model_name' => 'Galaxy S23',
+            'issue_category' => 'Direct Order',
+            'mode' => 'DIRECT_REPAIR',
+            'status' => \App\Models\RepairRequest::STATUS_COMPLETED,
+            'contact_phone' => '01712345678',
+        ]);
+
+        $this->actingAs($customer)->postJson('/cart/voucher/apply', ['voucher_code' => 'FIRSTSHOP1'])
+            ->assertStatus(422)
+            ->assertJsonPath('success', false);
+
+        // Customer still gets FIRSTSHOP1 at a brand-new shop ($hubShop)
+        $listing2 = SparePartListing::create([
+            'shop_id' => $hubShop->id,
+            'vendor_profile_id' => $lowProfile->id,
+            'title' => 'Apple iPhone 14 Battery Pack',
+            'slug' => 'ip14-bat-' . uniqid(),
+            'sku' => 'IP14-BAT-02',
+            'product_group_key' => 'ip14-bat-test',
+            'part_category' => 'Battery',
+            'brand' => 'Apple',
+            'is_active' => true,
+            'stock_quantity' => 10,
+            'base_price' => 1500.00,
+            'normal_price' => 1500.00,
+        ]);
+
+        $this->actingAs($customer)->postJson('/cart/add', [
+            'spare_part_id' => $listing2->id,
+            'quantity' => 1,
+        ])->assertStatus(200);
+
+        $this->actingAs($customer)->postJson('/cart/voucher/apply', ['voucher_code' => 'FIRSTSHOP1'])
+            ->assertStatus(200)
+            ->assertJsonPath('success', true);
+    }
+
+    public function test_customer_views_never_leak_internal_revenue_split_or_fee_percentages(): void
+    {
+        [, $profile, $shop] = $this->createApprovedVendorWithShop(['city' => 'Dhaka', 'area' => 'Banani'], 'Clean UI Workshop');
+        $customer = \App\Models\User::factory()->create(['role' => 'customer', 'city' => 'Dhaka', 'area' => 'Banani']);
+
+        $listing = SparePartListing::create([
+            'shop_id' => $shop->id,
+            'vendor_profile_id' => $profile->id,
+            'title' => 'Google Pixel 9 OLED Display Panel',
+            'slug' => 'gp9-oled-' . uniqid(),
+            'sku' => 'GP9-OLED-01',
+            'product_group_key' => 'gp9-oled-test',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Google',
+            'is_active' => true,
+            'stock_quantity' => 10,
+            'base_price' => 3500.00,
+            'normal_price' => 3500.00,
+        ]);
+
+        $forbidden = [
+            '100% to Workshop',
+            '100% Workshop',
+            '100% Seller',
+            '100% Vendor',
+            '100% Goes to Vendor',
+            '100% Listed Price',
+            'excl. courier',
+            'excl. pickup',
+            'of workshop total',
+            'Meramot Platform Fee (',
+        ];
+
+        $showResp = $this->get('/spare-parts/' . $listing->slug);
+        $showResp->assertStatus(200)->assertSee('Service & Buyer Protection Fee');
+        foreach ($forbidden as $phrase) {
+            $showResp->assertDontSee($phrase, false);
+        }
+
+        $this->actingAs($customer)->postJson('/cart/add', [
+            'spare_part_id' => $listing->id,
+            'quantity' => 1,
+        ])->assertStatus(200);
+
+        foreach (['/cart', '/cart/checkout'] as $route) {
+            $resp = $this->actingAs($customer)->get($route);
+            $resp->assertStatus(200)
+                ->assertSee('Service & Buyer Protection Fee')
+                ->assertSee('Doorstep Pickup & Delivery');
+            foreach ($forbidden as $phrase) {
+                $resp->assertDontSee($phrase, false);
+            }
+        }
+    }
 }

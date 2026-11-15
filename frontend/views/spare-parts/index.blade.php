@@ -22,10 +22,22 @@
 
     $selectedSubCategory = $selectedSubCategory ?? '';
     $selectedSubCategoryLabel = $selectedSubCategoryLabel ?? '';
-    $defaultSort = !empty($hasSearchContext) ? 'best_deal' : 'alphabetical';
+    $defaultSort = !empty($hasActiveSearchQuery) ? 'best_match' : (!empty($hasSearchContext) ? 'best_deal' : 'alphabetical');
     $hasActiveFilters = ($search !== '' || $selectedCategory !== 'All' || $selectedSubCategory !== '' || $selectedBrand !== 'All' || $deviceType !== 'all' || $selectedGroup !== '' || $wholesaleOnly || $specsOnly || $localOnly || $onSaleOnly || $sort !== $defaultSort);
 
-    $sortOptions = !empty($hasSearchContext)
+    $sortOptions = !empty($hasActiveSearchQuery)
+        ? [
+            'best_match' => 'Best Match (Relevance)',
+            'best_deal' => 'Price + Shipping: lowest first (Best Deal)',
+            'lowest_price' => 'Item Price: lowest first',
+            'highest_price' => 'Price + Shipping: highest first',
+            'distance' => 'Distance: nearest first',
+            'fastest_eta' => 'Fastest Delivery',
+            'popular' => 'Top Sold',
+            'wholesale' => 'Best Wholesale',
+            'alphabetical' => 'Alphabetical: A–Z',
+        ]
+        : (!empty($hasSearchContext)
         ? [
             'best_deal' => 'Price + Shipping: lowest first (Best Deal)',
             'lowest_price' => 'Item Price: lowest first',
@@ -45,8 +57,8 @@
             'fastest_eta' => 'Fastest Delivery',
             'popular' => 'Top Sold',
             'wholesale' => 'Best Wholesale',
-        ];
-    $activeSortLabel = $sortOptions[$sort] ?? ($hasSearchContext ? 'Price + Shipping: lowest first (Best Deal)' : 'Alphabetical: A–Z');
+        ]);
+    $activeSortLabel = $sortOptions[$sort] ?? (!empty($hasActiveSearchQuery) ? 'Best Match (Relevance)' : ($hasSearchContext ? 'Price + Shipping: lowest first (Best Deal)' : 'Alphabetical: A–Z'));
 
     $authVendorProfileId = null;
     if (auth()->check() && auth()->user()->role === 'vendor') {
@@ -125,10 +137,20 @@
                     <input type="hidden" name="on_sale" value="1">
                 @endif
 
-                <div class="relative flex-1 min-w-0">
+                <div class="relative flex-1 min-w-0"
+                     x-data="meramotTypeahead(@js($search ?? ''), 'spare-parts')"
+                     @click.outside="close()">
                     <input type="text"
                            name="q"
                            value="{{ $search }}"
+                           x-model="query"
+                           autocomplete="off"
+                           @input.debounce.180ms="fetchSuggestions()"
+                           @focus="onFocus()"
+                           @keydown.down.prevent="moveSelection(1)"
+                           @keydown.up.prevent="moveSelection(-1)"
+                           @keydown.enter="onEnter($event)"
+                           @keydown.escape="close()"
                            placeholder="Search displays, batteries, laptop keyboards, SSDs, models..."
                            class="w-full h-9 sm:h-10 pl-3.5 {{ $search !== '' ? 'pr-16 sm:pr-10' : 'pr-10' }} rounded-full bg-[var(--mint-50)] border border-[var(--border)] text-xs sm:text-sm text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-emerald-800">
                     @if($search !== '')
@@ -137,10 +159,12 @@
                            title="Clear search">✕</a>
                     @endif
                     <button type="submit"
+                            @click="close()"
                             aria-label="Search Parts"
                             class="sm:hidden absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-emerald-900 text-white flex items-center justify-center text-xs hover:bg-emerald-800 transition">
                         <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
                     </button>
+                    @include('partials.search-suggest-dropdown')
                 </div>
 
                 <button type="submit"
@@ -555,8 +579,11 @@
                     $effMax = $item->effectiveMaxPrice();
                     $normalBase = $item->resolvedNormalBasePrice();
                     $isOwnVendorListing = $authVendorProfileId && $shop && ((int) $shop->vendor_profile_id === (int) $authVendorProfileId);
-                    $detailUrl = route('spare-parts.show', ['slug' => $item->slug]);
-                    $showBestDealBadge = !empty($hasSearchContext) && $item->is_best_deal && $item->seller_count > 1;
+                    $detailUrl = route('spare-parts.show', array_filter([
+                        'slug' => $item->slug,
+                        'q' => $search !== '' ? $search : null,
+                    ]));
+                    $showBestDealBadge = !empty($hasActiveSearchQuery) && $item->is_best_deal && $item->seller_count > 1;
                 @endphp
 
                 <a href="{{ $detailUrl }}"
@@ -573,7 +600,7 @@
 
                         @if($showBestDealBadge)
                             <span class="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 z-10 px-2 py-0.5 rounded-full bg-emerald-800 text-white text-[9px] sm:text-[10px] font-bold tracking-tight shadow-xs">
-                                ★ Best Deal
+                                Best Deal
                             </span>
                         @elseif($isOwnVendorListing)
                             <span class="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 z-10 px-2 py-0.5 rounded-full bg-amber-600 text-white text-[9px] sm:text-[10px] font-bold shadow-xs">
