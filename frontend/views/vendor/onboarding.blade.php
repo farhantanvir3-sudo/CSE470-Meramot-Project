@@ -842,6 +842,38 @@ Models Touched: User, VendorProfile, RepairShop
                 </div>
             </div>
 
+            <div class="space-y-2 pt-1">
+                <div>
+                    <label class="block font-bold text-[var(--foreground)]">Store Capabilities &amp; Fulfillment Modes *</label>
+                    <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                        Choose how customers interact with your store. Enable Courier Pickup, In-Shop Walk-In Repair, both, or operate strictly as a Spare Parts Store/Wholesaler (at least one capability or Fixed-Price Packages required).
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <label class="flex items-start gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 cursor-pointer">
+                        <input type="checkbox" name="courier_pickup" value="1" {{ old('courier_pickup', $profile->courier_pickup ?? false) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
+                        <div>
+                            <span class="block font-bold text-[var(--foreground)]">Courier Pickup</span>
+                            <span class="block text-[11px] text-[var(--muted-foreground)] leading-snug mt-0.5">Platform rider collects the device from the customer, brings it to your shop, and returns it after repair.</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 cursor-pointer">
+                        <input type="checkbox" name="in_shop_repair" value="1" {{ old('in_shop_repair', $profile->in_shop_repair ?? true) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
+                        <div>
+                            <span class="block font-bold text-[var(--foreground)]">In-Shop Repair</span>
+                            <span class="block text-[11px] text-[var(--muted-foreground)] leading-snug mt-0.5">Customer walks into your shop for on-site repair and pays through Meramot — no courier delivery needed.</span>
+                        </div>
+                    </label>
+                    <label class="flex items-start gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 cursor-pointer">
+                        <input type="checkbox" name="spare_parts" value="1" {{ old('spare_parts', $profile->spare_parts ?? false) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
+                        <div>
+                            <span class="block font-bold text-[var(--foreground)]">Spare Parts Store</span>
+                            <span class="block text-[11px] text-[var(--muted-foreground)] leading-snug mt-0.5">Sell genuine components. Leave repair options unchecked to operate purely as a Spare Parts Wholesaler.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             <div class="pt-2">
                 @include('vendor.partials.fixed-packages-opt-in', [
                     'availablePackages' => $availablePackages ?? collect(),

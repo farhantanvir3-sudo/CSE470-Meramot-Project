@@ -47,6 +47,10 @@
     $avgRating = $reviewsList->count() > 0
         ? round((float) $reviewsList->avg('rating'), 2)
         : ($totalReviewsCount > 0 ? (float) $shop->rating : 0.0);
+    $supportsCourier = $shop->supportsCourierPickup();
+    $supportsInShop = $shop->supportsInShopRepair();
+    $supportsSpareParts = $shop->supportsSpareParts();
+    $isPureWholesaler = $shop->isPureSparePartsWholesaler();
 @endphp
 
 <div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
@@ -150,7 +154,7 @@
                     @else
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-xs font-bold text-[var(--accent-dark)]">
                             <i class="fa-solid {{ $isOperational ? 'fa-sparkles' : 'fa-clock' }} text-[10px]"></i>
-                            <span>{{ $isOperational ? 'New Workshop · No reviews yet' : 'Pending Verification · 0 reviews' }}</span>
+                            <span>{{ $isOperational ? ($isPureWholesaler ? 'New Parts Store · No reviews yet' : 'New Workshop · No reviews yet') : 'Pending Verification · 0 reviews' }}</span>
                         </span>
                     @endif
                     <span class="opacity-40">·</span>
@@ -168,7 +172,9 @@
                 </div>
 
                 <p class="mt-3 text-xs sm:text-sm text-[var(--muted-foreground)] leading-relaxed max-w-3xl">
-                    {{ $shop->description ?: "Professional device repair support with diagnostics, component level repairs, and courier handling from this repair workshop." }}
+                    {{ $shop->description ?: ($isPureWholesaler
+                        ? "Verified electronics spare parts store supplying genuine components and nationwide courier dispatch."
+                        : "Verified electronic device repair center offering transparent inspection, component-level servicing, and platform-protected payments.") }}
                 </p>
 
                 <!-- Badges & Perks -->
@@ -178,14 +184,29 @@
                             <i class="fa-solid fa-hourglass-half mr-1"></i> {{ ucfirst($verificationStatus) }} Verification
                         </span>
                     @endif
+                    @if($supportsCourier)
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-emerald-950">
+                            <i class="fa-solid fa-truck-fast text-emerald-700 mr-1"></i> Courier Pickup &amp; Return
+                        </span>
+                    @endif
+                    @if($supportsInShop)
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-teal-950">
+                            <i class="fa-solid fa-store text-teal-700 mr-1"></i> In-Shop Walk-In
+                        </span>
+                    @endif
+                    @if($supportsSpareParts)
+                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-sky-950">
+                            <i class="fa-solid fa-microchip text-sky-700 mr-1"></i> {{ $isPureWholesaler ? 'Spare Parts Wholesaler' : 'Spare Parts Store' }}
+                        </span>
+                    @endif
                     @if($shop->has_voucher)
                         <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-[var(--accent-dark)]">
                             <i class="fa-solid fa-ticket text-amber-600 mr-1"></i> Coupon Voucher
                         </span>
                     @endif
-                    @if($shop->free_delivery)
+                    @if($supportsCourier && $shop->free_delivery)
                         <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-emerald-800">
-                            <i class="fa-solid fa-truck-fast text-emerald-600 mr-1"></i> Free Doorstep Pickup
+                            <i class="fa-solid fa-gift text-emerald-600 mr-1"></i> Free Courier Pickup
                         </span>
                     @endif
                     @if($shop->has_deals)
@@ -202,13 +223,23 @@
             <!-- Right: Quick Quote / Booking Card (full-width row below lg, sidebar column on lg+) -->
             <div class="min-w-0 rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm space-y-4 sm:col-span-2 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] sm:items-center sm:gap-5 sm:space-y-0 lg:col-span-1 lg:block lg:space-y-4">
                 <div class="min-w-0">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Starting Inspection</span>
-                    <div class="text-2xl font-black text-[var(--accent-dark)]">
-                        ৳{{ number_format($shop->inspection_fee ?? 200) }}
-                    </div>
-                    <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
-                        Base Labor: ৳{{ number_format($shop->base_labor_fee ?? 400) }} · ETA: <span class="eta-display font-semibold text-[var(--foreground)]">{{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}</span>
-                    </div>
+                    @if($isPureWholesaler)
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Spare Parts Inventory</span>
+                        <div class="text-2xl font-black text-[var(--accent-dark)]">
+                            {{ number_format($shopSparePartsCount) }} SKUs Stocked
+                        </div>
+                        <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                            Retail &amp; Wholesale Supply · Nationwide Courier Dispatch
+                        </div>
+                    @else
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Starting Inspection</span>
+                        <div class="text-2xl font-black text-[var(--accent-dark)]">
+                            ৳{{ number_format($shop->inspection_fee ?? 200) }}
+                        </div>
+                        <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                            Base Labor: ৳{{ number_format($shop->base_labor_fee ?? 400) }} · ETA: <span class="eta-display font-semibold text-[var(--foreground)]">{{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}</span>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="space-y-2">
@@ -240,7 +271,11 @@
                             <i class="fa-solid fa-list-check mr-1.5"></i> View Ongoing &amp; Past Orders
                         </a>
                     @else
-                        @if($isOperational)
+                        @if($isPureWholesaler)
+                            <a href="{{ route('spare-parts.index', ['seller_shop_id' => $shop->id]) }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                                <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Browse Stocked Parts
+                            </a>
+                        @elseif($isOperational)
                             <a href="/requests/create?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
                                 Post Repair Request
                             </a>
@@ -249,9 +284,11 @@
                                 <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Booking Locked Until Approved
                             </span>
                         @endif
-                        <a href="/ai-consultant/chat" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
-                            <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-amber-600"></i> AI Diagnose Device
-                        </a>
+                        @if(!$isPureWholesaler)
+                            <a href="/ai-consultant/chat" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                                <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-amber-600"></i> AI Diagnose Device
+                            </a>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -308,16 +345,18 @@
             @endphp
 
             <!-- 1. Available Catalog (Split into Services & Spare Parts Tabs) -->
-            <div x-data="{ catalogTab: 'services' }" class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+            <div x-data="{ catalogTab: @js(($isPureWholesaler || (empty($displayServices) && $shopSpareParts->isNotEmpty())) ? 'spare_parts' : 'services') }" id="shop-catalog" class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
                 <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <div class="inline-flex items-center p-1 rounded-full bg-[var(--mint-100)] border border-[var(--border)] mb-2">
-                            <button type="button"
-                                    @click="catalogTab = 'services'"
-                                    :class="catalogTab === 'services' ? 'bg-[var(--accent-dark)] text-white shadow-xs' : 'text-[var(--foreground)] hover:bg-white/60'"
-                                    class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition">
-                                🛠️ Services ({{ count($displayServices) }})
-                            </button>
+                            @if(!$isPureWholesaler || !empty($displayServices))
+                                <button type="button"
+                                        @click="catalogTab = 'services'"
+                                        :class="catalogTab === 'services' ? 'bg-[var(--accent-dark)] text-white shadow-xs' : 'text-[var(--foreground)] hover:bg-white/60'"
+                                        class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition">
+                                    🛠️ Services ({{ count($displayServices) }})
+                                </button>
+                            @endif
                             <button type="button"
                                     @click="catalogTab = 'spare_parts'"
                                     :class="catalogTab === 'spare_parts' ? 'bg-[var(--accent-dark)] text-white shadow-xs' : 'text-[var(--foreground)] hover:bg-white/60'"
@@ -325,18 +364,22 @@
                                 🔩 Spare Parts ({{ number_format($shopSparePartsCount) }})
                             </button>
                         </div>
-                        <p x-show="catalogTab === 'services'" class="text-xs md:text-sm text-[var(--muted-foreground)]">
-                            @if($isOperational)
-                                Book fixed-price services directly with {{ $shop->name }}, or request a custom technician quote.
-                            @else
-                                Service catalog submitted for verification — booking opens once storefront review is complete.
-                            @endif
-                        </p>
-                        @if($shopSpareParts->isNotEmpty())
-                            <p x-show="catalogTab === 'spare_parts'" x-cloak class="text-xs md:text-sm text-[var(--muted-foreground)]">
-                                Genuine spare parts stocked and dispatched by {{ $shop->name }} with doorstep delivery calculated at checkout.
+                        @if(!$isPureWholesaler || !empty($displayServices))
+                            <p x-show="catalogTab === 'services'" class="text-xs md:text-sm text-[var(--muted-foreground)]">
+                                @if($isOperational)
+                                    Book fixed-price services directly with {{ $shop->name }}, or request a custom technician quote.
+                                @else
+                                    Service catalog submitted for verification — booking opens once storefront review is complete.
+                                @endif
                             </p>
                         @endif
+                        <p x-show="catalogTab === 'spare_parts'" x-cloak class="text-xs md:text-sm text-[var(--muted-foreground)]">
+                            @if($shopSpareParts->isNotEmpty())
+                                Genuine spare parts stocked and dispatched by {{ $shop->name }} with doorstep delivery calculated at checkout.
+                            @else
+                                Stocked spare parts listed by {{ $shop->name }} appear here.
+                            @endif
+                        </p>
                     </div>
                     @php
                         $shopCartCount = count(session('cart', []));
@@ -344,7 +387,7 @@
                     @if($isOperational && $canCustomerBookOrReview)
                         <a href="/cart" class="inline-flex items-center gap-2 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
                             <i class="fa-solid fa-cart-shopping"></i>
-                            <span>Open Direct Cart</span>
+                            <span>Open Cart</span>
                             <span data-cart-badge class="{{ $shopCartCount > 0 ? '' : 'hidden' }} inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[10px] font-bold text-[var(--accent-foreground)]">
                                 {{ $shopCartCount }}
                             </span>
@@ -368,12 +411,13 @@
                 </div>
 
                 {{-- Tab 1: Services --}}
+                @if(!$isPureWholesaler || !empty($displayServices))
                 <div x-show="catalogTab === 'services'">
                     @if(empty($displayServices))
                         <div class="rounded-[1.5rem] border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center">
-                            <i class="fa-solid fa-box-open text-2xl text-[var(--muted-foreground)]"></i>
+                            <i class="fa-solid fa-screwdriver-wrench text-2xl text-[var(--muted-foreground)]"></i>
                             <p class="mt-3 text-sm font-semibold text-[var(--foreground)]">This workshop hasn't published fixed-price services yet.</p>
-                            <p class="mt-1 text-xs text-[var(--muted-foreground)]">You can still describe your issue and request a custom quote.</p>
+                            <p class="mt-1 text-xs text-[var(--muted-foreground)]">Describe your device issue below to receive a customized repair quote from {{ $shop->name }}.</p>
                             @if($isOperational && $canCustomerBookOrReview)
                                 <a href="/requests/create?shop_id={{ $shop->id }}" class="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition">
                                     Request a Custom Quote
@@ -412,7 +456,7 @@
                                                         <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
                                                             From ৳{{ number_format($svcItem['estimate']) }}
                                                         </div>
-                                                        <div class="text-[10px] text-[var(--muted-foreground)]">quoted by model</div>
+                                                        <div class="text-[10px] text-[var(--muted-foreground)]">base estimate</div>
                                                     @else
                                                         <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
                                                             ৳{{ number_format($svcItem['estimate']) }}
@@ -420,8 +464,8 @@
                                                         <div class="text-[10px] text-[var(--muted-foreground)]">fixed price</div>
                                                     @endif
                                                 @else
-                                                    <div class="text-sm font-bold text-[var(--accent-dark)]">Quote on inspection</div>
-                                                    <div class="text-[10px] text-[var(--muted-foreground)]">quoted after inspection</div>
+                                                    <div class="text-sm font-bold text-[var(--accent-dark)]">Assessed on diagnosis</div>
+                                                    <div class="text-[10px] text-[var(--muted-foreground)]">transparent itemized quote</div>
                                                 @endif
                                             </div>
                                         </div>
@@ -472,6 +516,7 @@
                         </div>
                     @endif
                 </div>
+                @endif
 
                 {{-- Tab 2: Spare Parts (renders listed parts if present, otherwise stays empty as requested) --}}
                 <div x-show="catalogTab === 'spare_parts'" x-cloak>

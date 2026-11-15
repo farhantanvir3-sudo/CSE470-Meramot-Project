@@ -887,20 +887,34 @@ class VendorBranchController extends Controller
             }
             $job->repairRequest->update($reqUpdates);
 
-            if ($newStatus === 'RETURN_SCHEDULED') {
-                $returnDelivery = app(DeliveryLifecycleService::class)->ensureDeliveryJob(
-                    $job->repairRequest->fresh(),
-                    $job->fresh(),
-                    'TO_CUSTOMER'
-                );
+            $requiresCourier = $job->repairRequest->requiresCourierLogistics();
 
-                if ($job->repairRequest->customer_id) {
+            if ($newStatus === 'RETURN_SCHEDULED') {
+                if ($requiresCourier) {
+                    $returnDelivery = app(DeliveryLifecycleService::class)->ensureDeliveryJob(
+                        $job->repairRequest->fresh(),
+                        $job->fresh(),
+                        'TO_CUSTOMER'
+                    );
+
+                    if ($job->repairRequest->customer_id) {
+                        UserNotification::create([
+                            'user_id' => $job->repairRequest->customer_id,
+                            'type' => 'delivery_milestone',
+                            'severity' => 'info',
+                            'title' => 'Ready for Return Delivery',
+                            'message' => ($job->shop?->name ?? 'The workshop') . " completed bench service for #{$job->repairRequest->id} and queued a return courier ({$returnDelivery->tracking_code}).",
+                            'action_url' => '/requests/' . $job->repairRequest->id . '/track',
+                            'is_read' => false,
+                        ]);
+                    }
+                } elseif ($job->repairRequest->customer_id) {
                     UserNotification::create([
                         'user_id' => $job->repairRequest->customer_id,
                         'type' => 'delivery_milestone',
                         'severity' => 'info',
-                        'title' => 'Ready for Return Delivery',
-                        'message' => ($job->shop?->name ?? 'The workshop') . " completed bench service for #{$job->repairRequest->id} and queued a return courier ({$returnDelivery->tracking_code}).",
+                        'title' => 'Device Ready for In-Shop Pickup',
+                        'message' => ($job->shop?->name ?? 'The workshop') . " finished servicing order #{$job->repairRequest->id}. Pick up your device at the shop and complete payment via Meramot.",
                         'action_url' => '/requests/' . $job->repairRequest->id . '/track',
                         'is_read' => false,
                     ]);
@@ -913,12 +927,16 @@ class VendorBranchController extends Controller
             }
         }
 
+        $returnMsg = ($job->repairRequest && !$job->repairRequest->requiresCourierLogistics())
+            ? ' — Customer notified that device is ready for in-shop pickup.'
+            : ' — Return pickup task queued in courier dispatch pool.';
+
         return redirect('/vendor/dashboard?tab=assigned_jobs')
             ->with(
                 'success',
                 "Updated Job #{$job->id} status to {$newStatus}"
                 . ($newStatus === 'WAITING_APPROVAL' ? ' — Final quote sent to customer for approval.' : '')
-                . ($newStatus === 'RETURN_SCHEDULED' ? ' — Return pickup task queued in courier dispatch pool.' : '')
+                . ($newStatus === 'RETURN_SCHEDULED' ? $returnMsg : '')
                 . ($newStatus === 'COMPLETED' ? ' — Invoice, warranty & 10%/90% ledger settled.' : '')
             );
     }

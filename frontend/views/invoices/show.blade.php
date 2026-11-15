@@ -170,10 +170,17 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
                         <span>Service &amp; Escrow Protection Fee:</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invCommission, 2) }}</span>
                     </div>
-                    <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                        <span>Doorstep Pickup &amp; Delivery:</span>
-                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invDelivery, 2) }}</span>
-                    </div>
+                    @if($req && !$req->requiresCourierLogistics() && $invDelivery <= 0)
+                        <div class="flex justify-between gap-2 text-emerald-800 font-semibold">
+                            <span>In-Shop Walk-In (No Delivery):</span>
+                            <span class="shrink-0">৳0.00</span>
+                        </div>
+                    @else
+                        <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
+                            <span>Doorstep Pickup &amp; Delivery:</span>
+                            <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invDelivery, 2) }}</span>
+                        </div>
+                    @endif
                     @if($invDiscount > 0)
                         <div class="flex justify-between gap-2 text-emerald-800 font-bold">
                             <span>Promo Discount {{ !empty($req?->voucher_code) ? '(' . $req->voucher_code . ')' : '' }}:</span>

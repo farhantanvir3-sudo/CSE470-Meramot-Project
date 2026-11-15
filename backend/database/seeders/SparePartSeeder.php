@@ -66,6 +66,7 @@ class SparePartSeeder extends Seeder
         $budgetFixer = RepairShop::where('slug', 'budget-fixer')->first();
         $mirpurLab = RepairShop::where('slug', 'mirpur-laptop-lab')->first()
             ?? RepairShop::where('city', 'Dhaka')->where('area', 'Mirpur')->first();
+        $elephantWholesale = RepairShop::where('slug', 'elephant-road-parts-wholesale')->first();
 
         $sylhetShop = RepairShop::where('city', 'Sylhet')->where('is_active', true)->orderByDesc('rating')->first();
         $rajshahiShop = RepairShop::where('city', 'Rajshahi')->where('is_active', true)->orderByDesc('rating')->first();
@@ -79,6 +80,7 @@ class SparePartSeeder extends Seeder
             ->first();
 
         $dhakaPool = array_values(array_filter([
+            $elephantWholesale,
             $bananiProtech,
             $dhakaDoctors,
             $uttaraProtech,

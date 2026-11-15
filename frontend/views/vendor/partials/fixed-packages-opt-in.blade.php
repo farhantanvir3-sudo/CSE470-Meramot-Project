@@ -62,7 +62,7 @@
                 Can your workshop provide model-independent Fixed-Price Repair Packages?
             </h3>
             <p class="text-xs text-[#4a6650] leading-relaxed">
-                These flat-rate software, diagnostics, OS, thermal, and maintenance services do not depend on a customer's specific device model. Opted-in workshops are auto-matched for local Fixed Package orders and have selected packages listed automatically on their shop profile's <strong>Services</strong> tab.
+                These flat-rate software, diagnostics, OS, thermal, and maintenance services do not depend on a customer's specific device model. Opted-in workshops are matched for local Fixed Package bookings and display their selected packages automatically on their shop profile's <strong>Services</strong> tab. Spare-parts-only wholesalers can leave this disabled.
             </p>
         </div>
         <span
@@ -85,7 +85,7 @@
             >
             <div>
                 <p class="text-sm font-bold text-[#203126]">Yes, enable selected Fixed-Price Packages</p>
-                <p class="text-xs text-[#58725f] mt-0.5">Auto-match local customer bookings &amp; publish on our Services tab.</p>
+                <p class="text-xs text-[#58725f] mt-0.5">Match local customer bookings &amp; publish on our Services tab.</p>
             </div>
         </label>
 
@@ -102,7 +102,7 @@
             >
             <div>
                 <p class="text-sm font-bold text-[#203126]">No, custom quotes &amp; hardware specialties only</p>
-                <p class="text-xs text-[#58725f] mt-0.5">Opt out of platform Fixed Package auto-matching for now.</p>
+                <p class="text-xs text-[#58725f] mt-0.5">Opt out of platform Fixed Package matching for now.</p>
             </div>
         </label>
     </div>

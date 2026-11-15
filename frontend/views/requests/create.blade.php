@@ -394,77 +394,91 @@
                     </div>
                 </template>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Preferred Logistics Mode *</label>
-                        <select name="preferred_service_type" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none" required>
-                            <option value="pickup_dropoff">Rider Doorstep Pickup & Return (OTP Verified)</option>
-                            <option value="walk_in">Customer Walk-in to Technician Shop</option>
-                            <option value="technician_home_visit">Technician On-Site Home Diagnostic</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Area / Pickup Neighborhood *</label>
-                        <input
-                            type="text"
-                            name="area"
-                            autocomplete="address-level3"
-                            list="meramot-bangladesh-areas"
-                            x-model="selectedArea"
-                            placeholder="Banani, Hatirpool, Agrabad, Zindabazar..."
-                            class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none"
-                            required
-                        >
-                        <input type="hidden" name="city" :value="selectedCity">
-                        <datalist id="meramot-bangladesh-areas">
-                            @foreach([
-                                'Banani', 'Gulshan', 'Dhanmondi', 'Hatirpool', 'Mirpur', 'Uttara', 'Bashundhara',
-                                'Mohammadpur', 'Farmgate', 'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Wari',
-                                'Agrabad, Chattogram', 'GEC Circle, Chattogram', 'Zindabazar, Sylhet', 'Joydebpur, Gazipur',
-                                'Shaheb Bazar, Rajshahi', 'Shib Bari, Khulna', 'Satmatha, Bogura', 'Ganginarpar, Mymensingh'
-                            ] as $a)
-                                <option value="{{ $a }}"></option>
-                            @endforeach
-                        </datalist>
-                    </div>
-                </div>
-
-                <!-- 6. Contact Phone, Pickup Address & Expected Budget -->
-                @if($errors->has('contact_phone'))
-                    <div class="rounded-2xl border border-rose-300 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700">
-                        {{ $errors->first('contact_phone') }}
-                    </div>
-                @endif
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label class="block font-bold text-[var(--foreground)]">Contact Phone *</label>
-                            @auth
-                                @if(empty(auth()->user()->phone))
-                                    <a href="/profile?edit=1" class="text-[10px] font-bold text-[var(--accent-dark)] hover:underline">Save in Profile</a>
+                @php
+                    $shopCourierOk = !isset($selectedShop) || !$selectedShop || $selectedShop->supportsCourierPickup();
+                    $shopWalkInOk = !isset($selectedShop) || !$selectedShop || $selectedShop->supportsInShopRepair();
+                    $defaultReqServiceType = old('preferred_service_type', ($shopCourierOk ? 'pickup_dropoff' : ($shopWalkInOk ? 'walk_in' : 'pickup_dropoff')));
+                @endphp
+                <div class="space-y-4" x-data="{ serviceType: @js($defaultReqServiceType) }">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">How will you submit your device? *</label>
+                            <select name="preferred_service_type" x-model="serviceType" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none" required>
+                                @if($shopCourierOk)
+                                    <option value="pickup_dropoff">Courier Pickup &amp; Return (Rider collects &amp; delivers back)</option>
                                 @endif
-                            @endauth
+                                @if($shopWalkInOk)
+                                    <option value="walk_in">In-Shop Walk-In (Drop off in person &amp; pay on Meramot, ৳0 delivery)</option>
+                                @endif
+                                @if(!isset($selectedShop) || !$selectedShop)
+                                    <option value="technician_home_visit">Technician On-Site Diagnostic</option>
+                                @endif
+                            </select>
+                            <p class="mt-1 text-[11px] text-[var(--muted-foreground)]" x-text="serviceType === 'walk_in' ? 'No courier needed — visit the workshop directly and settle payment on Meramot.' : 'A verified rider picks up your device and returns it after completion.'"></p>
                         </div>
-                        <input
-                            type="tel"
-                            name="contact_phone"
-                            autocomplete="tel"
-                            inputmode="tel"
-                            maxlength="14"
-                            value="{{ old('contact_phone', auth()->user()->phone ?? '') }}"
-                            placeholder="01XXXXXXXXX"
-                            @auth required @endauth
-                            class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none"
-                        >
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Area / Neighborhood *</label>
+                            <input
+                                type="text"
+                                name="area"
+                                autocomplete="address-level3"
+                                list="meramot-bangladesh-areas"
+                                x-model="selectedArea"
+                                placeholder="Banani, Hatirpool, Agrabad, Zindabazar..."
+                                class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none"
+                                required
+                            >
+                            <input type="hidden" name="city" :value="selectedCity">
+                            <datalist id="meramot-bangladesh-areas">
+                                @foreach([
+                                    'Banani', 'Gulshan', 'Dhanmondi', 'Hatirpool', 'Mirpur', 'Uttara', 'Bashundhara',
+                                    'Mohammadpur', 'Farmgate', 'Tejgaon', 'Mohakhali', 'Badda', 'Rampura', 'New Market', 'Wari',
+                                    'Agrabad, Chattogram', 'GEC Circle, Chattogram', 'Zindabazar, Sylhet', 'Joydebpur, Gazipur',
+                                    'Shaheb Bazar, Rajshahi', 'Shib Bari, Khulna', 'Satmatha, Bogura', 'Ganginarpar, Mymensingh'
+                                ] as $a)
+                                    <option value="{{ $a }}"></option>
+                                @endforeach
+                            </datalist>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Full Pickup / Delivery Address</label>
-                        <input type="text" name="pickup_address" autocomplete="street-address" x-model="pickupAddress" placeholder="House #, Road #, Block/Sector, Landmarks" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
-                    </div>
-                    <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Estimated Budget (৳)</label>
-                        <input type="number" min="0" max="1000000" step="1" data-numeric-mode="integer" onwheel="this.blur()" name="estimated_budget" value="{{ old('estimated_budget') }}" placeholder="e.g. 2500" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+
+                    <!-- 6. Contact Phone, Pickup Address & Expected Budget -->
+                    @if($errors->has('contact_phone'))
+                        <div class="rounded-2xl border border-rose-300 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700">
+                            {{ $errors->first('contact_phone') }}
+                        </div>
+                    @endif
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block font-bold text-[var(--foreground)]">Contact Phone *</label>
+                                @auth
+                                    @if(empty(auth()->user()->phone))
+                                        <a href="/profile?edit=1" class="text-[10px] font-bold text-[var(--accent-dark)] hover:underline">Save in Profile</a>
+                                    @endif
+                                @endauth
+                            </div>
+                            <input
+                                type="tel"
+                                name="contact_phone"
+                                autocomplete="tel"
+                                inputmode="tel"
+                                maxlength="14"
+                                value="{{ old('contact_phone', auth()->user()->phone ?? '') }}"
+                                placeholder="01XXXXXXXXX"
+                                @auth required @endauth
+                                class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none"
+                            >
+                        </div>
+                        <div x-show="serviceType !== 'walk_in'" x-cloak>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Full Pickup / Delivery Address</label>
+                            <input type="text" name="pickup_address" autocomplete="street-address" x-model="pickupAddress" placeholder="House #, Road #, Block/Sector, Landmarks" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Estimated Budget (৳)</label>
+                            <input type="number" min="0" max="1000000" step="1" data-numeric-mode="integer" onwheel="this.blur()" name="estimated_budget" value="{{ old('estimated_budget') }}" placeholder="e.g. 2500" class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
+                        </div>
                     </div>
                 </div>
             </div>

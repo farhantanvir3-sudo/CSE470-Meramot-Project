@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Direct-Order Repair Cart | Meramot')
+@section('title', 'Service Cart | Meramot')
 
 {{-- ==========================================================================
      FEATURE R8: Unified Direct-Order & Quickmatch Cart Wizard
@@ -15,8 +15,20 @@
     $expCourierFee = (float) ($expressDeliveryFee ?? 150);
     $ratePctLabel = rtrim(rtrim(number_format((float) ($commissionRatePct ?? 8), 2), '0'), '.');
     $isVendorViewer = auth()->check() && auth()->user()->role === 'vendor';
+    $allowCourier = (bool) ($canCourierPickup ?? true);
+    $allowInShop = (bool) ($canInShopRepair ?? true);
+    $initFulfillment = old('fulfillment_mode', $defaultFulfillmentMode ?? 'COURIER_PICKUP');
+    if ($initFulfillment === 'COURIER_PICKUP' && !$allowCourier && $allowInShop) {
+        $initFulfillment = 'IN_SHOP';
+    } elseif ($initFulfillment === 'IN_SHOP' && !$allowInShop && $allowCourier) {
+        $initFulfillment = 'COURIER_PICKUP';
+    }
 @endphp
 <div class="mx-auto max-w-6xl px-4 py-6 md:px-6" x-data="{
+    fulfillmentMode: @js($initFulfillment),
+    isSparePartCart: @js(!empty($isSparePartCart)),
+    canCourierPickup: @js($allowCourier),
+    canInShopRepair: @js($allowInShop),
     scheduleType: '{{ old('schedule_type', 'NOW') }}',
     deliveryType: '{{ old('delivery_type', 'REGULAR') }}',
     paymentMethod: '{{ old('payment_method', 'CASH') }}',
@@ -30,7 +42,11 @@
     expressFee: {{ $expCourierFee }},
     appliedVoucher: @js($appliedVoucher ?? ''),
     baseDiscount: {{ (float) ($discountAmount ?? 0) }},
+    get isCourierMode() {
+        return this.isSparePartCart || this.fulfillmentMode === 'COURIER_PICKUP';
+    },
     get deliveryFee() {
+        if (!this.isCourierMode) return 0;
         return this.deliveryType === 'EXPRESS' ? this.expressFee : this.regularFee;
     },
     get activeDiscount() {
@@ -96,13 +112,13 @@
                 <span class="text-[var(--foreground)] font-semibold">Cart</span>
             </div>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">
-                Direct-Order Cart
+                Your Service Cart
             </h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1 flex flex-wrap items-center gap-2 leading-relaxed">
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R8 • Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Review your selected items, choose a verified workshop if applicable, and confirm doorstep delivery or pickup.</span>
+                <span>Review your selected items, choose your workshop, and confirm courier pickup or in-shop walk-in service.</span>
             </p>
         </div>
 
@@ -188,8 +204,8 @@
                                             <i class="fa-solid fa-circle-check text-[9px]"></i>
                                             <span>Selected Workshop</span>
                                         @else
-                                            <i class="fa-solid fa-location-crosshairs text-[9px]"></i>
-                                            <span>Smart-Matched Workshop</span>
+                                            <i class="fa-solid fa-location-dot text-[9px]"></i>
+                                            <span>Nearest Verified Workshop</span>
                                         @endif
                                     </span>
 
@@ -262,7 +278,7 @@
                                     No verified workshop available in {{ $customerLocation['city'] ?? 'your area' }}
                                 </h3>
                                 <p class="mt-1 text-xs text-amber-900 leading-relaxed">
-                                    Doorstep pickup is limited to verified workshops within your city. Update your pickup location or browse listed workshops.
+                                    We couldn't find a verified workshop for these items in your selected city. Update your location or browse listed workshops directly.
                                 </p>
                             </div>
                         </div>
@@ -272,7 +288,7 @@
                                 @click="$dispatch('meramot-open-location-modal')"
                                 class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
                             >
-                                Update Pickup Location
+                                Update Location
                             </button>
                             <a href="/shops" class="rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100 transition">
                                 Browse Workshops
@@ -289,7 +305,7 @@
                         </h2>
                         <div class="flex items-center gap-3">
                             <a href="{{ route('cart.checkout') }}" class="text-xs font-semibold text-[var(--accent-dark)] hover:underline whitespace-nowrap">
-                                Standalone Checkout
+                                Checkout Page
                             </a>
                             <form action="{{ route('cart.clear') }}" method="POST" class="inline">
                                 @csrf
@@ -405,26 +421,85 @@
                     </div>
                 </div>
 
-                <!-- 3. Direct-Order Pickup, Schedule & Address Configuration -->
+                <!-- 3. Fulfillment Mode, Schedule & Address Configuration -->
                 <form id="direct-order-form" method="POST" action="{{ route('cart.place') }}" class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm space-y-5 text-xs">
                     @csrf
                     @if(isset($activeShop) && $activeShop)
                         <input type="hidden" name="shop_id" value="{{ $activeShop->id }}">
                     @endif
 
-                    <h2 class="text-base font-black text-[var(--foreground)] border-b border-[var(--border)] pb-3">
+                    <h2 class="text-base font-black text-[var(--foreground)] border-b border-[var(--border)] pb-3" x-text="isCourierMode ? 'Pickup Schedule, Courier & Address' : 'Walk-In Schedule & Workshop Details'">
                         Pickup Schedule, Courier &amp; Address
                     </h2>
 
+                    @if(empty($isSparePartCart))
+                        <div>
+                            <label class="block font-bold text-[var(--foreground)] mb-2">1. How would you like your device serviced? *</label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label
+                                    class="rounded-2xl border-2 p-3.5 transition flex items-start justify-between gap-2.5 {{ !$allowCourier ? 'opacity-55 cursor-not-allowed bg-slate-50/70' : 'cursor-pointer' }}"
+                                    :class="fulfillmentMode === 'COURIER_PICKUP' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'"
+                                >
+                                    <div class="flex items-start gap-2.5 min-w-0">
+                                        <input
+                                            type="radio"
+                                            name="fulfillment_mode"
+                                            value="COURIER_PICKUP"
+                                            x-model="fulfillmentMode"
+                                            {{ !$allowCourier ? 'disabled' : '' }}
+                                            class="mt-0.5 accent-[#244229]"
+                                        >
+                                        <div class="min-w-0">
+                                            <span class="font-bold text-[var(--foreground)] block">Courier Pickup &amp; Return</span>
+                                            <span class="text-[11px] text-[var(--muted-foreground)] block leading-snug">
+                                                {{ $allowCourier ? 'A rider collects your device from home and returns it after service.' : 'This workshop accepts in-shop visits only.' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span class="font-black text-xs text-[var(--accent-dark)] shrink-0">
+                                        {{ $allowCourier ? '৳' . number_format($regCourierFee, 0) . '+' : 'N/A' }}
+                                    </span>
+                                </label>
+
+                                <label
+                                    class="rounded-2xl border-2 p-3.5 transition flex items-start justify-between gap-2.5 {{ !$allowInShop ? 'opacity-55 cursor-not-allowed bg-slate-50/70' : 'cursor-pointer' }}"
+                                    :class="fulfillmentMode === 'IN_SHOP' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'"
+                                >
+                                    <div class="flex items-start gap-2.5 min-w-0">
+                                        <input
+                                            type="radio"
+                                            name="fulfillment_mode"
+                                            value="IN_SHOP"
+                                            x-model="fulfillmentMode"
+                                            {{ !$allowInShop ? 'disabled' : '' }}
+                                            class="mt-0.5 accent-[#244229]"
+                                        >
+                                        <div class="min-w-0">
+                                            <span class="font-bold text-[var(--foreground)] block">In-Shop Walk-In Repair</span>
+                                            <span class="text-[11px] text-[var(--muted-foreground)] block leading-snug">
+                                                {{ $allowInShop ? 'Drop by the workshop in person and pay on Meramot — zero delivery fee.' : 'This workshop operates by courier only.' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span class="font-black text-xs text-emerald-700 shrink-0">
+                                        {{ $allowInShop ? '৳0 Fee' : 'N/A' }}
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    @else
+                        <input type="hidden" name="fulfillment_mode" value="COURIER_PICKUP">
+                    @endif
+
                     <!-- Schedule Type: NOW vs LATER -->
                     <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-2">1. Pickup Schedule *</label>
+                        <label class="block font-bold text-[var(--foreground)] mb-2" x-text="isCourierMode ? '2. Pickup Schedule *' : '2. Workshop Visit Schedule *'">2. Pickup Schedule *</label>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label class="cursor-pointer rounded-2xl border-2 p-3.5 transition flex items-start gap-3" :class="scheduleType === 'NOW' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'">
                                 <input type="radio" name="schedule_type" value="NOW" x-model="scheduleType" class="mt-0.5 accent-[#244229]">
                                 <div class="min-w-0">
-                                    <span class="font-bold text-[var(--foreground)] block">Pickup Now</span>
-                                    <span class="text-[11px] text-[var(--muted-foreground)]">Dispatch courier once workshop confirms</span>
+                                    <span class="font-bold text-[var(--foreground)] block" x-text="isCourierMode ? 'Pickup Now' : 'Walk In Today'">Pickup Now</span>
+                                    <span class="text-[11px] text-[var(--muted-foreground)]" x-text="isCourierMode ? 'Dispatch courier once workshop confirms' : 'Drop off once workshop confirms your slot'">Dispatch courier once workshop confirms</span>
                                 </div>
                             </label>
                             <label class="cursor-pointer rounded-2xl border-2 p-3.5 transition flex items-start gap-3" :class="scheduleType === 'LATER' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'">
@@ -448,10 +523,26 @@
                         </div>
                     </div>
 
-                    <!-- Delivery Type: REGULAR vs EXPRESS (Distance-Calculated for Spare Parts!) -->
-                    <div>
+                    @if(isset($activeShop) && $activeShop)
+                        <div x-show="!isCourierMode" x-cloak class="rounded-2xl border border-emerald-300 bg-emerald-50/75 p-4 text-xs space-y-1.5">
+                            <div class="font-black text-emerald-950 flex items-center gap-2">
+                                <i class="fa-solid fa-store text-emerald-700"></i>
+                                <span>In-Shop Service Counter (No Courier Needed)</span>
+                            </div>
+                            <p class="font-bold text-[var(--foreground)]">{{ $activeShop->name }}{{ $activeShop->display_branch_tag ? ' [' . $activeShop->display_branch_tag . ']' : '' }}</p>
+                            <p class="text-[var(--muted-foreground)]">{{ $activeShop->public_address }}</p>
+                            @if($activeShop->opening_hours_text)
+                                <p class="text-[11px] font-semibold text-[var(--accent-dark)]">
+                                    <i class="fa-regular fa-clock mr-1"></i>{{ $activeShop->opening_hours_text }}
+                                </p>
+                            @endif
+                        </div>
+                    @endif
+
+                    <!-- Delivery Type: REGULAR vs EXPRESS -->
+                    <div x-show="isCourierMode" x-cloak>
                         <label class="block font-bold text-[var(--foreground)] mb-2">
-                            2. {{ !empty($isSparePartCart) ? 'Distance-Based Courier Delivery *' : 'Two-Way Courier Tier *' }}
+                            3. {{ !empty($isSparePartCart) ? 'Distance-Based Courier Delivery *' : 'Two-Way Courier Tier *' }}
                             @if(!empty($isSparePartCart) && !empty($deliveryQuote['distance_formatted']))
                                 <span class="font-normal text-[var(--muted-foreground)]">
                                     ({{ $deliveryQuote['distance_formatted'] }} • ETA {{ $deliveryQuote['eta_label'] ?? 'Same day' }})
@@ -461,7 +552,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label class="cursor-pointer rounded-2xl border-2 p-3.5 transition flex items-center justify-between gap-3" :class="deliveryType === 'REGULAR' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'">
                                 <div class="flex items-start gap-2.5 min-w-0">
-                                    <input type="radio" name="delivery_type" value="REGULAR" x-model="deliveryType" class="mt-0.5 accent-[#244229]">
+                                    <input type="radio" name="delivery_type" value="REGULAR" x-model="deliveryType" :disabled="!isCourierMode" class="mt-0.5 accent-[#244229]">
                                     <div class="min-w-0">
                                         <span class="font-bold text-[var(--foreground)] block">Regular Courier</span>
                                         <span class="text-[11px] text-[var(--muted-foreground)]">{{ !empty($isSparePartCart) ? ($deliveryQuote['eta_label'] ?? 'Standard insured dispatch') : 'Standard insured pickup & return' }}</span>
@@ -472,7 +563,7 @@
 
                             <label class="cursor-pointer rounded-2xl border-2 p-3.5 transition flex items-center justify-between gap-3" :class="deliveryType === 'EXPRESS' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'">
                                 <div class="flex items-start gap-2.5 min-w-0">
-                                    <input type="radio" name="delivery_type" value="EXPRESS" x-model="deliveryType" class="mt-0.5 accent-[#244229]">
+                                    <input type="radio" name="delivery_type" value="EXPRESS" x-model="deliveryType" :disabled="!isCourierMode" class="mt-0.5 accent-[#244229]">
                                     <div class="min-w-0">
                                         <span class="font-bold text-[var(--foreground)] block">Express Courier</span>
                                         <span class="text-[11px] text-[var(--muted-foreground)]">Priority direct dispatch</span>
@@ -486,7 +577,7 @@
                     <!-- Contact Phone & Neighborhood -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block font-bold text-[var(--foreground)] mb-1">3. Contact Phone *</label>
+                            <label class="block font-bold text-[var(--foreground)] mb-1">Contact Phone *</label>
                             <input
                                 type="tel"
                                 name="phone"
@@ -499,7 +590,7 @@
                                 class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-xs text-[var(--foreground)] outline-none"
                             >
                         </div>
-                        <div>
+                        <div x-show="isCourierMode" x-cloak>
                             <label for="cart-pickup-area" class="block font-bold text-[var(--foreground)] mb-1">Pickup Area</label>
                             <input
                                 id="cart-pickup-area"
@@ -519,10 +610,10 @@
                         </div>
                     </div>
 
-                    <!-- Pickup Address Location Mode Selector -->
-                    <div class="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4">
+                    <!-- Pickup Address Location Mode Selector (Only when Courier mode) -->
+                    <div x-show="isCourierMode" x-cloak class="space-y-3 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4">
                         <div class="flex flex-wrap items-center justify-between gap-2">
-                            <label for="cart-pickup-address" class="font-bold text-[var(--foreground)]">4. Pickup Address *</label>
+                            <label for="cart-pickup-address" class="font-bold text-[var(--foreground)]">Pickup Address *</label>
                             <div class="flex items-center gap-2">
                                 <button
                                     type="button"
@@ -583,7 +674,7 @@
                             name="address"
                             x-model="pickupAddress"
                             rows="2"
-                            required
+                            :required="isCourierMode"
                             placeholder="House #, Road #, Floor/Apartment & Landmarks"
                             class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-xs text-[var(--foreground)] outline-none"
                         ></textarea>
@@ -591,7 +682,7 @@
 
                     <!-- Optional Device Model / Symptom Note -->
                     <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">5. Device Model &amp; Notes (Optional)</label>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Device Model &amp; Notes (Optional)</label>
                         <textarea
                             name="problem_note"
                             rows="2"
@@ -693,10 +784,18 @@
                         <span class="text-[var(--muted-foreground)]">Service &amp; Buyer Protection Fee</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($serviceCharge ?? 0, 2) }}</span>
                     </div>
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">Doorstep Pickup &amp; Delivery &middot; <span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Standard'">Standard</span></span>
-                        <span class="font-bold text-[var(--foreground)] shrink-0">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
-                    </div>
+                    <template x-if="isCourierMode">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-[var(--muted-foreground)]">Doorstep Pickup &amp; Delivery &middot; <span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Standard'">Standard</span></span>
+                            <span class="font-bold text-[var(--foreground)] shrink-0">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
+                        </div>
+                    </template>
+                    <template x-if="!isCourierMode">
+                        <div class="flex items-center justify-between gap-2 text-emerald-800 font-semibold">
+                            <span>In-Shop Walk-In (No Delivery Needed)</span>
+                            <span class="shrink-0">৳0</span>
+                        </div>
+                    </template>
                     <template x-if="activeDiscount > 0">
                         <div class="flex items-center justify-between gap-2 text-emerald-800 font-bold">
                             <span>Voucher Savings (<span class="font-mono" x-text="appliedVoucher"></span>)</span>
@@ -705,7 +804,7 @@
                     </template>
                     <div class="pt-2 border-t border-[var(--border)] flex items-center justify-between gap-2 text-base">
                         <span class="font-black text-[var(--foreground)]">Total Payable</span>
-                        <span class="text-2xl font-black text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 0) + $regCourierFee - ($discountAmount ?? 0))) }}</span></span>
+                        <span class="text-2xl font-black text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 0) + ($initFulfillment === 'IN_SHOP' && empty($isSparePartCart) ? 0 : $regCourierFee) - ($discountAmount ?? 0))) }}</span></span>
                     </div>
                 </div>
 
@@ -715,7 +814,7 @@
                     <label class="cursor-pointer rounded-2xl border p-3 flex items-center justify-between gap-2 transition" :class="paymentMethod === 'CASH' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)] font-bold' : 'border-[var(--border)] bg-[var(--card)]'">
                         <span class="flex items-center gap-2 text-[var(--foreground)]">
                             <input type="radio" value="CASH" x-model="paymentMethod" class="accent-[#244229]">
-                            <span>Cash on Return (COD)</span>
+                            <span x-text="isCourierMode ? 'Cash on Return (COD)' : 'Cash at Workshop (On Completion)'">Cash on Return (COD)</span>
                         </span>
                         <i class="fa-solid fa-money-bill-wave text-emerald-700 shrink-0"></i>
                     </label>
@@ -747,7 +846,7 @@
 
                 <div class="rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-3.5 text-[11px] text-[var(--muted-foreground)] leading-relaxed">
                     <i class="fa-solid fa-circle-info text-[var(--accent-dark)] mr-1"></i>
-                    Your order is routed directly to the selected workshop. Any additional work identified during inspection requires your prior approval.
+                    Your order goes straight to the selected workshop. Any extra work identified on the bench always requires your approval first.
                 </div>
 
                 <button
@@ -755,7 +854,7 @@
                     form="direct-order-form"
                     class="w-full rounded-full bg-[var(--accent-dark)] px-6 py-3.5 text-xs sm:text-sm font-bold text-[var(--accent-foreground)] shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2"
                 >
-                    <span>Confirm Direct Order</span>
+                    <span>Confirm Booking</span>
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>

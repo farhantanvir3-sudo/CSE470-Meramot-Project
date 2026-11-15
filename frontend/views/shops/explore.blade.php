@@ -158,7 +158,7 @@
                     </button>
                 </div>
                 <p class="mt-2.5 text-xs text-[var(--muted-foreground)]">
-                    Limit results to nearby shops and courier coverage.
+                    Show nearby workshops within your selected distance radius.
                 </p>
             </div>
 
@@ -451,34 +451,50 @@
                                     </div>
 
                                     <div class="shrink-0 text-right">
-                                        <div class="text-base font-black leading-tight text-[var(--accent-dark)] md:text-lg">
-                                            ৳{{ number_format($shop->inspection_fee ?? 200) }}
-                                        </div>
-                                        <div class="eta-display text-[10px] font-semibold text-[var(--muted-foreground)]">
-                                            {{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}
-                                        </div>
+                                        @if($shop->isPureSparePartsWholesaler())
+                                            <div class="text-xs font-black leading-tight text-[var(--accent-dark)]">
+                                                Parts Store
+                                            </div>
+                                            <div class="text-[10px] font-semibold text-[var(--muted-foreground)]">
+                                                Wholesale &amp; Retail
+                                            </div>
+                                        @else
+                                            <div class="text-base font-black leading-tight text-[var(--accent-dark)] md:text-lg">
+                                                ৳{{ number_format($shop->inspection_fee ?? 200) }}
+                                            </div>
+                                            <div class="eta-display text-[10px] font-semibold text-[var(--muted-foreground)]">
+                                                {{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Price + Labor + ETA compact row -->
-                        <div class="mt-2.5 grid grid-cols-3 items-center rounded-xl bg-[var(--mint-50)] px-2.5 py-1.5 md:mt-3 text-center min-w-0">
-                            <div>
-                                <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Inspection</span>
-                                <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->inspection_fee ?? 200) }}</div>
+                        @if($shop->isPureSparePartsWholesaler())
+                            <div class="mt-2.5 flex items-center justify-between rounded-xl bg-[var(--mint-50)] px-3 py-2 md:mt-3 text-[11px] font-bold text-[var(--accent-dark)] min-w-0">
+                                <span><i class="fa-solid fa-boxes-stacked mr-1.5"></i>Genuine Spare Parts Wholesaler</span>
+                                <span class="text-[10px] font-semibold text-[var(--muted-foreground)]">Courier Dispatch</span>
                             </div>
-                            <div class="border-x border-[var(--border)]/50 px-1">
-                                <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Labor</span>
-                                <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->base_labor_fee ?? 400) }}</div>
-                            </div>
-                            <div>
-                                <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">ETA</span>
-                                <div class="eta-display text-xs font-bold text-[var(--foreground)] sm:text-sm">
-                                    {{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}
+                        @else
+                            <div class="mt-2.5 grid grid-cols-3 items-center rounded-xl bg-[var(--mint-50)] px-2.5 py-1.5 md:mt-3 text-center min-w-0">
+                                <div>
+                                    <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Inspection</span>
+                                    <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->inspection_fee ?? 200) }}</div>
+                                </div>
+                                <div class="border-x border-[var(--border)]/50 px-1">
+                                    <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Labor</span>
+                                    <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->base_labor_fee ?? 400) }}</div>
+                                </div>
+                                <div>
+                                    <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">ETA</span>
+                                    <div class="eta-display text-xs font-bold text-[var(--foreground)] sm:text-sm">
+                                        {{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        @endif
 
                         <!-- Public Vendor Storefront Address & Summary -->
                         <p class="mt-2 line-clamp-1 text-[11px] text-[var(--muted-foreground)] md:text-xs">
@@ -487,11 +503,20 @@
 
                         <!-- Badges -->
                         <div class="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-medium text-[var(--accent-dark)] md:text-[11px]">
+                            @if($shop->supportsCourierPickup())
+                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 font-semibold text-emerald-950">Courier Pickup</span>
+                            @endif
+                            @if($shop->supportsInShopRepair())
+                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 font-semibold text-teal-950">In-Shop Repair</span>
+                            @endif
+                            @if($shop->supportsSpareParts())
+                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 font-semibold text-sky-950">Spare Parts</span>
+                            @endif
+                            @if($shop->supportsCourierPickup() && $shop->free_delivery)
+                                <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-900 font-semibold">Free Courier</span>
+                            @endif
                             @if($shop->has_voucher)
                                 <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5">Voucher</span>
-                            @endif
-                            @if($shop->free_delivery)
-                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-emerald-900 font-semibold">Free delivery</span>
                             @endif
                             @if($shop->has_deals)
                                 <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-rose-900 font-semibold">Deal</span>

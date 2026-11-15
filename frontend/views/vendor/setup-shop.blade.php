@@ -71,6 +71,23 @@
         editingIndex: null,
         suggestions: @js($serviceSuggestions),
         showSuggestions: false,
+        capCourier: {{ old('courier_pickup', $profile->courier_pickup ?? ($primaryShop?->supportsCourierPickup() ?? false)) ? 'true' : 'false' }},
+        capInShop: {{ old('in_shop_repair', $profile->in_shop_repair ?? ($primaryShop?->supportsInShopRepair() ?? true)) ? 'true' : 'false' }},
+        capSpareParts: {{ old('spare_parts', $profile->spare_parts ?? ($primaryShop?->supportsSpareParts() ?? false)) ? 'true' : 'false' }},
+        capFixedPackages: {{ old('provides_fixed_packages', $profile->provides_fixed_packages ?? ($primaryShop?->supportsFixedPackages() ?? false)) ? 'true' : 'false' }},
+        capError: '',
+        get isPureSparePartsWholesaler() {
+            return this.capSpareParts && !this.capCourier && !this.capInShop && !this.capFixedPackages;
+        },
+        get hasAnyCapability() {
+            return this.capCourier || this.capInShop || this.capSpareParts || this.capFixedPackages || this.services.length > 0;
+        },
+        syncFixedPkgFromDom(formEl) {
+            const radio = formEl?.querySelector('input[name=provides_fixed_packages]:checked');
+            if (radio) {
+                this.capFixedPackages = radio.value === '1';
+            }
+        },
         handleLogoFile(event) {
             const file = event.target.files?.[0];
             if (!file) return;
@@ -207,7 +224,14 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('vendor.setup-shop.store') }}" enctype="multipart/form-data" class="mt-8 space-y-7">
+        <form
+            method="POST"
+            action="{{ route('vendor.setup-shop.store') }}"
+            enctype="multipart/form-data"
+            class="mt-8 space-y-7"
+            @change="syncFixedPkgFromDom($event.currentTarget); if (hasAnyCapability) capError = ''"
+            @submit="syncFixedPkgFromDom($event.currentTarget); if (!hasAnyCapability) { $event.preventDefault(); capError = 'Enable at least one capability (Courier Pickup, In-Shop Repair, Spare Parts Store, or Fixed-Price Packages).'; }"
+        >
             @csrf
             <input type="hidden" name="shop_id" value="{{ $primaryShop->id ?? '' }}">
 
@@ -349,23 +373,50 @@
                 </div>
             </section>
 
-            <!-- 3. Services Offered -->
+            <!-- 3. Store Capabilities & Fulfillment Modes -->
             <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
-                <h2 class="text-lg font-semibold text-[#244229]">Services offered</h2>
+                <div class="flex flex-wrap items-baseline justify-between gap-2">
+                    <div>
+                        <h2 class="text-lg font-semibold text-[#244229]">Store capabilities &amp; fulfillment modes</h2>
+                        <p class="mt-1 text-xs md:text-sm text-slate-600">
+                            Offer Courier Pickup, In-Shop Walk-In Repair, both, or run strictly as a Spare Parts Store/Wholesaler. At least one capability (or Fixed-Price Packages below) must remain active.
+                        </p>
+                    </div>
+                </div>
                 <div class="mt-4 grid gap-3 md:grid-cols-3">
-                    <label class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-slate-700 cursor-pointer">
-                        <input type="checkbox" name="courier_pickup" value="1" {{ old('courier_pickup', $profile->courier_pickup ?? false) ? 'checked' : '' }} class="h-4 w-4 accent-[#244229]">
-                        <span>Courier pickup</span>
+                    <label
+                        :class="capCourier ? 'border-[#244229] bg-white ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white/80'"
+                        class="flex items-start gap-3 rounded-2xl border p-4 text-sm text-slate-700 cursor-pointer transition"
+                    >
+                        <input type="checkbox" name="courier_pickup" value="1" x-model="capCourier" {{ old('courier_pickup', $profile->courier_pickup ?? ($primaryShop?->supportsCourierPickup() ?? false)) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
+                        <div>
+                            <span class="block font-bold text-[#244229]">Courier pickup</span>
+                            <span class="mt-0.5 block text-xs text-slate-500 leading-snug">Platform rider picks up the customer's device, delivers it to your workshop, and returns it once fixed.</span>
+                        </div>
                     </label>
-                    <label class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-slate-700 cursor-pointer">
-                        <input type="checkbox" name="in_shop_repair" value="1" {{ old('in_shop_repair', $profile->in_shop_repair ?? true) ? 'checked' : '' }} class="h-4 w-4 accent-[#244229]">
-                        <span>In-shop repair</span>
+                    <label
+                        :class="capInShop ? 'border-[#244229] bg-white ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white/80'"
+                        class="flex items-start gap-3 rounded-2xl border p-4 text-sm text-slate-700 cursor-pointer transition"
+                    >
+                        <input type="checkbox" name="in_shop_repair" value="1" x-model="capInShop" {{ old('in_shop_repair', $profile->in_shop_repair ?? ($primaryShop?->supportsInShopRepair() ?? true)) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
+                        <div>
+                            <span class="block font-bold text-[#244229]">In-shop repair</span>
+                            <span class="mt-0.5 block text-xs text-slate-500 leading-snug">Customer walks into your shop, receives on-site service, and pays via Meramot — zero delivery required.</span>
+                        </div>
                     </label>
-                    <label class="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-slate-700 cursor-pointer">
-                        <input type="checkbox" name="spare_parts" value="1" {{ old('spare_parts', $profile->spare_parts ?? false) ? 'checked' : '' }} class="h-4 w-4 accent-[#244229]">
-                        <span>Spare parts available</span>
+                    <label
+                        :class="capSpareParts ? 'border-[#244229] bg-white ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white/80'"
+                        class="flex items-start gap-3 rounded-2xl border p-4 text-sm text-slate-700 cursor-pointer transition"
+                    >
+                        <input type="checkbox" name="spare_parts" value="1" x-model="capSpareParts" {{ old('spare_parts', $profile->spare_parts ?? ($primaryShop?->supportsSpareParts() ?? false)) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
+                        <div>
+                            <span class="block font-bold text-[#244229]">Spare parts store</span>
+                            <span class="mt-0.5 block text-xs text-slate-500 leading-snug">Sell OEM &amp; replacement components online. Uncheck repair modes to operate purely as a wholesaler.</span>
+                        </div>
                     </label>
                 </div>
+
+                <div x-show="capError" x-cloak class="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-800" x-text="capError"></div>
             </section>
 
             <!-- 4. Your Pricing -->
@@ -375,9 +426,16 @@
                     Configure your standard rates below. Workshops are published only with merchant-confirmed pricing.
                 </p>
 
+                <div x-show="isPureSparePartsWholesaler" x-cloak class="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-xs text-emerald-950">
+                    <i class="fa-solid fa-boxes-stacked mr-1.5 text-emerald-700"></i>
+                    <strong>Spare Parts Wholesaler / Store Mode active:</strong> inspection and base labor fees are optional and default to ৳0 for pure parts storefronts.
+                </div>
+
                 <div class="mt-4 grid gap-4 md:grid-cols-2">
                     <label class="block">
-                        <span class="mb-1.5 block text-sm font-medium text-slate-700">Inspection / diagnosis fee (৳) *</span>
+                        <span class="mb-1.5 block text-sm font-medium text-slate-700">
+                            Inspection / diagnosis fee (৳) <span x-text="isPureSparePartsWholesaler ? '(optional for parts store)' : '*'">*</span>
+                        </span>
                         <input
                             type="number"
                             min="0"
@@ -385,14 +443,16 @@
                             name="inspection_fee"
                             value="{{ $formatRateInput(old('inspection_fee', $primaryShop->inspection_fee ?? '')) }}"
                             onwheel="this.blur()"
-                            required
+                            :required="!isPureSparePartsWholesaler"
                             placeholder="e.g. 300"
                             class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
 
                     <label class="block">
-                        <span class="mb-1.5 block text-sm font-medium text-slate-700">Base labor fee (৳) *</span>
+                        <span class="mb-1.5 block text-sm font-medium text-slate-700">
+                            Base labor fee (৳) <span x-text="isPureSparePartsWholesaler ? '(optional for parts store)' : '*'">*</span>
+                        </span>
                         <input
                             type="number"
                             min="0"
@@ -400,14 +460,16 @@
                             name="base_labor_fee"
                             value="{{ $formatRateInput(old('base_labor_fee', $primaryShop->base_labor_fee ?? '')) }}"
                             onwheel="this.blur()"
-                            required
+                            :required="!isPureSparePartsWholesaler"
                             placeholder="e.g. 500"
                             class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
 
                     <label class="block">
-                        <span class="mb-1.5 block text-sm font-medium text-slate-700">Pickup fee (৳)</span>
+                        <span class="mb-1.5 block text-sm font-medium text-slate-700">
+                            Pickup fee (৳) <span class="text-xs font-normal text-slate-500" x-show="!capCourier" x-cloak>(applies when Courier Pickup is active)</span>
+                        </span>
                         <input
                             type="number"
                             min="0"

@@ -1098,10 +1098,16 @@
             </div>
             <div class="space-y-3 sm:space-y-4 text-xs">
                 @forelse($directOrders ?? [] as $order)
+                    @php
+                        $orderNeedsCourier = $order->requiresCourierLogistics();
+                    @endphp
                     <div class="p-3.5 sm:p-4 rounded-2xl bg-[var(--mint-100)] border-2 border-emerald-600 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="rounded bg-emerald-800 text-white font-bold text-[10px] px-2 py-0.5 uppercase whitespace-nowrap">Direct Order #{{ $order->id }}</span>
+                                <span class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase whitespace-nowrap {{ $orderNeedsCourier ? 'bg-sky-100 text-sky-900' : 'bg-emerald-200/80 text-emerald-950' }}">
+                                    {{ $orderNeedsCourier ? 'Courier Pickup' : 'In-Shop Walk-In' }}
+                                </span>
                                 <span class="text-[11px] font-bold text-[var(--accent-dark)] break-words">
                                     {{ $order->requestedShop->name ?? 'Assigned Workshop' }}{{ optional($order->requestedShop)->display_branch_tag ? ' [' . $order->requestedShop->display_branch_tag . ']' : '' }}
                                 </span>
@@ -1109,7 +1115,12 @@
                             </div>
                             <h4 class="font-bold text-sm text-[var(--foreground)] mt-1 break-words">{{ $order->title }}</h4>
                             <p class="text-[var(--muted-foreground)] break-words">
-                                Customer: {{ $order->customer->name ?? 'Meramot Customer' }} • {{ $order->pickup_address ?? 'Dhaka' }} • {{ strtoupper((string) ($order->delivery_type ?? 'REGULAR')) === 'EXPRESS' ? 'Express Courier' : 'Standard Courier' }}
+                                Customer: {{ $order->customer->name ?? 'Meramot Customer' }}
+                                @if($orderNeedsCourier)
+                                    • {{ $order->pickup_address ?? 'Dhaka' }} • {{ strtoupper((string) ($order->delivery_type ?? 'REGULAR')) === 'EXPRESS' ? 'Express Courier' : 'Standard Courier' }}
+                                @else
+                                    • In-Shop Walk-In (৳0 Delivery — No Courier)
+                                @endif
                             </p>
                             <span class="font-extrabold text-[var(--accent-dark)] text-sm">৳{{ number_format($order->quoted_final_amount ?? 0, 2) }}</span>
                         </div>
@@ -1118,7 +1129,7 @@
                                 @csrf
                                 <input type="hidden" name="decision" value="accept">
                                 <button type="submit" class="w-full sm:w-auto rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-3 sm:px-4 py-2 hover:opacity-90 shadow-sm transition whitespace-nowrap text-[11px] sm:text-xs">
-                                    Accept &amp; Dispatch Rider
+                                    {{ $orderNeedsCourier ? 'Accept & Dispatch Rider' : 'Accept Walk-In Order' }}
                                 </button>
                             </form>
                             <form method="POST" action="{{ route('vendor.direct-orders.respond', $order->id) }}" class="w-full sm:w-auto">
@@ -1233,12 +1244,13 @@
                                 </div>
 
                                 <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full lg:w-auto shrink-0">
+                                    @php $jobNeedsCourier = $job->repairRequest?->requiresCourierLogistics() ?? true; @endphp
                                     <select name="status" x-model="chosenStatus" class="w-full sm:w-auto min-w-0 max-w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] p-2 font-bold text-xs outline-none">
                                         <option value="AT_SHOP">At Shop (Received)</option>
                                         <option value="DIAGNOSING">Diagnosing Bench</option>
                                         <option value="WAITING_APPROVAL">Send Final Quote (Await Approval)</option>
                                         <option value="REPAIRING">Repairing / Servicing</option>
-                                        <option value="RETURN_SCHEDULED">Ready for Return Delivery (Dispatch Courier)</option>
+                                        <option value="RETURN_SCHEDULED">{{ $jobNeedsCourier ? 'Ready for Return Delivery (Dispatch Courier)' : 'Ready for Customer Pickup (At Shop)' }}</option>
                                         <option value="COMPLETED">Completed (Settle Ledger)</option>
                                     </select>
 

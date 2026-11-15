@@ -247,4 +247,29 @@ class RepairRequest extends Model
     {
         return $this->hasOne(ShopReview::class, 'repair_request_id');
     }
+
+    /**
+     * Whether this order is fulfilled on-site via customer walk-in (no platform rider or delivery fee).
+     */
+    public function isWalkIn(): bool
+    {
+        return $this->preferred_service_type === 'walk_in'
+            || ($this->preferred_service_type === null && $this->preferred_pickup === false);
+    }
+
+    /**
+     * Whether this order requires platform rider pickup and return delivery logistics.
+     */
+    public function requiresCourierLogistics(): bool
+    {
+        if ($this->preferred_service_type === 'pickup_dropoff') {
+            return true;
+        }
+
+        if (in_array($this->preferred_service_type, ['walk_in', 'technician_home_visit'], true)) {
+            return false;
+        }
+
+        return (bool) ($this->preferred_pickup ?? true);
+    }
 }

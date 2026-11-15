@@ -548,6 +548,11 @@ class ServicePackageController extends Controller
             ->where('is_public', true)
             ->where('setup_complete', true)
             ->where('accepts_direct_orders', true)
+            ->where(function ($q) {
+                $q->whereRaw("categories::text ILIKE ?", ['%COURIER_PICKUP%'])
+                    ->orWhereRaw("categories::text ILIKE ?", ['%IN_SHOP_REPAIR%'])
+                    ->orWhereHas('vendorProfile', fn ($vp) => $vp->where('provides_fixed_packages', true));
+            })
             ->whereRaw('LOWER(TRIM(city)) = ?', [$city]);
 
         if (!empty($packageIds) && $this->isStrictPackageCapabilityActive()) {
@@ -1035,29 +1040,79 @@ class ServicePackageController extends Controller
     }
 
     /**
-     * Compute regular/express courier delivery fees (distance-based nationwide for Spare Parts,
-     * fixed metro rates for standard workshop services).
+     * Determine allowed fulfillment options (`COURIER_PICKUP`, `IN_SHOP`) and safe default mode
+     * for a workshop or spare parts store.
+     *
+     * @return array{can_courier: bool, can_in_shop: bool, default_mode: string}
      */
-    private function resolveCartDeliveryQuote(array $cart, ?RepairShop $shop, array $customerLocation, string $deliveryType = 'REGULAR'): array
+    private function resolveShopFulfillmentCapabilities(?RepairShop $shop, bool $isSparePartCart): array
     {
-        if ($this->cartHasSpareParts($cart) && $shop) {
+        if ($isSparePartCart) {
+            return [
+                'can_courier' => true,
+                'can_in_shop' => false,
+                'default_mode' => 'COURIER_PICKUP',
+            ];
+        }
+
+        if (!$shop) {
+            return [
+                'can_courier' => true,
+                'can_in_shop' => true,
+                'default_mode' => 'COURIER_PICKUP',
+            ];
+        }
+
+        $canCourier = $shop->supportsCourierPickup();
+        $canInShop = $shop->supportsInShopRepair();
+        if (!$canCourier && !$canInShop && $shop->supportsFixedPackages()) {
+            $canInShop = true;
+        }
+
+        $defaultMode = $canCourier ? 'COURIER_PICKUP' : ($canInShop ? 'IN_SHOP' : 'COURIER_PICKUP');
+
+        return [
+            'can_courier' => $canCourier,
+            'can_in_shop' => $canInShop,
+            'default_mode' => $defaultMode,
+        ];
+    }
+
+    /**
+     * Compute regular/express courier delivery fees (distance-based nationwide for Spare Parts,
+     * fixed metro rates for standard workshop services, or ৳0 for In-Shop Walk-In).
+     */
+    private function resolveCartDeliveryQuote(
+        array $cart,
+        ?RepairShop $shop,
+        array $customerLocation,
+        string $deliveryType = 'REGULAR',
+        string $fulfillmentMode = 'COURIER_PICKUP'
+    ): array {
+        $isSparePart = $this->cartHasSpareParts($cart);
+        $isInShop = !$isSparePart && strtoupper($fulfillmentMode) === 'IN_SHOP';
+
+        if ($isSparePart && $shop) {
             $quote = SparePartListing::calculateDeliveryQuote($shop, $customerLocation, $deliveryType);
-            return array_merge($quote, ['is_spare_part' => true]);
+            return array_merge($quote, ['is_spare_part' => true, 'is_in_shop' => false]);
         }
 
         $reg = (float) self::REGULAR_DELIVERY_FEE;
         $exp = (float) self::EXPRESS_DELIVERY_FEE;
+        $courierFee = strtoupper($deliveryType) === 'EXPRESS' ? $exp : $reg;
+
         return [
             'distance_km' => $shop?->distance_km,
             'distance_formatted' => null,
-            'delivery_fee' => strtoupper($deliveryType) === 'EXPRESS' ? $exp : $reg,
+            'delivery_fee' => $isInShop ? 0.0 : $courierFee,
             'regular_delivery_fee' => $reg,
             'express_delivery_fee' => $exp,
-            'eta_minutes' => $shop?->eta_minutes ?? 120,
+            'eta_minutes' => $isInShop ? 0 : ($shop?->eta_minutes ?? 120),
             'eta_label' => null,
-            'zone_label' => 'Doorstep Courier',
+            'zone_label' => $isInShop ? 'In-Shop Walk-In' : 'Doorstep Courier',
             'is_same_city' => true,
             'is_spare_part' => false,
+            'is_in_shop' => $isInShop,
         ];
     }
 
@@ -1150,6 +1205,17 @@ class ServicePackageController extends Controller
         $explicitShopId = isset($validated['shop_id']) ? (int) $validated['shop_id'] : null;
         $addingPackageId = !empty($validated['package_id']) ? (int) $validated['package_id'] : null;
         $cart = session()->get('cart', []);
+
+        if ($addingPackageId && $explicitShopId) {
+            $requestedShop = RepairShop::where('is_active', true)->where('is_public', true)->find($explicitShopId);
+            if ($requestedShop && $requestedShop->isPureSparePartsWholesaler()) {
+                $msg = "{$requestedShop->name} operates exclusively as a Spare Parts Store and does not accept repair bookings.";
+                if (!$request->expectsJson()) {
+                    return back()->withErrors(['cart' => $msg]);
+                }
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+        }
 
         $strictCapability = $this->isStrictPackageCapabilityActive();
         if ($addingPackageId && $strictCapability) {
@@ -1530,14 +1596,19 @@ class ServicePackageController extends Controller
         $shopLocked = (bool) session('cart_shop_locked', false);
         $shopManuallySelected = (bool) session('cart_shop_manual', false);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop, $requiredPackageIds);
-        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
+        $fulfillmentCaps = $this->resolveShopFulfillmentCapabilities($activeShop, $isSparePartCart);
+        $canCourierPickup = $fulfillmentCaps['can_courier'];
+        $canInShopRepair = $fulfillmentCaps['can_in_shop'];
+        $defaultFulfillmentMode = $fulfillmentCaps['default_mode'];
+
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR', $defaultFulfillmentMode);
         $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
         $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
 
         $voucherEval = self::evaluateVoucher(
             session('cart_voucher_code'),
             (float) $total,
-            $regularDeliveryFee,
+            (float) $deliveryQuote['delivery_fee'],
             $activeShop,
             $request->user(),
             $commissionRatePct
@@ -1564,7 +1635,10 @@ class ServicePackageController extends Controller
             'isSparePartCart',
             'deliveryQuote',
             'regularDeliveryFee',
-            'expressDeliveryFee'
+            'expressDeliveryFee',
+            'canCourierPickup',
+            'canInShopRepair',
+            'defaultFulfillmentMode'
         ));
     }
 
@@ -1730,14 +1804,19 @@ class ServicePackageController extends Controller
         $serviceCharge = self::calculateServiceCharge($total, $activeShop, $customerLocation, $cart);
         $shopLocked = (bool) session('cart_shop_locked', false);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop, $requiredPackageIds);
-        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
+        $fulfillmentCaps = $this->resolveShopFulfillmentCapabilities($activeShop, $isSparePartCart);
+        $canCourierPickup = $fulfillmentCaps['can_courier'];
+        $canInShopRepair = $fulfillmentCaps['can_in_shop'];
+        $defaultFulfillmentMode = $fulfillmentCaps['default_mode'];
+
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR', $defaultFulfillmentMode);
         $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
         $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
 
         $voucherEval = self::evaluateVoucher(
             session('cart_voucher_code'),
             (float) $total,
-            $regularDeliveryFee,
+            (float) $deliveryQuote['delivery_fee'],
             $activeShop,
             $request->user(),
             $commissionRatePct
@@ -1761,7 +1840,10 @@ class ServicePackageController extends Controller
             'isSparePartCart',
             'deliveryQuote',
             'regularDeliveryFee',
-            'expressDeliveryFee'
+            'expressDeliveryFee',
+            'canCourierPickup',
+            'canInShopRepair',
+            'defaultFulfillmentMode'
         ));
     }
 
@@ -1785,19 +1867,20 @@ class ServicePackageController extends Controller
 
         $validated = $request->validate([
             'shop_id' => 'nullable|exists:repair_shops,id',
+            'fulfillment_mode' => 'nullable|in:COURIER_PICKUP,IN_SHOP',
             'schedule_type' => 'required|in:NOW,LATER',
             'scheduled_at' => 'nullable|date',
-            'delivery_type' => 'required|in:REGULAR,EXPRESS',
+            'delivery_type' => 'nullable|in:REGULAR,EXPRESS',
             'payment_method' => 'required|in:CASH,SSLCOMMERZ,BKASH,NAGAD,CARD',
             'voucher_code' => 'nullable|string|max:40',
             'area' => 'nullable|string|max:100',
-            'address' => 'required|string|max:500',
+            'address' => 'nullable|string|max:500',
             'phone' => 'required|string|max:30',
             'problem_note' => 'nullable|string|max:1000',
         ]);
 
         if ($validated['schedule_type'] === 'LATER' && empty($validated['scheduled_at'])) {
-            return back()->withErrors(['scheduled_at' => 'Please choose a pickup date and time for scheduled bookings.'])->withInput();
+            return back()->withErrors(['scheduled_at' => 'Please choose a preferred date and time for scheduled bookings.'])->withInput();
         }
 
         $cleanPhone = InputSanitizer::sanitizePhone($validated['phone']);
@@ -1817,10 +1900,37 @@ class ServicePackageController extends Controller
             $cityLabel = $customerLocation['city'] ?? 'your selected area';
             $errMsg = !empty($requiredPackageIds) && $this->isStrictPackageCapabilityActive()
                 ? "No verified workshop in {$cityLabel} provides all selected fixed-price packages. Please choose an eligible workshop or adjust your cart."
-                : "No verified workshop is available within {$cityLabel} for doorstep dispatch. Please update your pickup location or select an available workshop.";
+                : "No verified workshop is currently available in {$cityLabel}. Please adjust your area or select a workshop.";
             return back()->with('error', $errMsg);
         }
         $shop->loadMissing('vendorProfile');
+
+        if (!$isSparePartCart && $shop->isPureSparePartsWholesaler()) {
+            return back()->with('error', "{$shop->name} operates exclusively as a Spare Parts Store and does not accept repair bookings.");
+        }
+
+        $fulfillmentCaps = $this->resolveShopFulfillmentCapabilities($shop, $isSparePartCart);
+        $requestedMode = strtoupper(trim((string) ($validated['fulfillment_mode'] ?? '')));
+        $fulfillmentMode = $requestedMode !== '' ? $requestedMode : $fulfillmentCaps['default_mode'];
+
+        if ($fulfillmentMode === 'COURIER_PICKUP' && !$fulfillmentCaps['can_courier']) {
+            throw ValidationException::withMessages([
+                'fulfillment_mode' => "{$shop->name} offers In-Shop Walk-In repair only and does not support Courier Pickup.",
+            ]);
+        }
+        if ($fulfillmentMode === 'IN_SHOP' && !$fulfillmentCaps['can_in_shop']) {
+            throw ValidationException::withMessages([
+                'fulfillment_mode' => "{$shop->name} operates via Courier Pickup & Return only and does not support walk-in drop-offs.",
+            ]);
+        }
+
+        $isCourierPickup = ($fulfillmentMode === 'COURIER_PICKUP');
+        if ($isCourierPickup && trim((string) ($validated['address'] ?? '')) === '') {
+            throw ValidationException::withMessages([
+                'address' => 'Please enter your doorstep street / house address for Courier Pickup.',
+            ]);
+        }
+        $deliveryType = $isCourierPickup ? strtoupper((string) ($validated['delivery_type'] ?? 'REGULAR')) : 'REGULAR';
 
         // Re-verify that a vendor buyer cannot place a Spare Parts order against their own workshop
         if ($request->user() && $request->user()->role === 'vendor') {
@@ -1869,7 +1979,7 @@ class ServicePackageController extends Controller
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0);
         $commissionRatePct = self::resolveCommissionRatePct($shop, $customerLocation, $cart);
         $serviceCharge = self::calculateServiceCharge($subtotal, $shop, $customerLocation, $cart);
-        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $shop, $customerLocation, $validated['delivery_type']);
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $shop, $customerLocation, $deliveryType, $fulfillmentMode);
         $deliveryFee = (float) $deliveryQuote['delivery_fee'];
 
         // Attach computed delivery fee onto quote items so online checkout & PDF invoices reflect exact courier fee
@@ -1903,26 +2013,36 @@ class ServicePackageController extends Controller
             ? $firstItem['title']
             : count($cart) . ' Direct Services • ' . $shop->name;
 
-        $scheduleLabel = $validated['schedule_type'] === 'NOW'
-            ? 'Immediate Courier Pickup (NOW)'
-            : 'Scheduled Pickup (' . $validated['scheduled_at'] . ')';
+        $scheduleLabel = $isCourierPickup
+            ? ($validated['schedule_type'] === 'NOW'
+                ? 'Immediate Courier Pickup (NOW)'
+                : 'Scheduled Courier Pickup (' . $validated['scheduled_at'] . ')')
+            : ($validated['schedule_type'] === 'NOW'
+                ? 'Walk-In Drop-Off (Today)'
+                : 'Scheduled Workshop Visit (' . $validated['scheduled_at'] . ')');
 
         $customerCity = $customerLocation['city'] ?? ($shop->city ?: 'Dhaka');
-        $fullAddress = trim($validated['address']);
-        if (!empty($validated['area']) && !str_contains(strtolower($fullAddress), strtolower($validated['area']))) {
-            $fullAddress .= ', ' . $validated['area'];
-            if (!str_contains(strtolower($fullAddress), strtolower($customerCity))) {
-                $fullAddress .= ', ' . $customerCity;
+        $fullAddress = '';
+        if ($isCourierPickup) {
+            $fullAddress = trim((string) ($validated['address'] ?? ''));
+            if (!empty($validated['area']) && $fullAddress !== '' && !str_contains(strtolower($fullAddress), strtolower($validated['area']))) {
+                $fullAddress .= ', ' . $validated['area'];
+                if (!str_contains(strtolower($fullAddress), strtolower($customerCity))) {
+                    $fullAddress .= ', ' . $customerCity;
+                }
             }
         }
 
         $repairRequest = DB::transaction(function () use (
             $user, $shop, $cart, $firstItem, $validated, $cleanPhone, $title, $serviceLines, $scheduleLabel,
-            $subtotal, $commissionRatePct, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress, $customerCity,
-            $appliedVoucherCode, $discountAmount, $scheduledPickupAt
+            $subtotal, $commissionRatePct, $serviceCharge, $deliveryFee, $deliveryType, $isCourierPickup,
+            $totalAmount, $fullAddress, $customerCity, $appliedVoucherCode, $discountAmount, $scheduledPickupAt
         ) {
             $requestedServiceId = is_numeric($firstItem['id'] ?? null) ? (int) $firstItem['id'] : null;
             $discountLine = $discountAmount > 0 ? " | Discount ({$appliedVoucherCode}): -৳" . number_format($discountAmount, 2) : '';
+            $logisticsSummary = $isCourierPickup
+                ? "Courier Pickup & Return ({$deliveryType} • ৳" . number_format($deliveryFee, 2) . ')'
+                : 'In-Shop Walk-In Repair (No Delivery Needed • ৳0.00)';
 
             $req = RepairRequest::create([
                 'customer_id' => $user->id,
@@ -1932,7 +2052,7 @@ class ServicePackageController extends Controller
                 'title' => $title,
                 'description' => "Direct Service Booking ({$shop->name})\n"
                     . "Schedule: {$scheduleLabel}\n"
-                    . "Platform Pickup & Delivery Logistics: {$validated['delivery_type']} (৳{$deliveryFee})\n"
+                    . "Service Mode: {$logisticsSummary}\n"
                     . "Payment: {$validated['payment_method']}\n"
                     . "Order Subtotal: ৳" . number_format($subtotal, 2) . " | Service & Protection Fee: ৳" . number_format($serviceCharge, 2) . $discountLine . " | Total: ৳" . number_format($totalAmount, 2) . "\n\n"
                     . "Selected Services:\n{$serviceLines}",
@@ -1946,11 +2066,11 @@ class ServicePackageController extends Controller
                 'mode' => 'DIRECT_REPAIR',
                 // Starts as PENDING in Vendor Dashboard "Direct Orders" queue
                 'status' => RepairRequest::STATUS_PENDING,
-                'preferred_pickup' => true,
-                'preferred_service_type' => 'pickup_dropoff',
-                'delivery_type' => $validated['delivery_type'],
+                'preferred_pickup' => $isCourierPickup,
+                'preferred_service_type' => $isCourierPickup ? 'pickup_dropoff' : 'walk_in',
+                'delivery_type' => $isCourierPickup ? $deliveryType : null,
                 'contact_phone' => $cleanPhone ?? $validated['phone'],
-                'pickup_address' => $fullAddress,
+                'pickup_address' => $isCourierPickup ? ($fullAddress !== '' ? $fullAddress : null) : null,
                 'dropoff_address' => $shop->public_address ?: ($shop->address ?? trim(implode(', ', array_filter([$shop->area, $shop->city ?: $customerCity])))),
                 'checkup_fee' => $serviceCharge,
                 'commission_amount' => $serviceCharge,
@@ -1995,12 +2115,15 @@ class ServicePackageController extends Controller
             }
 
             if ($shop->vendorProfile?->user_id && Schema::hasTable('user_notifications')) {
+                $actionNote = $isCourierPickup
+                    ? 'Review and confirm courier pickup.'
+                    : 'Review and confirm in-shop walk-in booking.';
                 UserNotification::create([
                     'user_id' => $shop->vendorProfile->user_id,
                     'type' => 'direct_order_new',
                     'severity' => 'info',
                     'title' => "New Direct Order #{$req->id}",
-                    'message' => "{$user->name} booked {$title} (৳" . number_format($totalAmount, 0) . '). Review and confirm pickup dispatch.',
+                    'message' => "{$user->name} booked {$title} (৳" . number_format($totalAmount, 0) . "). {$actionNote}",
                     'action_url' => '/vendor/dashboard?tab=direct_orders',
                     'is_read' => false,
                 ]);
@@ -2014,7 +2137,7 @@ class ServicePackageController extends Controller
         if ($validated['payment_method'] !== 'CASH') {
             session()->flash('preselected_payment_method', $validated['payment_method']);
             return redirect("/checkout/payment/{$repairRequest->id}")
-                ->with('success', "Booking #{$repairRequest->id} created with {$shop->name}. Complete escrow authorization below.");
+                ->with('success', "Booking #{$repairRequest->id} created with {$shop->name}. Complete checkout below.");
         }
 
         return redirect()
