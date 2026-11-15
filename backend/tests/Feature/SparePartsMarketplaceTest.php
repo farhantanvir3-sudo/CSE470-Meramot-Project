@@ -1292,6 +1292,7 @@ class SparePartsMarketplaceTest extends TestCase
             ['ThinkPad T480 Backlit Replacement Keyboard', 't480-kbd', 'Laptop Keyboard', 'Lenovo', 'LEN-T480-KBD', 'ThinkPad T480', 3400],
             ['Galaxy S23 Ultra Type-C Charging Port Flex', 's23u-port', 'Charging Port & Flex', 'Samsung', 'SAM-S23U-PRT', 'Galaxy S23 Ultra', 1650],
             ['HP Pavilion 15 LA-K201P Motherboard Replacement', 'hp15-mb', 'PC Display, Cable & Board', 'HP', 'HP-PAV15-MB', 'Pavilion 15', 16500],
+            ['Dell XPS 15 9520 CPU Cooling Fan Replacement', 'xps15-fan', 'Laptop Cooling Fan', 'Dell', 'DEL-XPS15-FAN', 'XPS 15 9520', 1850],
             ['3M 300LSE Double-Sided Display & Battery Mounting Tape', '3m-300lse-tape', 'Tools, Consumables & Soldering', 'Universal', 'TOOL-3M-300LSE', 'All Phones & Tablets', 220],
             ['GD900 High-Conductivity Thermal Paste Syringe', 'gd900-paste', 'Tools, Consumables & Soldering', 'Universal', 'TOOL-GD900-PST', 'Laptops & Desktops', 350],
         ];
@@ -1314,15 +1315,27 @@ class SparePartsMarketplaceTest extends TestCase
             ]);
         }
 
-        // 1. Model-independent Fixed Packages only (including natural-language intents)
+        // 1. Model-independent Fixed Packages only (including natural-language intents & peripherals/printer cleaning/refill)
         $this->assertDatabaseMissing('service_packages', ['title' => 'Original Display Panel Replacement']);
+        $this->assertDatabaseMissing('service_packages', ['title' => 'Laptop High-Capacity Battery Replacement']);
+        $this->assertDatabaseHas('service_packages', ['title' => 'Windows & OS Clean Installation']);
+        $this->assertDatabaseHas('service_packages', ['title' => 'Keyboard & Mouse Deep Cleaning & Maintenance']);
+        $this->assertDatabaseHas('service_packages', ['title' => 'Printer Cartridge Refill & Printhead Maintenance']);
         $this->get('/search?q=virus+troubleshoot')->assertRedirectContains('/packages/catalog');
         $this->get('/search?q=virus+removal')->assertRedirectContains('/packages/catalog');
         $this->get('/search?q=device+rooting')->assertRedirectContains('/packages/catalog');
         $this->get('/search?q=water+damage')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=Windows+installation')->assertRedirectContains('/packages/catalog');
         $this->get('/search?q=windows+11+install')->assertRedirectContains('/packages/catalog');
         $this->get('/search?q=data+recovery')->assertRedirectContains('/packages/catalog');
         $this->get('/search?q=thermal+repasting')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=laptop+cleaning')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=pc+maintenance')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=keyboard+cleaning')->assertRedirectContains('/packages/catalog');
+        $this->get('/search?q=printer+cartridge')->assertRedirectContains('/packages/catalog');
+        $this->assertStringNotContainsString('/packages/catalog', (string) $this->get('/search?q=laptop')->headers->get('Location'));
+        $this->get('/search?q=fan')->assertRedirectContains('/spare-parts');
+        $this->get('/search?q=keyboard+replacement')->assertRedirectContains('/spare-parts');
 
         // 2. Explicit Vertical / Fulfillment Tab Shortcuts
         $courierResp = $this->get('/search?q=courier+pickup');
@@ -1589,10 +1602,22 @@ class SparePartsMarketplaceTest extends TestCase
             'excl. pickup',
             'of workshop total',
             'Meramot Platform Fee (',
+            'Item Price + Courier Delivery',
+            'Part Price + Distance Courier Fee',
+            'fixed price (excl. fee)',
+            'MERAMOT10, FREEDELIVERY',
         ];
 
+        $indexResp = $this->get('/spare-parts');
+        $indexResp->assertStatus(200)
+            ->assertSee('Genuine replacement components and precision repair tools from verified workshops')
+            ->assertDontSee('Item Price + Courier Delivery', false)
+            ->assertDontSee('ranked by', false);
+
         $showResp = $this->get('/spare-parts/' . $listing->slug);
-        $showResp->assertStatus(200)->assertSee('Service & Buyer Protection Fee');
+        $showResp->assertStatus(200)
+            ->assertSee('Service & Buyer Protection Fee')
+            ->assertDontSee('Part Price + Distance Courier Fee', false);
         foreach ($forbidden as $phrase) {
             $showResp->assertDontSee($phrase, false);
         }

@@ -469,7 +469,27 @@ class SparePartSeeder extends Seeder
             DB::table('spare_part_listings')->upsert($batchRows, ['slug'], $upsertCols);
         }
 
+        // Remove any legacy whole-device or excluded items (e.g. rechargeable fans) from pre-existing databases
+        $removedInvalidCount = 0;
+        \App\Models\SparePartListing::query()
+            ->select(['id', 'title', 'part_category', 'base_price'])
+            ->chunkById(1000, function ($rows) use (&$removedInvalidCount) {
+                $invalidIds = [];
+                foreach ($rows as $row) {
+                    if (\App\Models\SparePartListing::isWholeDeviceOrInvalidSeedItem(
+                        (string) $row->title,
+                        (string) $row->part_category,
+                        (float) $row->base_price
+                    )) {
+                        $invalidIds[] = $row->id;
+                    }
+                }
+                if (!empty($invalidIds)) {
+                    $removedInvalidCount += \App\Models\SparePartListing::whereIn('id', $invalidIds)->delete();
+                }
+            });
+
         $normalizedBrandsCount = \App\Models\SparePartListing::normalizeGenericBrandsInDatabase();
-        $this->command?->info("Seeded {$totalSeeded} multi-vendor Mobile & PC spare part listings (from " . count($catalog) . " cloned catalog items; normalized {$normalizedBrandsCount} specific brand names).");
+        $this->command?->info("Seeded {$totalSeeded} multi-vendor Mobile & PC spare part listings (from " . count($catalog) . " cloned catalog items; removed {$removedInvalidCount} invalid items; normalized {$normalizedBrandsCount} specific brand names).");
     }
 }

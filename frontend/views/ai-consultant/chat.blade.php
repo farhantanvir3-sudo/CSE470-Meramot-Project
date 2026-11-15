@@ -108,7 +108,7 @@
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R10 • Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Automated hardware symptom triage and preliminary repair guidance powered by Meramot Diagnostics.</span>
+                <span>Instant symptom analysis, fault isolation, and preliminary repair guidance before you book a workshop.</span>
             </p>
         </div>
         <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-dark)] self-start flex items-center gap-2">

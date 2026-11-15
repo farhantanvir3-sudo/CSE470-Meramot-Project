@@ -92,7 +92,17 @@ if [ "${AUTO_MIGRATE:-true}" = "true" ]; then
             echo \App\Models\SparePartListing::count();
         ' 2>/dev/null || echo "0")
 
-        if [ "${SPARE_PARTS_COUNT:-0}" -lt 1000 ]; then
+        TOOLS_CAT_COUNT=$(php -r '
+            require "vendor/autoload.php";
+            $app = require_once "bootstrap/app.php";
+            $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            echo \App\Models\SparePartListing::where("part_category", "Tools, Consumables & Soldering")->count();
+        ' 2>/dev/null || echo "0")
+
+        echo "Syncing model-independent Fixed Service Packages..."
+        DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --class=Database\\Seeders\\ServicePackageSeeder --force
+
+        if [ "${SPARE_PARTS_COUNT:-0}" -lt 1000 ] || [ "${TOOLS_CAT_COUNT:-0}" = "0" ]; then
             echo "Seeding cloned multi-vendor Mobile & PC Spare Parts catalog into Neon PostgreSQL..."
             DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --class=Database\\Seeders\\SparePartSeeder --force
         fi

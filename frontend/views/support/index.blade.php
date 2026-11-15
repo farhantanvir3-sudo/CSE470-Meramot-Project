@@ -21,7 +21,7 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
             </span>
             <h1 class="mt-2 text-2xl md:text-3xl font-black text-[var(--foreground)]">Support &amp; Escrow Dispute Desk</h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
-                Protected by Meramot Escrow Custody: file an order arbitration claim if a repair differs from the approved quote, or open a support ticket with our engineering &amp; operations team.
+                Protected by Meramot Buyer Protection — open an escrow claim if a completed service differs from your approved quote, or reach our customer support team.
             </p>
         </div>
         @if(auth()->user()?->role === 'admin')
@@ -60,7 +60,7 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
             <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
                 <div>
                     <h2 class="text-base font-black text-[var(--foreground)]"><i class="fa-solid fa-scale-balanced mr-1.5 text-amber-700"></i> Open Order / Escrow Dispute</h2>
-                    <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Freezes workshop payout release while Meramot Governance reviews bench diagnostics and handover evidence.</p>
+                    <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Places workshop payout on hold while our resolution team reviews diagnostic notes and handover records.</p>
                 </div>
 
                 @if(($myOrders ?? collect())->isNotEmpty())

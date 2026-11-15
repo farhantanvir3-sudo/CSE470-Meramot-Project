@@ -1409,7 +1409,7 @@
                     </p>
                     <h2 class="mt-1 text-2xl font-bold text-[var(--foreground)]">Choose your location</h2>
                     <p class="mt-1 text-sm text-[var(--muted-foreground)]">
-                        Click or drag the map pin to set your service address anywhere in Bangladesh, search a landmark, or detect via GPS.
+                        Search for your neighborhood, use GPS detection, or place the pin on the map for accurate delivery and workshop estimates.
                     </p>
                 </div>
 
@@ -2016,7 +2016,7 @@
                         </span>
                         <div>
                             <h3 class="text-sm font-black text-[var(--foreground)]">Direct-Order Cart</h3>
-                            <p class="text-[11px] text-[var(--muted-foreground)]">{{ count($miniCartItems) }} {{ count($miniCartItems) === 1 ? 'service' : 'services' }} selected</p>
+                            <p class="text-[11px] text-[var(--muted-foreground)]">{{ count($miniCartItems) }} {{ count($miniCartItems) === 1 ? 'item' : 'items' }} in cart</p>
                         </div>
                     </div>
                     <button type="button" @click="miniCartOpen = false" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)]">
@@ -2049,10 +2049,10 @@
 
                 <div class="border-t border-[var(--border)] bg-[var(--card)] p-4 space-y-3">
                     <div class="flex items-center justify-between text-xs">
-                        <span class="font-semibold text-[var(--muted-foreground)]">Services Subtotal</span>
+                        <span class="font-semibold text-[var(--muted-foreground)]">Order Subtotal</span>
                         <span class="text-base font-black text-[var(--accent-dark)]">৳{{ number_format($miniCartSubtotal) }}</span>
                     </div>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">Apply promo codes (<span class="font-mono font-bold">MERAMOT10</span>, <span class="font-mono font-bold">FREEDELIVERY</span>) on the cart page.</p>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Promo codes and delivery preferences can be applied in your cart before checkout.</p>
                     <div class="grid grid-cols-2 gap-2">
                         <a href="{{ $isVendorAuth ? '/spare-parts' : '/packages/catalog' }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-center text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
                             {{ $isVendorAuth ? '+ Add Spare Parts' : '+ Add Services' }}

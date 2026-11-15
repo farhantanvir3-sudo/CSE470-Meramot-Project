@@ -306,7 +306,7 @@
                             @if($isOperational)
                                 Book fixed-price services directly with {{ $shop->name }}, or request a custom technician quote.
                             @else
-                                Proposed service catalog submitted with {{ $shop->name }}'s onboarding application (read-only until verification is complete).
+                                Service catalog submitted for verification — booking opens once storefront review is complete.
                             @endif
                         </p>
                         @if($shopSpareParts->isNotEmpty())
@@ -373,10 +373,10 @@
                                                     <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
                                                         ৳{{ number_format($svcItem['estimate']) }}
                                                     </div>
-                                                    <div class="text-[10px] text-[var(--muted-foreground)]">fixed price (excl. fee)</div>
+                                                    <div class="text-[10px] text-[var(--muted-foreground)]">fixed price</div>
                                                 @else
                                                     <div class="text-sm font-bold text-[var(--accent-dark)]">Quote on inspection</div>
-                                                    <div class="text-[10px] text-[var(--muted-foreground)]">price after diagnosis</div>
+                                                    <div class="text-[10px] text-[var(--muted-foreground)]">quoted after inspection</div>
                                                 @endif
                                             </div>
                                         </div>

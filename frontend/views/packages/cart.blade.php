@@ -102,7 +102,7 @@
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R8 • Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Review your selected services, confirm a local workshop, and schedule doorstep pickup.</span>
+                <span>Review your selected items, choose a verified workshop if applicable, and confirm doorstep delivery or pickup.</span>
             </p>
         </div>
 
@@ -155,7 +155,7 @@
             </div>
             <h2 class="text-xl font-black text-[var(--foreground)]">Your cart is empty</h2>
             <p class="mt-2 text-xs text-[var(--muted-foreground)] max-w-md mx-auto leading-relaxed">
-                Choose a fixed-price repair package or add services directly from a verified workshop.
+                Browse genuine spare parts, flat-rate service packages, or verified workshops to get started.
             </p>
             <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <a href="{{ route('spare-parts.index') }}" class="rounded-full bg-[var(--accent-dark)] px-6 py-3 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
@@ -645,7 +645,7 @@
                                 name="voucher_code"
                                 maxlength="30"
                                 required
-                                placeholder="Enter code (e.g. MERAMOT10)"
+                                placeholder="Enter promo or voucher code"
                                 class="flex-1 min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs font-mono font-bold uppercase text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                             >
                             <button type="submit" class="shrink-0 rounded-xl bg-[var(--accent-dark)] px-3.5 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
@@ -694,7 +694,7 @@
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($serviceCharge ?? 0, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">Doorstep Pickup &amp; Delivery (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
+                        <span class="text-[var(--muted-foreground)]">Doorstep Pickup &amp; Delivery &middot; <span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Standard'">Standard</span></span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
                     </div>
                     <template x-if="activeDiscount > 0">
@@ -747,7 +747,7 @@
 
                 <div class="rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] p-3.5 text-[11px] text-[var(--muted-foreground)] leading-relaxed">
                     <i class="fa-solid fa-circle-info text-[var(--accent-dark)] mr-1"></i>
-                    Sent directly to your chosen workshop. If bench diagnostics require extra parts, you'll approve any updated quote before work starts.
+                    Your order is routed directly to the selected workshop. Any additional work identified during inspection requires your prior approval.
                 </div>
 
                 <button

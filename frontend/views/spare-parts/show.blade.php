@@ -29,7 +29,21 @@
         $gallery = [$listing->fallbackImageUrl()];
     }
 
-    $highlights = is_array($listing->highlights) ? array_values(array_filter($listing->highlights)) : [];
+    $rawHighlights = is_array($listing->highlights) ? $listing->highlights : [];
+    $highlights = [];
+    foreach ($rawHighlights as $rawHl) {
+        $hlText = trim((string) preg_replace('/\s+/', ' ', (string) $rawHl));
+        if ($hlText === '' || preg_match('/^[^:]+:\s*$/', $hlText) === 1) {
+            continue;
+        }
+        $hlText = (string) preg_replace('/\s*:\s*/', ': ', $hlText, 1);
+        if (preg_match('/^(?:Assemble|Service)\s+Charge\s*:?\s*(\d+)\s*tk\b.*/i', $hlText, $m) === 1) {
+            $hlText = 'Optional Workshop Installation: ৳' . number_format((int) $m[1]) . ' per unit';
+        } elseif (preg_match('/^Delivery:\s*Only\s+Bangladesh$/i', $hlText) === 1) {
+            $hlText = 'Nationwide Courier Delivery Available';
+        }
+        $highlights[] = $hlText;
+    }
     if (empty($highlights)) {
         $highlights = array_values(array_filter([
             'Condition: ' . ($listing->condition_label ?: 'Brand New'),
@@ -37,7 +51,7 @@
             'Brand: ' . ($listing->brand ?: 'Universal'),
             $listing->warranty_days > 0
                 ? ('Replacement Warranty: ' . $listing->warranty_days . ' Days')
-                : 'Tested 100% Working Before Dispatch',
+                : 'Quality-Inspected & Tested Prior to Dispatch',
         ]));
     }
 
@@ -329,7 +343,7 @@
 
                     @if(!empty($hasActiveSearchQuery) && !$listing->is_best_deal && $bestDealListing)
                         <div class="pt-1 text-xs text-amber-900 font-semibold flex flex-wrap items-center gap-2">
-                            <span>💡 Tip: <strong>{{ $bestDealListing->shop?->name }}</strong> delivers this part for <strong>৳{{ number_format($bestDealListing->landed_quote['landed_total'], 0) }} total</strong> (incl. courier).</span>
+                            <span>Lower landed offer available from <strong>{{ $bestDealListing->shop?->name }}</strong> at <strong>৳{{ number_format($bestDealListing->landed_quote['landed_total'], 0) }}</strong> including delivery.</span>
                             <a href="{{ route('spare-parts.show', array_filter(['slug' => $bestDealListing->slug, 'q' => $activeSearchQuery ?? null])) }}" class="underline font-extrabold text-emerald-900">
                                 View Best Deal →
                             </a>
@@ -462,7 +476,7 @@
                                     Order Quantity
                                 </label>
                                 <span class="text-[11px] text-emerald-900/75">
-                                    Supports single-unit retail &amp; 100+ workshop wholesale orders
+                                    Available for single-unit orders and bulk trade quantities
                                 </span>
                             </div>
 
@@ -529,12 +543,12 @@
                     {{-- Role-Aware Purchase Actions --}}
                     @if($authRole === 'admin')
                         <div class="rounded-xl bg-amber-50 border border-amber-300 p-3 text-xs font-bold text-amber-950">
-                            🛡️ Admin Preview Mode — Customer &amp; vendor spare part ordering is disabled for administrator accounts.
+                            Admin Preview Mode — Ordering is disabled for administrator accounts.
                         </div>
                     @elseif($isOwnVendorListing)
                         <div class="rounded-xl bg-amber-50 border border-amber-300 p-3.5 space-y-2">
                             <div class="text-xs font-extrabold text-amber-950">
-                                🏪 This spare part listing belongs to your own workshop ({{ $shop->name }}).
+                                Listed by your workshop &middot; {{ $shop->name }}
                             </div>
                             <p class="text-xs text-amber-900">
                                 You can order spare parts from any <strong>other</strong> vendor on Meramot, or manage your stock, offer dates, and wholesale tiers in your Vendor Dashboard.
@@ -630,7 +644,7 @@
                 Compare All {{ $competingListings->count() }} {{ Str::plural('Seller', $competingListings->count()) }}
             </h2>
             <p class="text-xs text-emerald-900/75">
-                Ranked automatically by <strong>Part Price + Distance Courier Fee</strong> to your active location ({{ $locLabel }}).
+                Compare verified workshop offers side by side, with estimated doorstep delivery to {{ $locLabel }}.
             </p>
         </div>
 

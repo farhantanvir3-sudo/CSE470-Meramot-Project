@@ -186,7 +186,7 @@
                     Add your {{ empty($user->phone) && empty($user->address) ? 'phone number & delivery address' : (empty($user->phone) ? 'phone number' : 'delivery address') }}
                 </h2>
                 <p class="text-xs text-amber-900/80">
-                    Save your contact mobile and pickup/delivery address here so they pre-fill automatically whenever you request a device repair, book a service package, or order spare parts.
+                    Save your mobile number and default address for faster checkout across repairs, service packages, and spare parts.
                 </p>
             </div>
             <button
@@ -212,7 +212,7 @@
                     </p>
                     @if(!empty($user->google_id))
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-white/90 border border-[var(--border)] px-3 py-0.5 text-[11px] font-semibold text-[#203126]">
-                            <i class="fa-brands fa-google text-[#4285F4]"></i> Google Account (Passwordless)
+                            <i class="fa-brands fa-google text-[#4285F4]"></i> Connected with Google
                         </span>
                     @endif
                 </div>

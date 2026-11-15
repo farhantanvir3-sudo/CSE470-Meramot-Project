@@ -48,7 +48,7 @@
             <a href="{{ route('cart.view') }}" class="hover:underline">&larr; Back to Cart</a>
         </div>
         <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Direct-Order Checkout</h1>
-        <p class="mt-1 text-xs text-[var(--muted-foreground)]">Confirm your workshop, pickup schedule, and payment preference.</p>
+        <p class="mt-1 text-xs text-[var(--muted-foreground)]">Review your fulfillment details, schedule, and escrow-protected payment method before placing your order.</p>
     </div>
 
     @if(session('error'))
@@ -229,7 +229,7 @@
                     <span class="shrink-0 font-semibold text-[var(--foreground)]">৳{{ number_format($serviceCharge ?? 0, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                    <span>Doorstep Pickup &amp; Delivery (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
+                    <span>Doorstep Pickup &amp; Delivery &middot; <span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Standard'">Standard</span></span>
                     <span class="shrink-0 font-semibold text-[var(--foreground)]">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
                 </div>
                 <template x-if="activeDiscount > 0">

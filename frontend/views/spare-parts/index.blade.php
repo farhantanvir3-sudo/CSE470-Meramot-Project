@@ -91,7 +91,7 @@
                 Spare Parts Marketplace
             </h1>
             <p class="hidden sm:block text-xs sm:text-sm text-[var(--muted-foreground)] mt-0.5">
-                Compare genuine mobile, laptop &amp; PC spare parts and repair tools — ranked by <strong class="font-semibold text-[var(--foreground)]">Item Price + Courier Delivery</strong> to your location, with bulk wholesale tiers.
+                Genuine replacement components and precision repair tools from verified workshops — with transparent delivery estimates and wholesale pricing.
             </p>
         </div>
 
@@ -563,7 +563,7 @@
         <div class="rounded-2xl bg-[var(--card)] border border-[var(--border)] p-8 sm:p-10 text-center">
             <div class="text-3xl mb-2">🔩</div>
             <h2 class="text-base sm:text-lg font-bold text-[var(--foreground)]">No spare part listings matched your filters</h2>
-            <p class="text-xs sm:text-sm text-[var(--muted-foreground)] mt-1 mb-4">Try clearing filters or switching from Same-City Sellers to nationwide delivery.</p>
+            <p class="text-xs sm:text-sm text-[var(--muted-foreground)] mt-1 mb-4">Try adjusting your search keywords, clearing active filters, or expanding to nationwide delivery.</p>
             <a href="{{ url('/spare-parts') }}" class="inline-flex items-center px-5 py-2.5 rounded-full bg-emerald-900 text-white text-xs font-bold hover:bg-emerald-800 transition">
                 Browse All Spare Parts
             </a>

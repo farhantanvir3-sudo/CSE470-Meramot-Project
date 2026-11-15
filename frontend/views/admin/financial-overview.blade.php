@@ -39,7 +39,7 @@
                 <span>Financial Business Intelligence & Double-Entry Ledger</span>
             </h1>
             <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
-                Real-time tracking of exclusive 5%–10% platform commission flow (excluding platform pickup &amp; delivery), escrow reserves, and 100% vendor payouts.
+                Real-time double-entry tracking of marketplace service fees, escrow reserves, courier settlements, and full workshop payouts.
             </p>
             <p class="dev-only-badge text-xs text-[var(--muted-foreground)] mt-1">
                 Assigned Developer: <strong class="text-[var(--foreground)] font-bold">Md. Nawshad Zaman Khan</strong>
@@ -151,7 +151,7 @@
                 <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center leading-snug">
                     <i class="fa-solid fa-receipt text-teal-600 dark:text-teal-400 mr-1 text-[10px] shrink-0"></i>
                     <span class="sm:hidden">Avg {{ $avgFeeDisplay }}% fee</span>
-                    <span class="hidden sm:inline">Shop avg {{ $avgFeeDisplay }}% (excl. delivery)</span>
+                    <span class="hidden sm:inline">Shop avg {{ $avgFeeDisplay }}% base rate</span>
                 </p>
             </div>
         </div>
@@ -188,12 +188,12 @@
             <div class="max-w-3xl">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="px-2.5 py-0.5 text-[10px] font-black uppercase rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] tracking-wide">
-                        5%–10% Fee Rule Engine
+                        Dynamic Fee Engine
                     </span>
                     <h3 class="text-xs sm:text-sm font-black text-[var(--foreground)]">Transparent Exclusive Pricing &amp; Platform Logistics Accounting</h3>
                 </div>
                 <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1.5 sm:mt-2 leading-relaxed">
-                    Every listed service &amp; spare part price is <strong>100% allocated to the workshop</strong>. Meramot charges an admin-configured <strong>5%–10% platform commission</strong> on workshop earnings (currently averaging <strong>{{ $avgFeeDisplay }}%</strong>), while <strong>pickup &amp; delivery logistics</strong> are handled directly by the platform and excluded from vendor commission.
+                    Listed service and spare part prices are settled in full to verified workshops. Meramot applies dynamic marketplace service fees averaging <strong>{{ $avgFeeDisplay }}%</strong> while managing doorstep courier logistics separately.
                 </p>
             </div>
 
@@ -307,7 +307,7 @@
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-dark)]">Vendor Performance Tiers</p>
                     <h3 class="text-sm sm:text-base font-black text-[var(--foreground)] mt-0.5">Best Performing Shops &amp; Commission Control</h3>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">Reward top-performing workshops with lower platform fees between <strong>5% and 10% (max)</strong> — pickup &amp; delivery remain excluded.</p>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Configure workshop base rates between <strong>5% and 10%</strong> based on quality and volume — courier logistics remain separate.</p>
                 </div>
                 <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-extrabold text-[var(--accent-dark)]">
                     Avg Fee: {{ $avgFeeDisplay }}%
@@ -403,7 +403,7 @@
                 <div>
                     <h3 class="text-sm font-black text-[var(--foreground)]">Manual Order Settlement</h3>
                     <p class="text-[11px] text-[var(--muted-foreground)]">
-                        Allocate 100% of vendor listed subtotal to the shop escrow account and record its active 5%–10% platform commission (excl. delivery).
+                        Credit the full workshop subtotal to shop escrow and record the applicable marketplace service fee.
                     </p>
                 </div>
 

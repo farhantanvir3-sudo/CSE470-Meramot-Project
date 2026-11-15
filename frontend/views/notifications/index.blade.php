@@ -16,7 +16,7 @@ Controller: VendorNotificationController@notificationCenter
         <div>
             <h1 class="text-2xl font-black text-[var(--foreground)]">Notification Center</h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                Real-time marketplace alerts, quote updates, courier handovers, and escrow settlements ({{ $unreadCount ?? 0 }} unread)
+                Order updates, workshop quotes, courier milestones, and payment confirmations &middot; {{ $unreadCount ?? 0 }} unread
             </p>
         </div>
 

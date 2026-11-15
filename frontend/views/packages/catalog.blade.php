@@ -27,7 +27,7 @@
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R8 • Lead: Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Upfront repair pricing with warranty protection — auto-matched to a top-rated workshop in {{ $customerLocation['city'] ?? 'your city' }} or your chosen local shop.</span>
+                <span>Flat-rate software diagnostics, OS setup, cleaning, and preventive maintenance — backed by warranty protection at verified workshops in {{ $customerLocation['city'] ?? 'your city' }}.</span>
             </p>
         </div>
 
@@ -75,7 +75,7 @@
                     type="text"
                     name="q"
                     value="{{ request('q') }}"
-                    placeholder="Search virus troubleshoot, device rooting, OS install, thermal clean..."
+                    placeholder="Search Windows install, virus troubleshoot, device rooting, cleaning, cartridge refill..."
                     class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] pl-10 pr-4 py-2.5 text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none transition"
                 >
             </div>

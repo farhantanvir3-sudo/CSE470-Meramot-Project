@@ -209,16 +209,16 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
 
                 <div>
                     <p class="text-[11px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-2.5">
-                        Choose Bangladeshi MFS or Card Gateway Channel
+                        Select Payment Method
                     </p>
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
                         @php
                             $channels = [
-                                ['code' => 'BKASH', 'label' => 'bKash', 'sub' => 'Instant MFS', 'icon' => 'fa-mobile-screen-button', 'accent' => 'text-pink-700'],
-                                ['code' => 'NAGAD', 'label' => 'Nagad', 'sub' => 'Digital MFS', 'icon' => 'fa-wallet', 'accent' => 'text-orange-700'],
-                                ['code' => 'ROCKET', 'label' => 'Rocket', 'sub' => 'DBBL MFS', 'icon' => 'fa-bolt', 'accent' => 'text-purple-700'],
-                                ['code' => 'CARD', 'label' => 'Card', 'sub' => 'Visa / Master', 'icon' => 'fa-credit-card', 'accent' => 'text-sky-700'],
-                                ['code' => 'SSLCOMMERZ', 'label' => 'SSLCommerz', 'sub' => 'All Gateways', 'icon' => 'fa-building-columns', 'accent' => 'text-emerald-800'],
+                                ['code' => 'BKASH', 'label' => 'bKash', 'sub' => 'Mobile Wallet', 'icon' => 'fa-mobile-screen-button', 'accent' => 'text-pink-700'],
+                                ['code' => 'NAGAD', 'label' => 'Nagad', 'sub' => 'Mobile Wallet', 'icon' => 'fa-wallet', 'accent' => 'text-orange-700'],
+                                ['code' => 'ROCKET', 'label' => 'Rocket', 'sub' => 'Mobile Banking', 'icon' => 'fa-bolt', 'accent' => 'text-purple-700'],
+                                ['code' => 'CARD', 'label' => 'Card', 'sub' => 'Debit & Credit Card', 'icon' => 'fa-credit-card', 'accent' => 'text-sky-700'],
+                                ['code' => 'SSLCOMMERZ', 'label' => 'SSLCommerz', 'sub' => 'Full Gateway', 'icon' => 'fa-building-columns', 'accent' => 'text-emerald-800'],
                             ];
                         @endphp
                         @foreach($channels as $ch)
@@ -254,7 +254,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                 </button>
 
                 <a href="{{ route('requests.track', $repairRequest->id) }}" class="block w-full text-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] py-3 px-4 text-xs font-bold text-[var(--foreground)] transition">
-                    &larr; Return to Order Tracker (Pay Cash on Return)
+                    &larr; Return to Order Tracker &middot; Pay on Delivery
                 </a>
             </form>
         @endif

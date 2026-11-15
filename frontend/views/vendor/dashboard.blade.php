@@ -345,7 +345,7 @@
                 <div class="space-y-1">
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="rounded-full bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-[var(--accent-foreground)]">
-                            Workshop Commission: {{ $vaFeePct }}% (5%–10% Range)
+                            Workshop Base Rate: {{ $vaFeePct }}%
                         </span>
                         <span class="rounded-full px-2.5 py-0.5 text-[10px] font-black border {{ $vaDir === 'UP' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : ($vaDir === 'DOWN' ? 'bg-rose-100 text-rose-900 border-rose-300' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border-[var(--border)]') }}">
                             {{ $vaTrend['trend_label'] ?? 'Steady ●' }} ({{ $vaDelta > 0 ? '+' : '' }}{{ $vaDelta }}%)
@@ -353,7 +353,7 @@
                     </div>
                     <h2 class="text-sm sm:text-base font-black text-[var(--foreground)]">Workshop Revenue Growth &amp; Performance Analytics</h2>
                     <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)]">
-                        Every listed service &amp; spare part price goes <strong>100% to your workshop</strong>. Customers pay a transparent <strong>{{ $vaFeePct }}%</strong> platform fee on top, and <strong>pickup &amp; delivery are handled by Meramot</strong> (excl. from commission).
+                        Your listed service and spare part prices are settled in full to your workshop balance; customer service fees and courier logistics are billed separately at checkout.
                     </p>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-xs shrink-0">
@@ -1145,7 +1145,7 @@
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div>
                     <h3 class="font-bold text-base text-[var(--foreground)]">Active Repair Queue &amp; Bench Milestones</h3>
-                    <p class="text-xs text-[var(--muted-foreground)]">Update live job status, issue final bench diagnostic quotes, or mark Completed to credit 100% of your quoted subtotal to workshop escrow (platform fee {{ $vaFeePct ?? '8' }}% is charged transparently at checkout, excl. delivery).</p>
+                    <p class="text-xs text-[var(--muted-foreground)]">Update live bench status, issue diagnostic quotes, or mark jobs completed to credit your full quoted subtotal to workshop escrow.</p>
                 </div>
             </div>
             <div class="divide-y divide-[var(--border)] text-xs">
@@ -1356,7 +1356,7 @@
                 <p class="text-base sm:text-xl font-black text-[var(--foreground)] mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['gross_inflow'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">{{ $vaFeePct ?? '8' }}% Platform Fee (Excl. Delivery)</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">Platform Service Fee</p>
                 <p class="text-base sm:text-xl font-black text-amber-800 mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['commission_deducted'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">

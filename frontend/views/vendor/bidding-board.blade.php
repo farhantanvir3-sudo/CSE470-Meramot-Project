@@ -219,7 +219,7 @@
                     ])
 
                     <p class="mt-3 text-[11px] text-[var(--muted-foreground)]">
-                        Quoted prices are <strong>100% yours</strong> — Meramot adds the shop's 5%–10% platform fee transparently for the customer at checkout (pickup &amp; delivery handled by platform, excluded from fee).
+                        Your quoted labor and parts total is credited in full upon completion; customer service fees and courier logistics are billed separately at checkout.
                     </p>
                 </div>
             </div>

@@ -47,7 +47,7 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
         <div class="rounded-2xl border border-emerald-400 bg-emerald-50 p-4 text-xs text-emerald-950 flex items-center gap-3 print:hidden">
             <i class="fa-solid fa-circle-check text-emerald-700 text-base"></i>
             <div>
-                <p class="font-black">{{ session('success') ?? 'Escrow payment verified and recorded in the Meramot Financial Ledger.' }}</p>
+                <p class="font-black">{{ session('success') ?? 'Payment verified and secured under Meramot Escrow Protection.' }}</p>
             </div>
         </div>
     @endif
@@ -144,7 +144,7 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
             <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
                 <div class="md:col-span-7 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-2">
                     <p class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
-                        <i class="fa-solid fa-scale-balanced mr-1"></i> Transparent Pricing &amp; Warranty Audit Record
+                        <i class="fa-solid fa-scale-balanced mr-1"></i> Escrow Protection &amp; Warranty Summary
                     </p>
                     <p class="text-[11px] text-[var(--muted-foreground)]">
                         <strong>Escrow &amp; Protection Summary:</strong> Payments are safeguarded under Meramot Escrow until verified completion or handover.

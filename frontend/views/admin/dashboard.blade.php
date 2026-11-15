@@ -252,7 +252,7 @@
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">{{ $dashTrend['granularity'] ?? 'Weekly' }} Income Rate</p>
                     <h2 class="text-sm sm:text-base font-black text-[var(--foreground)]">Platform Revenue Trajectory</h2>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">5%–10% workshop fees &amp; platform pickup/delivery earnings</p>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Marketplace service fees &amp; courier logistics revenue</p>
                 </div>
                 @php
                     $dashDir = $dashTrend['direction'] ?? 'STEADY';
@@ -298,8 +298,8 @@
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-dark)]">Top Ranked Partners</p>
-                    <h2 class="text-sm sm:text-base font-black text-[var(--foreground)]">Best Performing Workshops &amp; Fee Rate (5%–10%)</h2>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">Commission applies only to 100% workshop earnings — pickup &amp; delivery handled by platform.</p>
+                    <h2 class="text-sm sm:text-base font-black text-[var(--foreground)]">Best Performing Workshops &amp; Base Fee Rates</h2>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Base fee rates apply to workshop subtotals only; courier logistics are billed separately.</p>
                 </div>
                 <a href="/admin/financial-overview" class="text-xs font-bold text-[var(--accent-dark)] hover:underline whitespace-nowrap">Full Ledger &rarr;</a>
             </div>
@@ -311,7 +311,7 @@
                             <th class="py-2 pr-3">Workshop</th>
                             <th class="py-2 pr-3">Rating &amp; Jobs</th>
                             <th class="py-2 pr-3">Vendor Earnings</th>
-                            <th class="py-2 text-right">Fee (5–10%)</th>
+                            <th class="py-2 text-right">Base Rate</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--border)]/60">

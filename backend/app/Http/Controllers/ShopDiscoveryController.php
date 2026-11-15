@@ -58,23 +58,23 @@ class ShopDiscoveryController extends Controller
         $offerCards = [
             [
                 'title' => 'Free pickup on your first repair',
-                'subtitle' => 'Use code MERAMOTNEW to save the courier fee today.',
+                'subtitle' => 'Complimentary doorstep pickup and return on eligible first-time repair bookings.',
                 'href' => '/shops?sort=distance&freeDelivery=true&deals=true&q=pickup',
             ],
             [
                 'title' => 'Laptop battery week',
-                'subtitle' => 'Selected vendors are offering up to 15% off original cells.',
+                'subtitle' => 'Save up to 15% on genuine replacement batteries from participating workshops.',
                 'href' => '/shops?q=battery&sort=price&deals=true',
             ],
         ];
 
         $popularCategories = [
-            ['label' => 'Phone', 'sprite' => '📱', 'trend' => 'High screen repair demand', 'href' => '/shops?q=phone'],
-            ['label' => 'Laptop', 'sprite' => '💻', 'trend' => 'Battery and keyboard issues', 'href' => '/shops?q=laptop'],
-            ['label' => 'Tablet', 'sprite' => '🧾', 'trend' => 'Port replacement trending', 'href' => '/shops?q=tablet'],
-            ['label' => 'Smartwatch', 'sprite' => '⌚', 'trend' => 'Glass and strap repairs', 'href' => '/shops?q=smartwatch'],
-            ['label' => 'Gaming Console', 'sprite' => '🎮', 'trend' => 'Fan cleaning rising', 'href' => '/shops?q=console'],
-            ['label' => 'Printer', 'sprite' => '🖨️', 'trend' => 'Roller and cartridge requests', 'href' => '/shops?q=printer'],
+            ['label' => 'Phone', 'sprite' => '📱', 'trend' => 'Screen, battery & charging repairs', 'href' => '/shops?q=phone'],
+            ['label' => 'Laptop', 'sprite' => '💻', 'trend' => 'Keyboard, thermal & board servicing', 'href' => '/shops?q=laptop'],
+            ['label' => 'Tablet', 'sprite' => '🧾', 'trend' => 'Display glass & port replacements', 'href' => '/shops?q=tablet'],
+            ['label' => 'Smartwatch', 'sprite' => '⌚', 'trend' => 'Crown, sensor & screen restoration', 'href' => '/shops?q=smartwatch'],
+            ['label' => 'Gaming Console', 'sprite' => '🎮', 'trend' => 'HDMI port, cooling & controller care', 'href' => '/shops?q=console'],
+            ['label' => 'Printer', 'sprite' => '🖨️', 'trend' => 'Roller, feed & printhead servicing', 'href' => '/shops?q=printer'],
         ];
 
         $recentlyViewed = [

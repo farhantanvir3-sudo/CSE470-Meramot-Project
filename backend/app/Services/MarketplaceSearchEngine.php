@@ -137,6 +137,16 @@ class MarketplaceSearchEngine
         'overheating' => ['thermal', 'repasting', 'dust', 'cooling'],
         'heating' => ['thermal', 'repasting', 'dust', 'cooling', 'overheating'],
         'dust' => ['thermal', 'repasting', 'cooling', 'fan'],
+        'maintenance' => ['preventive', 'tune-up', 'tuneup', 'optimization', 'thermal', 'clean', 'cleaning'],
+        'tuneup' => ['tune-up', 'maintenance', 'optimization'],
+        'tune' => ['tune-up', 'maintenance'],
+        'cleaning' => ['clean', 'dust', 'ultrasonic'],
+        'clean' => ['cleaning', 'dust', 'ultrasonic'],
+        'cartridges' => ['cartridge', 'toner', 'ink', 'refill', 'printhead'],
+        'cartridge' => ['toner', 'ink', 'refill', 'printhead'],
+        'toner' => ['cartridge', 'refill', 'printhead'],
+        'ink' => ['cartridge', 'refill', 'printhead'],
+        'refill' => ['cartridge', 'toner', 'ink', 'printhead'],
         'hdd' => ['sata', 'caddy', 'hard drive'],
         'storage' => ['ssd', 'nvme', 'hdd', 'sata'],
         'ram' => ['memory', 'sodimm', 'so-dimm', 'ddr3', 'ddr3l', 'ddr4', 'ddr4l', 'ddr5'],
@@ -894,15 +904,9 @@ class MarketplaceSearchEngine
             return false;
         }
 
-        $haystack = strtolower(trim(
-            ($pkg->title ?? '') . ' ' .
-            ($pkg->device_category ?? '') . ' ' .
-            ($pkg->description ?? '') . ' ' .
-            (is_array($pkg->inclusions) ? implode(' ', $pkg->inclusions) : (string) ($pkg->inclusions ?? ''))
-        ));
-
-        if (str_contains($haystack, strtolower($rawTrimmed))) {
-            return true;
+        // Guard against any un-migrated legacy hardware replacement package row
+        if (preg_match('/\b(display|battery|motherboard|port\s+microsoldering|keyboard\s+replacement)\b/i', (string) ($pkg->title ?? '')) === 1) {
+            return false;
         }
 
         $tokens = self::tokenize($rawTrimmed);
@@ -910,21 +914,54 @@ class MarketplaceSearchEngine
             return false;
         }
 
-        $softIntentWords = [
-            'package', 'packages', 'fixed', 'replacement', 'replace', 'issue', 'issues', 'problem', 'problems',
-            'troubleshoot', 'troubleshooting', 'device', 'devices', 'phone', 'phones', 'smartphone',
-            'laptop', 'computer', 'pc', 'damage', 'damaged', 'fix', 'repair', 'service',
-            'clean', 'cleaning', 'cleanup', 'remove', 'removal', 'install', 'setup',
+        $strictHardwareTokens = [
+            'display', 'displays', 'screen', 'screens', 'lcd', 'oled', 'amoled', 'digitizer', 'touchscreen',
+            'battery', 'batteries', 'cell', 'motherboard', 'mainboard', 'ssd', 'nvme', 'ram', 'hdd',
+            'charger', 'chargers', 'adapter', 'adapters', 'magsafe', 'camera', 'lens', 'speaker', 'speakers',
+            'hinge', 'backshell', 'housing', 'trackpad', 'touchpad', 'sim', 'paste', 'flux', 'solder',
+            'multimeter', 'screwdriver', 'spudger', 'tweezers',
         ];
-        if (array_intersect($tokens, ['windows', 'os'])) {
-            $softIntentWords[] = '10';
-            $softIntentWords[] = '11';
-        }
-        $coreTokens = array_values(array_diff($tokens, $softIntentWords));
-        if (empty($coreTokens)) {
+        if (!empty(array_intersect($tokens, $strictHardwareTokens))) {
             return false;
         }
-        $matchTokens = $coreTokens;
+
+        // Route peripheral/fan queries to Fixed Packages only when cleaning/maintenance intent is explicit
+        $cleaningOrMaintWords = [
+            'clean', 'cleaning', 'cleanup', 'maintenance', 'tune', 'tuneup', 'dust',
+            'thermal', 'repaste', 'repasting', 'sanitize', 'sanitization',
+        ];
+        if (!empty(array_intersect($tokens, ['keyboard', 'keyboards', 'keycap', 'fan', 'fans', 'mouse', 'mice']))) {
+            if (!empty(array_intersect($tokens, ['replacement', 'replace', 'replacing'])) || empty(array_intersect($tokens, $cleaningOrMaintWords))) {
+                return false;
+            }
+        }
+
+        $fillerWords = [
+            'package', 'packages', 'fixed', 'replacement', 'replace', 'issue', 'issues', 'problem', 'problems',
+            'device', 'devices', 'phone', 'phones', 'smartphone', 'laptop', 'computer', 'pc', 'tablet',
+            'printer', 'console', 'smartwatch', 'fix', 'repair', 'service', 'services', 'damage', 'damaged',
+            'for', 'my', 'on', 'in',
+        ];
+        if (array_intersect($tokens, ['windows', 'os'])) {
+            $fillerWords[] = '10';
+            $fillerWords[] = '11';
+        }
+
+        $intentTokens = array_values(array_diff($tokens, $fillerWords));
+        if (empty($intentTokens)) {
+            return false;
+        }
+
+        $secondaryActionWords = ['clean', 'cleaning', 'cleanup', 'troubleshoot', 'troubleshooting', 'install', 'installation', 'setup', 'remove', 'removal'];
+        $specificTokens = array_values(array_diff($intentTokens, $secondaryActionWords));
+        $matchTokens = !empty($specificTokens) ? $specificTokens : $intentTokens;
+
+        // Exclude device_category from haystack so generic device names never create false package matches
+        $haystack = strtolower(trim(
+            ($pkg->title ?? '') . ' ' .
+            ($pkg->description ?? '') . ' ' .
+            (is_array($pkg->inclusions) ? implode(' ', $pkg->inclusions) : (string) ($pkg->inclusions ?? ''))
+        ));
 
         foreach ($matchTokens as $token) {
             $group = self::expandTokenGroup($token);
@@ -1032,6 +1069,8 @@ class MarketplaceSearchEngine
             'root', 'rooting', 'bootloader', 'bootloop', 'unbrick', 'magisk', 'kernelsu', 'rom', 'firmware', 'flash', 'flashing',
             'os', 'windows', 'linux', 'macos', 'ubuntu', 'bios', 'uefi', 'driver', 'drivers', 'format', 'reinstall',
             'repasting', 'repaste', 'thermal', 'overheating', 'heating', 'dust', 'clean', 'cleaning', 'cleanup',
+            'maintenance', 'tuneup', 'tune', 'preventive', 'sanitize', 'sanitization',
+            'cartridge', 'cartridges', 'toner', 'ink', 'refill', 'printhead',
             'backup', 'recovery', 'encrypted', 'corrupted', 'migration',
             'ultrasonic', 'liquid', 'water', 'wet', 'spill', 'chemical', 'corrosion', 'package', 'packages',
         ];
