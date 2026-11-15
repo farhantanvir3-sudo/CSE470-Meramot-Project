@@ -1061,8 +1061,10 @@ const MeramotLocationPicker = {
             const map = L.map(container, {
                 center: [startLat, startLng],
                 zoom: startZoom,
-                zoomControl: true
+                zoomControl: false
             });
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
@@ -1071,12 +1073,15 @@ const MeramotLocationPicker = {
 
             const pinIcon = L.divIcon({
                 className: '',
-                html: `<div style="position:relative;width:28px;height:38px;">
-                    <div style="position:absolute;top:0;left:50%;width:28px;height:28px;background:#244229;border:3px solid #ffffff;border-radius:999px;transform:translateX(-50%);box-shadow:0 4px 10px rgba(15,23,42,.28);"></div>
-                    <div style="position:absolute;bottom:1px;left:50%;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:12px solid #244229;transform:translateX(-50%);"></div>
+                html: `<div style="position:relative;width:34px;height:44px;">
+                    <div style="position:absolute;top:0;left:50%;width:34px;height:34px;background:rgba(36,66,41,0.16);border-radius:999px;transform:translateX(-50%);"></div>
+                    <div style="position:absolute;top:4px;left:50%;width:26px;height:26px;background:#244229;border:2.5px solid #ffffff;border-radius:999px;transform:translateX(-50%);box-shadow:0 6px 14px rgba(15,32,20,0.34);display:flex;align-items:center;justify-content:center;">
+                        <div style="width:8px;height:8px;border-radius:999px;background:#d8f0d4;"></div>
+                    </div>
+                    <div style="position:absolute;bottom:4px;left:50%;width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid #244229;transform:translateX(-50%);filter:drop-shadow(0 2px 3px rgba(15,32,20,0.22));"></div>
                 </div>`,
-                iconSize: [28, 38],
-                iconAnchor: [14, 38]
+                iconSize: [34, 44],
+                iconAnchor: [17, 40]
             });
 
             const marker = L.marker([startLat, startLng], {

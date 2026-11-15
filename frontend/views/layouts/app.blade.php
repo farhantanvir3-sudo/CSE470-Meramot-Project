@@ -272,6 +272,100 @@
             max-height: none !important;
         }
 
+        /* Scoped styling for global Location Picker interactive map shell */
+        .meramot-map-shell #meramot-leaflet-map {
+            height: 100%;
+            min-height: 260px;
+        }
+        @media (min-width: 1024px) {
+            .meramot-map-shell #meramot-leaflet-map {
+                min-height: 440px;
+            }
+        }
+        .meramot-map-shell .meramot-map-search-input,
+        .meramot-map-shell .meramot-map-search-input:focus,
+        .meramot-map-shell .meramot-map-search-input:focus-visible {
+            border: 0 !important;
+            box-shadow: none !important;
+            outline: none !important;
+            background: transparent !important;
+        }
+        .meramot-map-shell .leaflet-control-zoom {
+            border: 1px solid rgba(36, 66, 41, 0.14) !important;
+            box-shadow: 0 8px 24px -6px rgba(16, 34, 22, 0.22) !important;
+            border-radius: 0.75rem !important;
+            overflow: hidden !important;
+            margin: 0 12px 12px 0 !important;
+        }
+        .dark .meramot-map-shell .leaflet-control-zoom {
+            border-color: rgba(255, 255, 255, 0.14) !important;
+        }
+        .meramot-map-shell .leaflet-control-zoom a {
+            width: 32px !important;
+            height: 32px !important;
+            line-height: 32px !important;
+            background: rgba(255, 255, 255, 0.94) !important;
+            color: #203126 !important;
+            border-bottom: 1px solid rgba(36, 66, 41, 0.1) !important;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            backdrop-filter: blur(8px);
+            transition: background-color 150ms ease, color 150ms ease;
+        }
+        .meramot-map-shell .leaflet-control-zoom a:last-child {
+            border-bottom: 0 !important;
+        }
+        .meramot-map-shell .leaflet-control-zoom a:hover {
+            background: #eef7eb !important;
+            color: #163625 !important;
+        }
+        .dark .meramot-map-shell .leaflet-control-zoom a {
+            background: rgba(21, 31, 24, 0.94) !important;
+            color: #f0fde8 !important;
+            border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .dark .meramot-map-shell .leaflet-control-zoom a:hover {
+            background: rgba(38, 56, 48, 0.96) !important;
+        }
+        .meramot-map-shell .leaflet-control-attribution {
+            font-size: 9px !important;
+            line-height: 1.3 !important;
+            padding: 2px 6px !important;
+            background: rgba(255, 255, 255, 0.78) !important;
+            color: #5e6d64 !important;
+            border-top-left-radius: 0.5rem !important;
+            backdrop-filter: blur(4px);
+        }
+        .dark .meramot-map-shell .leaflet-control-attribution {
+            background: rgba(15, 21, 18, 0.78) !important;
+            color: #b4c9b0 !important;
+        }
+        .meramot-map-shell .leaflet-control-attribution a {
+            color: inherit !important;
+        }
+        .meramot-map-shell .meramot-map-pin-pill {
+            background: rgba(255, 255, 255, 0.92);
+            color: #203126;
+            border: 1px solid rgba(36, 66, 41, 0.14);
+        }
+        .dark .meramot-map-shell .meramot-map-pin-pill {
+            background: rgba(21, 31, 24, 0.92);
+            color: #f0fde8;
+            border-color: rgba(255, 255, 255, 0.14);
+        }
+        .meramot-map-select {
+            color-scheme: light;
+            background-color: #ffffff !important;
+            color: #203126 !important;
+            border-color: rgba(36, 66, 41, 0.16) !important;
+        }
+        .dark .meramot-map-select {
+            color-scheme: dark;
+            background-color: #162019 !important;
+            color: #f0fde8 !important;
+            border-color: rgba(255, 255, 255, 0.16) !important;
+        }
+
         /* Radial subtle darker-green outline disk + outward spread on hover & mobile press */
         .meramot-cart-btn {
             position: relative;
@@ -1396,136 +1490,220 @@
         </aside>
     </div>
 
-    <!-- ── OpenStreetMap + Leaflet Location Picker Modal (Exact match to LocationPickerModal.tsx & MapPicker.tsx) ── -->
-    <div x-show="locationModalOpen" x-cloak class="fixed inset-0 z-[120] flex items-center justify-center px-4 py-6">
-        <div class="absolute inset-0 bg-black/35 backdrop-blur-sm" @click="locationModalOpen = false"></div>
+    <!-- ── OpenStreetMap + Leaflet Location Picker Modal (Minimalist Map-First Redesign) ── -->
+    <div
+        x-show="locationModalOpen"
+        x-cloak
+        @keydown.escape.window="if (locationModalOpen) locationModalOpen = false"
+        class="fixed inset-0 z-[120] flex items-center justify-center px-3 py-4 sm:px-4 sm:py-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="meramot-location-modal-title"
+    >
+        <div
+            x-show="locationModalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="absolute inset-0 bg-[#0d1c13]/45 backdrop-blur-sm"
+            @click="locationModalOpen = false"
+        ></div>
 
-        <div class="relative z-[121] flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-2xl">
-            <!-- Modal Header -->
-            <div class="flex items-start justify-between gap-4 border-b border-[var(--border)] p-5">
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-[0.25em] text-[var(--muted-foreground)]">
-                        Delivery location
-                    </p>
-                    <h2 class="mt-1 text-2xl font-bold text-[var(--foreground)]">Choose your location</h2>
-                    <p class="mt-1 text-sm text-[var(--muted-foreground)]">
-                        Search for your neighborhood, use GPS detection, or place the pin on the map for accurate delivery and workshop estimates.
-                    </p>
+        <div
+            x-show="locationModalOpen"
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 scale-[0.98] translate-y-1.5"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 scale-100 translate-y-0"
+            x-transition:leave-end="opacity-0 scale-[0.98] translate-y-1.5"
+            class="relative z-[121] flex max-h-[90vh] w-full max-w-[56rem] flex-col overflow-hidden rounded-[1.5rem] border border-[#244229]/15 dark:border-white/15 bg-[#f6fbf4] dark:bg-[#111914] shadow-[0_28px_70px_-16px_rgba(15,32,20,0.32)]"
+        >
+            <!-- Compact Minimalist Header -->
+            <div class="flex items-center justify-between gap-4 border-b border-[#244229]/10 dark:border-white/10 px-5 py-3.5">
+                <div class="flex items-center gap-3 min-w-0">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#244229]/10 dark:bg-white/10 text-[var(--accent-dark)]">
+                        <i class="fa-solid fa-location-dot text-sm"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h2 id="meramot-location-modal-title" class="text-base sm:text-lg font-semibold tracking-tight text-[var(--foreground)]">Choose your location</h2>
+                            <span class="hidden sm:inline-block rounded-full border border-[#244229]/15 dark:border-white/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--muted-foreground)]">Delivery location</span>
+                        </div>
+                        <p class="truncate text-xs text-[var(--muted-foreground)]">
+                            Search your area, click or drag the pin, or detect automatically with GPS.
+                        </p>
+                    </div>
                 </div>
 
                 <button
                     type="button"
                     @click="locationModalOpen = false"
-                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] transition hover:bg-[var(--mint-200)]"
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#244229]/15 dark:border-white/15 bg-transparent text-[var(--muted-foreground)] transition hover:border-[#244229]/30 hover:bg-[#244229]/5 dark:hover:bg-white/10 hover:text-[var(--foreground)]"
                     aria-label="Close location picker"
                 >
-                    <i class="fa-solid fa-xmark text-base"></i>
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <!-- Modal Body: MapPicker + Controls Column -->
-            <div class="grid min-h-0 flex-1 gap-4 overflow-y-auto p-5 lg:grid-cols-[1fr_290px]">
-                <!-- Left Column: Address Search + Interactive OpenStreetMap + Leaflet Canvas -->
-                <div class="flex flex-col gap-3">
-                    <form @submit.prevent="searchMapAddress()" class="relative flex items-center gap-2 z-[500]">
-                        <div class="relative flex-1">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]"></i>
-                            <input
-                                type="text"
-                                x-model="mapSearchQuery"
-                                @input="onMapQueryInput()"
-                                @focus="if (mapSearchQuery.trim().length > 0 || mapSuggestions.length > 0) onMapQueryInput()"
-                                @keydown.arrow-down.prevent="if (mapSuggestions.length) mapHighlightIdx = (mapHighlightIdx + 1) % mapSuggestions.length"
-                                @keydown.arrow-up.prevent="if (mapSuggestions.length) mapHighlightIdx = (mapHighlightIdx - 1 + mapSuggestions.length) % mapSuggestions.length"
-                                @keydown.escape="mapSuggestionsOpen = false"
-                                @blur="setTimeout(() => { mapSuggestionsOpen = false; }, 180)"
-                                autocomplete="off"
-                                data-map-search-input
-                                placeholder="Type area, sector, plaza, or city (e.g. Uttara Sector 7, Multiplan, Zindabazar)..."
-                                class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] pl-9 pr-4 py-2.5 text-xs font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
-                            />
+            <!-- Modal Body: Map Viewport + Minimalist Controls Column -->
+            <div class="grid min-h-0 flex-1 overflow-y-auto lg:overflow-hidden lg:grid-cols-[1fr_320px]">
+                <!-- Left Column: Full-Bleed Map Frame with Floating Frosted Search Bar -->
+                <div class="meramot-map-shell flex flex-col p-3.5 sm:p-4">
+                    <div class="relative flex-1 min-h-[260px] sm:min-h-[340px] lg:min-h-[440px] overflow-hidden rounded-2xl border border-[#244229]/15 dark:border-white/15 bg-[#e5efe3] dark:bg-[#0d1410]">
+                        <!-- Floating Frosted Address Search Bar -->
+                        <form @submit.prevent="searchMapAddress()" class="absolute left-3 right-3 top-3 z-[500]">
+                            <div class="relative flex items-center gap-1.5 rounded-xl border border-[#244229]/15 dark:border-white/15 bg-white/95 dark:bg-[#151f18]/95 p-1.5 pl-3 shadow-[0_10px_28px_-8px_rgba(16,34,22,0.22)] backdrop-blur-md">
+                                <i class="fa-solid fa-magnifying-glass shrink-0 text-[11px] text-[var(--muted-foreground)]"></i>
+                                <input
+                                    type="text"
+                                    x-model="mapSearchQuery"
+                                    @input="onMapQueryInput()"
+                                    @focus="if (mapSearchQuery.trim().length > 0 || mapSuggestions.length > 0) onMapQueryInput()"
+                                    @keydown.arrow-down.prevent="if (mapSuggestions.length) mapHighlightIdx = (mapHighlightIdx + 1) % mapSuggestions.length"
+                                    @keydown.arrow-up.prevent="if (mapSuggestions.length) mapHighlightIdx = (mapHighlightIdx - 1 + mapSuggestions.length) % mapSuggestions.length"
+                                    @keydown.escape="mapSuggestionsOpen = false"
+                                    @blur="setTimeout(() => { mapSuggestionsOpen = false; }, 180)"
+                                    autocomplete="off"
+                                    data-map-search-input
+                                    placeholder="Search area, sector, plaza, or city (e.g. Uttara, Multiplan)..."
+                                    class="meramot-map-search-input w-full border-0 bg-transparent p-0 py-1 text-xs font-medium text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:ring-0"
+                                />
+                                <button
+                                    type="button"
+                                    x-show="mapSearchQuery && mapSearchQuery.trim().length > 0"
+                                    x-cloak
+                                    @click="mapSearchQuery = ''; mapSuggestions = []; mapSuggestionsOpen = false"
+                                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[var(--muted-foreground)] transition hover:bg-[#244229]/5 dark:hover:bg-white/10 hover:text-[var(--foreground)]"
+                                    aria-label="Clear address search"
+                                >
+                                    <i class="fa-solid fa-xmark text-[11px]"></i>
+                                </button>
+                                <button
+                                    type="submit"
+                                    :disabled="locationLoading"
+                                    class="inline-flex h-7 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-dark)] px-3 text-[11px] font-semibold text-[var(--accent-foreground)] transition hover:opacity-90 disabled:opacity-50"
+                                >
+                                    Find
+                                </button>
+                            </div>
+
+                            <!-- Suggestions Dropdown -->
                             <div
                                 x-show="mapSuggestionsOpen && mapSuggestions.length > 0"
                                 x-cloak
                                 data-map-search-suggestions
-                                class="absolute left-0 right-0 top-full mt-1.5 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--card)] p-1.5 shadow-xl z-[900]"
+                                class="absolute left-0 right-0 top-full mt-1.5 max-h-56 overflow-y-auto rounded-xl border border-[#244229]/15 dark:border-white/15 bg-[#ffffff] dark:bg-[#151f18] p-1 shadow-[0_18px_40px_-10px_rgba(15,32,20,0.28)] z-[900]"
                             >
                                 <template x-for="(item, idx) in mapSuggestions" :key="item.city + '-' + item.area + '-' + idx">
                                     <button
                                         type="button"
                                         @mousedown.prevent="pickMapSuggestion(item)"
-                                        :class="mapHighlightIdx === idx ? 'bg-[var(--mint-100)] text-[var(--accent-dark)]' : 'hover:bg-[var(--mint-50)] text-[var(--foreground)]'"
-                                        class="flex w-full items-start justify-between gap-2 rounded-xl px-3 py-2 text-left transition"
+                                        :class="mapHighlightIdx === idx ? 'bg-[#eef7eb] dark:bg-white/10 text-[var(--accent-dark)]' : 'hover:bg-[#f6fbf4] dark:hover:bg-white/5 text-[var(--foreground)]'"
+                                        class="flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left transition"
                                     >
                                         <div class="min-w-0">
-                                            <p class="truncate text-xs font-bold" x-text="item.area"></p>
+                                            <p class="truncate text-xs font-semibold" x-text="item.area"></p>
                                             <p class="truncate text-[11px] text-[var(--muted-foreground)]" x-text="item.address"></p>
                                         </div>
-                                        <span class="shrink-0 rounded-full bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]" x-text="item.city"></span>
+                                        <span class="shrink-0 rounded-full border border-[#244229]/15 dark:border-white/15 bg-[#eef7eb]/80 dark:bg-white/5 px-2 py-0.5 text-[10px] font-medium text-[var(--accent-dark)]" x-text="item.city"></span>
                                     </button>
                                 </template>
                             </div>
-                        </div>
-                        <button
-                            type="submit"
-                            :disabled="locationLoading"
-                            class="rounded-2xl bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-[var(--accent-foreground)] transition hover:opacity-90 disabled:opacity-60"
-                        >
-                            Find
-                        </button>
-                    </form>
+                        </form>
 
-                    <div class="relative min-h-[360px] flex-1 overflow-hidden rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-50)]">
-                        <div id="meramot-leaflet-map" style="height: 400px; min-height: 360px; width: 100%;" class="w-full z-10"></div>
-                        <div class="pointer-events-none absolute left-4 top-4 z-[400] rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#244229] shadow-sm">
-                            Interactive Service Map
+                        <!-- Interactive OpenStreetMap + Leaflet Canvas -->
+                        <div id="meramot-leaflet-map" class="h-full w-full z-10"></div>
+
+                        <!-- Bottom-Left Live Coordinate & Interaction Micro-Pill -->
+                        <div class="meramot-map-pin-pill pointer-events-none absolute bottom-3 left-3 z-[400] inline-flex max-w-[calc(100%-6.5rem)] items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-medium shadow-sm backdrop-blur-md">
+                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
+                            <span class="truncate">Click map or drag pin</span>
+                            <template x-if="draftLocation && typeof draftLocation.lat === 'number' && typeof draftLocation.lng === 'number'">
+                                <span class="hidden sm:inline shrink-0 border-l border-[#244229]/15 dark:border-white/15 pl-2 font-mono text-[10px] opacity-75" x-text="draftLocation.lat.toFixed(4) + ', ' + draftLocation.lng.toFixed(4)"></span>
+                            </template>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column: GPS Button, Selected Address Card, Quick Hubs, Confirm Button -->
-                <div class="flex flex-col gap-3">
-                    <button
-                        type="button"
-                        @click="useGpsLocation()"
-                        :disabled="locationLoading || locationSaving"
-                        class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--accent-dark)] px-4 py-3 text-sm font-bold text-[var(--accent-foreground)] transition hover:opacity-95 disabled:opacity-60 shadow-sm"
-                    >
-                        <i class="fa-solid fa-location-crosshairs" :class="locationLoading ? 'fa-spin' : ''"></i>
-                        <span x-text="locationLoading ? 'Detecting...' : 'Use GPS location'">Use GPS location</span>
-                    </button>
+                <!-- Right Column: Selected Pin + Minimalist GPS/Confirm/Nearby Trio + Compact Selectors -->
+                <div
+                    x-data="{ hubTab: 'dhaka' }"
+                    data-map-inspector
+                    class="flex flex-col gap-3 border-t lg:border-t-0 lg:border-l border-[#244229]/10 dark:border-white/10 bg-[#ffffff]/65 dark:bg-white/[0.02] p-4 sm:p-5 lg:overflow-y-auto"
+                >
+                    <!-- Selected Pin Summary Card -->
+                    <div class="rounded-xl border border-[#244229]/10 dark:border-white/10 bg-[#eef7eb]/65 dark:bg-white/5 px-3.5 py-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+                                Selected pin
+                            </span>
+                            <template x-if="draftLocation && (draftLocation.area || draftLocation.city)">
+                                <span class="truncate text-[11px] font-semibold text-[var(--accent-dark)]" x-text="[draftLocation.area, draftLocation.city].filter(Boolean).join(', ')"></span>
+                            </template>
+                        </div>
+                        <p class="mt-1 line-clamp-2 text-xs font-medium leading-relaxed text-[var(--foreground)]" x-text="draftLocation?.address || 'No address selected yet. Click on the map to place your pin.'"></p>
+                    </div>
 
-                    <!-- Selected Address Preview Box -->
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] p-4">
-                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                            Selected address
-                        </p>
-                        <p class="mt-2 text-sm font-semibold leading-6 text-[var(--foreground)]" x-text="draftLocation?.address || 'No address selected yet. Click anywhere on the map to pin your location.'"></p>
-                        <template x-if="draftLocation && (draftLocation.area || draftLocation.city)">
-                            <p class="mt-1.5 text-xs font-semibold text-[var(--accent-dark)]" x-text="[draftLocation.area, draftLocation.city].filter(Boolean).join(', ')"></p>
-                        </template>
+                    <!-- Unified Minimalist Action Trio (GPS + Confirm + Find Nearby Shops right together at top) -->
+                    <div class="flex flex-col gap-1.5">
+                        <button
+                            type="button"
+                            @click="useGpsLocation()"
+                            :disabled="locationLoading || locationSaving"
+                            class="inline-flex h-9 w-full items-center justify-between rounded-xl border border-[#244229]/15 dark:border-white/15 bg-[#ffffff] dark:bg-white/5 px-3.5 text-xs font-medium text-[var(--foreground)] shadow-[0_1px_2px_rgba(16,34,22,0.04)] transition-all hover:border-[var(--accent-dark)]/50 hover:bg-[#eef7eb]/70 dark:hover:bg-white/10 disabled:opacity-50"
+                        >
+                            <span class="inline-flex items-center gap-2">
+                                <i class="fa-solid fa-location-crosshairs text-[11px] text-[var(--accent-dark)]" :class="locationLoading ? 'fa-spin' : ''"></i>
+                                <span x-text="locationLoading ? 'Detecting...' : 'Use GPS location'">Use GPS location</span>
+                            </span>
+                            <span class="rounded-md border border-[#244229]/15 dark:border-white/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">GPS</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            @click="confirmMapLocation()"
+                            :disabled="locationSaving || !draftLocation"
+                            class="inline-flex h-9 w-full items-center justify-center gap-2 rounded-xl bg-[var(--accent-dark)] px-4 text-xs font-semibold tracking-[0.01em] text-[var(--accent-foreground)] shadow-[0_2px_8px_-2px_rgba(36,66,41,0.32)] transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
+                        >
+                            <i class="fa-solid fa-check text-[11px]"></i>
+                            <span x-text="locationSaving ? 'Saving...' : 'Confirm location'">Confirm location</span>
+                        </button>
+
                         <template x-if="draftLocation && typeof draftLocation.lat === 'number' && typeof draftLocation.lng === 'number'">
-                            <p class="mt-1 font-mono text-[11px] text-[var(--muted-foreground)]" x-text="draftLocation.lat.toFixed(5) + ', ' + draftLocation.lng.toFixed(5)"></p>
+                            <button
+                                type="button"
+                                @click="confirmMapLocation(); window.MeramotGeolocation.updateUrlWithLocation(draftLocation.lat, draftLocation.lng, 12)"
+                                class="inline-flex h-[34px] w-full items-center justify-center gap-1.5 rounded-xl border border-[#244229]/15 dark:border-white/15 bg-transparent px-3.5 text-xs font-medium text-[var(--accent-dark)] transition-all hover:border-[#244229]/30 hover:bg-[#244229]/5 dark:hover:bg-white/10"
+                            >
+                                <i class="fa-regular fa-compass text-[11px] opacity-85"></i>
+                                <span>Find Nearby Shops from Pin</span>
+                            </button>
                         </template>
                     </div>
 
+                    <div x-show="locationError" x-cloak class="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-[11px] font-medium text-red-700 dark:text-red-300" x-text="locationError"></div>
+
                     <!-- Narrowed-Down District & Neighborhood Selector -->
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 space-y-2.5">
+                    <div class="border-t border-[#244229]/10 dark:border-white/10 pt-3 space-y-2">
                         <div class="flex items-center justify-between gap-2">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
-                                Select narrowed-down location
-                            </p>
-                            <span class="text-[10px] font-semibold text-[var(--accent-dark)]" x-text="mapAreaOptions.length + ' hubs in ' + mapDistrictFilter"></span>
+                            <span class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+                                Browse by area
+                            </span>
+                            <span class="text-[10px] font-medium text-[var(--accent-dark)]" x-text="mapAreaOptions.length + ' hubs'"></span>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <div>
-                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-1">District (64)</label>
+                                <label class="block text-[10px] font-medium text-[var(--muted-foreground)] mb-1">District (64)</label>
                                 <select
                                     x-model="mapDistrictFilter"
                                     @change="onMapDistrictChange()"
                                     x-effect="$nextTick(() => { $el.value = mapDistrictFilter; })"
                                     data-map-district-select
-                                    class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-50)] px-2.5 py-1.5 text-xs font-semibold text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                                    class="meramot-map-select w-full rounded-lg border px-2.5 py-1.5 text-xs font-medium outline-none focus:border-[var(--accent-dark)]"
                                 >
                                     @foreach(array_column(\App\Services\BangladeshLocationResolver::DISTRICTS, 'city') as $distOption)
                                         <option value="{{ $distOption }}">{{ $distOption }}</option>
@@ -1533,13 +1711,13 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[10px] font-bold text-[var(--muted-foreground)] mb-1">Narrowed-Down Area / Hub</label>
+                                <label class="block text-[10px] font-medium text-[var(--muted-foreground)] mb-1">Area / Hub</label>
                                 <select
                                     x-model="mapAreaSelect"
                                     @change="onMapAreaChange()"
                                     x-effect="const _opts = mapAreaOptions; $nextTick(() => { if (_opts.length) $el.value = mapAreaSelect; })"
                                     data-map-area-select
-                                    class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-50)] px-2.5 py-1.5 text-xs font-semibold text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                                    class="meramot-map-select w-full rounded-lg border px-2.5 py-1.5 text-xs font-medium outline-none focus:border-[var(--accent-dark)]"
                                 >
                                     <template x-for="place in mapAreaOptions" :key="'map-place-' + place.city + '-' + place.area">
                                         <option :value="place.area" x-text="place.area"></option>
@@ -1549,82 +1727,73 @@
                         </div>
                     </div>
 
-                    <!-- Quick Jump Bangladesh & Dhaka Hubs -->
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-3 space-y-2">
-                        <div>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)] mb-1.5">
-                                Quick jump • Dhaka hubs
-                            </p>
-                            <div class="flex flex-wrap gap-1.5">
-                                @foreach([
-                                    ['area' => 'Banani', 'city' => 'Dhaka', 'lat' => 23.7937, 'lng' => 90.4066, 'address' => 'Road 11, Banani, Dhaka 1213'],
-                                    ['area' => 'Gulshan', 'city' => 'Dhaka', 'lat' => 23.7925, 'lng' => 90.4158, 'address' => 'Gulshan 2 Circle, Gulshan, Dhaka 1212'],
-                                    ['area' => 'Dhanmondi', 'city' => 'Dhaka', 'lat' => 23.7461, 'lng' => 90.3742, 'address' => 'Satmasjid Road, Dhanmondi, Dhaka 1209'],
-                                    ['area' => 'Hatirpool', 'city' => 'Dhaka', 'lat' => 23.7422, 'lng' => 90.3918, 'address' => 'Hatirpool Eastern Plaza Rd, Dhaka 1205'],
-                                    ['area' => 'Mirpur', 'city' => 'Dhaka', 'lat' => 23.8071, 'lng' => 90.3686, 'address' => 'Mirpur 10 Roundabout, Mirpur, Dhaka 1216'],
-                                    ['area' => 'Uttara', 'city' => 'Dhaka', 'lat' => 23.8759, 'lng' => 90.3795, 'address' => 'Sector 7, Uttara, Dhaka 1230'],
-                                    ['area' => 'Bashundhara', 'city' => 'Dhaka', 'lat' => 23.8191, 'lng' => 90.4526, 'address' => 'Block C, Bashundhara R/A, Dhaka 1229'],
-                                ] as $hub)
-                                    <button
-                                        type="button"
-                                        @click="selectQuickHub(@js($hub))"
-                                        class="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-[11px] font-semibold text-[var(--foreground)] transition hover:border-[var(--accent-dark)] hover:bg-[var(--mint-50)]"
-                                    >
-                                        {{ $hub['area'] }}
-                                    </button>
-                                @endforeach
+                    <!-- Compact Tabbed Quick Select Hubs (Dhaka | Cities) -->
+                    <div class="border-t border-[#244229]/10 dark:border-white/10 pt-3 space-y-2">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--muted-foreground)]">
+                                Quick select
+                            </span>
+                            <div class="inline-flex items-center rounded-lg border border-[#244229]/15 dark:border-white/15 bg-[#eef7eb]/70 dark:bg-white/5 p-0.5 text-[10px] font-semibold">
+                                <button
+                                    type="button"
+                                    @click="hubTab = 'dhaka'"
+                                    :class="hubTab === 'dhaka' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'"
+                                    class="rounded-md px-2 py-0.5 transition"
+                                >
+                                    Dhaka
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="hubTab = 'cities'"
+                                    :class="hubTab === 'cities' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'"
+                                    class="rounded-md px-2 py-0.5 transition"
+                                >
+                                    Cities
+                                </button>
                             </div>
                         </div>
 
-                        <div class="border-t border-[var(--border)] pt-2">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)] mb-1.5">
-                                Nationwide Bangladesh cities
-                            </p>
-                            <div class="flex flex-wrap gap-1.5">
-                                @foreach([
-                                    ['area' => 'Agrabad', 'city' => 'Chattogram', 'lat' => 22.3264, 'lng' => 91.8155, 'address' => 'Agrabad Commercial Area, Chattogram 4100'],
-                                    ['area' => 'Zindabazar', 'city' => 'Sylhet', 'lat' => 24.8949, 'lng' => 91.8687, 'address' => 'Zindabazar Main Road, Sylhet 3100'],
-                                    ['area' => 'Joydebpur', 'city' => 'Gazipur', 'lat' => 23.9999, 'lng' => 90.4203, 'address' => 'Joydebpur Chowrasta, Gazipur'],
-                                    ['area' => 'Shaheb Bazar', 'city' => 'Rajshahi', 'lat' => 24.3653, 'lng' => 88.6003, 'address' => 'Shaheb Bazar Zero Point, Rajshahi'],
-                                    ['area' => 'Shib Bari', 'city' => 'Khulna', 'lat' => 22.8206, 'lng' => 89.5535, 'address' => 'Shib Bari More, Khulna'],
-                                    ['area' => 'Satmatha', 'city' => 'Bogura', 'lat' => 24.8481, 'lng' => 89.3730, 'address' => 'Satmatha Zero Point, Bogura'],
-                                    ['area' => 'Ganginarpar', 'city' => 'Mymensingh', 'lat' => 24.7564, 'lng' => 90.4065, 'address' => 'Ganginarpar, Mymensingh'],
-                                ] as $cityHub)
-                                    <button
-                                        type="button"
-                                        @click="selectQuickHub(@js($cityHub))"
-                                        class="rounded-full border border-[var(--border)] bg-[var(--mint-50)] px-2.5 py-1 text-[11px] font-semibold text-[var(--accent-dark)] transition hover:border-[var(--accent-dark)] hover:bg-[var(--card)]"
-                                    >
-                                        {{ $cityHub['city'] }}
-                                    </button>
-                                @endforeach
-                            </div>
+                        <div x-show="hubTab === 'dhaka'" class="flex flex-wrap gap-1.5">
+                            @foreach([
+                                ['area' => 'Banani', 'city' => 'Dhaka', 'lat' => 23.7937, 'lng' => 90.4066, 'address' => 'Road 11, Banani, Dhaka 1213'],
+                                ['area' => 'Gulshan', 'city' => 'Dhaka', 'lat' => 23.7925, 'lng' => 90.4158, 'address' => 'Gulshan 2 Circle, Gulshan, Dhaka 1212'],
+                                ['area' => 'Dhanmondi', 'city' => 'Dhaka', 'lat' => 23.7461, 'lng' => 90.3742, 'address' => 'Satmasjid Road, Dhanmondi, Dhaka 1209'],
+                                ['area' => 'Hatirpool', 'city' => 'Dhaka', 'lat' => 23.7422, 'lng' => 90.3918, 'address' => 'Hatirpool Eastern Plaza Rd, Dhaka 1205'],
+                                ['area' => 'Mirpur', 'city' => 'Dhaka', 'lat' => 23.8071, 'lng' => 90.3686, 'address' => 'Mirpur 10 Roundabout, Mirpur, Dhaka 1216'],
+                                ['area' => 'Uttara', 'city' => 'Dhaka', 'lat' => 23.8759, 'lng' => 90.3795, 'address' => 'Sector 7, Uttara, Dhaka 1230'],
+                                ['area' => 'Bashundhara', 'city' => 'Dhaka', 'lat' => 23.8191, 'lng' => 90.4526, 'address' => 'Block C, Bashundhara R/A, Dhaka 1229'],
+                            ] as $hub)
+                                <button
+                                    type="button"
+                                    @click="selectQuickHub(@js($hub))"
+                                    :class="draftLocation?.area === @js($hub['area']) ? 'border-[var(--accent-dark)] bg-[#244229]/10 dark:bg-white/10 text-[var(--accent-dark)]' : 'border-[#244229]/15 dark:border-white/15 bg-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40 hover:bg-[#eef7eb]/60 dark:hover:bg-white/5'"
+                                    class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition"
+                                >
+                                    {{ $hub['area'] }}
+                                </button>
+                            @endforeach
                         </div>
-                    </div>
 
-                    <div x-show="locationError" x-cloak class="rounded-2xl bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 border border-red-200" x-text="locationError"></div>
-
-                    <div class="mt-auto flex flex-col gap-2 pt-1">
-                        <button
-                            type="button"
-                            @click="confirmMapLocation()"
-                            :disabled="locationSaving || !draftLocation"
-                            class="inline-flex items-center justify-center gap-2 rounded-2xl bg-[var(--accent-dark)] px-4 py-3 text-sm font-bold text-[var(--accent-foreground)] transition hover:opacity-95 disabled:opacity-60 shadow-sm"
-                        >
-                            <i class="fa-solid fa-check"></i>
-                            <span x-text="locationSaving ? 'Saving...' : 'Confirm location'">Confirm location</span>
-                        </button>
-
-                        <template x-if="draftLocation && typeof draftLocation.lat === 'number' && typeof draftLocation.lng === 'number'">
-                            <button
-                                type="button"
-                                @click="confirmMapLocation(); window.MeramotGeolocation.updateUrlWithLocation(draftLocation.lat, draftLocation.lng, 12)"
-                                class="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]"
-                            >
-                                <i class="fa-solid fa-compass"></i>
-                                <span>Find Nearby Shops from Pin</span>
-                            </button>
-                        </template>
+                        <div x-show="hubTab === 'cities'" x-cloak class="flex flex-wrap gap-1.5">
+                            @foreach([
+                                ['area' => 'Agrabad', 'city' => 'Chattogram', 'lat' => 22.3264, 'lng' => 91.8155, 'address' => 'Agrabad Commercial Area, Chattogram 4100'],
+                                ['area' => 'Zindabazar', 'city' => 'Sylhet', 'lat' => 24.8949, 'lng' => 91.8687, 'address' => 'Zindabazar Main Road, Sylhet 3100'],
+                                ['area' => 'Joydebpur', 'city' => 'Gazipur', 'lat' => 23.9999, 'lng' => 90.4203, 'address' => 'Joydebpur Chowrasta, Gazipur'],
+                                ['area' => 'Shaheb Bazar', 'city' => 'Rajshahi', 'lat' => 24.3653, 'lng' => 88.6003, 'address' => 'Shaheb Bazar Zero Point, Rajshahi'],
+                                ['area' => 'Shib Bari', 'city' => 'Khulna', 'lat' => 22.8206, 'lng' => 89.5535, 'address' => 'Shib Bari More, Khulna'],
+                                ['area' => 'Satmatha', 'city' => 'Bogura', 'lat' => 24.8481, 'lng' => 89.3730, 'address' => 'Satmatha Zero Point, Bogura'],
+                                ['area' => 'Ganginarpar', 'city' => 'Mymensingh', 'lat' => 24.7564, 'lng' => 90.4065, 'address' => 'Ganginarpar, Mymensingh'],
+                            ] as $cityHub)
+                                <button
+                                    type="button"
+                                    @click="selectQuickHub(@js($cityHub))"
+                                    :class="draftLocation?.city === @js($cityHub['city']) ? 'border-[var(--accent-dark)] bg-[#244229]/10 dark:bg-white/10 text-[var(--accent-dark)]' : 'border-[#244229]/15 dark:border-white/15 bg-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40 hover:bg-[#eef7eb]/60 dark:hover:bg-white/5'"
+                                    class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition"
+                                >
+                                    {{ $cityHub['city'] }}
+                                </button>
+                            @endforeach
+                        </div>
                     </div>
                 </div>
             </div>
