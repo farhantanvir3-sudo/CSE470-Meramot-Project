@@ -689,6 +689,12 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                 >{{ old('notes', $profile->notes ?? '') }}</textarea>
             </div>
 
+            @include('vendor.partials.fixed-packages-opt-in', [
+                'availablePackages' => $availablePackages ?? collect(),
+                'profile' => $profile ?? null,
+                'targetShop' => ($profile ?? null)?->shops?->sortBy('id')?->first(),
+            ])
+
             <!-- Service Mode Checkboxes -->
             <div class="grid gap-3 sm:grid-cols-3 pt-1">
                 <label class="flex items-center gap-2.5 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] cursor-pointer">

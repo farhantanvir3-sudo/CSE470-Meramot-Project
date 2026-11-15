@@ -267,16 +267,39 @@
         <div class="min-w-0 space-y-6">
 
             @php
-                // Only vendor-published services are listed — nothing is generated from specialty tags.
+                // Show opted-in platform Fixed-Price Repair Packages first, followed by vendor-published shop services.
+                $dbPackages = $shop->servicePackages ?? collect();
                 $dbServices = $shop->services ?? collect();
                 $displayServices = [];
+
+                foreach ($dbPackages as $pkg) {
+                    $displayServices[] = [
+                        'kind' => 'package',
+                        'package_id' => (int) $pkg->id,
+                        'name' => $pkg->title,
+                        'category' => $pkg->device_category,
+                        'turnaround' => (int) $pkg->estimated_turnaround_hours,
+                        'warranty_months' => (int) $pkg->warranty_months,
+                        'pricing_type' => 'FIXED_PACKAGE',
+                        'estimate' => (float) $pkg->fixed_price,
+                        'summary' => $pkg->description ?: implode(' · ', array_slice($pkg->inclusions ?? [], 0, 2)),
+                    ];
+                }
+
                 foreach ($dbServices as $svc) {
                     $hasFixedPrice = $svc->base_price !== null && (float) $svc->base_price > 0;
+                    $rawPricingType = strtoupper((string) ($svc->pricing_type ?: ($hasFixedPrice ? 'FIXED' : 'QUOTE')));
                     $displayServices[] = [
+                        'kind' => 'shop_service',
+                        'package_id' => null,
                         'name' => $svc->name,
+                        'category' => null,
+                        'turnaround' => null,
+                        'warranty_months' => null,
+                        'pricing_type' => $hasFixedPrice ? ($rawPricingType === 'STARTING_FROM' ? 'STARTING_FROM' : 'FIXED') : 'QUOTE',
                         'estimate' => $hasFixedPrice ? (float) $svc->base_price : null,
                         'summary' => $svc->short_description ?: ($svc->description ?: ($hasFixedPrice
-                            ? 'Fixed-price service set by the workshop.'
+                            ? 'Certified workshop service with genuine replacement components, bench testing, and repair warranty.'
                             : 'Priced after diagnosis — request a quote from the workshop.')),
                     ];
                 }
@@ -364,16 +387,38 @@
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-start justify-between gap-4">
                                             <div class="min-w-0">
-                                                <h3 class="text-base md:text-lg font-bold text-[var(--foreground)]">{{ $svcItem['name'] }}</h3>
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <h3 class="text-base md:text-lg font-bold text-[var(--foreground)]">{{ $svcItem['name'] }}</h3>
+                                                    @if(($svcItem['pricing_type'] ?? '') === 'FIXED_PACKAGE')
+                                                        <span class="inline-flex items-center gap-1 rounded-full border border-[#b9d3b6] bg-white px-2.5 py-0.5 text-[10px] font-bold text-[#244229]">
+                                                            <i class="fa-solid fa-box-open text-[9px]"></i>
+                                                            Fixed Package &bull; {{ $svcItem['category'] ?? 'All Devices' }}
+                                                        </span>
+                                                    @endif
+                                                </div>
                                                 <p class="mt-1 text-xs md:text-sm leading-relaxed text-[var(--muted-foreground)]">{{ $svcItem['summary'] }}</p>
+                                                @if(($svcItem['pricing_type'] ?? '') === 'FIXED_PACKAGE')
+                                                    <p class="mt-1.5 text-[11px] font-semibold text-[#3f5946]">
+                                                        <i class="fa-regular fa-clock mr-1"></i>~{{ (int) ($svcItem['turnaround'] ?? 2) }}h turnaround
+                                                        <span class="mx-1.5">&bull;</span>
+                                                        <i class="fa-solid fa-shield-halved mr-1"></i>{{ (int) ($svcItem['warranty_months'] ?? 1) }}-mo warranty
+                                                    </p>
+                                                @endif
                                             </div>
 
                                             <div class="shrink-0 text-right">
                                                 @if($svcItem['estimate'] !== null)
-                                                    <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
-                                                        ৳{{ number_format($svcItem['estimate']) }}
-                                                    </div>
-                                                    <div class="text-[10px] text-[var(--muted-foreground)]">fixed price</div>
+                                                    @if(($svcItem['pricing_type'] ?? '') === 'STARTING_FROM')
+                                                        <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
+                                                            From ৳{{ number_format($svcItem['estimate']) }}
+                                                        </div>
+                                                        <div class="text-[10px] text-[var(--muted-foreground)]">quoted by model</div>
+                                                    @else
+                                                        <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
+                                                            ৳{{ number_format($svcItem['estimate']) }}
+                                                        </div>
+                                                        <div class="text-[10px] text-[var(--muted-foreground)]">fixed price</div>
+                                                    @endif
                                                 @else
                                                     <div class="text-sm font-bold text-[var(--accent-dark)]">Quote on inspection</div>
                                                     <div class="text-[10px] text-[var(--muted-foreground)]">quoted after inspection</div>
@@ -385,14 +430,25 @@
                                     <div class="flex flex-wrap items-center gap-2 w-full md:w-auto md:pl-4">
                                         @if($isOperational && $canCustomerBookOrReview)
                                             @if($shop->accepts_direct_orders && $svcItem['estimate'] !== null)
-                                                <button
-                                                    type="button"
-                                                    onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"
-                                                    class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
-                                                >
-                                                    <i class="fa-solid fa-cart-plus text-xs"></i>
-                                                    <span>Add to Cart</span>
-                                                </button>
+                                                @if(($svcItem['kind'] ?? '') === 'package' && !empty($svcItem['package_id']))
+                                                    <button
+                                                        type="button"
+                                                        onclick="MeramotCart.addDirectPackage({{ $shop->id }}, {{ (int) $svcItem['package_id'] }}, this)"
+                                                        class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
+                                                    >
+                                                        <i class="fa-solid fa-cart-plus text-xs"></i>
+                                                        <span>Add to Cart</span>
+                                                    </button>
+                                                @else
+                                                    <button
+                                                        type="button"
+                                                        onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"
+                                                        class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
+                                                    >
+                                                        <i class="fa-solid fa-cart-plus text-xs"></i>
+                                                        <span>Add to Cart</span>
+                                                    </button>
+                                                @endif
                                             @endif
 
                                             <a

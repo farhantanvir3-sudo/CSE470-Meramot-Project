@@ -842,6 +842,14 @@ Models Touched: User, VendorProfile, RepairShop
                 </div>
             </div>
 
+            <div class="pt-2">
+                @include('vendor.partials.fixed-packages-opt-in', [
+                    'availablePackages' => $availablePackages ?? collect(),
+                    'profile' => $profile ?? null,
+                    'targetShop' => ($profile ?? null)?->shops?->sortBy('id')?->first(),
+                ])
+            </div>
+
             <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-95 text-[var(--accent-foreground)] font-bold py-3 text-xs mt-4 shadow-md transition">
                 {{ $profile ? 'Save & Resubmit Application for Verification' : 'Submit Application for Verification' }}
             </button>

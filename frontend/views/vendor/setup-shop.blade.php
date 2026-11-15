@@ -461,6 +461,15 @@
                     <span class="shrink-0 rounded-full border border-[var(--border)] bg-white px-3 py-1 text-xs font-bold text-[#244229]" x-text="services.length + (services.length === 1 ? ' item' : ' items')"></span>
                 </div>
 
+                <!-- Meramot Platform Fixed-Price Packages Opt-In -->
+                <div class="mt-4">
+                    @include('vendor.partials.fixed-packages-opt-in', [
+                        'availablePackages' => $availablePackages ?? collect(),
+                        'profile' => $profile ?? null,
+                        'targetShop' => $primaryShop ?? null,
+                    ])
+                </div>
+
                 <!-- Suggestions derived from onboarding specialty tags -->
                 <div class="mt-4 rounded-2xl border border-dashed border-[#b9d3b6] bg-white/70 p-4" x-show="suggestions.length > 0">
                     <p class="text-xs font-semibold uppercase tracking-wide text-[#58725f]">

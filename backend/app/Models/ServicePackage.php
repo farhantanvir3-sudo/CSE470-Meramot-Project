@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * ============================================================================
@@ -57,5 +58,10 @@ class ServicePackage extends Model
     public function getIncludedItemsAttribute(): array
     {
         return $this->inclusions ?? [];
+    }
+
+    public function shops(): BelongsToMany
+    {
+        return $this->belongsToMany(RepairShop::class, 'repair_shop_service_package')->withTimestamps();
     }
 }

@@ -121,6 +121,11 @@ class RepairShop extends Model
         return $this->hasMany(ShopService::class, 'shop_id');
     }
 
+    public function servicePackages()
+    {
+        return $this->belongsToMany(ServicePackage::class, 'repair_shop_service_package')->withTimestamps();
+    }
+
     public function carts()
     {
         return $this->hasMany(Cart::class, 'shop_id');

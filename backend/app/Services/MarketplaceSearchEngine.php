@@ -122,8 +122,25 @@ class MarketplaceSearchEngine
         'ubuntu' => ['os', 'linux', 'drivers', 'installation'],
         'format' => ['os', 'windows', 'drivers', 'installation', 'backup'],
         'reinstall' => ['os', 'windows', 'linux', 'drivers', 'installation'],
-        'bios' => ['uefi', 'os', 'drivers', 'firmware'],
-        'backup' => ['recovery', 'data', 'migration', 'encrypted'],
+        'bios' => ['uefi', 'os', 'drivers', 'firmware', 'boot'],
+        'uefi' => ['bios', 'os', 'drivers', 'firmware', 'boot'],
+        'cloning' => ['clone', 'migration', 'partition', 'os', 'storage'],
+        'clone' => ['cloning', 'migration', 'partition', 'os', 'storage'],
+        'migration' => ['clone', 'cloning', 'partition', 'transfer', 'backup'],
+        'partition' => ['cloning', 'clone', 'migration', 'os'],
+        'reflash' => ['flash', 'firmware', 'bootloop', 'os', 'restore'],
+        'fastboot' => ['flash', 'reflash', 'bootloader', 'firmware', 'bootloop'],
+        'dfu' => ['flash', 'reflash', 'firmware', 'restore'],
+        'muffled' => ['clean', 'cleaning', 'mesh', 'lint', 'speaker', 'mic'],
+        'lint' => ['clean', 'cleaning', 'mesh', 'muffled', 'port'],
+        'transfer' => ['backup', 'cloud', 'migration', 'data'],
+        'drift' => ['controller', 'analog', 'calibration', 'cleaning'],
+        'router' => ['wifi', 'mesh', 'network', 'configuration', 'security'],
+        'wifi' => ['router', 'mesh', 'network', 'configuration'],
+        'mesh' => ['wifi', 'router', 'network', 'clean', 'cleaning'],
+        'jam' => ['roller', 'feed', 'paper', 'printer'],
+        'roller' => ['jam', 'feed', 'paper', 'printer'],
+        'backup' => ['recovery', 'data', 'migration', 'encrypted', 'transfer', 'cloud'],
         'recovery' => ['backup', 'data', 'migration', 'encrypted', 'corrupted'],
         'corrupted' => ['recovery', 'backup', 'os', 'troubleshoot'],
         'liquid' => ['water', 'spill', 'ultrasonic', 'corrosion', 'chemical'],
@@ -180,7 +197,9 @@ class MarketplaceSearchEngine
         'diagnostic', 'replacement', 'nvme', 'sata', 'pcie', 'sodimm', 'screwdriver', 'multimeter',
         'adhesive', 'tweezers', 'spudger', 'flux', 'tray', 'sim', 'glass', 'upper', 'outer', 'replacement',
         'sony', 'xperia', 'virus', 'malware', 'adware', 'troubleshoot', 'rooting', 'bootloader', 'firmware',
-        'drivers', 'bios', 'thermal', 'repasting', 'ultrasonic', 'liquid', 'spill', 'backup', 'recovery', 'encrypted',
+        'drivers', 'bios', 'uefi', 'cloning', 'clone', 'migration', 'partition', 'reflash', 'fastboot', 'dfu',
+        'muffled', 'lint', 'transfer', 'drift', 'router', 'wifi', 'mesh', 'jam', 'roller',
+        'thermal', 'repasting', 'ultrasonic', 'liquid', 'spill', 'backup', 'recovery', 'encrypted',
         'protech', 'doctors', 'gadget', 'budget', 'macmaster', 'garage', 'bytesize', 'gulshan',
         'applecore', 'precision', 'mirpur', 'uttara', 'bashundhara', 'farmgate', 'miraz', 'telecom',
         'dhaka', 'chattogram', 'chittagong', 'banani', 'dhanmondi', 'mohakhali', 'agrabad', 'hatirpool',
@@ -858,6 +877,15 @@ class MarketplaceSearchEngine
                             }
                         }
                     });
+                })->orWhereHas('servicePackages', function (Builder $pkgQuery) use ($patterns, $isPg) {
+                    $pkgQuery->where('service_packages.is_active', true)->where(function (Builder $sub) use ($patterns, $isPg) {
+                        foreach (['service_packages.title', 'service_packages.device_category', 'service_packages.description'] as $col) {
+                            $sql = self::columnLikeSql($col, $isPg);
+                            foreach ($patterns as $pat) {
+                                $sub->orWhereRaw($sql, [$pat]);
+                            }
+                        }
+                    });
                 })->orWhereExists(function ($partExists) use ($patterns, $isPg) {
                     $partExists->select(DB::raw(1))
                         ->from('spare_part_listings')
@@ -916,8 +944,8 @@ class MarketplaceSearchEngine
 
         $strictHardwareTokens = [
             'display', 'displays', 'screen', 'screens', 'lcd', 'oled', 'amoled', 'digitizer', 'touchscreen',
-            'battery', 'batteries', 'cell', 'motherboard', 'mainboard', 'ssd', 'nvme', 'ram', 'hdd',
-            'charger', 'chargers', 'adapter', 'adapters', 'magsafe', 'camera', 'lens', 'speaker', 'speakers',
+            'battery', 'batteries', 'cell', 'motherboard', 'mainboard', 'ram',
+            'charger', 'chargers', 'adapter', 'adapters', 'magsafe', 'camera', 'lens',
             'hinge', 'backshell', 'housing', 'trackpad', 'touchpad', 'sim', 'paste', 'flux', 'solder',
             'multimeter', 'screwdriver', 'spudger', 'tweezers',
         ];
@@ -925,12 +953,19 @@ class MarketplaceSearchEngine
             return false;
         }
 
-        // Route peripheral/fan queries to Fixed Packages only when cleaning/maintenance intent is explicit
+        if (!empty(array_intersect($tokens, ['ssd', 'nvme', 'hdd']))) {
+            if (!empty(array_intersect($tokens, ['replacement', 'replace', 'replacing']))
+                || empty(array_intersect($tokens, ['cloning', 'clone', 'migration', 'partition']))) {
+                return false;
+            }
+        }
+
+        // Route peripheral/fan/speaker queries to Fixed Packages only when cleaning/maintenance intent is explicit
         $cleaningOrMaintWords = [
             'clean', 'cleaning', 'cleanup', 'maintenance', 'tune', 'tuneup', 'dust',
-            'thermal', 'repaste', 'repasting', 'sanitize', 'sanitization',
+            'thermal', 'repaste', 'repasting', 'sanitize', 'sanitization', 'mesh', 'lint', 'muffled', 'drift', 'calibration',
         ];
-        if (!empty(array_intersect($tokens, ['keyboard', 'keyboards', 'keycap', 'fan', 'fans', 'mouse', 'mice']))) {
+        if (!empty(array_intersect($tokens, ['keyboard', 'keyboards', 'keycap', 'fan', 'fans', 'mouse', 'mice', 'speaker', 'speakers', 'controller', 'mic', 'charging', 'port', 'ports']))) {
             if (!empty(array_intersect($tokens, ['replacement', 'replace', 'replacing'])) || empty(array_intersect($tokens, $cleaningOrMaintWords))) {
                 return false;
             }
@@ -1066,8 +1101,9 @@ class MarketplaceSearchEngine
 
         $packageKeywords = [
             'virus', 'malware', 'adware', 'spyware', 'antivirus', 'hacked', 'troubleshoot', 'troubleshooting',
-            'root', 'rooting', 'bootloader', 'bootloop', 'unbrick', 'magisk', 'kernelsu', 'rom', 'firmware', 'flash', 'flashing',
+            'root', 'rooting', 'bootloader', 'bootloop', 'unbrick', 'magisk', 'kernelsu', 'rom', 'firmware', 'flash', 'flashing', 'reflash', 'fastboot', 'dfu',
             'os', 'windows', 'linux', 'macos', 'ubuntu', 'bios', 'uefi', 'driver', 'drivers', 'format', 'reinstall',
+            'cloning', 'clone', 'partition', 'office', 'productivity', 'transfer', 'drift', 'calibration', 'router', 'wifi', 'mesh', 'jam', 'roller', 'muffled', 'lint',
             'repasting', 'repaste', 'thermal', 'overheating', 'heating', 'dust', 'clean', 'cleaning', 'cleanup',
             'maintenance', 'tuneup', 'tune', 'preventive', 'sanitize', 'sanitization',
             'cartridge', 'cartridges', 'toner', 'ink', 'refill', 'printhead',

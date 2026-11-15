@@ -312,6 +312,12 @@ class ShopDiscoveryController extends Controller
             'services' => function ($q) {
                 $q->where('is_active', true)->orderBy('sort_order', 'asc');
             },
+            'servicePackages' => function ($q) {
+                $q->where('service_packages.is_active', true)
+                    ->orderByDesc('is_popular')
+                    ->orderBy('fixed_price', 'asc')
+                    ->orderBy('service_packages.id', 'asc');
+            },
         ])->where('slug', $slug)->firstOrFail();
 
         if ($shop->latitude !== null && $shop->longitude !== null) {

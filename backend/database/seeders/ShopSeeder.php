@@ -3,12 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\RepairShop;
+use App\Models\ServicePackage;
 use App\Models\ShopService;
 use App\Models\User;
 use App\Models\VendorProfile;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -1157,6 +1159,13 @@ class ShopSeeder extends Seeder
                 $nidNumber = '199' . str_pad((string) $vendorIndex, 10, '0', STR_PAD_LEFT);
                 $vendorIndex++;
 
+                $specBlob = strtolower($gKey . ' ' . $entry['name'] . ' ' . implode(' ', $entry['specialties']));
+                $isPureHardwareSpecialist = (
+                    str_contains($specBlob, 'bga')
+                    || str_contains($specBlob, 'micro-soldering')
+                    || str_contains($specBlob, 'motherboard')
+                ) && ! preg_match('/\b(os|software|macbook|ssd|ram|upgrade)\b/i', $specBlob);
+
                 $vendorBlueprints[$gKey] = [
                     'user_id' => $entry['owner_user_id'],
                     'shop_name' => $entry['name'],
@@ -1179,6 +1188,8 @@ class ShopSeeder extends Seeder
                     'courier_pickup' => in_array('COURIER_PICKUP', $entry['categories'], true),
                     'in_shop_repair' => in_array('IN_SHOP_REPAIR', $entry['categories'], true),
                     'spare_parts' => in_array('SPARE_PARTS', $entry['categories'], true),
+                    'provides_fixed_packages' => $isPureHardwareSpecialist ? false : null,
+                    'offered_package_ids' => $isPureHardwareSpecialist ? json_encode([]) : null,
                     'commission_rate' => $vendorIndex <= 2
                         ? VendorProfile::DEFAULT_COMMISSION_RATE
                         : ([6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50][$vendorIndex % 8]),
@@ -1204,7 +1215,7 @@ class ShopSeeder extends Seeder
         foreach ($vendorBlueprints as $gKey => $bp) {
             $noteTag = 'group_key:' . $gKey;
             if (isset($existingByGroupKey[$noteTag])) {
-                VendorProfile::where('id', $existingByGroupKey[$noteTag])->update([
+                $updateFields = [
                     'user_id' => $bp['user_id'],
                     'shop_name' => $bp['shop_name'],
                     'brand_name' => $bp['brand_name'],
@@ -1218,7 +1229,13 @@ class ShopSeeder extends Seeder
                     'reviewed_by_admin_id' => $meramotAdmin?->id,
                     'reviewed_at' => $reviewedAt,
                     'updated_at' => $now,
-                ]);
+                ];
+                if ($bp['provides_fixed_packages'] === false) {
+                    $updateFields['provides_fixed_packages'] = false;
+                    $updateFields['offered_package_ids'] = json_encode([]);
+                }
+
+                VendorProfile::where('id', $existingByGroupKey[$noteTag])->update($updateFields);
             } else {
                 $profilesToInsert[] = $bp;
             }
@@ -1393,6 +1410,22 @@ class ShopSeeder extends Seeder
                 ['shop_id', 'user_id'],
                 ['role', 'is_active', 'updated_at']
             );
+        }
+
+        if (Schema::hasTable('repair_shop_service_package')) {
+            $optedOutShopIds = RepairShop::query()
+                ->whereHas('vendorProfile', fn ($q) => $q->where('provides_fixed_packages', false))
+                ->pluck('id');
+
+            if ($optedOutShopIds->isNotEmpty()) {
+                DB::table('repair_shop_service_package')
+                    ->whereIn('repair_shop_id', $optedOutShopIds->all())
+                    ->delete();
+            }
+
+            if (ServicePackage::where('is_active', true)->exists()) {
+                (new ServicePackageSeeder())->syncSeededShopCapabilities();
+            }
         }
     }
 

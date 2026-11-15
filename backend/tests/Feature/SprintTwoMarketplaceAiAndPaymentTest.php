@@ -147,6 +147,7 @@ class SprintTwoMarketplaceAiAndPaymentTest extends TestCase
         $shop = RepairShop::where('is_public', true)
             ->where('accepts_direct_orders', true)
             ->where('supports_pickup', true)
+            ->whereHas('servicePackages', fn ($q) => $q->where('service_packages.id', $pkg->id))
             ->firstOrFail();
 
         // Add package to Quickmatch Service Cart

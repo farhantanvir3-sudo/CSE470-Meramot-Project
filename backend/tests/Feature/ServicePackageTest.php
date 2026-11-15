@@ -888,4 +888,185 @@ class ServicePackageTest extends TestCase
             'type' => 'direct_order_declined',
         ]);
     }
+
+    /** @test */
+    public function it_seeds_20_model_independent_packages_and_specialty_aligned_capabilities()
+    {
+        $laptopVendor = User::factory()->create(['role' => 'vendor', 'is_active' => true]);
+        $printerVendor = User::factory()->create(['role' => 'vendor', 'is_active' => true]);
+
+        $laptopVp = VendorProfile::create([
+            'user_id' => $laptopVendor->id,
+            'shop_name' => 'ThinkCare Laptop Lab',
+            'business_license_no' => 'TRAD/DNCC/101010',
+            'nid_number' => '1991223344556',
+            'verification_status' => 'approved',
+            'notes' => 'group_key:test_laptop_only',
+            'city' => 'Dhaka',
+            'area' => 'Banani',
+            'is_setup_completed' => true,
+        ]);
+        $printerVp = VendorProfile::create([
+            'user_id' => $printerVendor->id,
+            'shop_name' => 'ColorJet Printer Care',
+            'business_license_no' => 'TRAD/DNCC/202020',
+            'nid_number' => '1991223344557',
+            'verification_status' => 'approved',
+            'notes' => 'group_key:test_printer_only',
+            'city' => 'Dhaka',
+            'area' => 'Mirpur',
+            'is_setup_completed' => true,
+        ]);
+
+        $laptopShop = RepairShop::factory()->create([
+            'vendor_profile_id' => $laptopVp->id,
+            'name' => 'ThinkCare Laptop Lab',
+            'slug' => 'thinkcare-laptop-lab',
+            'city' => 'Dhaka',
+            'specialties' => ['Laptop OS Tuning', 'Thermal Cleaning'],
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+        ]);
+        $printerShop = RepairShop::factory()->create([
+            'vendor_profile_id' => $printerVp->id,
+            'name' => 'ColorJet Printer Care',
+            'slug' => 'colorjet-printer-care',
+            'city' => 'Dhaka',
+            'specialties' => ['Printer Cartridge Refill', 'Paper Roller Service'],
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+        ]);
+
+        $this->seed(\Database\Seeders\ServicePackageSeeder::class);
+
+        $activePackages = ServicePackage::where('is_active', true)->get();
+        $this->assertCount(20, $activePackages);
+
+        foreach ($activePackages as $pkg) {
+            $this->assertDoesNotMatchRegularExpression(
+                '/\b(display|battery|motherboard|port\s+microsoldering|keyboard\s+replacement)\b/i',
+                $pkg->title
+            );
+        }
+
+        $winPkg = $activePackages->firstWhere('title', 'Windows & OS Clean Installation');
+        $printerPkg = $activePackages->firstWhere('title', 'Printer Cartridge Refill & Printhead Maintenance');
+        $this->assertNotNull($winPkg);
+        $this->assertNotNull($printerPkg);
+
+        $this->assertDatabaseHas('repair_shop_service_package', [
+            'repair_shop_id' => $laptopShop->id,
+            'service_package_id' => $winPkg->id,
+        ]);
+        $this->assertDatabaseHas('repair_shop_service_package', [
+            'repair_shop_id' => $printerShop->id,
+            'service_package_id' => $printerPkg->id,
+        ]);
+        $this->assertDatabaseMissing('repair_shop_service_package', [
+            'repair_shop_id' => $printerShop->id,
+            'service_package_id' => $winPkg->id,
+        ]);
+    }
+
+    /** @test */
+    public function it_quickmatches_only_capable_workshops_and_filters_catalog_dropdowns()
+    {
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+
+        $pkgTargeted = ServicePackage::factory()->create([
+            'title' => 'Dual-Boot Linux & Windows Environment Setup',
+            'device_category' => 'Laptop & PC',
+            'fixed_price' => 1100,
+            'is_active' => true,
+        ]);
+        $pkgOther = ServicePackage::factory()->create([
+            'title' => 'Printer Cartridge Refill & Printhead Maintenance',
+            'device_category' => 'Printer',
+            'fixed_price' => 650,
+            'is_active' => true,
+        ]);
+
+        // Closer & higher rated, but ONLY provides $pkgOther (NOT $pkgTargeted)
+        $nearIncapableShop = RepairShop::factory()->create([
+            'name' => 'Near Print Only Shop',
+            'city' => 'Dhaka',
+            'area' => 'Banani',
+            'latitude' => 23.7940,
+            'longitude' => 90.4068,
+            'rating' => 5.0,
+            'review_count' => 80,
+            'is_featured' => true,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+        ]);
+        $nearIncapableShop->servicePackages()->sync([$pkgOther->id]);
+
+        // Slightly farther, lower rating, but DOES provide $pkgTargeted
+        $capableShop = RepairShop::factory()->create([
+            'name' => 'Capable Linux & OS Lab',
+            'city' => 'Dhaka',
+            'area' => 'Gulshan',
+            'latitude' => 23.7995,
+            'longitude' => 90.4140,
+            'rating' => 4.2,
+            'review_count' => 12,
+            'is_featured' => false,
+            'is_active' => true,
+            'is_public' => true,
+            'setup_complete' => true,
+            'accepts_direct_orders' => true,
+        ]);
+        $capableShop->servicePackages()->sync([$pkgTargeted->id]);
+
+        // Catalog dropdown for $pkgTargeted must contain Capable Lab, not Near Print Only Shop
+        $catalogResp = $this->actingAs($customer)
+            ->withSession([
+                'customer_location' => [
+                    'city' => 'Dhaka',
+                    'area' => 'Banani',
+                    'lat' => 23.7937,
+                    'lng' => 90.4066,
+                    'has_coordinates' => true,
+                    'is_default_fallback' => false,
+                ],
+            ])
+            ->get('/packages/catalog');
+        $catalogResp->assertOk();
+        $packageShopsMap = $catalogResp->viewData('packageShopsMap');
+        $this->assertTrue($packageShopsMap[$pkgTargeted->id]->contains('id', $capableShop->id));
+        $this->assertFalse($packageShopsMap[$pkgTargeted->id]->contains('id', $nearIncapableShop->id));
+
+        // Explicit incapable shop pick is rejected cleanly with 422
+        $this->actingAs($customer)
+            ->postJson('/cart/add', [
+                'package_id' => $pkgTargeted->id,
+                'shop_id' => $nearIncapableShop->id,
+                'customer_city' => 'Dhaka',
+                'customer_lat' => 23.7937,
+                'customer_lng' => 90.4066,
+            ])
+            ->assertStatus(422)
+            ->assertJson(['success' => false]);
+
+        // Auto-match skips nearer incapable workshop and assigns Capable Linux & OS Lab
+        $autoResp = $this->actingAs($customer)
+            ->postJson('/cart/add', [
+                'package_id' => $pkgTargeted->id,
+                'customer_city' => 'Dhaka',
+                'customer_lat' => 23.7937,
+                'customer_lng' => 90.4066,
+            ]);
+        $autoResp->assertOk()
+            ->assertJson([
+                'success' => true,
+                'shop_id' => $capableShop->id,
+                'shop_name' => 'Capable Linux & OS Lab',
+            ]);
+    }
 }
