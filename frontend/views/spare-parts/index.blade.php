@@ -70,6 +70,10 @@
                     <span>/</span>
                     <span class="text-[var(--foreground)] font-semibold truncate">{{ $selectedSubCategoryLabel }}</span>
                 @endif
+                @if($selectedBrand !== 'All')
+                    <span>/</span>
+                    <span class="text-[var(--foreground)] font-semibold truncate">{{ $selectedBrand }}</span>
+                @endif
             </nav>
             <h1 class="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight text-[var(--foreground)] leading-tight">
                 Spare Parts Marketplace
@@ -298,15 +302,19 @@
     @php
         $directoryTree = $directoryTree ?? [];
         $defaultOpenRoots = collect($directoryTree)->pluck('key')->values()->all();
-        $defaultOpenBrandsCat = ($selectedBrand !== 'All' && $selectedCategory !== 'All') ? $selectedCategory : '';
+        $defaultOpenSub = ($selectedCategory !== 'All' && $selectedSubCategory !== '') ? ($selectedCategory . '::' . $selectedSubCategory) : '';
+        $defaultOpenBrandsKey = ($selectedCategory !== 'All' && $selectedBrand !== 'All')
+            ? ($selectedSubCategory !== '' ? ($selectedCategory . '::' . $selectedSubCategory) : ($selectedCategory . '::__cat'))
+            : '';
     @endphp
 
-    {{-- Main 2-Column Catalog Layout: Minimalistic Hierarchical Folder Directory + Product Grid --}}
+    {{-- Main 2-Column Catalog Layout: Minimalistic Hierarchical Categories Tree + Product Grid --}}
     <div x-data="{
             mobileCatsOpen: false,
             openRoots: @js($defaultOpenRoots),
             openCat: @js($selectedCategory !== 'All' ? $selectedCategory : ''),
-            openBrandsCat: @js($defaultOpenBrandsCat),
+            openSub: @js($defaultOpenSub),
+            openBrandsKey: @js($defaultOpenBrandsKey),
             toggleRoot(k) {
                 if (this.openRoots.includes(k)) {
                     this.openRoots = this.openRoots.filter(x => x !== k);
@@ -317,27 +325,27 @@
          }"
          class="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4 items-start">
 
-        {{-- Mobile Collapsible Folder Directory Trigger --}}
+        {{-- Mobile Collapsible Categories Drawer Trigger --}}
         <div class="lg:hidden">
             <button type="button"
                     @click="mobileCatsOpen = !mobileCatsOpen"
                     class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/90 dark:bg-[var(--card)] border border-[var(--border)] text-xs font-semibold text-[var(--foreground)]">
                 <span class="inline-flex items-center gap-2">
                     <svg class="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                    <span>Directory ({{ count($directoryTree) }} groups)</span>
+                    <span>Categories ({{ count($directoryTree) }} groups)</span>
                 </span>
                 <span class="text-[11px] text-[var(--muted-foreground)]" x-text="mobileCatsOpen ? 'Hide ▴' : 'Open ▾'">Open ▾</span>
             </button>
         </div>
 
-        {{-- Left Minimalistic Hierarchical Folder Directory --}}
+        {{-- Left Minimalistic Hierarchical Categories Sidebar --}}
         <aside :class="mobileCatsOpen ? 'block' : 'hidden lg:block'"
-               aria-label="Parts directory tree"
+               aria-label="Parts categories tree"
                class="rounded-xl bg-white/85 dark:bg-[var(--card)] border border-slate-200/85 dark:border-[var(--border)] overflow-hidden">
             <div class="px-3 py-2 border-b border-slate-200/75 dark:border-[var(--border)] flex items-center justify-between bg-slate-50/70 dark:bg-transparent">
                 <div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[var(--muted-foreground)]">
                     <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                    <span>Directory</span>
+                    <span>CATEGORIES</span>
                 </div>
                 @if($deviceType !== 'all' || $selectedCategory !== 'All' || $selectedSubCategory !== '' || $selectedBrand !== 'All')
                     <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => null, 'sub_category' => null, 'brand' => null]) }}"
@@ -417,48 +425,97 @@
                                         </a>
                                     </div>
 
-                                    {{-- Level 3: Sub-Categories + Collapsible Brands Sub-Folder --}}
+                                    {{-- Level 3: Sub-Categories -> Level 4: Brands (Last Sub-Category) -> Level 5: Brand --}}
                                     @if($hasChildren)
                                         <div x-show="openCat === @js($catName)"
                                              x-cloak
-                                             class="ml-3 pl-2.5 border-l border-slate-200/80 dark:border-[var(--border)] space-y-0.5 py-0.5">
+                                             class="ml-3 pl-2 border-l border-slate-200/80 dark:border-[var(--border)] space-y-0.5 py-0.5">
                                             @foreach($catNode['sub_categories'] as $subNode)
                                                 @php
                                                     $subKey = $subNode['key'];
+                                                    $subCompositeKey = $catName . '::' . $subKey;
+                                                    $subBrands = $subNode['brands'] ?? [];
                                                     $isSubSelected = $isCatSelected && ($selectedSubCategory === $subKey);
+                                                    $isSubDirectActive = $isSubSelected && $selectedBrand === 'All';
                                                 @endphp
-                                                <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => $catName, 'sub_category' => $isSubSelected ? null : $subKey, 'brand' => null]) }}"
-                                                   class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] transition {{ $isSubSelected ? 'bg-emerald-900/10 text-emerald-950 font-semibold dark:bg-emerald-900/40 dark:text-emerald-200' : 'text-slate-600 dark:text-[var(--muted-foreground)] hover:text-slate-950 hover:bg-slate-100/70 dark:hover:bg-white/5' }}">
-                                                    <span class="inline-flex items-center gap-1.5 min-w-0">
-                                                        <span class="text-slate-300 font-mono text-[10px] select-none shrink-0">└</span>
-                                                        <span class="truncate">{{ $subNode['label'] }}</span>
-                                                    </span>
-                                                    <span class="text-[10px] text-slate-400 tabular-nums shrink-0">{{ number_format($subNode['count']) }}</span>
-                                                </a>
+                                                <div class="space-y-0.5">
+                                                    <div class="flex items-center gap-1 px-1 py-0.5 rounded transition {{ $isSubSelected ? 'bg-emerald-900/10 text-emerald-950 font-semibold dark:bg-emerald-900/40 dark:text-emerald-200' : 'text-slate-600 dark:text-[var(--muted-foreground)] hover:text-slate-950 hover:bg-slate-100/70 dark:hover:bg-white/5' }}">
+                                                        @if(!empty($subBrands))
+                                                            <button type="button"
+                                                                    @click="openSub = (openSub === @js($subCompositeKey) ? '' : @js($subCompositeKey))"
+                                                                    aria-label="Toggle brands in {{ $subNode['label'] }}"
+                                                                    class="w-3.5 h-3.5 flex items-center justify-center text-slate-400 hover:text-slate-700 shrink-0 transition-transform"
+                                                                    :class="openSub === @js($subCompositeKey) ? 'rotate-90' : ''">
+                                                                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg>
+                                                            </button>
+                                                        @else
+                                                            <span class="w-3.5 shrink-0"></span>
+                                                        @endif
+
+                                                        <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => $catName, 'sub_category' => $isSubDirectActive ? null : $subKey, 'brand' => null]) }}"
+                                                           class="flex-1 min-w-0 flex items-center justify-between gap-1 text-[11px]">
+                                                            <span class="truncate">{{ $subNode['label'] }}</span>
+                                                            <span class="text-[10px] text-slate-400 tabular-nums shrink-0">{{ number_format($subNode['count']) }}</span>
+                                                        </a>
+                                                    </div>
+
+                                                    @if(!empty($subBrands))
+                                                        <div x-show="openSub === @js($subCompositeKey)"
+                                                             x-cloak
+                                                             class="ml-3 pl-2 border-l border-slate-200/75 dark:border-[var(--border)] space-y-0.5 py-0.5">
+                                                            <button type="button"
+                                                                    @click="openBrandsKey = (openBrandsKey === @js($subCompositeKey) ? '' : @js($subCompositeKey))"
+                                                                    class="w-full flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 dark:hover:bg-white/5 transition">
+                                                                <span class="inline-flex items-center gap-1.5 min-w-0">
+                                                                    <svg class="w-3 h-3 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                                                    <span class="font-medium truncate">Brands ({{ count($subBrands) }})</span>
+                                                                </span>
+                                                                <span class="text-[10px] text-slate-400" x-text="openBrandsKey === @js($subCompositeKey) ? '▾' : '▸'">▸</span>
+                                                            </button>
+
+                                                            <div x-show="openBrandsKey === @js($subCompositeKey)"
+                                                                 x-cloak
+                                                                 class="ml-2.5 pl-2 border-l border-slate-200/75 dark:border-[var(--border)] space-y-0.5 mt-0.5">
+                                                                @foreach($subBrands as $brandNode)
+                                                                    @php
+                                                                        $bName = $brandNode['name'];
+                                                                        $isBrandSelected = $isSubSelected && strcasecmp($selectedBrand, $bName) === 0;
+                                                                    @endphp
+                                                                    <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => $catName, 'sub_category' => $subKey, 'brand' => $isBrandSelected ? null : $bName]) }}"
+                                                                       class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] transition {{ $isBrandSelected ? 'bg-emerald-900 text-white font-semibold' : 'text-slate-500 hover:text-slate-950 hover:bg-slate-100/70 dark:text-[var(--muted-foreground)] dark:hover:bg-white/5' }}">
+                                                                        <span class="truncate">{{ $bName }}</span>
+                                                                        <span class="text-[10px] {{ $isBrandSelected ? 'text-emerald-100' : 'text-slate-400' }} tabular-nums shrink-0">{{ number_format($brandNode['count']) }}</span>
+                                                                    </a>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             @endforeach
 
-                                            @if(!empty($catNode['brands']))
+                                            @if(empty($catNode['sub_categories']) && !empty($catNode['brands']))
+                                                @php $catBrandKey = $catName . '::__cat'; @endphp
                                                 <div class="pt-0.5">
                                                     <button type="button"
-                                                            @click="openBrandsCat = (openBrandsCat === @js($catName) ? '' : @js($catName))"
-                                                            class="w-full flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 transition">
+                                                            @click="openBrandsKey = (openBrandsKey === @js($catBrandKey) ? '' : @js($catBrandKey))"
+                                                            class="w-full flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 dark:hover:bg-white/5 transition">
                                                         <span class="inline-flex items-center gap-1.5 min-w-0">
                                                             <svg class="w-3 h-3 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                                                             <span class="font-medium truncate">Brands ({{ count($catNode['brands']) }})</span>
                                                         </span>
-                                                        <span class="text-[10px] text-slate-400" x-text="openBrandsCat === @js($catName) ? '▾' : '▸'">▸</span>
+                                                        <span class="text-[10px] text-slate-400" x-text="openBrandsKey === @js($catBrandKey) ? '▾' : '▸'">▸</span>
                                                     </button>
 
-                                                    <div x-show="openBrandsCat === @js($catName)"
+                                                    <div x-show="openBrandsKey === @js($catBrandKey)"
                                                          x-cloak
                                                          class="ml-2.5 pl-2 border-l border-slate-200/75 dark:border-[var(--border)] space-y-0.5 mt-0.5">
                                                         @foreach($catNode['brands'] as $brandNode)
                                                             @php
                                                                 $bName = $brandNode['name'];
-                                                                $isBrandSelected = $isCatSelected && strcasecmp($selectedBrand, $bName) === 0;
+                                                                $isBrandSelected = $isCatSelected && $selectedSubCategory === '' && strcasecmp($selectedBrand, $bName) === 0;
                                                             @endphp
                                                             <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => $catName, 'sub_category' => null, 'brand' => $isBrandSelected ? null : $bName]) }}"
-                                                               class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] transition {{ $isBrandSelected ? 'bg-emerald-900 text-white font-semibold' : 'text-slate-500 hover:text-slate-950 hover:bg-slate-100/70 dark:text-[var(--muted-foreground)]' }}">
+                                                               class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] transition {{ $isBrandSelected ? 'bg-emerald-900 text-white font-semibold' : 'text-slate-500 hover:text-slate-950 hover:bg-slate-100/70 dark:text-[var(--muted-foreground)] dark:hover:bg-white/5' }}">
                                                                 <span class="truncate">{{ $bName }}</span>
                                                                 <span class="text-[10px] {{ $isBrandSelected ? 'text-emerald-100' : 'text-slate-400' }} tabular-nums shrink-0">{{ number_format($brandNode['count']) }}</span>
                                                             </a>

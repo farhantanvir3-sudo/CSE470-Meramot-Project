@@ -383,12 +383,16 @@ class SparePartSeeder extends Seeder
                 $sku = sprintf('%s-%d-S%d', $skuPrefix, (int) ($item['ext_id'] ?? $item['etel_id'] ?? ($idx + 1000)), $shop->id);
 
                 $rawImg = trim((string) ($item['image_url'] ?? ''));
-                $isBrokenImg = $rawImg === ''
-                    || (!str_starts_with($rawImg, 'http') && !str_starts_with($rawImg, '/images/'))
-                    || ($rawImg === '/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp' && stripos($cleanTitle, 'S21 FE') === false);
-                $resolvedImageUrl = $isBrokenImg
-                    ? \App\Models\SparePartListing::resolveCategoryFallbackImage($normalizedCategory, $cleanTitle, $resolvedBrand)
-                    : $rawImg;
+                $itemSrc = (string) ($item['src'] ?? '');
+                $itemExtId = (string) ($item['ext_id'] ?? $item['etel_id'] ?? '');
+                $resolvedImageUrl = \App\Models\SparePartListing::resolveListingImageUrl(
+                    $rawImg,
+                    $normalizedCategory,
+                    $cleanTitle,
+                    $resolvedBrand,
+                    $itemSrc,
+                    $itemExtId
+                );
 
                 $rawGallery = is_array($item['gallery_urls'] ?? null) && !empty($item['gallery_urls'])
                     ? $item['gallery_urls']
@@ -398,7 +402,7 @@ class SparePartSeeder extends Seeder
                     $gStr = trim((string) $gEntry);
                     $gBroken = $gStr === ''
                         || (!str_starts_with($gStr, 'http') && !str_starts_with($gStr, '/images/'))
-                        || ($gStr === '/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp' && stripos($cleanTitle, 'S21 FE') === false);
+                        || \App\Models\SparePartListing::isMismatchedOrInvalidImageUrl($gStr, $normalizedCategory, $cleanTitle, $resolvedBrand);
                     $gallery[] = $gBroken ? $resolvedImageUrl : $gStr;
                 }
                 $gallery = array_values(array_unique(array_filter($gallery)));

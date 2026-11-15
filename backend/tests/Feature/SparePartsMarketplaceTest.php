@@ -862,11 +862,12 @@ class SparePartsMarketplaceTest extends TestCase
             'is_active' => true,
         ]);
 
-        // 4. Unsearched index shows directory folders, both lowest & highest sort options, no redundant badges, and defaults 0.00 shop rating to 4.8
+        // 4. Unsearched index shows CATEGORIES sidebar, both lowest & highest sort options, no redundant badges, and defaults 0.00 shop rating to 4.8
         $indexRes = $this->get('/spare-parts');
         $indexRes->assertStatus(200)
             ->assertSee('Catalog')
-            ->assertSee('Directory')
+            ->assertSee('CATEGORIES')
+            ->assertDontSee('<span>Directory</span>', false)
             ->assertSee('Tools &amp; Soldering', false)
             ->assertSee('Price + Shipping: lowest first (Best Deal)')
             ->assertSee('Item Price: lowest first')
@@ -895,5 +896,202 @@ class SparePartsMarketplaceTest extends TestCase
         $this->assertTrue(
             array_search('Samsung S22 Super AMOLED Display Panel', $highTitles, true) < array_search('Samsung J7 IPS LCD Screen', $highTitles, true)
         );
+    }
+
+    /** @test */
+    public function image_validation_rejects_mismatched_urls_and_resolves_verified_clean_studio_assets(): void
+    {
+        // Cross-brand, wrong-component, template/placeholder & legacy S21 FE fallbacks must be rejected
+        $this->assertTrue(SparePartListing::isMismatchedOrInvalidImageUrl(
+            '/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp',
+            'Adapter & Charger',
+            '102W 15V 6.33A Charger for Microsoft Surface Book 3',
+            'Microsoft'
+        ));
+        $this->assertTrue(SparePartListing::isMismatchedOrInvalidImageUrl(
+            'https://etel.com.bd/wp-content/uploads/2026/08/Sony-Xperia-1-V-Backshell.webp',
+            'Display & Touch',
+            'Sony Xperia 1 V Display',
+            'Sony'
+        ));
+        $this->assertTrue(SparePartListing::isMismatchedOrInvalidImageUrl(
+            'https://etel.com.bd/wp-content/uploads/2025/01/Huawei-Mate-70-Pro-Display-1.webp',
+            'Battery',
+            'Huawei Mate 70 Pro Battery',
+            'Huawei'
+        ));
+        $this->assertTrue(SparePartListing::isMismatchedOrInvalidImageUrl(
+            'https://etel.com.bd/wp-content/uploads/2025/01/oneplus-9rt-original-display.jpg',
+            'Display & Touch',
+            'Original Realme GT Neo2T Display',
+            'Realme'
+        ));
+        $this->assertTrue(SparePartListing::isMismatchedOrInvalidImageUrl(
+            'https://laptopworlddhaka.com/wp-content/uploads/2022/10/products-frame-2.png',
+            'Laptop Battery',
+            'F3YGT DELL LAPTOP ORIGINAL BATTERY',
+            'Dell'
+        ));
+        $this->assertTrue(SparePartListing::isMismatchedOrInvalidImageUrl(
+            'https://laptopbd.net/wp-content/uploads/2025/12/Untitled-design-1.jpg',
+            'Laptop Keyboard',
+            'ACER 4710 Laptop Keyboard',
+            'Acer'
+        ));
+        $this->assertTrue(SparePartListing::isMismatchedOrInvalidImageUrl(
+            'https://dearit.com.bd/assets/c/dspythone3/placeholder-500x500fill.webp',
+            'Laptop Battery',
+            'Lenovo ThinkPad T430s Laptop Battery',
+            'Lenovo'
+        ));
+
+        // Legitimate back glass + clean studio asset URLs pass validation cleanly
+        $this->assertFalse(SparePartListing::isMismatchedOrInvalidImageUrl(
+            'https://etel.com.bd/wp-content/uploads/2025/01/iPhone-13-Pro-Max-Backshell.webp',
+            'Backshell & Housing',
+            'iPhone 13 Pro Max Back Glass',
+            'Apple'
+        ));
+
+        // Clean studio assets exist on disk and resolve accurately by part sub-type
+        $surfaceChargerUrl = SparePartListing::resolveListingImageUrl(
+            '/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp',
+            'Adapter & Charger',
+            '102W 15V 6.33A Charger for Microsoft Surface Book 3',
+            'Microsoft'
+        );
+        $this->assertSame('/images/spare-parts/clean/charger-surface-magnetic.webp', $surfaceChargerUrl);
+        $this->assertFileExists(public_path(ltrim($surfaceChargerUrl, '/')));
+
+        $ramUrl = SparePartListing::resolveListingImageUrl(
+            '/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp',
+            'SSD, RAM & Storage',
+            'DDR3L 4GB 1333MHz SemsoTai Laptop RAM',
+            'SemsoTai'
+        );
+        $this->assertSame('/images/spare-parts/clean/ram-sodimm-module.webp', $ramUrl);
+        $this->assertFileExists(public_path(ltrim($ramUrl, '/')));
+
+        // All 11 curated Tools, Consumables & Soldering listings resolve to distinct clean studio assets on disk
+        $toolTitles = [
+            'Kaisi K-8126 126-in-1 Magnetic Precision Repair Screwdriver Kit',
+            'Quick 861DW 1000W Hot Air BGA Rework & Soldering Station',
+            'Mechanic UV50 BGA Solder Flux Paste (50g Jar)',
+            'Mechanic 0.3mm Lead-Free Rosin Core Solder Wire Roll',
+            'UNI-T UT89X True RMS Digital Multimeter for PCB Diagnostics',
+            'Zhanlida B-7000 Frame & Display Bonding Adhesive (110ml)',
+            'Relife RL-049B Anti-Static IC & Motherboard Pry Spudger Set',
+            'Sunshine S-918E LCD & OLED Screen Heating Separator Pad',
+            'ESD-15 Stainless Steel Anti-Static Precision Micro Tweezers Set',
+            'Mechanic S-160 Heat-Resistant Silicone Soldering Repair Mat',
+            '3M 300LSE Double-Sided Display & Battery Mounting Tape Roll',
+        ];
+        $resolvedTools = [];
+        foreach ($toolTitles as $toolTitle) {
+            $url = SparePartListing::resolveListingImageUrl('', 'Tools, Consumables & Soldering', $toolTitle, 'Universal', 'meramot_tools');
+            $this->assertStringStartsWith('/images/spare-parts/clean/tool-', $url);
+            $this->assertFileExists(public_path(ltrim($url, '/')));
+            $resolvedTools[] = $url;
+        }
+        $this->assertCount(11, array_unique($resolvedTools));
+
+        // Comma-truncated DearIT image recovers local WebP on disk when present
+        $dearitUrl = SparePartListing::resolveListingImageUrl(
+            '-l20d4p71-laptop-battery-500x500fill.webp?v=1793617423',
+            'Laptop Battery',
+            'Original Lenovo ThinkPad X1 Carbon L20C4P71, L20D4P71 Laptop Battery',
+            'Lenovo',
+            'dearit',
+            '8160'
+        );
+        $this->assertSame('/images/spare-parts/dearit/dearit-8160.webp', $dearitUrl);
+        $this->assertFileExists(public_path(ltrim($dearitUrl, '/')));
+
+        // Category misfiling fixes
+        $this->assertSame('Backshell & Housing', SparePartListing::normalizePartCategory('Battery', 'Oppo F33 Backshell'));
+        $this->assertSame('SIM Tray & Small Parts', SparePartListing::normalizePartCategory('Charging Port & Flex', 'Samsung Galaxy S25 Plus SIM Tray'));
+        $this->assertSame('Charging Port & Flex', SparePartListing::normalizePartCategory('Battery', 'Tecno Camon 30 Charging Logic'));
+        $this->assertSame('Battery', SparePartListing::normalizePartCategory('Display & Touch', 'Huawei Pura 90 Pro Battery'));
+    }
+
+    /** @test */
+    public function categories_sidebar_nests_brands_inside_sub_categories_and_rejects_rechargeable_fans(): void
+    {
+        // 1. Consumer rechargeable desk/mini fans are rejected while laptop cooling fans pass
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('JYSUPER JY-2218 Rechargeable Fan', 'Laptop Cooling Fan', 1500.0));
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('DP-7639 4000mAh Rechargeable Fan', 'Laptop Cooling Fan', 1500.0));
+        $this->assertFalse(SparePartListing::isWholeDeviceOrInvalidSeedItem('ASUS ROG Strix G512 CPU+GPU Cooling Fan', 'Laptop Cooling Fan', 1500.0));
+
+        // 2. Every sub-category label is concise (<= 26 chars) and free of brand/model-series names
+        $forbiddenBrandSeries = ['iPhone', 'iPad', 'Galaxy', 'Pixel', 'OnePlus', 'Xiaomi', 'Oppo', 'Vivo', 'Realme', 'ThinkPad', 'Latitude', 'EliteBook', 'MacBook', 'Surface', 'ZenBook', 'XPS', 'Pavilion', 'IdeaPad', 'Inspiron', 'MagSafe'];
+        foreach (\App\Http\Controllers\SparePartController::directorySchema() as $rootDef) {
+            foreach ($rootDef['categories'] as $catMeta) {
+                foreach ($catMeta['sub_categories'] as $subLabel) {
+                    $this->assertLessThanOrEqual(26, strlen($subLabel), "Sub-category label '{$subLabel}' exceeds 26 chars");
+                    foreach ($forbiddenBrandSeries as $term) {
+                        $this->assertStringNotContainsStringIgnoringCase($term, $subLabel, "Sub-category label '{$subLabel}' must not contain brand/series '{$term}'");
+                    }
+                }
+            }
+        }
+
+        // 3. Nested Display & Touch > AMOLED & OLED Screens > Brands > Google isolates Google AMOLED screens
+        [, $profile, $shop] = $this->createApprovedVendorWithShop();
+
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'vendor_profile_id' => $profile->id,
+            'title' => 'Google Pixel 7 Pro AMOLED Display',
+            'slug' => 'google-pixel-7-pro-amoled-display-' . uniqid(),
+            'product_group_key' => 'pixel-7-pro-amoled',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Google',
+            'is_active' => true,
+            'stock_quantity' => 5,
+            'base_price' => 12500,
+            'normal_price' => 12500,
+        ]);
+
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'vendor_profile_id' => $profile->id,
+            'title' => 'Samsung S22 Super AMOLED Panel',
+            'slug' => 'samsung-s22-super-amoled-panel-' . uniqid(),
+            'product_group_key' => 's22-amoled',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Samsung',
+            'is_active' => true,
+            'stock_quantity' => 5,
+            'base_price' => 11500,
+            'normal_price' => 11500,
+        ]);
+
+        $charger = SparePartListing::create([
+            'shop_id' => $shop->id,
+            'vendor_profile_id' => $profile->id,
+            'title' => '102W 15V 6.33A Charger for Microsoft Surface Book 3',
+            'slug' => '102w-15v-surface-book-3-charger-' . uniqid(),
+            'product_group_key' => 'surface-book-3-102w',
+            'part_category' => 'Adapter & Charger',
+            'brand' => 'Microsoft',
+            'is_active' => true,
+            'stock_quantity' => 4,
+            'base_price' => 3450,
+            'normal_price' => 3450,
+        ]);
+
+        $res = $this->get('/spare-parts?part_category=' . urlencode('Display & Touch') . '&sub_category=amoled_oled&brand=Google');
+        $res->assertStatus(200)
+            ->assertSee('CATEGORIES')
+            ->assertSee('AMOLED &amp; OLED Screens', false)
+            ->assertSee('Brands (2)')
+            ->assertSee('Google Pixel 7 Pro AMOLED Display')
+            ->assertDontSee('Samsung S22 Super AMOLED Panel');
+
+        // 4. Show page breadcrumb includes inferred sub-category and preserves sub_category in Brand link
+        $showRes = $this->get('/spare-parts/' . $charger->slug);
+        $showRes->assertStatus(200)
+            ->assertSee('Magnetic &amp; Slim-Tip PSU', false)
+            ->assertSee('sub_category=magnetic_slim_adapter', false);
     }
 }

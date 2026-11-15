@@ -711,8 +711,8 @@ class SparePartListing extends Model
             return true;
         }
 
-        // Exclude external desk stands, cooling pads, USB hubs, docks, Bose Bluetooth speakers, and laptop bags
-        if (preg_match('/\b(laptop\s+stand|notebook\s+stand|desk\s+stand|tray\s+stand|folding\s+laptop\s+table|laptop\s+table|cooling\s+pad|cooler\s+pad|notepal|wind\s+pal|multi\s+core\s+x6|u\s+pal|usb\s+hub|docking\s+station|bose\s+mini|bose\s+soundlink|laptop\s+bag|backpack|sleeve|earbuds|neckband|smart\s*watch|power\s+bank|mouse|headphone|router)\b/i', $title) === 1) {
+        // Exclude external desk stands, cooling pads, rechargeable desk fans, USB hubs, docks, Bose Bluetooth speakers, and laptop bags
+        if (preg_match('/\b(laptop\s+stand|notebook\s+stand|desk\s+stand|tray\s+stand|folding\s+laptop\s+table|laptop\s+table|cooling\s+pad|cooler\s+pad|notepal|wind\s+pal|multi\s+core\s+x6|u\s+pal|rechargeable\s+fan|mini\s+fan|table\s+fan|desk\s+fan|stand\s+fan|usb\s+hub|docking\s+station|bose\s+mini|bose\s+soundlink|laptop\s+bag|backpack|sleeve|earbuds|neckband|smart\s*watch|power\s+bank|mouse|headphone|router)\b/i', $title) === 1) {
             return true;
         }
 
@@ -796,6 +796,38 @@ class SparePartListing extends Model
             return 'SIM Tray & Small Parts';
         }
 
+        // Misplaced pure batteries inside Display & Touch
+        if (
+            $cat === 'Display & Touch'
+            && preg_match('/\bbattery\b/i', $cleanTitle) === 1
+            && preg_match('/\b(display|touch|lcd|oled|amoled|digitizer|screen)\b/i', $cleanTitle) !== 1
+        ) {
+            return 'Battery';
+        }
+
+        // Misplaced mobile backshells, SIM trays & charging logic across sibling mobile categories
+        $mobileCats = ['Battery', 'Display & Touch', 'Charging Port & Flex', 'Backshell & Housing', 'Mobile Spare Parts'];
+        if (in_array($cat, $mobileCats, true)) {
+            if (
+                preg_match('/\b(backshell|back\s*shell|middle\s*frame|back\s*cover)\b/i', $cleanTitle) === 1
+                && preg_match('/\b(display|lcd|oled|amoled|screen|touch|digitizer)\b/i', $cleanTitle) !== 1
+            ) {
+                return 'Backshell & Housing';
+            }
+            if (
+                preg_match('/\b(sim\s*tray|sim\s*card\s*tray|sim\s*holder)\b/i', $cleanTitle) === 1
+                && preg_match('/\b(display|lcd|screen|backshell|housing|flex)\b/i', $cleanTitle) !== 1
+            ) {
+                return 'SIM Tray & Small Parts';
+            }
+            if (
+                preg_match('/\bcharging\s*(?:logic|port\s*flex|flex|sub\s*board)\b/i', $cleanTitle) === 1
+                && preg_match('/\bbattery\b/i', $cleanTitle) !== 1
+            ) {
+                return 'Charging Port & Flex';
+            }
+        }
+
         // Reclassify legacy catch-all categories
         if (in_array($cat, ['', 'Accessories & Chargers', 'PC & Laptop Parts', 'Mobile Spare Parts', 'Spare Part'], true)) {
             if (preg_match('/\b(dc\s+port|dc\s+power\s+jack|charging\s+port\s+dc|power\s+jack|lvds|display\s+cable|motherboard|mainboard|camera|webcam|hdd\s+connector|power\s+cable|power\s+cord)\b/i', $cleanTitle) === 1) {
@@ -840,109 +872,237 @@ class SparePartListing extends Model
     {
         $normCat = self::normalizePartCategory($category, $title);
         $cleanTitle = self::cleanCatalogTitle($title);
-        $b = strtolower(trim($brand));
+
+        if ($normCat === 'Tools, Consumables & Soldering') {
+            if (preg_match('/\b(hot\s*air|rework|861dw)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-hot-air-station.webp';
+            }
+            if (preg_match('/\bflux\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-solder-flux.webp';
+            }
+            if (preg_match('/\b(solder\s*wire|rosin\s*core)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-solder-wire.webp';
+            }
+            if (preg_match('/\bmultimeter\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-multimeter.webp';
+            }
+            if (preg_match('/\b(b-?7000|adhesive|glue)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-b7000-adhesive.webp';
+            }
+            if (preg_match('/\b(spudger|pry|opening)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-pry-spudger-set.webp';
+            }
+            if (preg_match('/\b(separator|heating|s-918e)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-screen-separator.webp';
+            }
+            if (preg_match('/\b(tweezer|tweezers)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-precision-tweezers.webp';
+            }
+            if (preg_match('/\b(silicone|repair\s*mat|s-160)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-silicone-repair-mat.webp';
+            }
+            if (preg_match('/\b(tape|300lse)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/tool-mounting-tape.webp';
+            }
+            return '/images/spare-parts/clean/tool-screwdriver-kit.webp';
+        }
 
         if ($normCat === 'Adapter & Charger') {
-            if (preg_match('/\b(type-c|usb-c|pd|surface|magsafe|apple)\b/i', $cleanTitle) === 1) {
-                return '/images/spare-parts/65w-usb-c-charger-for-hp-laptops-and-notebooks.png';
+            if (stripos($cleanTitle, 'surface') !== false) {
+                return '/images/spare-parts/clean/charger-surface-magnetic.webp';
             }
-            return '/images/spare-parts/135w-oem-original-adapter-for-hp-laptops-notebooks-19-5v-6-9a-4-5mm3-0mm-blue-pin.jpg';
+            if (preg_match('/\b(type-c|usb-c|pd|magsafe)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/charger-usbc-adapter.webp';
+            }
+            return '/images/spare-parts/clean/charger-barrel-adapter.webp';
         }
 
         if ($normCat === 'Laptop Battery') {
-            return match ($b) {
-                'apple' => '/images/spare-parts/apple-a1706-a1819-battery.jpg',
-                'asus' => '/images/spare-parts/c31n1620-battery-for-asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-laptops.jpg',
-                'hp' => '/images/spare-parts/rx03xl-original-quality-battery-for-hp-probook-440-g11-445-g11-460-g11-465-g11-630-g11-640.jpg',
-                default => '/images/spare-parts/dell-4gvmp-3hwpp-04gvmp-battery-for-latitude-precision-inspiron.jpg',
-            };
+            return '/images/spare-parts/clean/laptop-battery-internal.webp';
         }
 
         if ($normCat === 'Laptop Keyboard') {
-            if ($b === 'lenovo') {
-                return '/images/spare-parts/lenovo-ideapad-3-15-ideapad-3-15itl6-ideapad-3-15ada6-ideapad-3-15alc6-series-backlight-ke.jpg';
-            }
-            if (preg_match('/\b(probook|elitebook)\b/i', $cleanTitle) === 1) {
-                return '/images/spare-parts/hp-probook-440-g8-g9-g10-445-g8-g9-g10-laptop-keyboard.jpg';
-            }
-            return '/images/spare-parts/hp-pavilion-15-eg-15-eh-15-fc-15-fd-15-er-laptop-keyboard-us-layout-silver-color.jpg';
+            return '/images/spare-parts/clean/laptop-keyboard-us.webp';
         }
 
         if ($normCat === 'Laptop Cooling Fan') {
-            return match ($b) {
-                'acer' => '/images/spare-parts/acer-predator-helios-neo-16-phn16-71-cpu-cooling-fan.jpg',
-                'asus' => '/images/spare-parts/asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-series-laptop-cooler.jpg',
-                'hp' => '/images/spare-parts/hp-pavilion-15-eg-15-eh-series-laptop-cooling-fan.jpg',
-                default => '/images/spare-parts/dell-latitude-7330-e7330-laptop-cpu-cooling-fan.jpg',
-            };
+            return '/images/spare-parts/clean/laptop-cooling-fan.webp';
         }
 
         if ($normCat === 'Laptop Speaker') {
-            return match ($b) {
-                'lenovo' => '/images/spare-parts/lenovo-thinkpad-e480-e485-e490-e495-speaker.jpg',
-                'acer' => '/images/spare-parts/acer-aspire-a515-57-series-laptop-speaker-left-right.jpg',
-                'asus' => '/images/spare-parts/asus-vivobook-15-k3500-x3500-k3500p-k3500pa-k3500pc-m3500q-k6500-laptop-build-in-speaker.jpg',
-                default => '/images/spare-parts/hp-elitbook-660-g11-laptop-speaker-set-left-right.jpg',
-            };
+            return '/images/spare-parts/clean/laptop-speaker-set.webp';
         }
 
-        if (in_array($normCat, ['PC Display, Cable & Board', 'Laptop Casing & Touchpad', 'SSD, RAM & Storage', 'Tools, Consumables & Soldering'], true)) {
-            if (preg_match('/\b(dc|jack|charging\s+port|power\s+socket)\b/i', $cleanTitle) === 1) {
-                return '/images/spare-parts/dc-charging-port-for-asus-zenbook-ux430-ux430u-ux430uq-ux430ua-u4100u-u4100uq-laptops-dc-j.jpg';
+        if ($normCat === 'SSD, RAM & Storage') {
+            if (preg_match('/\b(ram|ddr\d|ddr3l|so-?dimm|memory)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/ram-sodimm-module.webp';
             }
-            if (preg_match('/\b(cable|lvds|ribbon|flex|connector)\b/i', $cleanTitle) === 1) {
-                return '/images/spare-parts/asus-ux430-ux430ua-ux430uq-ux430uar-series-laptops-30-pin-display-lvds-cable.jpg';
+            if (preg_match('/\b(hdd|hard\s*disk|hard\s*drive|2\.5\s*sata|sata\s*hdd|caddy|enclosure)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/hdd-sata-25.webp';
             }
-            return '/images/spare-parts/14-0-ultra-30-pin-nano-border-full-hd-display-for-laptops-nv140fhm-n48.jpg';
+            return '/images/spare-parts/clean/ssd-nvme-m2.webp';
+        }
+
+        if ($normCat === 'Laptop Casing & Touchpad') {
+            if (preg_match('/\b(touchpad|trackpad)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/laptop-trackpad.webp';
+            }
+            return '/images/spare-parts/clean/laptop-casing-bezel.webp';
+        }
+
+        if ($normCat === 'PC Display, Cable & Board') {
+            if (preg_match('/\b(dc|jack|charging\s+port|power\s+port|power\s+socket)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/laptop-dc-jack-cable.webp';
+            }
+            if (preg_match('/\b(cable|lvds|edp|ribbon|flex|connector)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/laptop-lvds-cable.webp';
+            }
+            if (preg_match('/\b(motherboard|mainboard|logic\s+board)\b/i', $cleanTitle) === 1) {
+                return '/images/spare-parts/clean/laptop-motherboard.webp';
+            }
+            return '/images/spare-parts/clean/laptop-lcd-panel.webp';
         }
 
         if ($normCat === 'Battery') {
-            return match ($b) {
-                'apple' => '/images/spare-parts/iphone-13-battery-price-in-bangladesh.webp',
-                'google' => '/images/spare-parts/google-pixel-10-pro-fold-battery.webp',
-                'realme' => '/images/spare-parts/realme-note-70t-battery.webp',
-                'vivo' => '/images/spare-parts/vivo-y31-battery.webp',
-                default => '/images/spare-parts/oppo-a6-battery.webp',
-            };
+            return '/images/spare-parts/clean/mobile-battery-cell.webp';
         }
 
         if ($normCat === 'Camera & Lens') {
-            return $b === 'apple'
-                ? '/images/spare-parts/iphone-17e-camera-glass.webp'
-                : '/images/spare-parts/samsung-galaxy-s21-fe-5g-back-camera-price-in-bangladesh.webp';
+            return '/images/spare-parts/clean/mobile-camera-module.webp';
         }
 
         if ($normCat === 'Backshell & Housing') {
-            return match ($b) {
-                'google' => '/images/spare-parts/google-pixel-10-pro-fold-backshell.webp',
-                'realme' => '/images/spare-parts/realme-note-70t-backshell.webp',
-                'vivo' => '/images/spare-parts/vivo-y31-backshell.webp',
-                default => '/images/spare-parts/oppo-a6-backshell.webp',
-            };
+            return '/images/spare-parts/clean/mobile-backshell-housing.webp';
         }
 
         if ($normCat === 'Charging Port & Flex') {
-            return '/images/spare-parts/samsung-galaxy-s24-ultra-charging-logic.webp';
+            return '/images/spare-parts/clean/mobile-charging-flex.webp';
         }
 
         if ($normCat === 'SIM Tray & Small Parts') {
-            return match ($b) {
-                'apple' => '/images/spare-parts/iphone-17e-sim-tray.webp',
-                'infinix' => '/images/spare-parts/infinix-gt-30-sim-tray.webp',
-                default => '/images/spare-parts/vivo-v30-sim-tray.webp',
-            };
+            return '/images/spare-parts/clean/mobile-sim-tray.webp';
         }
 
-        return match ($b) {
-            'apple' => '/images/spare-parts/iphone-14-pro-display.jpg',
-            'google' => '/images/spare-parts/google-pixel-10-pro-fold-display.webp',
-            'xiaomi' => '/images/spare-parts/xiaomi-redmi-note-12-display-price-in-bangladesh.webp',
-            'oneplus' => '/images/spare-parts/oneplus-9r-display.jpg',
-            'oppo' => '/images/spare-parts/oppo-reno-display.jpg',
-            'realme' => '/images/spare-parts/realme-note-70t-display.webp',
-            'vivo' => '/images/spare-parts/vivo-y31-display.webp',
-            default => '/images/spare-parts/samsung-galaxy-a54-display.webp',
-        };
+        return '/images/spare-parts/clean/mobile-display-assembly.webp';
+    }
+
+    /**
+     * Detect broken relative paths, missing local assets, generic/placeholder graphics,
+     * cross-brand image filenames, and wrong-component filenames (e.g. Backshell photo on a Display listing).
+     */
+    public static function isMismatchedOrInvalidImageUrl(
+        string $imageUrl,
+        string $category,
+        string $title,
+        string $brand = ''
+    ): bool {
+        $url = trim($imageUrl);
+        if ($url === '' || (!str_starts_with($url, 'http') && !str_starts_with($url, '/images/'))) {
+            return true;
+        }
+
+        if (str_starts_with($url, '/images/')) {
+            $localFile = public_path(ltrim(explode('?', $url, 2)[0], '/'));
+            if (!is_file($localFile) || filesize($localFile) < 300) {
+                return true;
+            }
+        }
+
+        $cleanTitle = self::cleanCatalogTitle($title);
+        $path = (string) (parse_url($url, PHP_URL_PATH) ?: $url);
+        $base = strtolower(basename($path));
+
+        if (
+            str_contains($base, 'brandlogo')
+            || str_contains($base, 'placeholder')
+            || str_contains($base, 'products-frame')
+            || preg_match('/^untitled-design/i', $base) === 1
+            || preg_match('/^download\./i', $base) === 1
+            || str_contains($base, 'no-image')
+        ) {
+            return true;
+        }
+
+        if (str_contains($base, 's21-fe-5g-display') && stripos($cleanTitle, 'S21 FE') === false) {
+            return true;
+        }
+
+        $inferredBrand = strtolower(trim(self::inferSpecificBrandFromTitle($cleanTitle, $brand)));
+        $exclusiveBrands = [
+            'apple', 'samsung', 'xiaomi', 'oppo', 'vivo', 'realme', 'oneplus',
+            'huawei', 'google', 'motorola', 'nothing', 'sony',
+            'hp', 'dell', 'lenovo', 'asus', 'acer', 'msi', 'microsoft', 'toshiba', 'fujitsu',
+        ];
+        foreach ($exclusiveBrands as $otherBrand) {
+            if ($otherBrand === $inferredBrand) {
+                continue;
+            }
+            if (preg_match('/(?:^|[-_])' . preg_quote($otherBrand, '/') . '(?:[-_.]|$)/i', $base) === 1) {
+                $brandMentionsTitle = stripos($cleanTitle, $otherBrand) !== false
+                    || ($otherBrand === 'apple' && (stripos($cleanTitle, 'iphone') !== false || stripos($cleanTitle, 'macbook') !== false || stripos($cleanTitle, 'ipad') !== false))
+                    || ($otherBrand === 'xiaomi' && (stripos($cleanTitle, 'redmi') !== false || stripos($cleanTitle, 'poco') !== false))
+                    || ($otherBrand === 'google' && stripos($cleanTitle, 'pixel') !== false)
+                    || ($otherBrand === 'hp' && (stripos($cleanTitle, 'compaq') !== false || stripos($cleanTitle, 'elitebook') !== false || stripos($cleanTitle, 'probook') !== false || stripos($cleanTitle, 'pavilion') !== false));
+                if (!$brandMentionsTitle) {
+                    return true;
+                }
+            }
+        }
+
+        if (
+            str_contains($base, 'backshell')
+            && preg_match('/\b(backshell|back\s*shell|back\s*glass|housing|middle\s*frame|back\s*cover|frame)\b/i', $cleanTitle) !== 1
+        ) {
+            return true;
+        }
+        if (
+            preg_match('/(?:^|[-_])display(?:[-_.]|$)/i', $base) === 1
+            && preg_match('/\bbattery\b/i', $cleanTitle) === 1
+            && preg_match('/\b(display|lcd|oled|amoled|screen|touch|digitizer)\b/i', $cleanTitle) !== 1
+        ) {
+            return true;
+        }
+        if (str_contains($base, 'sim-tray') && stripos($cleanTitle, 'sim') === false) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Resolve a verified product image URL for seeding: recovers comma-truncated DearIT photos,
+     * attaches clean unbranded studio assets to repair tools, and swaps any mismatched URL.
+     */
+    public static function resolveListingImageUrl(
+        string $rawImageUrl,
+        string $category,
+        string $title,
+        string $brand = '',
+        string $src = '',
+        string $extId = ''
+    ): string {
+        $normCat = self::normalizePartCategory($category, $title);
+        $trimmed = trim($rawImageUrl);
+
+        if ($src === 'meramot_tools' || $normCat === 'Tools, Consumables & Soldering') {
+            if ($trimmed === '' || self::isMismatchedOrInvalidImageUrl($trimmed, $normCat, $title, $brand)) {
+                return self::resolveCategoryFallbackImage($normCat, $title, $brand);
+            }
+        }
+
+        if ($trimmed !== '' && !str_starts_with($trimmed, 'http') && !str_starts_with($trimmed, '/images/') && $extId !== '') {
+            $recoveredRel = '/images/spare-parts/dearit/dearit-' . preg_replace('/[^A-Za-z0-9_-]/', '', $extId) . '.webp';
+            $recoveredDisk = public_path(ltrim($recoveredRel, '/'));
+            if (is_file($recoveredDisk) && filesize($recoveredDisk) > 300) {
+                return $recoveredRel;
+            }
+        }
+
+        if (self::isMismatchedOrInvalidImageUrl($trimmed, $normCat, $title, $brand)) {
+            return self::resolveCategoryFallbackImage($normCat, $title, $brand);
+        }
+
+        return $trimmed;
     }
 
     /**

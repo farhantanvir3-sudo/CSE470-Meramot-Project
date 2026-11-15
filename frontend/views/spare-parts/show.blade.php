@@ -222,6 +222,9 @@
         <div class="lg:col-span-7 space-y-4">
             <div class="rounded-2xl bg-white/95 border border-emerald-900/15 p-4 sm:p-6 shadow-sm space-y-4">
                 {{-- Compact Horizontally-Slidable Folder-Path Breadcrumb (Mobile & Desktop Friendly) --}}
+                @php
+                    $inferredSubCategory = \App\Http\Controllers\SparePartController::inferSubCategoryForListing($listing);
+                @endphp
                 <nav aria-label="Category folder path"
                      class="flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap px-3 py-1.5 rounded-xl bg-emerald-950/[0.04] border border-emerald-950/10 text-[11px] sm:text-xs font-mono text-emerald-950">
                     <a href="{{ route('spare-parts.index') }}" class="shrink-0 font-bold text-emerald-900 hover:underline">
@@ -235,8 +238,14 @@
                     <a href="{{ route('spare-parts.index', ['part_category' => $listing->part_category]) }}" class="shrink-0 font-bold text-emerald-950 hover:underline">
                         {{ $listing->part_category }}
                     </a>
+                    @if($inferredSubCategory)
+                        <span class="text-emerald-900/40 shrink-0">/</span>
+                        <a href="{{ route('spare-parts.index', ['part_category' => $listing->part_category, 'sub_category' => $inferredSubCategory['key']]) }}" class="shrink-0 font-bold text-emerald-900/90 hover:underline">
+                            {{ $inferredSubCategory['label'] }}
+                        </a>
+                    @endif
                     <span class="text-emerald-900/40 shrink-0">/</span>
-                    <a href="{{ route('spare-parts.index', ['part_category' => $listing->part_category, 'brand' => $listing->brand]) }}" class="shrink-0 font-extrabold text-emerald-900 hover:underline">
+                    <a href="{{ route('spare-parts.index', array_filter(['part_category' => $listing->part_category, 'sub_category' => $inferredSubCategory['key'] ?? null, 'brand' => $listing->brand])) }}" class="shrink-0 font-extrabold text-emerald-900 hover:underline">
                         {{ $listing->brand }}
                     </a>
                     @if($listing->sku)
