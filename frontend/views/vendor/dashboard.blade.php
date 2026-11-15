@@ -329,6 +329,239 @@
             </div>
         </div>
 
+        @php
+            $va = $vendorAnalytics ?? [];
+            $vaFeePct = rtrim(rtrim(number_format((float) ($va['commission_rate_pct'] ?? $vendorProfile->effectiveCommissionRatePct()), 2), '0'), '.');
+            $vaTrend = $va['earnings_trend'] ?? [];
+            $vaDir = $vaTrend['direction'] ?? 'STEADY';
+            $vaDelta = (float) ($vaTrend['rate_delta_pct'] ?? 0);
+            $vaSvc = $va['services'] ?? [];
+            $vaParts = $va['spare_parts'] ?? [];
+        @endphp
+
+        <!-- Exclusive 5%–10% Fee Tier Banner & Chronological Workshop Earnings Graph -->
+        <div class="meramot-card p-4 sm:p-6 shadow-sm space-y-4">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-[var(--border)] pb-3">
+                <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="rounded-full bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wide text-[var(--accent-foreground)]">
+                            Workshop Commission: {{ $vaFeePct }}% (5%–10% Range)
+                        </span>
+                        <span class="rounded-full px-2.5 py-0.5 text-[10px] font-black border {{ $vaDir === 'UP' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : ($vaDir === 'DOWN' ? 'bg-rose-100 text-rose-900 border-rose-300' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border-[var(--border)]') }}">
+                            {{ $vaTrend['trend_label'] ?? 'Steady ●' }} ({{ $vaDelta > 0 ? '+' : '' }}{{ $vaDelta }}%)
+                        </span>
+                    </div>
+                    <h2 class="text-sm sm:text-base font-black text-[var(--foreground)]">Workshop Revenue Growth &amp; Performance Analytics</h2>
+                    <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)]">
+                        Every listed service &amp; spare part price goes <strong>100% to your workshop</strong>. Customers pay a transparent <strong>{{ $vaFeePct }}%</strong> platform fee on top, and <strong>pickup &amp; delivery are handled by Meramot</strong> (excl. from commission).
+                    </p>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs shrink-0">
+                    <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/55 px-3 py-2 text-center">
+                        <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Period Earnings</span>
+                        <span class="font-mono font-black text-[var(--accent-dark)]">৳{{ number_format($vaTrend['total_earning'] ?? 0, 0) }}</span>
+                    </div>
+                    <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/55 px-3 py-2 text-center">
+                        <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Paid Orders</span>
+                        <span class="font-mono font-black text-[var(--foreground)]">{{ $vaTrend['total_orders'] ?? 0 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/35 p-3">
+                <svg viewBox="0 0 {{ $vaTrend['svg_width'] ?? 640 }} {{ $vaTrend['svg_height'] ?? 170 }}" class="w-full h-36 sm:h-44 overflow-visible" role="img" aria-label="Vendor Earnings Trend Chart">
+                    <defs>
+                        <linearGradient id="meramotVendorGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#047857" stop-opacity="0.28"/>
+                            <stop offset="100%" stop-color="#047857" stop-opacity="0.02"/>
+                        </linearGradient>
+                    </defs>
+                    @foreach([18, 60, 102, 146] as $gy)
+                        <line x1="30" y1="{{ $gy }}" x2="610" y2="{{ $gy }}" stroke="currentColor" stroke-opacity="0.12" stroke-dasharray="4 4"/>
+                    @endforeach
+                    @if(!empty($vaTrend['area_earning']))
+                        <polygon points="{{ $vaTrend['area_earning'] }}" fill="url(#meramotVendorGrad)"/>
+                    @endif
+                    @if(!empty($vaTrend['polyline_earning']))
+                        <polyline fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="{{ $vaTrend['polyline_earning'] }}"/>
+                    @endif
+                    @foreach(($vaTrend['points'] ?? []) as $pt)
+                        <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y'] }}" r="4.5" fill="#047857" stroke="#ffffff" stroke-width="1.5">
+                            <title>{{ $pt['label'] }}: ৳{{ number_format($pt['earning'], 2) }} ({{ $pt['orders'] }} paid orders)</title>
+                        </circle>
+                        <text x="{{ $pt['x'] }}" y="164" text-anchor="middle" fill="currentColor" opacity="0.68" font-size="10" font-weight="700">{{ $pt['label'] }}</text>
+                    @endforeach
+                </svg>
+            </div>
+        </div>
+
+        <!-- 2x2 Demand & Rating Matrix (Services & Spare Parts Improvement Insights) -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 text-xs">
+            <!-- Services: Most vs Least Demanding (Sales) -->
+            <div class="meramot-card p-4 sm:p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+                    <div>
+                        <h3 class="font-black text-sm text-[var(--foreground)]">Services Demand (Sales Volume)</h3>
+                        <p class="text-[11px] text-[var(--muted-foreground)]">Spot top-booked repairs and underperforming services to revise or upgrade.</p>
+                    </div>
+                    <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">{{ $vaSvc['total_count'] ?? 0 }} Active</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 space-y-2">
+                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">▲ Most Demanding</p>
+                        @forelse($vaSvc['most_demanding'] ?? [] as $row)
+                            <div class="border-b border-emerald-200/60 last:border-0 pb-1.5 last:pb-0">
+                                <div class="font-bold text-[var(--foreground)] leading-snug">{{ $row['name'] }}</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)] flex justify-between mt-0.5">
+                                    <span class="font-bold text-emerald-700">{{ $row['sales_count'] }} orders</span>
+                                    <span class="font-mono">৳{{ number_format($row['price'], 0) }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-[11px] text-[var(--muted-foreground)]">No service listings yet.</p>
+                        @endforelse
+                    </div>
+                    <div class="rounded-xl border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 p-3 space-y-2">
+                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300">▼ Least Demanding (Upgrade/Reprice)</p>
+                        @forelse($vaSvc['least_demanding'] ?? [] as $row)
+                            <div class="border-b border-amber-200/60 last:border-0 pb-1.5 last:pb-0">
+                                <div class="font-bold text-[var(--foreground)] leading-snug">{{ $row['name'] }}</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)] flex justify-between mt-0.5">
+                                    <span class="font-bold text-amber-700">{{ $row['sales_count'] }} orders</span>
+                                    <span class="font-mono">৳{{ number_format($row['price'], 0) }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-[11px] text-[var(--muted-foreground)]">No service listings yet.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <!-- Services: Most vs Least Popular (Ratings) -->
+            <div class="meramot-card p-4 sm:p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+                    <div>
+                        <h3 class="font-black text-sm text-[var(--foreground)]">Services Popularity (Customer Ratings)</h3>
+                        <p class="text-[11px] text-[var(--muted-foreground)]">Identify highest-rated repairs vs lower-rated offerings that need QA upgrades.</p>
+                    </div>
+                    <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">★ Quality Score</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 space-y-2">
+                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">★ Most Popular (Top Rated)</p>
+                        @forelse($vaSvc['most_popular'] ?? [] as $row)
+                            <div class="border-b border-emerald-200/60 last:border-0 pb-1.5 last:pb-0">
+                                <div class="font-bold text-[var(--foreground)] leading-snug">{{ $row['name'] }}</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)] flex justify-between mt-0.5">
+                                    <span class="font-bold text-amber-600">{{ $row['avg_rating'] !== null ? '★ ' . number_format($row['avg_rating'], 1) : 'No ratings' }}</span>
+                                    <span>{{ $row['review_count'] }} reviews</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-[11px] text-[var(--muted-foreground)]">No service reviews matched yet.</p>
+                        @endforelse
+                    </div>
+                    <div class="rounded-xl border border-rose-200 bg-rose-50/50 dark:bg-rose-950/20 p-3 space-y-2">
+                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-rose-800 dark:text-rose-300">▼ Least Popular (Needs Improvement)</p>
+                        @forelse($vaSvc['least_popular'] ?? [] as $row)
+                            <div class="border-b border-rose-200/60 last:border-0 pb-1.5 last:pb-0">
+                                <div class="font-bold text-[var(--foreground)] leading-snug">{{ $row['name'] }}</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)] flex justify-between mt-0.5">
+                                    <span class="font-bold text-rose-700">{{ $row['avg_rating'] !== null ? '★ ' . number_format($row['avg_rating'], 1) : 'Unrated' }}</span>
+                                    <span>{{ $row['review_count'] }} reviews</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-[11px] text-[var(--muted-foreground)]">No service reviews matched yet.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spare Parts: Most vs Least Demanding (Sales) -->
+            <div class="meramot-card p-4 sm:p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+                    <div>
+                        <h3 class="font-black text-sm text-[var(--foreground)]">Spare Parts Demand (Units Sold)</h3>
+                        <p class="text-[11px] text-[var(--muted-foreground)]">Track fast-moving SKUs to restock vs slow-moving parts to discount or swap.</p>
+                    </div>
+                    <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">{{ $vaParts['total_count'] ?? 0 }} SKUs</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 space-y-2">
+                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">▲ Most Demanding Parts</p>
+                        @forelse($vaParts['most_demanding'] ?? [] as $row)
+                            <div class="border-b border-emerald-200/60 last:border-0 pb-1.5 last:pb-0">
+                                <div class="font-bold text-[var(--foreground)] leading-snug">{{ \Illuminate\Support\Str::limit($row['title'], 44) }}</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)] flex justify-between mt-0.5">
+                                    <span class="font-bold text-emerald-700">{{ $row['sales_count'] }} sold</span>
+                                    <span class="font-mono">৳{{ number_format($row['price'], 0) }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-[11px] text-[var(--muted-foreground)]">No spare part listings yet.</p>
+                        @endforelse
+                    </div>
+                    <div class="rounded-xl border border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 p-3 space-y-2">
+                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300">▼ Least Demanding Parts</p>
+                        @forelse($vaParts['least_demanding'] ?? [] as $row)
+                            <div class="border-b border-amber-200/60 last:border-0 pb-1.5 last:pb-0">
+                                <div class="font-bold text-[var(--foreground)] leading-snug">{{ \Illuminate\Support\Str::limit($row['title'], 44) }}</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)] flex justify-between mt-0.5">
+                                    <span class="font-bold text-amber-700">{{ $row['sales_count'] }} sold</span>
+                                    <span class="font-mono">৳{{ number_format($row['price'], 0) }}</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-[11px] text-[var(--muted-foreground)]">No spare part listings yet.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spare Parts: Most vs Least Popular (Ratings) -->
+            <div class="meramot-card p-4 sm:p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+                    <div>
+                        <h3 class="font-black text-sm text-[var(--foreground)]">Spare Parts Popularity (Ratings)</h3>
+                        <p class="text-[11px] text-[var(--muted-foreground)]">Compare customer-loved components vs low-rated batches to upgrade suppliers.</p>
+                    </div>
+                    <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">★ Part Feedback</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 dark:bg-emerald-950/20 p-3 space-y-2">
+                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300">★ Most Popular Parts</p>
+                        @forelse($vaParts['most_popular'] ?? [] as $row)
+                            <div class="border-b border-emerald-200/60 last:border-0 pb-1.5 last:pb-0">
+                                <div class="font-bold text-[var(--foreground)] leading-snug">{{ \Illuminate\Support\Str::limit($row['title'], 44) }}</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)] flex justify-between mt-0.5">
+                                    <span class="font-bold text-amber-600">{{ $row['avg_rating'] !== null ? '★ ' . number_format($row['avg_rating'], 1) : 'No ratings' }}</span>
+                                    <span>{{ $row['review_count'] }} reviews</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-[11px] text-[var(--muted-foreground)]">No part feedback matched yet.</p>
+                        @endforelse
+                    </div>
+                    <div class="rounded-xl border border-rose-200 bg-rose-50/50 dark:bg-rose-950/20 p-3 space-y-2">
+                        <p class="text-[10px] font-extrabold uppercase tracking-wider text-rose-800 dark:text-rose-300">▼ Least Popular Parts</p>
+                        @forelse($vaParts['least_popular'] ?? [] as $row)
+                            <div class="border-b border-rose-200/60 last:border-0 pb-1.5 last:pb-0">
+                                <div class="font-bold text-[var(--foreground)] leading-snug">{{ \Illuminate\Support\Str::limit($row['title'], 44) }}</div>
+                                <div class="text-[10px] text-[var(--muted-foreground)] flex justify-between mt-0.5">
+                                    <span class="font-bold text-rose-700">{{ $row['avg_rating'] !== null ? '★ ' . number_format($row['avg_rating'], 1) : 'Unrated' }}</span>
+                                    <span>{{ $row['review_count'] }} reviews</span>
+                                </div>
+                            </div>
+                        @empty
+                            <p class="text-[11px] text-[var(--muted-foreground)]">No part feedback matched yet.</p>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Recent Performance Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <div class="meramot-card p-4 sm:p-6 shadow-sm lg:col-span-2">
@@ -912,7 +1145,7 @@
             <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
                 <div>
                     <h3 class="font-bold text-base text-[var(--foreground)]">Active Repair Queue &amp; Bench Milestones</h3>
-                    <p class="text-xs text-[var(--muted-foreground)]">Update live job status, issue final bench diagnostic quotes, or mark Completed to settle the 10% commission and 90% workshop payout ledger.</p>
+                    <p class="text-xs text-[var(--muted-foreground)]">Update live job status, issue final bench diagnostic quotes, or mark Completed to credit 100% of your quoted subtotal to workshop escrow (platform fee {{ $vaFeePct ?? '8' }}% is charged transparently at checkout, excl. delivery).</p>
                 </div>
             </div>
             <div class="divide-y divide-[var(--border)] text-xs">
@@ -1123,11 +1356,11 @@
                 <p class="text-base sm:text-xl font-black text-[var(--foreground)] mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['gross_inflow'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">10% Platform Fee</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">{{ $vaFeePct ?? '8' }}% Platform Fee (Excl. Delivery)</p>
                 <p class="text-base sm:text-xl font-black text-amber-800 mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['commission_deducted'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
-                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">90% Net Allocated</p>
+                <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] leading-tight">100% Vendor Escrow Allocated</p>
                 <p class="text-base sm:text-xl font-black text-[var(--accent-dark)] mt-1 whitespace-nowrap">৳{{ number_format($branchMetrics['net_allocated'] ?? 0, 2) }}</p>
             </div>
             <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
@@ -1146,9 +1379,9 @@
                 <div class="flex items-center justify-between gap-2">
                     <div>
                         <h2 class="text-base font-black text-[var(--foreground)]">Request Net Escrow Withdrawal</h2>
-                        <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Withdraw 90% net workshop earnings to your registered MFS or bank account.</p>
+                        <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Withdraw 100% of your listed service &amp; spare part earnings to your registered MFS or bank account.</p>
                     </div>
-                    <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-black text-[var(--accent-dark)]">90% Net Split</span>
+                    <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-black text-[var(--accent-dark)]">100% Vendor Share</span>
                 </div>
 
                 <form method="POST" action="{{ route('vendor.payouts.request') }}" class="space-y-3">

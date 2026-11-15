@@ -32,9 +32,11 @@ class AdminLedgerTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('Financial Business Intelligence & Double-Entry Ledger', false);
         $response->assertSee('ProTech Solutions');
+        $response->assertSee('4,860.00');
+        $response->assertSee('360.00');
         $response->assertSee('4,500.00');
-        $response->assertSee('450.00');
-        $response->assertSee('4,050.00');
+        $response->assertSee('Platform Income Rate Graph');
+        $response->assertSee('Best Performing Shops');
     }
 
     /** @test */
@@ -94,13 +96,18 @@ class AdminLedgerTest extends TestCase
         $settleResp->assertRedirect('/admin/financial-overview');
         $this->assertDatabaseHas('financial_ledgers', [
             'shop_id' => $shop->id,
+            'entry_type' => 'CUSTOMER_PAYMENT',
+            'amount' => 2160.00,
+        ]);
+        $this->assertDatabaseHas('financial_ledgers', [
+            'shop_id' => $shop->id,
             'entry_type' => 'PLATFORM_COMMISSION',
-            'amount' => 200.00,
+            'amount' => 160.00,
         ]);
         $this->assertDatabaseHas('financial_ledgers', [
             'shop_id' => $shop->id,
             'entry_type' => 'VENDOR_EARNING',
-            'amount' => 1800.00,
+            'amount' => 2000.00,
         ]);
 
         // Filtering by Manual Audit Adjustment (`entry_type=ADJUSTMENT`) surfaces manual settlements
@@ -109,7 +116,7 @@ class AdminLedgerTest extends TestCase
             ->assertSee('Gadget Den')
             ->assertSee('Bench repair #101');
 
-        // Run batch auto-settlement to disburse VENDOR_EARNING into VENDOR_PAYOUT
+        // Run batch auto-settlement to disburse VENDOR_EARNING (100% vendor subtotal) into VENDOR_PAYOUT
         $batchResp = $this->post('/admin/financial-overview/auto-settle', [
             'limit' => 10,
         ]);
@@ -119,7 +126,7 @@ class AdminLedgerTest extends TestCase
             'shop_id' => $shop->id,
             'entry_type' => 'VENDOR_PAYOUT',
             'direction' => 'DEBIT',
-            'amount' => 1800.00,
+            'amount' => 2000.00,
         ]);
     }
 
@@ -230,7 +237,7 @@ class AdminLedgerTest extends TestCase
 
         $payment = \App\Models\PaymentTransaction::create([
             'user_id' => $customer->id,
-            'amount' => 4500.00,
+            'amount' => 4860.00,
             'currency' => 'BDT',
             'payment_method' => 'BKASH',
             'status' => 'PAID',
@@ -238,20 +245,28 @@ class AdminLedgerTest extends TestCase
             'paid_at' => now(),
         ]);
 
-        // Settle ৳4,500 order: Treasury Cash = ৳4,500 (no double-count), Commission = ৳450, Escrow = ৳4,050
+        // Settle ৳4,500 vendor subtotal (excl. fee): Customer Inflow = ৳4,860 (with 8% fee), Commission = ৳360, Vendor Escrow = ৳4,500
         AdminLedgerController::settleOrderWithCommission(4500.00, $shop->id, $payment->id);
 
         $this->assertSame(1, AdminLedgerController::countUnsettledShops());
 
-        // Issuing full ৳4,500 refund must claw back 90% (৳4,050) from unsettled vendor escrow
+        // Issuing full ৳4,860 refund must claw back 100% of vendor escrow (৳4,500) and reverse ৳360 platform commission
         $this->post('/admin/financial-overview/issue-refund', [
             'payment_id' => $payment->id,
-            'refund_amount' => 4500.00,
+            'refund_amount' => 4860.00,
             'reason' => 'Full refund clawback integrity check',
         ])->assertRedirect('/admin/financial-overview');
 
         // Shop must NO LONGER be eligible for vendor payout after full refund
         $this->assertSame(0, AdminLedgerController::countUnsettledShops());
+
+        $this->assertDatabaseHas('financial_ledgers', [
+            'shop_id' => $shop->id,
+            'payment_id' => $payment->id,
+            'entry_type' => 'PLATFORM_COMMISSION',
+            'direction' => 'DEBIT',
+            'amount' => 360.00,
+        ]);
 
         // Batch auto-settle must NOT create any VENDOR_PAYOUT for this refunded order
         $this->post('/admin/financial-overview/auto-settle', ['limit' => 20])
@@ -261,5 +276,62 @@ class AdminLedgerTest extends TestCase
             'shop_id' => $shop->id,
             'entry_type' => 'VENDOR_PAYOUT',
         ]);
+    }
+
+    /** @test */
+    public function it_allows_admin_to_adjust_shop_commission_rate_between_5_and_10_percent_and_renders_bi_graphs()
+    {
+        $admin = \App\Models\User::factory()->create(['role' => 'admin', 'is_active' => true]);
+        $vendorUser = \App\Models\User::factory()->create(['role' => 'vendor', 'is_active' => true]);
+        $vendorProfile = \App\Models\VendorProfile::create([
+            'user_id' => $vendorUser->id,
+            'shop_name' => 'Apex Precision Lab',
+            'verification_status' => 'approved',
+            'commission_rate' => 8.00,
+        ]);
+        $shop = RepairShop::factory()->create([
+            'vendor_profile_id' => $vendorProfile->id,
+            'name' => 'Apex Precision Lab',
+            'is_active' => true,
+            'is_public' => true,
+        ]);
+
+        AdminLedgerController::settleOrderWithCommission(5000.00, $shop->id);
+
+        // Bounds outside 5%–10% must fail validation
+        $this->actingAs($admin)
+            ->post("/admin/shops/{$shop->id}/commission-rate", ['commission_rate' => 4.0])
+            ->assertSessionHasErrors('commission_rate');
+
+        $this->actingAs($admin)
+            ->post("/admin/shops/{$shop->id}/commission-rate", ['commission_rate' => 12.0])
+            ->assertSessionHasErrors('commission_rate');
+
+        // Valid rate 6.5% saves onto vendor_profile & writes AuditLog
+        $this->actingAs($admin)
+            ->post("/admin/shops/{$shop->id}/commission-rate", ['commission_rate' => 6.5])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertEquals(6.50, (float) $vendorProfile->fresh()->commission_rate);
+        $this->assertDatabaseHas('audit_logs', [
+            'actor_id' => $admin->id,
+            'action' => 'vendor_commission_rate_updated',
+            'target_resource' => "vendor_profiles:{$vendorProfile->id}",
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/admin')
+            ->assertStatus(200)
+            ->assertSee('Platform Revenue Trajectory')
+            ->assertSee('Best Performing Workshops')
+            ->assertSee('6.5');
+
+        $this->actingAs($admin)
+            ->get('/admin/financial-overview')
+            ->assertStatus(200)
+            ->assertSee('Platform Income Rate Graph')
+            ->assertSee('Best Performing Shops')
+            ->assertSee('6.5');
     }
 }

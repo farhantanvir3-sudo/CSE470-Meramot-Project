@@ -13,6 +13,7 @@
 @php
     $regCourierFee = (float) ($regularDeliveryFee ?? 80);
     $expCourierFee = (float) ($expressDeliveryFee ?? 150);
+    $ratePctLabel = rtrim(rtrim(number_format((float) ($commissionRatePct ?? 8), 2), '0'), '.');
     $isVendorViewer = auth()->check() && auth()->user()->role === 'vendor';
 @endphp
 <div class="mx-auto max-w-6xl px-4 py-6 md:px-6" x-data="{
@@ -676,15 +677,15 @@
 
                 <div class="space-y-2.5 text-xs border-y border-[var(--border)] py-4">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">Services Subtotal</span>
-                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($total) }}</span>
+                        <span class="text-[var(--muted-foreground)]">{{ !empty($isSparePartCart) ? 'Seller Parts Subtotal (100% Seller)' : 'Services Subtotal (100% Vendor)' }}</span>
+                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($total, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">Escrow Fee (5%)</span>
-                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($serviceCharge ?? 0) }}</span>
+                        <span class="text-[var(--muted-foreground)]">Meramot Platform Fee ({{ $ratePctLabel }}%, excl. courier)</span>
+                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($serviceCharge ?? 0, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">{{ !empty($isSparePartCart) ? 'Courier Delivery' : 'Two-Way Courier' }} (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
+                        <span class="text-[var(--muted-foreground)]">Platform Pickup &amp; Delivery (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
                     </div>
                     <template x-if="activeDiscount > 0">

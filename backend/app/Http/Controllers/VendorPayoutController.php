@@ -61,9 +61,7 @@ class VendorPayoutController extends Controller
             ->where('entry_type', 'VENDOR_EARNING')
             ->sum('amount');
 
-        $refundClawback = (float) FinancialLedger::whereIn('shop_id', $shopIds)
-            ->where('entry_type', 'REFUND')
-            ->sum(DB::raw('amount * 0.90'));
+        $refundClawback = AdminLedgerController::computeTotalVendorClawback($shopIds);
 
         $netAllocated = max(0.0, round($vendorAllocated - $refundClawback, 2));
         $paidOut = round((float) FinancialLedger::whereIn('shop_id', $shopIds)
@@ -241,7 +239,7 @@ class VendorPayoutController extends Controller
                     'VENDOR_PAYOUT',
                     'DEBIT',
                     (float) $payout->amount,
-                    "Net 90% escrow payout disbursed to {$shopLabel} via {$channel} ({$payout->reference_code} / {$txnRef})",
+                    "100% vendor escrow payout disbursed to {$shopLabel} via {$channel} ({$payout->reference_code} / {$txnRef})",
                     [
                         'shop_id' => (int) $payout->shop_id,
                         'payment_id' => $latestPaymentId,
@@ -342,18 +340,20 @@ class VendorPayoutController extends Controller
             ->first();
 
         if (!$payout) {
-            $grossRef = round($summary['unsettled_balance'] / 0.90, 2);
+            $ratePct = ServicePackageController::resolveCommissionRatePct($shop);
+            $commissionRef = round($summary['unsettled_balance'] * ($ratePct / 100.0), 2);
+            $grossRef = round($summary['unsettled_balance'] + $commissionRef, 2);
             $payout = VendorPayout::create([
                 'shop_id' => $shop->id,
                 'amount' => $summary['unsettled_balance'],
                 'gross_reference_amount' => $grossRef,
-                'commission_deducted' => round($grossRef - $summary['unsettled_balance'], 2),
+                'commission_deducted' => $commissionRef,
                 'currency' => 'BDT',
                 'payout_method' => $method,
                 'payout_account' => $account,
                 'status' => 'PENDING',
                 'reference_code' => 'VND-DIR-' . $shop->id . '-' . strtoupper(Str::random(5)),
-                'notes' => "Direct Admin net settlement for {$shop->name}",
+                'notes' => "Direct Admin settlement for {$shop->name} (100% vendor earning; {$ratePct}% buyer platform fee)",
             ]);
         } else {
             $payout->update(['amount' => $summary['unsettled_balance']]);
@@ -455,8 +455,9 @@ class VendorPayoutController extends Controller
             'payout_account_number' => $account,
         ]);
 
-        $grossRef = round($requestAmount / 0.90, 2);
-        $commissionRef = round($grossRef - $requestAmount, 2);
+        $ratePct = ServicePackageController::resolveCommissionRatePct($targetShop);
+        $commissionRef = round($requestAmount * ($ratePct / 100.0), 2);
+        $grossRef = round($requestAmount + $commissionRef, 2);
         $refCode = 'VND-PYT-' . $targetShop->id . '-' . strtoupper(Str::random(5));
 
         $payout = VendorPayout::create([
@@ -469,7 +470,7 @@ class VendorPayoutController extends Controller
             'payout_account' => $account,
             'status' => 'PENDING',
             'reference_code' => $refCode,
-            'notes' => "Vendor withdrawal request for {$targetShop->name} (90% net after 10% platform commission)",
+            'notes' => "Vendor withdrawal request for {$targetShop->name} (100% vendor price earning; {$ratePct}% buyer platform fee excl. delivery)",
         ]);
 
         AuditLog::create([

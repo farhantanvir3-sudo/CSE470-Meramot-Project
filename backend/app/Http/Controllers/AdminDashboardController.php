@@ -26,6 +26,13 @@ class AdminDashboardController extends Controller
 {
     public function index()
     {
+        $netCommission = (float) FinancialLedger::where('entry_type', 'PLATFORM_COMMISSION')
+            ->where('direction', '!=', 'DEBIT')
+            ->sum('amount')
+            - (float) FinancialLedger::where('entry_type', 'PLATFORM_COMMISSION')
+            ->where('direction', 'DEBIT')
+            ->sum('amount');
+
         $kpis = [
             'total_users' => User::count(),
             'public_shops' => RepairShop::where('is_active', true)->where('is_public', true)->count(),
@@ -35,7 +42,7 @@ class AdminDashboardController extends Controller
             'approved_riders' => DeliveryAgent::where('registration_status', 'APPROVED')->count(),
             'open_requests' => RepairRequest::whereIn('status', ['PENDING', 'BIDDING', 'ASSIGNED', 'WAITING_APPROVAL', 'REPAIRING'])->count(),
             'platform_volume' => (float) FinancialLedger::where('entry_type', 'CUSTOMER_PAYMENT')->sum('amount'),
-            'platform_commission' => (float) FinancialLedger::where('entry_type', 'PLATFORM_COMMISSION')->sum('amount'),
+            'platform_commission' => max(0.0, round($netCommission, 2)),
             'unsettled_tx_count' => AdminLedgerController::countUnsettledShops() + PaymentTransaction::where('status', 'PENDING')->count(),
         ];
 
@@ -56,11 +63,19 @@ class AdminDashboardController extends Controller
             ->take(5)
             ->get();
 
+        $biMetrics = AdminLedgerController::buildShopPerformanceAndIncomeMetrics();
+        $bestPerformingShops = $biMetrics['bestPerformingShops'];
+        $platformIncomeTrend = $biMetrics['platformIncomeTrend'];
+        $avgCommissionRatePct = $biMetrics['avgCommissionRatePct'];
+
         return view('admin.dashboard', compact(
             'kpis',
             'recentPendingVendors',
             'recentPendingRiders',
-            'recentRequests'
+            'recentRequests',
+            'bestPerformingShops',
+            'platformIncomeTrend',
+            'avgCommissionRatePct'
         ));
     }
 }

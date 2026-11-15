@@ -219,7 +219,7 @@
                     ])
 
                     <p class="mt-3 text-[11px] text-[var(--muted-foreground)]">
-                        10.00% Platform Escrow Commission automatically accounted on completion.
+                        Quoted prices are <strong>100% yours</strong> — Meramot adds the shop's 5%–10% platform fee transparently for the customer at checkout (pickup &amp; delivery handled by platform, excluded from fee).
                     </p>
                 </div>
             </div>

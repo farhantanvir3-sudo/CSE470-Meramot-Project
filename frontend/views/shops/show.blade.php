@@ -266,18 +266,54 @@
         <!-- ── Left Column: Available Services & Customer Reviews ── -->
         <div class="min-w-0 space-y-6">
 
-            <!-- 1. Available Services Catalog (Unified Direct-Order Cart + Custom Quote) -->
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+            @php
+                // Only vendor-published services are listed — nothing is generated from specialty tags.
+                $dbServices = $shop->services ?? collect();
+                $displayServices = [];
+                foreach ($dbServices as $svc) {
+                    $hasFixedPrice = $svc->base_price !== null && (float) $svc->base_price > 0;
+                    $displayServices[] = [
+                        'name' => $svc->name,
+                        'estimate' => $hasFixedPrice ? (float) $svc->base_price : null,
+                        'summary' => $svc->short_description ?: ($svc->description ?: ($hasFixedPrice
+                            ? 'Fixed-price service set by the workshop.'
+                            : 'Priced after diagnosis — request a quote from the workshop.')),
+                    ];
+                }
+                $shopSpareParts = $shopSpareParts ?? collect();
+                $shopSparePartsCount = $shopSparePartsCount ?? $shopSpareParts->count();
+            @endphp
+
+            <!-- 1. Available Catalog (Split into Services & Spare Parts Tabs) -->
+            <div x-data="{ catalogTab: 'services' }" class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
                 <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-2xl md:text-3xl font-bold text-[var(--foreground)]">Available services</h2>
-                        <p class="mt-1 text-xs md:text-sm text-[var(--muted-foreground)]">
+                        <div class="inline-flex items-center p-1 rounded-full bg-[var(--mint-100)] border border-[var(--border)] mb-2">
+                            <button type="button"
+                                    @click="catalogTab = 'services'"
+                                    :class="catalogTab === 'services' ? 'bg-[var(--accent-dark)] text-white shadow-xs' : 'text-[var(--foreground)] hover:bg-white/60'"
+                                    class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition">
+                                🛠️ Services ({{ count($displayServices) }})
+                            </button>
+                            <button type="button"
+                                    @click="catalogTab = 'spare_parts'"
+                                    :class="catalogTab === 'spare_parts' ? 'bg-[var(--accent-dark)] text-white shadow-xs' : 'text-[var(--foreground)] hover:bg-white/60'"
+                                    class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition">
+                                🔩 Spare Parts ({{ number_format($shopSparePartsCount) }})
+                            </button>
+                        </div>
+                        <p x-show="catalogTab === 'services'" class="text-xs md:text-sm text-[var(--muted-foreground)]">
                             @if($isOperational)
-                                Book fixed-price services directly with {{ $shop->name }}, or request a custom diagnostic quote.
+                                Book fixed-price services directly with {{ $shop->name }} (listed prices go 100% to workshop), or request a custom quote.
                             @else
                                 Proposed service catalog submitted with {{ $shop->name }}'s onboarding application (read-only until verification is complete).
                             @endif
                         </p>
+                        @if($shopSpareParts->isNotEmpty())
+                            <p x-show="catalogTab === 'spare_parts'" x-cloak class="text-xs md:text-sm text-[var(--muted-foreground)]">
+                                Genuine spare parts stocked and dispatched by {{ $shop->name }} (prices exclude platform fee &amp; courier).
+                            </p>
+                        @endif
                     </div>
                     @php
                         $shopCartCount = count(session('cart', []));
@@ -308,90 +344,128 @@
                     @endif
                 </div>
 
-                @php
-                    // Only vendor-published services are listed — nothing is generated from specialty tags.
-                    $dbServices = $shop->services ?? collect();
-                    $displayServices = [];
-                    foreach ($dbServices as $svc) {
-                        $hasFixedPrice = $svc->base_price !== null && (float) $svc->base_price > 0;
-                        $displayServices[] = [
-                            'name' => $svc->name,
-                            'estimate' => $hasFixedPrice ? (float) $svc->base_price : null,
-                            'summary' => $svc->short_description ?: ($svc->description ?: ($hasFixedPrice
-                                ? 'Fixed-price service set by the workshop.'
-                                : 'Priced after diagnosis — request a quote from the workshop.')),
-                        ];
-                    }
-                @endphp
+                {{-- Tab 1: Services --}}
+                <div x-show="catalogTab === 'services'">
+                    @if(empty($displayServices))
+                        <div class="rounded-[1.5rem] border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center">
+                            <i class="fa-solid fa-box-open text-2xl text-[var(--muted-foreground)]"></i>
+                            <p class="mt-3 text-sm font-semibold text-[var(--foreground)]">This workshop hasn't published fixed-price services yet.</p>
+                            <p class="mt-1 text-xs text-[var(--muted-foreground)]">You can still describe your issue and request a custom quote.</p>
+                            @if($isOperational && $canCustomerBookOrReview)
+                                <a href="/requests/create?shop_id={{ $shop->id }}" class="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition">
+                                    Request a Custom Quote
+                                </a>
+                            @endif
+                        </div>
+                    @else
+                        <div class="space-y-4">
+                            @foreach($displayServices as $svcItem)
+                                <article class="flex flex-col gap-4 rounded-[1.5rem] border border-[var(--border)] p-4 transition hover:shadow-sm md:flex-row md:items-start md:justify-between bg-[var(--mint-100)]/40">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex items-start justify-between gap-4">
+                                            <div class="min-w-0">
+                                                <h3 class="text-base md:text-lg font-bold text-[var(--foreground)]">{{ $svcItem['name'] }}</h3>
+                                                <p class="mt-1 text-xs md:text-sm leading-relaxed text-[var(--muted-foreground)]">{{ $svcItem['summary'] }}</p>
+                                            </div>
 
-                @if(empty($displayServices))
-                    <div class="rounded-[1.5rem] border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center">
-                        <i class="fa-solid fa-box-open text-2xl text-[var(--muted-foreground)]"></i>
-                        <p class="mt-3 text-sm font-semibold text-[var(--foreground)]">This workshop hasn't published fixed-price services yet.</p>
-                        <p class="mt-1 text-xs text-[var(--muted-foreground)]">You can still describe your issue and request a custom quote.</p>
-                        @if($isOperational && $canCustomerBookOrReview)
-                            <a href="/requests/create?shop_id={{ $shop->id }}" class="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition">
-                                Request a Custom Quote
-                            </a>
-                        @endif
-                    </div>
-                @endif
-
-                <div class="space-y-4">
-                    @foreach($displayServices as $svcItem)
-                        <article class="flex flex-col gap-4 rounded-[1.5rem] border border-[var(--border)] p-4 transition hover:shadow-sm md:flex-row md:items-start md:justify-between bg-[var(--mint-100)]/40">
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="min-w-0">
-                                        <h3 class="text-base md:text-lg font-bold text-[var(--foreground)]">{{ $svcItem['name'] }}</h3>
-                                        <p class="mt-1 text-xs md:text-sm leading-relaxed text-[var(--muted-foreground)]">{{ $svcItem['summary'] }}</p>
+                                            <div class="shrink-0 text-right">
+                                                @if($svcItem['estimate'] !== null)
+                                                    <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
+                                                        ৳{{ number_format($svcItem['estimate']) }}
+                                                    </div>
+                                                    <div class="text-[10px] text-[var(--muted-foreground)]">fixed price (excl. fee)</div>
+                                                @else
+                                                    <div class="text-sm font-bold text-[var(--accent-dark)]">Quote on inspection</div>
+                                                    <div class="text-[10px] text-[var(--muted-foreground)]">price after diagnosis</div>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div class="shrink-0 text-right">
-                                        @if($svcItem['estimate'] !== null)
-                                            <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
-                                                ৳{{ number_format($svcItem['estimate']) }}
-                                            </div>
-                                            <div class="text-[10px] text-[var(--muted-foreground)]">fixed price</div>
-                                        @else
-                                            <div class="text-sm font-bold text-[var(--accent-dark)]">Quote on inspection</div>
-                                            <div class="text-[10px] text-[var(--muted-foreground)]">price after diagnosis</div>
+                                    <div class="flex flex-wrap items-center gap-2 w-full md:w-auto md:pl-4">
+                                        @if($isOperational && $canCustomerBookOrReview)
+                                            @if($shop->accepts_direct_orders && $svcItem['estimate'] !== null)
+                                                <button
+                                                    type="button"
+                                                    onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"
+                                                    class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
+                                                >
+                                                    <i class="fa-solid fa-cart-plus text-xs"></i>
+                                                    <span>Add to Cart</span>
+                                                </button>
+                                            @endif
+
+                                            <a
+                                                href="/requests/create?shop_id={{ $shop->id }}&issue={{ urlencode($svcItem['name']) }}"
+                                                class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap"
+                                            >
+                                                Custom Quote
+                                            </a>
+                                        @elseif(!$isOperational)
+                                            <span class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed whitespace-nowrap">
+                                                <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Available After Approval
+                                            </span>
+                                        @elseif($isBannedCustomerViewer)
+                                            <span class="inline-flex h-10 items-center justify-center rounded-full border border-rose-300 bg-rose-50 px-4 text-xs font-semibold text-rose-800 cursor-not-allowed whitespace-nowrap">
+                                                <i class="fa-solid fa-ban mr-1.5 text-[10px]"></i> Ordering Restricted
+                                            </span>
                                         @endif
                                     </div>
-                                </div>
-                            </div>
+                                </article>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
 
-                            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto md:pl-4">
-                                @if($isOperational && $canCustomerBookOrReview)
-                                    @if($shop->accepts_direct_orders && $svcItem['estimate'] !== null)
-                                        <button
-                                            type="button"
-                                            onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"
-                                            class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
-                                        >
-                                            <i class="fa-solid fa-cart-plus text-xs"></i>
-                                            <span>Add to Cart</span>
-                                        </button>
-                                    @endif
-
-                                    <a
-                                        href="/requests/create?shop_id={{ $shop->id }}&issue={{ urlencode($svcItem['name']) }}"
-                                        class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap"
-                                    >
-                                        Custom Quote
-                                    </a>
-                                @elseif(!$isOperational)
-                                    <span class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed whitespace-nowrap">
-                                        <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Available After Approval
-                                    </span>
-                                @elseif($isBannedCustomerViewer)
-                                    <span class="inline-flex h-10 items-center justify-center rounded-full border border-rose-300 bg-rose-50 px-4 text-xs font-semibold text-rose-800 cursor-not-allowed whitespace-nowrap">
-                                        <i class="fa-solid fa-ban mr-1.5 text-[10px]"></i> Ordering Restricted
-                                    </span>
-                                @endif
+                {{-- Tab 2: Spare Parts (renders listed parts if present, otherwise stays empty as requested) --}}
+                <div x-show="catalogTab === 'spare_parts'" x-cloak>
+                    @if($shopSpareParts->isNotEmpty())
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            @foreach($shopSpareParts as $spItem)
+                                @php
+                                    $spEff = $spItem->effectiveBasePrice();
+                                    $spNorm = $spItem->resolvedNormalBasePrice();
+                                    $spOffer = $spItem->isOfferActive();
+                                @endphp
+                                <a href="{{ route('spare-parts.show', ['slug' => $spItem->slug]) }}"
+                                   class="group rounded-2xl border border-[var(--border)] bg-white/95 dark:bg-[var(--mint-100)]/20 hover:border-emerald-700 hover:shadow-sm transition overflow-hidden flex flex-col">
+                                    <div class="relative aspect-square bg-white p-2.5 border-b border-slate-100">
+                                        @if($spOffer)
+                                            <span class="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-600 text-white text-[10px] font-extrabold flex items-center justify-center shadow-xs">
+                                                Sale!
+                                            </span>
+                                        @endif
+                                        <img src="{{ $spItem->image_url }}"
+                                             alt="{{ $spItem->title }}"
+                                             loading="lazy"
+                                             onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
+                                             class="w-full h-full object-contain group-hover:scale-105 transition">
+                                    </div>
+                                    <div class="p-3 flex-1 flex flex-col justify-between gap-1.5">
+                                        <div class="text-xs font-bold text-[var(--foreground)] line-clamp-2 group-hover:text-emerald-800">
+                                            {{ $spItem->title }}
+                                        </div>
+                                        <div class="flex items-baseline gap-1.5 flex-wrap">
+                                            @if($spOffer && $spNorm > $spEff)
+                                                <span class="text-[11px] text-slate-400 line-through">৳{{ number_format($spNorm, 0) }}</span>
+                                                <span class="text-sm font-extrabold text-red-600">৳{{ number_format($spEff, 0) }}</span>
+                                            @else
+                                                <span class="text-sm font-extrabold text-[var(--foreground)]">৳{{ number_format($spEff, 0) }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                        @if($shopSparePartsCount > $shopSpareParts->count())
+                            <div class="mt-4 text-center">
+                                <a href="{{ route('spare-parts.index', ['seller_shop_id' => $shop->id]) }}"
+                                   class="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-emerald-900 text-white text-xs font-bold hover:bg-emerald-800 transition">
+                                    View all {{ number_format($shopSparePartsCount) }} spare parts from {{ $shop->name }} →
+                                </a>
                             </div>
-                        </article>
-                    @endforeach
+                        @endif
+                    @endif
                 </div>
             </div>
 

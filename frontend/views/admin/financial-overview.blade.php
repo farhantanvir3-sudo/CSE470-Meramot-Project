@@ -39,7 +39,7 @@
                 <span>Financial Business Intelligence & Double-Entry Ledger</span>
             </h1>
             <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
-                Real-time tracking of platform revenue, 10% commission flow, escrow reserves, and vendor payout distributions.
+                Real-time tracking of exclusive 5%–10% platform commission flow (excluding platform pickup &amp; delivery), escrow reserves, and 100% vendor payouts.
             </p>
             <p class="dev-only-badge text-xs text-[var(--muted-foreground)] mt-1">
                 Assigned Developer: <strong class="text-[var(--foreground)] font-bold">Md. Nawshad Zaman Khan</strong>
@@ -59,6 +59,18 @@
         <div class="rounded-2xl border border-emerald-600/40 bg-[var(--mint-100)] px-5 py-3.5 text-xs font-bold text-[var(--accent-dark)] flex items-center gap-2 shadow-sm">
             <i class="fa-solid fa-circle-check text-emerald-700"></i>
             <span>{{ session('success') }}</span>
+        </div>
+    @endif
+    @if(session('warning'))
+        <div class="rounded-2xl border border-amber-500/40 bg-amber-50 px-5 py-3.5 text-xs font-bold text-amber-900 flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
+            <span>{{ session('warning') }}</span>
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="rounded-2xl border border-rose-500/40 bg-rose-50 px-5 py-3.5 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+            <span>{{ $errors->first() }}</span>
         </div>
     @endif
 
@@ -113,12 +125,20 @@
             </div>
         </div>
 
-        <!-- 10% Platform Commission Revenue -->
+        @php
+            $avgFeeDisplay = rtrim(rtrim(number_format((float) ($avgCommissionRatePct ?? 8.0), 2), '0'), '.');
+            $trendData = $platformIncomeTrend ?? [];
+            $trendDirection = $trendData['direction'] ?? 'STEADY';
+            $trendDelta = (float) ($trendData['rate_delta_pct'] ?? 0);
+            $trendDeltaLabel = ($trendDelta > 0 ? 'Up ' : ($trendDelta < 0 ? 'Down ' : '')) . abs($trendDelta) . '%';
+        @endphp
+
+        <!-- Dynamic Platform Commission Revenue (5%–10% Excl. Delivery) -->
         <div class="meramot-card rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
             <div class="flex items-start justify-between gap-1.5">
                 <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
-                    <span class="sm:hidden">10% Commission</span>
-                    <span class="hidden sm:inline">10% Platform Commission</span>
+                    <span class="sm:hidden">Platform Fee</span>
+                    <span class="hidden sm:inline">Platform Commission (5–10%)</span>
                 </span>
                 <div class="w-7 h-7 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-teal-100 dark:bg-teal-950/70 border border-teal-300/40 dark:border-teal-800 flex items-center justify-center text-teal-700 dark:text-teal-300 shadow-sm">
                     <i class="fa-solid fa-percent text-xs sm:text-sm"></i>
@@ -130,8 +150,8 @@
                 </p>
                 <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center leading-snug">
                     <i class="fa-solid fa-receipt text-teal-600 dark:text-teal-400 mr-1 text-[10px] shrink-0"></i>
-                    <span class="sm:hidden">Retained 10% fee</span>
-                    <span class="hidden sm:inline">Net service fee retained (10%)</span>
+                    <span class="sm:hidden">Avg {{ $avgFeeDisplay }}% fee</span>
+                    <span class="hidden sm:inline">Shop avg {{ $avgFeeDisplay }}% (excl. delivery)</span>
                 </p>
             </div>
         </div>
@@ -161,19 +181,19 @@
     </div>
 
     {{-- ======================================================================
-         RELOCATED BLOCK 2: 10% Platform Commission Accounting Breakdown
+         RELOCATED BLOCK 2: Dynamic 5%–10% Platform Commission Accounting Breakdown
          ====================================================================== --}}
     <div class="meramot-card rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 shadow-sm bg-[var(--mint-100)] border border-[var(--border)] space-y-4 sm:space-y-5">
         <div class="space-y-3 sm:space-y-4">
             <div class="max-w-3xl">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="px-2.5 py-0.5 text-[10px] font-black uppercase rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] tracking-wide">
-                        10% Rule Engine
+                        5%–10% Fee Rule Engine
                     </span>
-                    <h3 class="text-xs sm:text-sm font-black text-[var(--foreground)]">Automated Platform Commission &amp; Escrow Accounting</h3>
+                    <h3 class="text-xs sm:text-sm font-black text-[var(--foreground)]">Transparent Exclusive Pricing &amp; Platform Logistics Accounting</h3>
                 </div>
                 <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1.5 sm:mt-2 leading-relaxed">
-                    Meramot enforces an automated <strong>10% platform commission</strong> deduction on gross electronic repair tickets. The remaining <strong>90%</strong> is credited to vendor escrow accounts for banking/bKash settlement.
+                    Every listed service &amp; spare part price is <strong>100% allocated to the workshop</strong>. Meramot charges an admin-configured <strong>5%–10% platform commission</strong> on workshop earnings (currently averaging <strong>{{ $avgFeeDisplay }}%</strong>), while <strong>pickup &amp; delivery logistics</strong> are handled directly by the platform and excluded from vendor commission.
                 </p>
             </div>
 
@@ -183,7 +203,7 @@
                     <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalCustomerInflow, 2) }}</span>
                 </div>
                 <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
-                    <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Commission (10%)</span>
+                    <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Platform Fee (5–10%)</span>
                     <span class="mt-1 block text-xs sm:text-sm font-black text-teal-700 dark:text-teal-400 font-mono whitespace-nowrap">৳{{ number_format($totalCommissionRevenue, 2) }}</span>
                 </div>
                 <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
@@ -202,6 +222,150 @@
                     <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Open Settlements</span>
                     <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--accent-dark)] font-mono whitespace-nowrap">{{ $pendingSettlementCount ?? 0 }}</span>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ======================================================================
+         PLATFORM INCOME RATE CHART & BEST PERFORMING WORKSHOPS (5%–10% TIERS)
+         ====================================================================== --}}
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <!-- Platform Income Rate Trend Graph -->
+        <div class="xl:col-span-5 meramot-card rounded-2xl sm:rounded-[2rem] p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">{{ $trendData['granularity'] ?? 'Weekly' }} Income Trajectory</p>
+                    <h3 class="text-sm sm:text-base font-black text-[var(--foreground)] mt-0.5">Platform Income Rate Graph</h3>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Platform fee revenue &amp; pickup/delivery logistics over time</p>
+                </div>
+                <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black border
+                    {{ $trendDirection === 'UP' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800' : ($trendDirection === 'DOWN' ? 'bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950/70 dark:text-rose-300 dark:border-rose-800' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border-[var(--border)]') }}">
+                    {{ $trendData['trend_label'] ?? 'Steady ●' }}
+                    <span class="font-mono">({{ $trendDeltaLabel }})</span>
+                </span>
+            </div>
+
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/35 p-3">
+                <svg viewBox="0 0 {{ $trendData['svg_width'] ?? 640 }} {{ $trendData['svg_height'] ?? 190 }}" class="w-full h-44 sm:h-48 overflow-visible" role="img" aria-label="Platform Income Rate Graph">
+                    <defs>
+                        <linearGradient id="meramotIncomeGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#047857" stop-opacity="0.28"/>
+                            <stop offset="100%" stop-color="#047857" stop-opacity="0.02"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Horizontal Gridlines -->
+                    @foreach([20, 68, 116, 164] as $gy)
+                        <line x1="32" y1="{{ $gy }}" x2="608" y2="{{ $gy }}" stroke="currentColor" stroke-opacity="0.12" stroke-dasharray="4 4"/>
+                    @endforeach
+
+                    @if(!empty($trendData['area_income']))
+                        <polygon points="{{ $trendData['area_income'] }}" fill="url(#meramotIncomeGrad)"/>
+                    @endif
+                    @if(!empty($trendData['polyline_income']))
+                        <polyline fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="{{ $trendData['polyline_income'] }}"/>
+                    @endif
+                    @if(!empty($trendData['polyline_commission']))
+                        <polyline fill="none" stroke="#0284c7" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round" stroke-linejoin="round" points="{{ $trendData['polyline_commission'] }}"/>
+                    @endif
+
+                    @foreach(($trendData['points'] ?? []) as $pt)
+                        <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y_income'] }}" r="4.5" fill="#047857" stroke="#ffffff" stroke-width="1.5">
+                            <title>{{ $pt['label'] }} — Total Platform Income: ৳{{ number_format($pt['platform_income'], 2) }} (Commission: ৳{{ number_format($pt['commission'], 2) }}, Logistics: ৳{{ number_format($pt['delivery'], 2) }})</title>
+                        </circle>
+                        <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y_commission'] }}" r="3" fill="#0284c7">
+                            <title>{{ $pt['label'] }} — Commission Only: ৳{{ number_format($pt['commission'], 2) }}</title>
+                        </circle>
+                        <text x="{{ $pt['x'] }}" y="183" text-anchor="middle" fill="currentColor" opacity="0.65" font-size="10" font-weight="700">{{ $pt['label'] }}</text>
+                    @endforeach
+                </svg>
+
+                <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold text-[var(--muted-foreground)] px-1">
+                    <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full bg-emerald-700 inline-block"></span> Total Platform Income (Fee + Logistics)</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="h-0.5 w-4 border-t-2 border-dashed border-sky-600 inline-block"></span> 5–10% Fee Only</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/45 p-2.5">
+                    <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Prior Avg</span>
+                    <span class="font-mono font-black text-[var(--foreground)]">৳{{ number_format($trendData['previous_period_avg'] ?? 0, 0) }}</span>
+                </div>
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/45 p-2.5">
+                    <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Recent Avg</span>
+                    <span class="font-mono font-black text-emerald-700 dark:text-emerald-400">৳{{ number_format($trendData['recent_period_avg'] ?? 0, 0) }}</span>
+                </div>
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/45 p-2.5">
+                    <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Platform Delivery</span>
+                    <span class="font-mono font-black text-sky-700 dark:text-sky-400">৳{{ number_format($trendData['total_delivery'] ?? 0, 0) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Performing Workshops & Admin Commission Rate Control (5%–10%) -->
+        <div class="xl:col-span-7 meramot-card rounded-2xl sm:rounded-[2rem] p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
+            <div class="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--border)] pb-3">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-dark)]">Vendor Performance Tiers</p>
+                    <h3 class="text-sm sm:text-base font-black text-[var(--foreground)] mt-0.5">Best Performing Shops &amp; Commission Control</h3>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Reward top-performing workshops with lower platform fees between <strong>5% and 10% (max)</strong> — pickup &amp; delivery remain excluded.</p>
+                </div>
+                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-extrabold text-[var(--accent-dark)]">
+                    Avg Fee: {{ $avgFeeDisplay }}%
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-[var(--border)] text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">
+                            <th class="py-2 pr-3">Rank &amp; Workshop</th>
+                            <th class="py-2 pr-3">Performance</th>
+                            <th class="py-2 pr-3">100% Vendor / Fee</th>
+                            <th class="py-2 text-right">Fee Rate (5–10%)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--border)]/60">
+                        @forelse($bestPerformingShops ?? [] as $idx => $perfShop)
+                            <tr class="hover:bg-[var(--mint-100)]/40 transition">
+                                <td class="py-2.5 pr-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="h-6 w-6 shrink-0 rounded-full bg-[var(--mint-100)] border border-[var(--border)] flex items-center justify-center text-[10px] font-black text-[var(--accent-dark)]">#{{ $idx + 1 }}</span>
+                                        <div class="min-w-0">
+                                            <div class="font-bold text-[var(--foreground)] truncate max-w-[175px]">{{ $perfShop['name'] }}</div>
+                                            <div class="text-[10px] text-[var(--muted-foreground)]">{{ $perfShop['tier_badge'] }} &bull; {{ $perfShop['city'] }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-2.5 pr-3 whitespace-nowrap">
+                                    <div class="font-bold text-amber-600">★ {{ number_format($perfShop['rating'], 1) }} <span class="text-[10px] font-normal text-[var(--muted-foreground)]">({{ $perfShop['review_count'] }})</span></div>
+                                    <div class="text-[10px] text-[var(--muted-foreground)]">{{ $perfShop['completed_orders'] }} completed jobs</div>
+                                </td>
+                                <td class="py-2.5 pr-3 whitespace-nowrap font-mono">
+                                    <div class="font-bold text-[var(--foreground)]">৳{{ number_format($perfShop['vendor_earning'], 0) }}</div>
+                                    <div class="text-[10px] text-teal-700 dark:text-teal-400">Fee: ৳{{ number_format($perfShop['platform_commission'], 0) }}</div>
+                                </td>
+                                <td class="py-2.5 text-right whitespace-nowrap">
+                                    <form method="POST" action="{{ route('admin.shops.commission-rate', $perfShop['shop_id']) }}" class="inline-flex items-center justify-end gap-1.5">
+                                        @csrf
+                                        <input type="number" name="commission_rate" min="5" max="10" step="0.5" onwheel="this.blur()"
+                                               value="{{ rtrim(rtrim(number_format($perfShop['commission_rate_pct'], 2), '0'), '.') }}"
+                                               aria-label="Commission percentage for {{ $perfShop['name'] }}"
+                                               class="w-16 rounded-lg border border-[var(--border)] bg-[var(--mint-100)] px-2 py-1 text-right font-mono text-xs font-bold text-[var(--foreground)] outline-none">
+                                        <span class="text-[10px] font-bold text-[var(--muted-foreground)]">%</span>
+                                        <button type="submit" class="rounded-full bg-[var(--accent-dark)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                                            Save
+                                        </button>
+                                    </form>
+                                    <div class="text-[9px] text-[var(--muted-foreground)] mt-0.5">Suggested: {{ rtrim(rtrim(number_format($perfShop['suggested_rate_pct'], 2), '0'), '.') }}%</div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="py-5 text-center text-[var(--muted-foreground)]">No active verified workshops ranked yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -239,7 +403,7 @@
                 <div>
                     <h3 class="text-sm font-black text-[var(--foreground)]">Manual Order Settlement</h3>
                     <p class="text-[11px] text-[var(--muted-foreground)]">
-                        Post a single repair order settlement with automated 10% platform commission & 90% vendor escrow allocation.
+                        Allocate 100% of vendor listed subtotal to the shop escrow account and record its active 5%–10% platform commission (excl. delivery).
                     </p>
                 </div>
 
@@ -254,7 +418,7 @@
 
                 <div class="grid grid-cols-2 gap-2.5">
                     <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Gross Amount (৳) *</label>
+                        <label class="block font-bold text-[var(--foreground)] mb-1">Vendor Subtotal (৳) *</label>
                         <input type="number" step="0.01" min="50" onwheel="this.blur()" name="gross_amount" placeholder="e.g. 4500" required
                                class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs text-[var(--foreground)] outline-none">
                     </div>
@@ -267,7 +431,7 @@
             </div>
 
             <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] py-2.5 text-xs font-bold shadow-sm hover:opacity-90 transition">
-                Confirm 10% / 90% Settlement
+                Confirm Dynamic Fee Settlement
             </button>
         </form>
 

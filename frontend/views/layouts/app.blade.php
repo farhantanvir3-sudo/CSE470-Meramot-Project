@@ -2489,6 +2489,7 @@
             const SCROLL_RESTORE_KEY = 'meramot.scrollRestore';
             let activeController = null;
             let navSequence = 0;
+            let lastSoftPathAndQuery = window.location.pathname + window.location.search;
 
             function isSoftNavExcludedPath(pathname) {
                 return /^\/(auth|login|register|logout|delivery\/login|vendor\/apply)/i.test(pathname)
@@ -2686,6 +2687,7 @@
                             window.history.pushState({ meramotSoftNav: true, url: resolvedUrl }, '', resolvedUrl);
                         }
                     }
+                    lastSoftPathAndQuery = resolvedParsed.pathname + resolvedParsed.search;
 
                     syncHeaderState(doc, resolvedUrl);
 
@@ -2824,6 +2826,11 @@
             };
 
             window.addEventListener('popstate', function () {
+                const currentPathAndQuery = window.location.pathname + window.location.search;
+                if (currentPathAndQuery === lastSoftPathAndQuery) {
+                    return;
+                }
+                lastSoftPathAndQuery = currentPathAndQuery;
                 visit(window.location.href, { skipHistory: true, preserveScroll: true });
             });
 

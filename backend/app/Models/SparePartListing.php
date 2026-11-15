@@ -26,6 +26,8 @@ class SparePartListing extends Model
 {
     use HasFactory;
 
+    public const MAX_INSTALLATION_QTY = 3;
+
     protected $fillable = [
         'shop_id',
         'vendor_profile_id',
@@ -582,6 +584,38 @@ class SparePartListing extends Model
     }
 
     /**
+     * Whether this spare part supports optional branch/workshop installation.
+     * Excludes raw tools/consumables/adhesives/chargers/cables that do not require repair bench fitting.
+     */
+    public function supportsWorkshopInstallation(): bool
+    {
+        if ((float) ($this->assembly_fee ?? 0) <= 0) {
+            return false;
+        }
+
+        $category = trim((string) ($this->part_category ?? ''));
+        if ($category === 'Tools, Consumables & Soldering') {
+            return false;
+        }
+
+        $title = (string) ($this->title ?? '');
+        if (preg_match('/\b(flux|solder|paste|screwdriver|tweezer|tape|glue|adhesive|multimeter|cleaner|isopropyl|mat|cable|adapter|charger)\b/i', $title)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Maximum retail order quantity eligible for optional workshop installation.
+     * Bulk/wholesale quantities (> 3 units) must order parts-only supply.
+     */
+    public function maxInstallationQuantity(): int
+    {
+        return self::MAX_INSTALLATION_QTY;
+    }
+
+    /**
      * Returns true when a candidate landed total matches or is within the close-price window of the best deal.
      */
     public static function isWithinBestDealWindow(float $candidateLandedTotal, float $bestLandedTotal): bool
@@ -600,5 +634,108 @@ class SparePartListing extends Model
         $clean = preg_replace('/\s+(Price\s+in\s+Bangladesh|In\s+Bangladesh|In\s+BD).*$/i', '', (string) $clean);
 
         return \Illuminate\Support\Str::slug((string) $clean);
+    }
+
+    /**
+     * Extract specific hardware/component brands from product titles when `brand` was left generic
+     * (e.g., Sunon, Toshiba, Sony, Fujitsu, Gigabyte, Delta, Logitech, Kingston, etc.).
+     */
+    public static function inferSpecificBrandFromTitle(string $title, string $currentBrand = ''): string
+    {
+        $trimmedCurrent = trim($currentBrand);
+        $genericBrands = ['', 'PC / Laptop', 'PC Component', 'Universal', 'Generic', 'Other', 'Unknown'];
+        if (!in_array($trimmedCurrent, $genericBrands, true)) {
+            return $trimmedCurrent;
+        }
+
+        $brandPatterns = [
+            'Sunon' => '/\bsunon\b/i',
+            'Delta' => '/\bdelta\b/i',
+            'Forcecon' => '/\bforcecon\b/i',
+            'ADDA' => '/\badda\b/i',
+            'Toshiba' => '/\btoshiba\b/i',
+            'Sony' => '/\bsony\b/i',
+            'Fujitsu' => '/\bfujitsu\b/i',
+            'Gigabyte' => '/\bgigabyte\b/i',
+            'Samsung' => '/\bsamsung\b/i',
+            'Apple' => '/\b(apple|macbook|iphone|ipad)\b/i',
+            'Asus' => '/\b(asus|rog|zenbook|vivobook)\b/i',
+            'Dell' => '/\b(dell|inspiron|latitude|vostro|xps|alienware)\b/i',
+            'HP' => '/\b(hp|pavilion|elitebook|probook|envy|spectre|compaq)\b/i',
+            'Lenovo' => '/\b(lenovo|thinkpad|ideapad|legion|yoga)\b/i',
+            'Acer' => '/\b(acer|aspire|nitro|predator|swift)\b/i',
+            'MSI' => '/\bmsi\b/i',
+            'Microsoft' => '/\b(microsoft|surface)\b/i',
+            'Razer' => '/\brazer\b/i',
+            'Logitech' => '/\blogitech\b/i',
+            'Corsair' => '/\bcorsair\b/i',
+            'Kingston' => '/\bkingston\b/i',
+            'Crucial' => '/\bcrucial\b/i',
+            'WD' => '/\b(wd|western\s+digital)\b/i',
+            'Seagate' => '/\bseagate\b/i',
+            'Transcend' => '/\btranscend\b/i',
+            'A4Tech' => '/\ba4\s*tech\b/i',
+            'Havit' => '/\bhavit\b/i',
+            'Fantech' => '/\bfantech\b/i',
+            'Redragon' => '/\bredragon\b/i',
+            'Baseus' => '/\bbaseus\b/i',
+            'Ugreen' => '/\bugreen\b/i',
+            'Anker' => '/\banker\b/i',
+            'Remax' => '/\bremax\b/i',
+            'Joyroom' => '/\bjoyroom\b/i',
+            'Haylou' => '/\bhaylou\b/i',
+            'QCY' => '/\bqcy\b/i',
+            'Amazfit' => '/\bamazfit\b/i',
+            'Xiaomi' => '/\b(xiaomi|redmi|poco|mi\s+)\b/i',
+            'Oppo' => '/\boppo\b/i',
+            'Vivo' => '/\bvivo\b/i',
+            'Realme' => '/\brealme\b/i',
+            'OnePlus' => '/\b(oneplus|one\s+plus)\b/i',
+            'Google' => '/\b(google|pixel)\b/i',
+            'Motorola' => '/\b(motorola|moto\s+)\b/i',
+            'Huawei' => '/\bhuawei\b/i',
+            'Nokia' => '/\bnokia\b/i',
+            'Infinix' => '/\binfinix\b/i',
+            'Tecno' => '/\btecno\b/i',
+            'Itel' => '/\bitel\b/i',
+            'Nothing' => '/\bnothing\b/i',
+            'Walton' => '/\bwalton\b/i',
+            'LG' => '/\blg\b/i',
+            'Honor' => '/\bhonor\b/i',
+        ];
+
+        foreach ($brandPatterns as $canonicalBrand => $regex) {
+            if (preg_match($regex, $title)) {
+                return $canonicalBrand;
+            }
+        }
+
+        return $trimmedCurrent !== '' ? $trimmedCurrent : 'Universal';
+    }
+
+    /**
+     * Normalize generic brands across existing `spare_part_listings` rows so the hierarchical
+     * category->brand sidebar exposes cloned brands such as Sunon, Toshiba, Sony, Kingston, etc.
+     */
+    public static function normalizeGenericBrandsInDatabase(): int
+    {
+        $updated = 0;
+        static::query()
+            ->whereIn('brand', ['', 'PC / Laptop', 'PC Component', 'Universal', 'Generic', 'Other', 'Unknown'])
+            ->select(['id', 'title', 'brand'])
+            ->chunkById(500, function ($rows) use (&$updated) {
+                $byNewBrand = [];
+                foreach ($rows as $row) {
+                    $inferred = self::inferSpecificBrandFromTitle((string) $row->title, (string) $row->brand);
+                    if ($inferred !== (string) $row->brand) {
+                        $byNewBrand[$inferred][] = $row->id;
+                    }
+                }
+                foreach ($byNewBrand as $brandName => $ids) {
+                    $updated += static::whereIn('id', $ids)->update(['brand' => substr($brandName, 0, 80)]);
+                }
+            });
+
+        return $updated;
     }
 }

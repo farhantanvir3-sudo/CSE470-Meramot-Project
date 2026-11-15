@@ -18,6 +18,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
     $isDirectService = $b['is_direct_service'];
     $servicesSubtotal = $b['services_subtotal'];
     $escrowFee = $b['escrow_fee'];
+    $ratePctLabel = rtrim(rtrim(number_format((float) ($b['commission_rate_pct'] ?? 8), 2), '0'), '.');
     $deliveryFee = $b['delivery_fee'];
     $discountAmount = $b['discount_amount'];
     $totalPayable = $b['total_payable'];
@@ -121,15 +122,15 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
 
             @if($isDirectService)
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Services Subtotal:</span>
+                    <span>Vendor Services &amp; Parts (100% Goes to Vendor):</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($servicesSubtotal, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Escrow Protection Fee (5%):</span>
+                    <span>Meramot Platform Fee ({{ $ratePctLabel }}%, excl. pickup &amp; delivery):</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($escrowFee, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Two-Way Courier ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }}):</span>
+                    <span>Platform Pickup &amp; Delivery Logistics ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }}):</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($deliveryFee, 2) }}</span>
                 </div>
             @else
@@ -169,15 +170,19 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                 @endif
 
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Repair Quote / Order Subtotal:</span>
+                    <span>Workshop Quote / Parts &amp; Labor (100% Goes to Vendor):</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($acceptedBidCost, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Doorstep Courier Fee:</span>
+                    <span>Meramot Platform Fee ({{ $ratePctLabel }}%, excl. pickup &amp; delivery):</span>
+                    <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($escrowFee, 2) }}</span>
+                </div>
+                <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
+                    <span>Platform Pickup &amp; Delivery Logistics:</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($deliveryFee, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Platform Escrow Buyer Protection:</span>
+                    <span>Escrow Buyer Protection Coverage:</span>
                     <span class="font-bold text-emerald-700 shrink-0">Included</span>
                 </div>
             @endif

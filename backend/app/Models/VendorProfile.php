@@ -21,6 +21,10 @@ class VendorProfile extends Model
 {
     use HasFactory;
 
+    public const MIN_COMMISSION_RATE = 5.0;
+    public const MAX_COMMISSION_RATE = 10.0;
+    public const DEFAULT_COMMISSION_RATE = 8.0;
+
     protected $fillable = [
         'user_id',
         'owner_name',
@@ -117,5 +121,18 @@ class VendorProfile extends Model
     public function getCanonicalBrandNameAttribute(): string
     {
         return $this->brand_name ?: $this->shop_name;
+    }
+
+    /**
+     * Platform commission/fee percentage strictly bounded between 5% and 10% (max),
+     * charged on vendor earnings excluding platform-handled pickup & delivery.
+     */
+    public function effectiveCommissionRatePct(): float
+    {
+        $raw = (float) ($this->commission_rate ?? self::DEFAULT_COMMISSION_RATE);
+        if ($raw <= 0) {
+            $raw = self::DEFAULT_COMMISSION_RATE;
+        }
+        return round(min(self::MAX_COMMISSION_RATE, max(self::MIN_COMMISSION_RATE, $raw)), 2);
     }
 }

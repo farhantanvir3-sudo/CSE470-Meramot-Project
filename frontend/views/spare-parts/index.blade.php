@@ -20,7 +20,29 @@
         return url('/spare-parts') . ($qs ? ('?' . $qs) : '');
     };
 
-    $hasActiveFilters = ($search !== '' || $selectedCategory !== 'All' || $selectedBrand !== 'All' || $deviceType !== 'all' || $selectedGroup !== '' || $wholesaleOnly || $specsOnly || $localOnly || $onSaleOnly || $sort !== 'best_deal');
+    $defaultSort = !empty($hasSearchContext) ? 'best_deal' : 'alphabetical';
+    $hasActiveFilters = ($search !== '' || $selectedCategory !== 'All' || $selectedBrand !== 'All' || $deviceType !== 'all' || $selectedGroup !== '' || $wholesaleOnly || $specsOnly || $localOnly || $onSaleOnly || $sort !== $defaultSort);
+
+    $sortOptions = !empty($hasSearchContext)
+        ? [
+            'best_deal' => 'Price + Shipping: lowest first (Best Deal)',
+            'lowest_price' => 'Price: lowest first',
+            'highest_price' => 'Price + Shipping: highest first',
+            'distance' => 'Distance: nearest first',
+            'fastest_eta' => 'Fastest Delivery',
+            'popular' => 'Top Sold',
+            'wholesale' => 'Best Wholesale',
+            'alphabetical' => 'Alphabetical: A–Z',
+        ]
+        : [
+            'alphabetical' => 'Alphabetical: A–Z',
+            'distance' => 'Distance: nearest first',
+            'fastest_eta' => 'Fastest Delivery',
+            'popular' => 'Top Sold',
+            'wholesale' => 'Best Wholesale',
+            'highest_price' => 'Price + Shipping: highest first',
+        ];
+    $activeSortLabel = $sortOptions[$sort] ?? ($hasSearchContext ? 'Price + Shipping: lowest first' : 'Alphabetical: A–Z');
 
     $authVendorProfileId = null;
     if (auth()->check() && auth()->user()->role === 'vendor') {
@@ -124,32 +146,25 @@
                         class="min-w-0 flex-1 sm:flex-initial inline-flex items-center gap-1.5 h-8 sm:h-10 px-2.5 sm:px-3.5 rounded-full bg-[var(--mint-50)] border border-[var(--border)] text-[11px] sm:text-xs text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
                     <span class="text-emerald-700 font-bold shrink-0">📍</span>
                     <span class="text-[var(--muted-foreground)] hidden md:inline shrink-0">Deliver to:</span>
-                    <strong class="font-extrabold text-[var(--foreground)] truncate max-w-[145px] sm:max-w-[180px]" id="spActiveLocationLabel">{{ $locLabel }}</strong>
-                    <span class="text-[10px] text-emerald-800 font-bold shrink-0 ml-auto sm:ml-0.5">Pin ▾</span>
-                </button>
-
-                <button type="button"
-                        id="spNearMeBtn"
-                        onclick="window.meramotUseGpsForSpareParts && window.meramotUseGpsForSpareParts(this)"
-                        class="select-none shrink-0 inline-flex items-center gap-1 h-8 sm:h-10 px-2.5 sm:px-3.5 rounded-full bg-emerald-900 text-white text-[11px] sm:text-xs font-bold hover:bg-emerald-800 transition">
-                    <span>◎ Near Me</span>
+                    <strong class="font-extrabold text-[var(--foreground)] truncate max-w-[165px] sm:max-w-[200px]" id="spActiveLocationLabel">{{ $locLabel }}</strong>
+                    <span class="text-[10px] text-emerald-800 font-bold shrink-0 ml-auto sm:ml-0.5">Change ▾</span>
                 </button>
             </div>
         </div>
 
-        {{-- Row 2: Mobile 4-Tab Segmented Switcher (Zero Horizontal Clipping) + Desktop Deal Pills --}}
+        {{-- Row 2 (Mobile): 4-Tab Segmented Switcher (Mobile / PC Parts / Others / Sale!) — tap active tab to clear --}}
         <div class="grid grid-cols-4 gap-1 sm:hidden pt-0.5">
-            <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => null, 'on_sale' => null]) }}"
-               class="text-center py-1.5 px-1 rounded-xl text-[11px] font-extrabold border transition truncate {{ ($deviceType === 'all' && !$onSaleOnly) ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)]' }}">
-                All Parts
-            </a>
-            <a href="{{ $buildFilterUrl(['device_type' => 'mobile', 'part_category' => null]) }}"
+            <a href="{{ $buildFilterUrl(['device_type' => $deviceType === 'mobile' ? null : 'mobile', 'part_category' => null]) }}"
                class="text-center py-1.5 px-1 rounded-xl text-[11px] font-extrabold border transition truncate {{ $deviceType === 'mobile' ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)]' }}">
                 📱 Mobile
             </a>
-            <a href="{{ $buildFilterUrl(['device_type' => 'pc', 'part_category' => null]) }}"
+            <a href="{{ $buildFilterUrl(['device_type' => $deviceType === 'pc' ? null : 'pc', 'part_category' => null]) }}"
                class="text-center py-1.5 px-1 rounded-xl text-[11px] font-extrabold border transition truncate {{ $deviceType === 'pc' ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)]' }}">
                 💻 PC Parts
+            </a>
+            <a href="{{ $buildFilterUrl(['device_type' => $deviceType === 'others' ? null : 'others', 'part_category' => null]) }}"
+               class="text-center py-1.5 px-1 rounded-xl text-[11px] font-extrabold border transition truncate {{ $deviceType === 'others' ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)]' }}">
+                🧩 Others
             </a>
             <a href="{{ $buildFilterUrl(['on_sale' => $onSaleOnly ? null : '1']) }}"
                class="text-center py-1.5 px-1 rounded-xl text-[11px] font-extrabold border transition truncate {{ $onSaleOnly ? 'bg-red-600 text-white border-red-600 shadow-xs' : 'bg-red-50 text-red-700 border-red-200' }}">
@@ -157,16 +172,16 @@
             </a>
         </div>
 
-        {{-- Desktop Catalog & Deal Toggles Row --}}
+        {{-- Desktop Catalog & Deal Toggles Row (No redundant "All Parts" pill; click active segment to show all) --}}
         <div class="hidden sm:flex items-center gap-2 min-w-0 border-t border-[var(--border)]/60 pt-2">
             <span class="w-20 shrink-0 text-[11px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Catalog:</span>
             <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                 @foreach([
-                    'all' => '🌐 All Parts (Mobile + PC)',
                     'mobile' => '📱 Mobile & Gadget Parts',
                     'pc' => '💻 Laptop & PC Parts',
+                    'others' => '🧩 Others',
                 ] as $dtKey => $dtLabel)
-                    <a href="{{ $buildFilterUrl(['device_type' => $dtKey === 'all' ? null : $dtKey, 'part_category' => null]) }}"
+                    <a href="{{ $buildFilterUrl(['device_type' => $deviceType === $dtKey ? null : $dtKey, 'part_category' => null]) }}"
                        class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $deviceType === $dtKey ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
                         {{ $dtLabel }}
                     </a>
@@ -195,128 +210,27 @@
                 </a>
             </div>
         </div>
-
-        {{-- Row 3: Part Category Chip Slider (Fixed Label Outside Scrollport on Desktop, Full-Bleed Unclipped Chips on Mobile) --}}
-        <div class="flex items-center gap-2 min-w-0 sm:border-t sm:border-[var(--border)]/60 sm:pt-2">
-            <span class="hidden sm:inline-block w-20 shrink-0 text-[11px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Part Type:</span>
-            <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5"
-                 x-init="const el = $el.querySelector('[data-active-pill=true]'); if (el && (el.offsetLeft + el.offsetWidth > $el.clientWidth)) { $el.scrollLeft = Math.max(0, el.offsetLeft - ($el.clientWidth - el.offsetWidth) / 2); }">
-                <a href="{{ $buildFilterUrl(['part_category' => null]) }}"
-                   @if($selectedCategory === 'All') data-active-pill="true" @endif
-                   class="shrink-0 whitespace-nowrap px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold border transition {{ $selectedCategory === 'All' ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
-                    All Types
-                </a>
-                @foreach($partCategories as $cat)
-                    @php $isCatActive = strcasecmp($selectedCategory, $cat) === 0; @endphp
-                    <a href="{{ $buildFilterUrl(['part_category' => $cat]) }}"
-                       @if($isCatActive) data-active-pill="true" @endif
-                       class="shrink-0 whitespace-nowrap px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold border transition {{ $isCatActive ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
-                        {{ $cat }}
-                    </a>
-                @endforeach
-            </div>
-        </div>
-
-        {{-- Row 4A (Mobile Only): Ultra-Clean 3-Column Brand / Sort / Wholesale Bar --}}
-        <div class="grid grid-cols-3 gap-1.5 sm:hidden pt-0.5">
-            <select aria-label="Filter by Brand"
-                    onchange="window.spNavigateFilterUrl(this.value)"
-                    class="w-full h-8 px-2 rounded-xl bg-[var(--mint-50)] border border-[var(--border)] text-[11px] font-bold text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-emerald-800">
-                <option value="{{ $buildFilterUrl(['brand' => null]) }}" {{ $selectedBrand === 'All' ? 'selected' : '' }}>Brand: All</option>
-                @foreach($popularBrands as $br)
-                    <option value="{{ $buildFilterUrl(['brand' => $br]) }}" {{ strcasecmp($selectedBrand, $br) === 0 ? 'selected' : '' }}>
-                        {{ $br }}
-                    </option>
-                @endforeach
-            </select>
-
-            <select aria-label="Sort Spare Parts"
-                    onchange="window.spNavigateFilterUrl(this.value)"
-                    class="w-full h-8 px-2 rounded-xl bg-[var(--mint-50)] border border-[var(--border)] text-[11px] font-bold text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-emerald-800">
-                <option value="{{ $buildFilterUrl(['sort' => null]) }}" {{ $sort === 'best_deal' ? 'selected' : '' }}>🏆 Best Deal</option>
-                <option value="{{ $buildFilterUrl(['sort' => 'lowest_price']) }}" {{ $sort === 'lowest_price' ? 'selected' : '' }}>🏷️ Low Price</option>
-                <option value="{{ $buildFilterUrl(['sort' => 'fastest_eta']) }}" {{ $sort === 'fastest_eta' ? 'selected' : '' }}>⚡ Fastest</option>
-                <option value="{{ $buildFilterUrl(['sort' => 'popular']) }}" {{ $sort === 'popular' ? 'selected' : '' }}>🔥 Top Sold</option>
-                <option value="{{ $buildFilterUrl(['sort' => 'wholesale']) }}" {{ $sort === 'wholesale' ? 'selected' : '' }}>📦 Bulk Tier</option>
-            </select>
-
-            <a href="{{ $buildFilterUrl(['wholesale' => $wholesaleOnly ? null : '1']) }}"
-               class="h-8 px-2 rounded-xl flex items-center justify-center text-[11px] font-extrabold border transition truncate {{ $wholesaleOnly ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)]' }}">
-                📦 100+ Bulk
-            </a>
-        </div>
-
-        {{-- Row 4B (Desktop Only): Brand, Sort & Quick City Destination Sliders with Fixed Non-Scrolling Labels --}}
-        <div class="hidden sm:block space-y-2 border-t border-[var(--border)]/60 pt-2">
-            {{-- Brand Row --}}
-            <div class="flex items-center gap-2 min-w-0">
-                <span class="w-20 shrink-0 text-[11px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Brand:</span>
-                <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5"
-                     x-init="const el = $el.querySelector('[data-active-pill=true]'); if (el && (el.offsetLeft + el.offsetWidth > $el.clientWidth)) { $el.scrollLeft = Math.max(0, el.offsetLeft - ($el.clientWidth - el.offsetWidth) / 2); }">
-                    <a href="{{ $buildFilterUrl(['brand' => null]) }}"
-                       @if($selectedBrand === 'All') data-active-pill="true" @endif
-                       class="shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition {{ $selectedBrand === 'All' ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
-                        All
-                    </a>
-                    @foreach($popularBrands as $br)
-                        @php $isBrandActive = strcasecmp($selectedBrand, $br) === 0; @endphp
-                        <a href="{{ $buildFilterUrl(['brand' => $br]) }}"
-                           @if($isBrandActive) data-active-pill="true" @endif
-                           class="shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition {{ $isBrandActive ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
-                            {{ $br }}
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Sort + Quick City Switcher Row --}}
-            <div class="flex items-center justify-between gap-3 min-w-0 pt-0.5">
-                <div class="flex items-center gap-2 min-w-0 flex-1">
-                    <span class="w-20 shrink-0 text-[11px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Sort By:</span>
-                    <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                        @foreach([
-                            'best_deal' => '🏆 Best Deal Near You',
-                            'lowest_price' => '🏷️ Lowest Part Price',
-                            'fastest_eta' => '⚡ Fastest Delivery',
-                            'popular' => '🔥 Top Sold',
-                            'wholesale' => '📦 Best Wholesale',
-                        ] as $sKey => $sLabel)
-                            <a href="{{ $buildFilterUrl(['sort' => $sKey === 'best_deal' ? null : $sKey]) }}"
-                               class="shrink-0 px-3 py-1 rounded-full text-xs font-bold border transition {{ $sort === $sKey ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
-                                {{ $sLabel }}
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
-
-                <div class="hidden xl:flex items-center gap-1.5 shrink-0">
-                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">City Quote:</span>
-                    @foreach(array_slice($quickLocations, 0, 4) as $ql)
-                        @php
-                            $isLocActive = strcasecmp((string) ($customerLocation['city'] ?? ''), $ql['city']) === 0
-                                && (empty($customerLocation['area']) || strcasecmp((string) $customerLocation['area'], $ql['area']) === 0 || strcasecmp((string) $customerLocation['area'], $ql['city']) === 0);
-                        @endphp
-                        <a href="{{ $buildFilterUrl(['city' => $ql['city'], 'area' => $ql['area'], 'lat' => $ql['lat'], 'lng' => $ql['lng']]) }}"
-                           class="px-2.5 py-1 rounded-full text-[11px] font-bold border transition {{ $isLocActive ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
-                            {{ $ql['city'] === 'Dhaka' ? $ql['area'] : $ql['city'] }}
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-        </div>
     </div>
 
-    {{-- Compact Result Summary Bar --}}
-    <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5 sm:mb-4 px-0.5 text-[11px] sm:text-sm text-[var(--muted-foreground)]">
-        <div class="min-w-0">
-            Showing <strong class="text-[var(--foreground)]">{{ number_format($listings->firstItem() ?? 0) }}–{{ number_format($listings->lastItem() ?? 0) }}</strong>
-            of <strong class="text-[var(--foreground)]">{{ number_format($totalListingsCount) }}</strong>
-            <span class="hidden sm:inline">spare part listings ({{ number_format($distinctProductCount) }} unique parts)</span>
-            <span class="sm:hidden">({{ number_format($distinctProductCount) }} parts)</span>
-            <span class="hidden md:inline">• Quotes for <strong class="text-[var(--foreground)]">{{ $locLabel }}</strong></span>
-        </div>
-
-        <div class="flex items-center gap-3 shrink-0">
+    {{-- eBay-Style Result Summary, Active Breadcrumb Chips & Clean Sort Dropdown Bar --}}
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4 px-0.5 text-[11px] sm:text-sm text-[var(--muted-foreground)]">
+        <div class="min-w-0 flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <span>
+                Showing <strong class="text-[var(--foreground)]">{{ number_format($listings->firstItem() ?? 0) }}–{{ number_format($listings->lastItem() ?? 0) }}</strong>
+                of <strong class="text-[var(--foreground)]">{{ number_format($totalListingsCount) }}</strong> results
+            </span>
+            @if($selectedCategory !== 'All')
+                <a href="{{ $buildFilterUrl(['part_category' => null, 'brand' => null]) }}"
+                   class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-900/10 text-emerald-950 text-[11px] font-bold hover:bg-emerald-900/20">
+                    {{ $selectedCategory }} <span class="text-red-600">✕</span>
+                </a>
+            @endif
+            @if($selectedBrand !== 'All')
+                <a href="{{ $buildFilterUrl(['brand' => null]) }}"
+                   class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-900/10 text-emerald-950 text-[11px] font-bold hover:bg-emerald-900/20">
+                    Brand: {{ $selectedBrand }} <span class="text-red-600">✕</span>
+                </a>
+            @endif
             @if($selectedGroup !== '')
                 <a href="{{ $buildFilterUrl(['group' => null]) }}" class="text-[11px] sm:text-xs font-bold text-emerald-800 underline">
                     ← All parts
@@ -328,9 +242,127 @@
                 </a>
             @endif
         </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+            <button type="button"
+                    onclick="if(window.openMeramotLocationModal){window.openMeramotLocationModal();}"
+                    class="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
+                <span>Shipping to <strong class="text-[var(--foreground)]">{{ $customerLocation['city'] ?? 'Dhaka' }}</strong></span>
+                <span>▾</span>
+            </button>
+
+            {{-- eBay-Style Sort Popover Dropdown --}}
+            <div class="relative" x-data="{ sortOpen: false }" @click.away="sortOpen = false" @keydown.escape.window="sortOpen = false">
+                <button type="button"
+                        @click="sortOpen = !sortOpen"
+                        aria-haspopup="true"
+                        :aria-expanded="sortOpen"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--card)] border border-[var(--border)] text-[11px] sm:text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition shadow-xs">
+                    <span>⇅</span>
+                    <span class="hidden sm:inline text-[var(--muted-foreground)] font-semibold">Sort:</span>
+                    <span class="truncate max-w-[140px] sm:max-w-[210px]">{{ $activeSortLabel }}</span>
+                    <span class="text-[10px]">▾</span>
+                </button>
+
+                <div x-show="sortOpen"
+                     x-cloak
+                     x-transition.opacity.duration.120ms
+                     class="absolute right-0 mt-1.5 w-64 sm:w-72 rounded-2xl bg-white dark:bg-[var(--card)] border border-[var(--border)] shadow-xl py-1.5 z-30">
+                    @foreach($sortOptions as $sKey => $sLabel)
+                        @php
+                            $isSortActive = $sort === $sKey;
+                            $sortHref = $buildFilterUrl(['sort' => $sKey === $defaultSort ? null : $sKey]);
+                        @endphp
+                        <a href="{{ $sortHref }}"
+                           @click="sortOpen = false"
+                           class="flex items-center gap-2.5 px-3.5 py-2 text-xs transition {{ $isSortActive ? 'bg-emerald-50 text-emerald-950 font-extrabold' : 'text-[var(--foreground)] hover:bg-[var(--mint-50)] font-medium' }}">
+                            <span class="w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 {{ $isSortActive ? 'border-emerald-900' : 'border-slate-300' }}">
+                                @if($isSortActive)
+                                    <span class="w-2 h-2 rounded-full bg-emerald-900"></span>
+                                @endif
+                            </span>
+                            <span class="leading-snug">{{ $sLabel }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        </div>
     </div>
 
-    {{-- Spare Part Item Grid (2-Column E-Commerce Grid on Mobile, 3 on LG, 4 on XL) --}}
+    {{-- Main 2-Column Catalog Layout: Left Hierarchical CATEGORIES Tree + Right Product Grid --}}
+    <div x-data="{ mobileCatsOpen: false, openCat: @js($selectedCategory !== 'All' ? $selectedCategory : '') }"
+         class="grid grid-cols-1 lg:grid-cols-[248px_minmax(0,1fr)] gap-4 items-start">
+
+        {{-- Mobile Collapsible Category Trigger --}}
+        <div class="lg:hidden">
+            <button type="button"
+                    @click="mobileCatsOpen = !mobileCatsOpen"
+                    class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[var(--card)] border border-[var(--border)] text-xs font-extrabold text-[var(--foreground)] shadow-xs">
+                <span>📂 Categories &amp; Brands ({{ count($categoryBrandTree) }})</span>
+                <span x-text="mobileCatsOpen ? '▲ Hide' : '▼ Browse'">▼ Browse</span>
+            </button>
+        </div>
+
+        {{-- Left Hierarchical CATEGORIES Sidebar (`laptopbd.net` style: Category -> Expandable Brands) --}}
+        <aside :class="mobileCatsOpen ? 'block' : 'hidden lg:block'"
+               class="rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-sm overflow-hidden">
+            <div class="px-4 py-3 bg-emerald-900 text-white flex items-center justify-between">
+                <span class="text-xs font-extrabold uppercase tracking-wider">Categories</span>
+                @if($selectedCategory !== 'All' || $selectedBrand !== 'All')
+                    <a href="{{ $buildFilterUrl(['part_category' => null, 'brand' => null]) }}"
+                       class="text-[10px] font-bold text-amber-200 hover:underline">
+                        Show All
+                    </a>
+                @endif
+            </div>
+
+            <div class="divide-y divide-[var(--border)]/60 max-h-[68vh] lg:max-h-[calc(100vh-140px)] overflow-y-auto">
+                @foreach($categoryBrandTree as $catNode)
+                    @php
+                        $catName = $catNode['name'];
+                        $isCatSelected = strcasecmp($selectedCategory, $catName) === 0;
+                    @endphp
+                    <div class="px-3 py-2">
+                        <div class="flex items-center justify-between gap-1.5">
+                            <a href="{{ $buildFilterUrl(['part_category' => $catName, 'brand' => null]) }}"
+                               class="flex-1 min-w-0 py-1 text-xs font-bold truncate transition {{ $isCatSelected ? 'text-emerald-900 dark:text-emerald-300 font-extrabold' : 'text-[var(--foreground)] hover:text-emerald-800' }}">
+                                {{ $catName }}
+                                <span class="text-[10px] font-semibold text-[var(--muted-foreground)] ml-0.5">({{ number_format($catNode['total']) }})</span>
+                            </a>
+                            @if(!empty($catNode['brands']))
+                                <button type="button"
+                                        @click="openCat = (openCat === @js($catName) ? '' : @js($catName))"
+                                        aria-label="Toggle brands in {{ $catName }}"
+                                        class="w-6 h-6 rounded-md flex items-center justify-center text-[11px] text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] hover:text-[var(--foreground)] transition shrink-0">
+                                    <span x-text="openCat === @js($catName) ? '⌃' : '⌄'">⌄</span>
+                                </button>
+                            @endif
+                        </div>
+
+                        @if(!empty($catNode['brands']))
+                            <div x-show="openCat === @js($catName)"
+                                 x-cloak
+                                 class="mt-1.5 pl-3 border-l-2 border-emerald-900/20 space-y-1 pb-1">
+                                @foreach($catNode['brands'] as $brandNode)
+                                    @php
+                                        $bName = $brandNode['name'];
+                                        $isBrandSelected = $isCatSelected && strcasecmp($selectedBrand, $bName) === 0;
+                                    @endphp
+                                    <a href="{{ $buildFilterUrl(['part_category' => $catName, 'brand' => $bName]) }}"
+                                       class="flex items-center justify-between py-0.5 text-[11px] rounded px-1.5 transition {{ $isBrandSelected ? 'bg-emerald-900 text-white font-bold' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                                        <span class="truncate">{{ $bName }}</span>
+                                        <span class="text-[10px] opacity-75 shrink-0">{{ number_format($brandNode['count']) }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </aside>
+
+        {{-- Right Column: Spare Part Item Grid --}}
+        <div class="min-w-0">
     @if($listings->isEmpty())
         <div class="rounded-2xl bg-[var(--card)] border border-[var(--border)] p-8 sm:p-10 text-center">
             <div class="text-3xl mb-2">🔩</div>
@@ -341,7 +373,7 @@
             </a>
         </div>
     @else
-        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5">
             @foreach($listings as $item)
                 @php
                     $shop = $item->shop;
@@ -350,15 +382,15 @@
                     $effBase = $item->effectiveBasePrice();
                     $effMax = $item->effectiveMaxPrice();
                     $normalBase = $item->resolvedNormalBasePrice();
-                    $branchTag = $shop?->display_branch_tag;
                     $isOwnVendorListing = $authVendorProfileId && $shop && ((int) $shop->vendor_profile_id === (int) $authVendorProfileId);
                     $detailUrl = route('spare-parts.show', ['slug' => $item->slug]);
+                    $showBestDealBadge = !empty($hasSearchContext) && $item->is_best_deal && $item->seller_count > 1;
                 @endphp
 
                 <a href="{{ $detailUrl }}"
                    data-no-soft-nav="true"
-                   class="group rounded-xl sm:rounded-2xl bg-white/95 dark:bg-[var(--card)] border {{ ($item->is_best_deal && $item->seller_count > 1) ? 'border-emerald-700/50' : 'border-[var(--border)]' }} hover:border-emerald-700 hover:shadow-md transition flex flex-col overflow-hidden min-w-0">
-                    {{-- Product Image with Circular Red "Sale!" Banner on Top-Left Corner & Auto Best Deal Tag --}}
+                   class="group rounded-xl sm:rounded-2xl bg-white/95 dark:bg-[var(--card)] border {{ $showBestDealBadge ? 'border-emerald-700/50' : 'border-[var(--border)]' }} hover:border-emerald-700 hover:shadow-md transition flex flex-col overflow-hidden min-w-0">
+                    {{-- Product Image with Circular Red "Sale!" Banner & Search-Only Best Deal Tag --}}
                     <div class="relative aspect-square bg-white border-b border-slate-100 dark:border-[var(--border)]/40 overflow-hidden p-2.5 sm:p-3.5">
                         @if($offerActive)
                             <span class="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-600 text-white text-[10px] sm:text-[11px] font-extrabold tracking-tight flex items-center justify-center shadow-sm select-none"
@@ -367,7 +399,7 @@
                             </span>
                         @endif
 
-                        @if($item->is_best_deal && $item->seller_count > 1)
+                        @if($showBestDealBadge)
                             <span class="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 z-10 px-2 py-0.5 rounded-full bg-emerald-800 text-white text-[9px] sm:text-[10px] font-bold tracking-tight shadow-xs">
                                 ★ Best Deal
                             </span>
@@ -384,7 +416,7 @@
                              class="w-full h-full object-contain group-hover:scale-105 transition duration-300">
                     </div>
 
-                    {{-- Minimalistic Card Body: Title + Clean Unboxed Price Breakdown + Quiet Seller Line --}}
+                    {{-- Minimalistic Card Body: Title + Vendor-Net Price (Excl. Platform Fee) + Delivery + Seller --}}
                     <div class="p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between gap-2 min-w-0">
                         <h2 class="text-xs sm:text-[13px] font-semibold text-[var(--foreground)] leading-snug line-clamp-2 group-hover:text-emerald-800 transition">
                             {{ $item->title }}
@@ -414,14 +446,14 @@
                                 @endif
                             </div>
 
-                            {{-- Minimalistic Unboxed Total Price Breakdown --}}
+                            {{-- Minimalistic Unboxed Shipping + Landed Breakdown --}}
                             <div class="pt-1.5 border-t border-slate-200/70 dark:border-[var(--border)]/50 space-y-0.5 text-[10px] sm:text-[11px]">
                                 <div class="flex items-center justify-between text-[var(--muted-foreground)] gap-1">
-                                    <span>+৳{{ number_format((float) $quote['delivery_fee'], 0) }} delivery</span>
+                                    <span>Delivery: ৳{{ number_format((float) $quote['delivery_fee'], 0) }}</span>
                                     <span class="hidden sm:inline truncate">{{ $quote['eta_label'] }}</span>
                                 </div>
                                 <div class="flex items-center justify-between text-[11px] sm:text-xs">
-                                    <span class="text-[var(--muted-foreground)]">Total</span>
+                                    <span class="text-[var(--muted-foreground)]">Est. Total</span>
                                     <span class="font-extrabold text-[var(--foreground)]">
                                         {{ ($item->has_specs && $effMax && $effMax > $effBase) ? 'from ' : '' }}৳{{ number_format((float) $quote['landed_total'], 0) }}
                                     </span>
@@ -448,6 +480,8 @@
             </div>
         @endif
     @endif
+        </div>
+    </div>
 </div>
 
 <script>
@@ -458,49 +492,6 @@ window.spNavigateFilterUrl = function (targetUrl) {
     } else {
         window.location.href = targetUrl;
     }
-};
-
-window.meramotUseGpsForSpareParts = function (btn) {
-    if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser. Please use Pin on Map.');
-        return;
-    }
-    const origText = btn ? btn.innerHTML : '◎ Near Me';
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '⏳...';
-    }
-    navigator.geolocation.getCurrentPosition(
-        function (pos) {
-            const lat = pos.coords.latitude.toFixed(6);
-            const lng = pos.coords.longitude.toFixed(6);
-            const url = new URL(window.location.href);
-            url.searchParams.set('lat', lat);
-            url.searchParams.set('lng', lng);
-            url.searchParams.delete('city');
-            url.searchParams.delete('area');
-            url.searchParams.delete('page');
-            if (window.MeramotSoftNav && typeof window.MeramotSoftNav.visit === 'function') {
-                window.MeramotSoftNav.visit(url.toString(), { push: true });
-            } else {
-                window.location.href = url.toString();
-            }
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = origText;
-            }
-        },
-        function () {
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = origText;
-            }
-            if (window.openMeramotLocationModal) {
-                window.openMeramotLocationModal();
-            }
-        },
-        { enableHighAccuracy: true, timeout: 8000 }
-    );
 };
 </script>
 @endsection

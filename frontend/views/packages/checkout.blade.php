@@ -12,6 +12,7 @@
 @php
     $regCourierFee = (float) ($regularDeliveryFee ?? 80);
     $expCourierFee = (float) ($expressDeliveryFee ?? 150);
+    $ratePctLabel = rtrim(rtrim(number_format((float) ($commissionRatePct ?? 8), 2), '0'), '.');
 @endphp
 <div class="mx-auto max-w-5xl px-4 py-6 md:px-6" x-data="{
     scheduleType: '{{ old('schedule_type', 'NOW') }}',
@@ -20,7 +21,7 @@
     checkoutAddress: @js(old('address', auth()->user()->address ?? ($customerLocation['address'] ?? ''))),
     checkoutArea: @js(old('area', auth()->user()->area ?? ($customerLocation['area'] ?? 'Banani'))),
     subtotal: {{ (float) ($total ?? 0) }},
-    serviceCharge: {{ (float) ($serviceCharge ?? 30) }},
+    serviceCharge: {{ (float) ($serviceCharge ?? 0) }},
     regularFee: {{ $regCourierFee }},
     expressFee: {{ $expCourierFee }},
     appliedVoucher: @js($appliedVoucher ?? ''),
@@ -220,16 +221,16 @@
 
             <div class="space-y-1.5">
                 <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                    <span>Subtotal</span>
-                    <span class="shrink-0">৳{{ number_format($total) }}</span>
+                    <span>{{ !empty($isSparePartCart) ? 'Seller Parts Subtotal (100% Seller)' : 'Services Subtotal (100% Vendor)' }}</span>
+                    <span class="shrink-0 font-semibold text-[var(--foreground)]">৳{{ number_format($total, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                    <span>Escrow Fee (5%)</span>
-                    <span class="shrink-0">৳{{ number_format($serviceCharge ?? 30) }}</span>
+                    <span>Meramot Platform Fee ({{ $ratePctLabel }}%, excl. courier)</span>
+                    <span class="shrink-0 font-semibold text-[var(--foreground)]">৳{{ number_format($serviceCharge ?? 0, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                    <span>{{ !empty($isSparePartCart) ? 'Courier Delivery' : 'Two-Way Courier' }} (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
-                    <span class="shrink-0">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
+                    <span>Platform Pickup &amp; Delivery (<span x-text="deliveryType === 'EXPRESS' ? 'Express' : 'Regular'">Regular</span>)</span>
+                    <span class="shrink-0 font-semibold text-[var(--foreground)]">৳<span x-text="deliveryFee">{{ number_format($regCourierFee, 0) }}</span></span>
                 </div>
                 <template x-if="activeDiscount > 0">
                     <div class="flex justify-between gap-2 text-emerald-800 font-bold">
@@ -239,7 +240,7 @@
                 </template>
                 <div class="pt-2 border-t border-[var(--border)] flex justify-between gap-2 text-base font-black text-[var(--foreground)]">
                     <span>Total</span>
-                    <span class="text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 30) + $regCourierFee - ($discountAmount ?? 0))) }}</span></span>
+                    <span class="text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 0) + $regCourierFee - ($discountAmount ?? 0))) }}</span></span>
                 </div>
             </div>
 

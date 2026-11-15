@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Http\Controllers\ServicePackageController;
 use App\Models\Invoice;
 
 /**
@@ -19,12 +20,12 @@ class PdfInvoiceService
     {
         $invoice->loadMissing([
             'lineItems',
-            'shop',
+            'shop.vendorProfile',
             'repairRequest.customer',
-            'repairRequest.requestedShop',
-            'repairRequest.repairJob.shop',
+            'repairRequest.requestedShop.vendorProfile',
+            'repairRequest.repairJob.shop.vendorProfile',
             'repairRequest.repairJob.warranty',
-            'repairJob.shop',
+            'repairJob.shop.vendorProfile',
             'repairJob.warranty',
             'paymentTransactions',
         ]);
@@ -117,13 +118,18 @@ class PdfInvoiceService
         $contentOps[] = '0.82 0.88 0.80 RG 1 w 36 ' . ($y + 10) . ' m 576 ' . ($y + 10) . ' l S';
 
         $subtotal = (float) ($invoice->subtotal_amount ?? 0);
+        $commissionAmt = (float) ($invoice->commission_amount ?? 0);
         $delivery = (float) ($invoice->delivery_amount ?? 0);
         $discount = (float) ($invoice->discount_amount ?? 0);
-        $grandTotal = (float) ($invoice->total_amount ?? max(0.0, $subtotal + $delivery - $discount));
+        $rateLabelPct = $subtotal > 0 && $commissionAmt > 0
+            ? rtrim(rtrim(number_format(($commissionAmt / $subtotal) * 100, 2), '0'), '.')
+            : rtrim(rtrim(number_format(ServicePackageController::resolveCommissionRatePct($shop), 2), '0'), '.');
+        $grandTotal = (float) ($invoice->total_amount ?? max(0.0, $subtotal + $commissionAmt + $delivery - $discount));
 
         $summaryRows = [
-            ['Service & Parts Subtotal:', 'BDT ' . number_format($subtotal, 2)],
-            ['Doorstep Logistics Fee:', 'BDT ' . number_format($delivery, 2)],
+            ['Vendor Services & Parts (100% Vendor):', 'BDT ' . number_format($subtotal, 2)],
+            ['Meramot Platform Fee (' . $rateLabelPct . '%, Excl. Delivery):', 'BDT ' . number_format($commissionAmt, 2)],
+            ['Platform Pickup & Delivery Logistics:', 'BDT ' . number_format($delivery, 2)],
         ];
         if ($discount > 0) {
             $voucherSuffix = !empty($req?->voucher_code) ? ' (' . $this->cleanText($req->voucher_code) . ')' : '';
@@ -131,13 +137,13 @@ class PdfInvoiceService
         }
 
         foreach ($summaryRows as [$label, $val]) {
-            $contentOps[] = $this->pdfText(340, $y - 6, 'F1', 9.5, $label, [0.22, 0.30, 0.25]);
+            $contentOps[] = $this->pdfText(320, $y - 6, 'F1', 9.0, $label, [0.22, 0.30, 0.25]);
             $contentOps[] = $this->pdfText(482, $y - 6, 'F2', 9.5, $val, [0.10, 0.18, 0.13]);
             $y -= 17;
         }
 
-        $contentOps[] = '0.129 0.298 0.204 rg 332 ' . ($y - 14) . ' 244 26 re f';
-        $contentOps[] = $this->pdfText(344, $y - 5, 'F2', 11, 'GRAND TOTAL (BDT):', [1, 1, 1]);
+        $contentOps[] = '0.129 0.298 0.204 rg 320 ' . ($y - 14) . ' 256 26 re f';
+        $contentOps[] = $this->pdfText(332, $y - 5, 'F2', 11, 'GRAND TOTAL (BDT):', [1, 1, 1]);
         $contentOps[] = $this->pdfText(472, $y - 5, 'F2', 11, 'BDT ' . number_format($grandTotal, 2), [0.89, 0.98, 0.84]);
 
         // Payment, Escrow & Warranty Governance Footer
@@ -146,7 +152,7 @@ class PdfInvoiceService
 
         $payMethod = $paidTxn ? strtoupper((string) $paidTxn->payment_method) : 'PENDING SETTLEMENT';
         $txnRef = $paidTxn ? $this->cleanText((string) ($paidTxn->transaction_reference ?: ('TXN-' . $paidTxn->id))) : 'N/A';
-        $commissionNote = 'Escrow Split Policy: 10% Meramot Platform Governance Fee | 90% Net Workshop Settlement upon verified completion.';
+        $commissionNote = 'Pricing Policy: 100% Listed Price goes to Workshop (BDT ' . number_format($subtotal, 2) . ') | ' . $rateLabelPct . '% Platform Fee (BDT ' . number_format($commissionAmt, 2) . ') excl. Platform Logistics.';
         $warrantyNote = $warranty
             ? ('Active Warranty: ' . (int) $warranty->duration_days . ' days coverage (Ends: ' . optional($warranty->ends_at)->format('d M Y') . '). ' . mb_substr($this->cleanText((string) ($warranty->details ?: $warranty->title)), 0, 68))
             : 'Warranty Protection: Activated automatically upon workshop completion and customer handover verification.';

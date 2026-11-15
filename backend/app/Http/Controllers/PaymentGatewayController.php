@@ -7,7 +7,9 @@ use App\Models\FinancialLedger;
 use App\Models\Invoice;
 use App\Models\PaymentTransaction;
 use App\Models\RepairRequest;
+use App\Models\RepairShop;
 use App\Models\ShopService;
+use App\Models\VendorProfile;
 use App\Services\MultiChannelNotificationService;
 use App\Services\PdfInvoiceService;
 use Illuminate\Http\Request;
@@ -38,6 +40,12 @@ class PaymentGatewayController extends Controller
         $isDirectService = ($repairRequest->source ?? '') === 'DIRECT_SERVICE';
         $discountAmount = round(max(0.0, (float) ($repairRequest->discount_amount ?? 0)), 2);
 
+        $shopId = $repairRequest->repairJob?->shop_id
+            ?? $repairRequest->requested_shop_id
+            ?? $repairRequest->bids?->firstWhere('id', $repairRequest->selected_bid_id)?->shop_id;
+        $shop = $shopId ? RepairShop::with('vendorProfile')->find($shopId) : null;
+        $commissionRatePct = ServicePackageController::resolveCommissionRatePct($shop);
+
         if ($isDirectService) {
             $quoteItems = is_array($repairRequest->repairJob?->final_quote_items)
                 ? $repairRequest->repairJob->final_quote_items
@@ -51,22 +59,28 @@ class PaymentGatewayController extends Controller
                 : (($repairRequest->delivery_type === 'EXPRESS')
                     ? 150.0
                     : (($repairRequest->preferred_pickup ?? true) ? 80.0 : 0.0));
-            $escrowFee = round((float) ($repairRequest->checkup_fee ?? 0), 2);
             $storedTotal = round((float) ($repairRequest->quoted_final_amount ?? 0), 2);
+            $storedCommission = round((float) ($repairRequest->commission_amount ?? $repairRequest->checkup_fee ?? 0), 2);
 
             $servicesSubtotal = !empty($quoteItems)
                 ? round((float) collect($quoteItems)->sum(
                     fn ($it) => ((float) ($it['price'] ?? 0)) * max(1, (int) ($it['quantity'] ?? 1))
                 ), 2)
-                : round(max(0.0, $storedTotal + $discountAmount - $escrowFee - $deliveryFee), 2);
+                : round(max(0.0, $storedTotal + $discountAmount - $storedCommission - $deliveryFee), 2);
 
-            $invoiceSubtotal = round($servicesSubtotal + $escrowFee, 2);
-            $computedTotal = max(0.0, round($invoiceSubtotal + $deliveryFee - $discountAmount, 2));
+            $escrowFee = $storedCommission > 0
+                ? $storedCommission
+                : round($servicesSubtotal * ($commissionRatePct / 100.0), 2);
+            $effectiveRatePct = ($servicesSubtotal > 0 && $escrowFee > 0)
+                ? round(($escrowFee / $servicesSubtotal) * 100, 2)
+                : $commissionRatePct;
+
+            $computedTotal = max(0.0, round($servicesSubtotal + $escrowFee + $deliveryFee - $discountAmount, 2));
             $totalPayable = $storedTotal > 0 ? $storedTotal : $computedTotal;
 
-            // Keep subtotal + delivery - discount == totalPayable invariant exact
-            if (abs(($invoiceSubtotal + $deliveryFee - $discountAmount) - $totalPayable) > 0.02) {
-                $discountAmount = max(0.0, round(($invoiceSubtotal + $deliveryFee) - $totalPayable, 2));
+            // Keep servicesSubtotal + escrowFee + delivery - discount == totalPayable invariant exact
+            if (abs(($servicesSubtotal + $escrowFee + $deliveryFee - $discountAmount) - $totalPayable) > 0.02) {
+                $discountAmount = max(0.0, round(($servicesSubtotal + $escrowFee + $deliveryFee) - $totalPayable, 2));
             }
 
             $lineItems = [];
@@ -76,7 +90,7 @@ class PaymentGatewayController extends Controller
                 $lineItems[] = [
                     'shop_service_id' => isset($it['service_id']) ? (int) $it['service_id'] : null,
                     'title' => (string) ($it['title'] ?? 'Booked Workshop Service'),
-                    'description' => 'Direct-Order fixed-price service package',
+                    'description' => '100% Vendor listed price (excl. platform fee & courier)',
                     'quantity' => $qty,
                     'unit_price' => $unit,
                     'total_price' => round($unit * $qty, 2),
@@ -86,28 +100,21 @@ class PaymentGatewayController extends Controller
                 $lineItems[] = [
                     'shop_service_id' => $repairRequest->requested_service_id,
                     'title' => $repairRequest->title ?: 'Direct-Order Workshop Service',
-                    'description' => 'Booked workshop service package',
+                    'description' => '100% Vendor listed price (excl. platform fee & courier)',
                     'quantity' => 1,
                     'unit_price' => $servicesSubtotal,
                     'total_price' => $servicesSubtotal,
-                ];
-            }
-            if ($escrowFee > 0) {
-                $lineItems[] = [
-                    'shop_service_id' => null,
-                    'title' => 'Meramot Escrow Buyer Protection (5%)',
-                    'description' => 'Escrow custody & verified workshop protection',
-                    'quantity' => 1,
-                    'unit_price' => $escrowFee,
-                    'total_price' => $escrowFee,
                 ];
             }
 
             return [
                 'is_direct_service' => true,
                 'services_subtotal' => $servicesSubtotal,
+                'vendor_earning' => $servicesSubtotal,
                 'escrow_fee' => $escrowFee,
-                'invoice_subtotal' => $invoiceSubtotal,
+                'platform_fee' => $escrowFee,
+                'commission_rate_pct' => $effectiveRatePct,
+                'invoice_subtotal' => $servicesSubtotal,
                 'delivery_fee' => round($deliveryFee, 2),
                 'discount_amount' => $discountAmount,
                 'total_payable' => round($totalPayable, 2),
@@ -128,8 +135,11 @@ class PaymentGatewayController extends Controller
             ?? 3500
         ), 2);
 
-        $deliveryFee = ($repairRequest->preferred_pickup ?? true) ? 150.0 : 0.0;
-        $totalPayable = max(0.0, round($acceptedBidCost + $deliveryFee - $discountAmount, 2));
+        $escrowFee = round($acceptedBidCost * ($commissionRatePct / 100.0), 2);
+        $deliveryFee = ($repairRequest->preferred_pickup ?? true)
+            ? (($repairRequest->delivery_type === 'REGULAR') ? 80.0 : 150.0)
+            : 0.0;
+        $totalPayable = max(0.0, round($acceptedBidCost + $escrowFee + $deliveryFee - $discountAmount, 2));
 
         $lineItems = [];
         $job = $repairRequest->repairJob;
@@ -172,7 +182,7 @@ class PaymentGatewayController extends Controller
             $lineItems[] = [
                 'shop_service_id' => null,
                 'title' => $repairRequest->title ?: 'Verified Electronics Repair',
-                'description' => $job?->diagnosis_notes ?: 'Marketplace accepted quote & escrow service',
+                'description' => $job?->diagnosis_notes ?: '100% Vendor quoted price (excl. platform fee & courier)',
                 'quantity' => 1,
                 'unit_price' => $acceptedBidCost,
                 'total_price' => $acceptedBidCost,
@@ -182,7 +192,10 @@ class PaymentGatewayController extends Controller
         return [
             'is_direct_service' => false,
             'services_subtotal' => $acceptedBidCost,
-            'escrow_fee' => 0.0,
+            'vendor_earning' => $acceptedBidCost,
+            'escrow_fee' => $escrowFee,
+            'platform_fee' => $escrowFee,
+            'commission_rate_pct' => $commissionRatePct,
             'invoice_subtotal' => $acceptedBidCost,
             'delivery_fee' => round($deliveryFee, 2),
             'discount_amount' => $discountAmount,
@@ -281,7 +294,7 @@ class PaymentGatewayController extends Controller
         [$invoice, $payment] = DB::transaction(function () use ($repairRequest, $user, $breakdown, $shopId, $primarySvcId, $dbPaymentMethod, $rawChannel) {
             $now = now();
             $invoiceSubtotal = $breakdown['invoice_subtotal'];
-            $commissionAmount = round($invoiceSubtotal * 0.10, 2);
+            $commissionAmount = round((float) ($breakdown['escrow_fee'] ?? 0), 2);
 
             $invoice = Invoice::where('repair_request_id', $repairRequest->id)
                 ->orderByDesc('id')
@@ -647,13 +660,14 @@ class PaymentGatewayController extends Controller
             if (!$invoice) {
                 $breakdown = $req ? self::computeCheckoutBreakdown($req) : [
                     'invoice_subtotal' => (float) $payment->amount,
+                    'escrow_fee' => 0.0,
                     'delivery_fee' => 0.0,
                     'discount_amount' => 0.0,
                     'total_payable' => (float) $payment->amount,
                     'line_items' => [[
                         'shop_service_id' => null,
                         'title' => $req?->title ?: 'Escrow Repair Payment',
-                        'description' => 'Verified online payment',
+                        'description' => '100% Vendor price (excl. platform fee & courier)',
                         'quantity' => 1,
                         'unit_price' => (float) $payment->amount,
                         'total_price' => (float) $payment->amount,
@@ -670,7 +684,7 @@ class PaymentGatewayController extends Controller
                     'subtotal_amount' => $breakdown['invoice_subtotal'],
                     'delivery_amount' => $breakdown['delivery_fee'],
                     'discount_amount' => $breakdown['discount_amount'],
-                    'commission_amount' => round($breakdown['invoice_subtotal'] * 0.10, 2),
+                    'commission_amount' => round((float) ($breakdown['escrow_fee'] ?? 0), 2),
                     'total_amount' => $breakdown['total_payable'],
                     'issued_at' => $now,
                     'due_at' => $now,
@@ -707,9 +721,15 @@ class PaymentGatewayController extends Controller
                 ]),
             ]);
 
-            $subtotalGross = round((float) $invoice->subtotal_amount, 2);
-            $commission = round($subtotalGross * 0.10, 2);
-            $vendorNet = round($subtotalGross - $commission, 2);
+            $vendorNet = round((float) $invoice->subtotal_amount, 2);
+            $shopForRate = $job?->shop ?? ($shopId ? RepairShop::with('vendorProfile')->find($shopId) : null);
+            $ratePct = ServicePackageController::resolveCommissionRatePct($shopForRate);
+            $rateDecimal = $ratePct / 100.0;
+            $commission = (float) $invoice->commission_amount > 0
+                ? round((float) $invoice->commission_amount, 2)
+                : round($vendorNet * $rateDecimal, 2);
+            $effectiveRateDecimal = $vendorNet > 0 ? ($commission / $vendorNet) : $rateDecimal;
+            $subtotalGross = round($vendorNet + $commission, 2);
             $vendorUserId = $job?->shop?->vendorProfile?->user_id
                 ?? $invoice->shop?->vendorProfile?->user_id;
 
@@ -744,11 +764,11 @@ class PaymentGatewayController extends Controller
             if (!$hasCustomerLedger) {
                 if ($isJobAlreadyCompleted && $shopId) {
                     AdminLedgerController::settleOrderWithCommission(
-                        $subtotalGross,
+                        $vendorNet,
                         (int) $shopId,
                         (int) $payment->id,
                         (int) $invoice->id,
-                        0.10,
+                        $effectiveRateDecimal,
                         "Online {$selectedChannel} settlement ({$payment->transaction_reference})"
                     );
                 } else {
@@ -756,7 +776,7 @@ class PaymentGatewayController extends Controller
                         'CUSTOMER_PAYMENT',
                         'CREDIT',
                         $subtotalGross,
-                        "Online {$selectedChannel} escrow inflow received ({$payment->transaction_reference})",
+                        "Online {$selectedChannel} escrow inflow received (Vendor ৳{$vendorNet} + Fee ৳{$commission}) ({$payment->transaction_reference})",
                         [
                             'shop_id' => $shopId ? (int) $shopId : null,
                             'payment_id' => (int) $payment->id,
@@ -765,13 +785,18 @@ class PaymentGatewayController extends Controller
                     );
                 }
 
-                $netLogisticsInflow = round((float) $payment->amount - $subtotalGross, 2);
+                $deliveryAmt = round((float) ($invoice->delivery_amount ?? 0), 2);
+                $voucherCodeUpper = strtoupper((string) ($req?->voucher_code ?? ''));
+                $deliveryDiscounted = in_array($voucherCodeUpper, ['FREEDELIVERY', 'SHOPFREE'], true)
+                    ? min($deliveryAmt, (float) ($invoice->discount_amount ?? 0))
+                    : 0.0;
+                $netLogisticsInflow = max(0.0, round($deliveryAmt - $deliveryDiscounted, 2));
                 if ($netLogisticsInflow > 0.009) {
                     AdminLedgerController::logEntry(
                         'DELIVERY_FEE',
                         'CREDIT',
                         $netLogisticsInflow,
-                        "Doorstep courier fee collected via {$selectedChannel} ({$payment->transaction_reference})",
+                        "Platform pickup & delivery logistics fee collected via {$selectedChannel} ({$payment->transaction_reference})",
                         [
                             'shop_id' => $shopId ? (int) $shopId : null,
                             'payment_id' => (int) $payment->id,

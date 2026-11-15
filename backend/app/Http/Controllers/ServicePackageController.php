@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\UserNotification;
 use App\Models\VendorProfile;
 use App\Services\GeolocationService;
+use App\Services\MarketplaceSearchEngine;
 use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -46,12 +47,20 @@ class ServicePackageController extends Controller
     public const MAX_QUICKMATCH_RADIUS_KM = 20.0;
     public const PROXIMITY_BAND_KM = 1.0;
 
-    public static function calculateServiceCharge(float $subtotal): float
+    public static function resolveCommissionRatePct(?RepairShop $shop = null): float
+    {
+        return $shop
+            ? $shop->effectiveCommissionRatePct()
+            : VendorProfile::DEFAULT_COMMISSION_RATE;
+    }
+
+    public static function calculateServiceCharge(float $subtotal, ?RepairShop $shop = null): float
     {
         if ($subtotal <= 0) {
-            return 0;
+            return 0.0;
         }
-        return (float) max(self::MIN_SERVICE_CHARGE, round($subtotal * self::SERVICE_CHARGE_RATE));
+        $ratePct = self::resolveCommissionRatePct($shop);
+        return round($subtotal * ($ratePct / 100.0), 2);
     }
 
     /**
@@ -120,7 +129,7 @@ class ServicePackageController extends Controller
                 'valid' => true,
                 'code' => 'SHOPFREE',
                 'discount' => (float) min($deliveryFee, self::REGULAR_DELIVERY_FEE),
-                'label' => 'Workshop Sponsored Free Regular Pickup',
+                'label' => 'Platform Regular Pickup & Delivery Sponsored',
                 'error' => null,
             ];
         }
@@ -759,17 +768,17 @@ class ServicePackageController extends Controller
             $query->where('fixed_price', '<=', (float) $request->input('max_price'));
         }
 
-        if ($request->filled('q')) {
-            $searchTerm = trim($request->input('q'));
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('title', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('description', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('device_category', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhereRaw('CAST(inclusions AS TEXT) ILIKE ?', ["%{$searchTerm}%"]);
-            });
-        }
+        $searchRelevanceOrder = MarketplaceSearchEngine::applySearch(
+            $query,
+            $request->input('q'),
+            ['title', 'device_category'],
+            ['description', 'CAST(inclusions AS TEXT)']
+        );
 
         $sort = $request->input('sort', 'popular');
+        if ($searchRelevanceOrder !== null && ($sort === 'popular' || !($searchRelevanceOrder['all_matched'] ?? true))) {
+            $query->orderByRaw($searchRelevanceOrder['sql'], $searchRelevanceOrder['bindings']);
+        }
         switch ($sort) {
             case 'price_low':
                 $query->orderBy('fixed_price', 'asc');
@@ -1042,6 +1051,7 @@ class ServicePackageController extends Controller
             'spare_part_id' => 'required|integer|exists:spare_part_listings,id',
             'spec_code' => 'nullable|string|max:100',
             'quantity' => 'nullable|integer|min:1|max:10000',
+            'include_installation' => 'nullable|boolean',
             'buy_now' => 'nullable|boolean',
             'customer_lat' => 'nullable|numeric|between:-90,90',
             'customer_lng' => 'nullable|numeric|between:-180,180',
@@ -1114,19 +1124,43 @@ class ServicePackageController extends Controller
             : 0;
         $finalQty = min($maxStock, $existingQty + $requestedQty);
 
+        $wantInstallation = $request->boolean('include_installation');
+        $supportsInstall = $listing->supportsWorkshopInstallation();
+        $maxInstallQty = $listing->maxInstallationQuantity();
+
+        if ($wantInstallation && !$supportsInstall) {
+            $msg = 'Workshop installation is not applicable for this tool/consumable item.';
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $msg], 422)
+                : back()->withErrors(['include_installation' => $msg])->withInput();
+        }
+
+        if ($wantInstallation && $finalQty > $maxInstallQty) {
+            $msg = "Certified workshop installation is capped at {$maxInstallQty} retail units per order. Please uncheck installation for bulk/wholesale quantities ({$finalQty} units).";
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $msg, 'errors' => ['include_installation' => [$msg]]], 422)
+                : back()->withErrors(['include_installation' => $msg])->withInput();
+        }
+
+        $includeInstallation = $wantInstallation && $supportsInstall && $finalQty <= $maxInstallQty;
+        $installFeePerUnit = $includeInstallation ? round((float) $listing->assembly_fee, 2) : 0.0;
+
         $breakdown = $listing->calculatePricingBreakdown($finalQty, $selectedSpec['code'] ?? null);
         $specSuffix = $selectedSpec ? (' (' . ($listing->spec_label ?: 'Spec') . ': ' . $selectedSpec['name'] . ')') : '';
-        $displayTitle = $listing->title . $specSuffix;
+        $displayTitle = $listing->title . $specSuffix . ($includeInstallation ? ' + Workshop Installation' : '');
 
         $descParts = [
             $listing->part_category,
             'Seller: ' . $shop->name . ($shop->display_branch_tag ? " [{$shop->display_branch_tag}]" : ''),
         ];
+        if ($includeInstallation) {
+            $descParts[] = 'Includes Branch Installation (৳' . number_format($installFeePerUnit, 0) . '/unit)';
+        }
         if ($breakdown['has_active_offer']) {
             $descParts[] = 'Sale Offer (Normal ৳' . number_format($breakdown['normal_unit_price'], 0) . ')';
         }
         if ($breakdown['is_wholesale_applied']) {
-            $descParts[] = 'Wholesale -' . rtrim(rtrim(number_format($breakdown['wholesale_discount_pct'], 2), '0'), '.') . '% applied';
+            $descParts[] = 'Wholesale ' . rtrim(rtrim(number_format($breakdown['wholesale_discount_pct'], 2), '0'), '.') . '% off applied';
         }
 
         $cart[$itemKey] = [
@@ -1135,7 +1169,10 @@ class ServicePackageController extends Controller
             'slug' => $listing->slug,
             'title' => $displayTitle,
             'description' => implode(' • ', $descParts),
-            'price' => (float) $breakdown['effective_unit_price'],
+            'part_unit_price' => (float) $breakdown['effective_unit_price'],
+            'include_installation' => $includeInstallation,
+            'installation_fee_per_unit' => $installFeePerUnit,
+            'price' => round((float) $breakdown['effective_unit_price'] + $installFeePerUnit, 2),
             'normal_unit_price' => (float) $breakdown['normal_unit_price'],
             'raw_unit_price' => (float) $breakdown['raw_unit_price'],
             'has_active_offer' => (bool) $breakdown['has_active_offer'],
@@ -1233,9 +1270,10 @@ class ServicePackageController extends Controller
             return $sum + ((float) $item['price'] * (int) $item['quantity']);
         }, 0);
 
-        $serviceCharge = self::calculateServiceCharge($total);
         $customerLocation = $this->resolveCustomerLocation($request);
         $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request) : null;
+        $commissionRatePct = self::resolveCommissionRatePct($activeShop);
+        $serviceCharge = self::calculateServiceCharge($total, $activeShop);
         $shopLocked = (bool) session('cart_shop_locked', false);
         $shopManuallySelected = (bool) session('cart_shop_manual', false);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
@@ -1252,6 +1290,7 @@ class ServicePackageController extends Controller
             'cart',
             'total',
             'serviceCharge',
+            'commissionRatePct',
             'activeShop',
             'shopLocked',
             'shopManuallySelected',
@@ -1302,7 +1341,8 @@ class ServicePackageController extends Controller
             'message' => 'Service removed from cart',
             'cart_count' => count($cart),
             'subtotal' => $subtotal,
-            'service_charge' => self::calculateServiceCharge($subtotal),
+            'commission_rate_pct' => self::resolveCommissionRatePct($targetShop),
+            'service_charge' => self::calculateServiceCharge($subtotal, $targetShop),
         ]);
     }
 
@@ -1335,12 +1375,23 @@ class ServicePackageController extends Controller
                 $spListing = SparePartListing::with('shop')->find((int) $cart[$packageId]['spare_part_id']);
                 if ($spListing) {
                     $breakdown = $spListing->calculatePricingBreakdown($newQty, $cart[$packageId]['spec_code'] ?? null);
-                    $cart[$packageId]['price'] = (float) $breakdown['effective_unit_price'];
+                    $hadInstall = !empty($cart[$packageId]['include_installation']) && $spListing->supportsWorkshopInstallation();
+                    $keepInstall = $hadInstall && $newQty <= $spListing->maxInstallationQuantity();
+                    $installFeePerUnit = $keepInstall ? round((float) $spListing->assembly_fee, 2) : 0.0;
+
+                    $cart[$packageId]['part_unit_price'] = (float) $breakdown['effective_unit_price'];
+                    $cart[$packageId]['include_installation'] = $keepInstall;
+                    $cart[$packageId]['installation_fee_per_unit'] = $installFeePerUnit;
+                    $cart[$packageId]['price'] = round((float) $breakdown['effective_unit_price'] + $installFeePerUnit, 2);
                     $cart[$packageId]['normal_unit_price'] = (float) $breakdown['normal_unit_price'];
                     $cart[$packageId]['raw_unit_price'] = (float) $breakdown['raw_unit_price'];
                     $cart[$packageId]['has_active_offer'] = (bool) $breakdown['has_active_offer'];
                     $cart[$packageId]['wholesale_discount_pct'] = (float) $breakdown['wholesale_discount_pct'];
                     $cart[$packageId]['wholesale_savings'] = (float) $breakdown['wholesale_savings'];
+
+                    if ($hadInstall && !$keepInstall) {
+                        $cart[$packageId]['title'] = str_replace(' + Workshop Installation', '', (string) $cart[$packageId]['title']);
+                    }
                 }
             }
 
@@ -1353,13 +1404,15 @@ class ServicePackageController extends Controller
         }
 
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0.0);
+        $activeShop = $this->resolveTargetShop(null, $request);
 
         return response()->json([
             'success' => true,
             'message' => 'Cart quantity updated',
             'cart_count' => count($cart),
             'subtotal' => $subtotal,
-            'service_charge' => self::calculateServiceCharge($subtotal),
+            'commission_rate_pct' => self::resolveCommissionRatePct($activeShop),
+            'service_charge' => self::calculateServiceCharge($subtotal, $activeShop),
             'item' => $cart[$packageId] ?? null,
         ]);
     }
@@ -1406,9 +1459,10 @@ class ServicePackageController extends Controller
             return $sum + ((float) $item['price'] * (int) $item['quantity']);
         }, 0);
 
-        $serviceCharge = self::calculateServiceCharge($total);
         $customerLocation = $this->resolveCustomerLocation($request);
         $activeShop = $this->resolveTargetShop(null, $request);
+        $commissionRatePct = self::resolveCommissionRatePct($activeShop);
+        $serviceCharge = self::calculateServiceCharge($total, $activeShop);
         $shopLocked = (bool) session('cart_shop_locked', false);
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
         $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
@@ -1424,6 +1478,7 @@ class ServicePackageController extends Controller
             'cart',
             'total',
             'serviceCharge',
+            'commissionRatePct',
             'activeShop',
             'shopLocked',
             'verifiedShops',
@@ -1533,7 +1588,8 @@ class ServicePackageController extends Controller
         }
 
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0);
-        $serviceCharge = self::calculateServiceCharge($subtotal);
+        $commissionRatePct = self::resolveCommissionRatePct($shop);
+        $serviceCharge = self::calculateServiceCharge($subtotal, $shop);
         $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $shop, $customerLocation, $validated['delivery_type']);
         $deliveryFee = (float) $deliveryQuote['delivery_fee'];
 
@@ -1576,7 +1632,7 @@ class ServicePackageController extends Controller
 
         $repairRequest = DB::transaction(function () use (
             $user, $shop, $cart, $firstItem, $validated, $cleanPhone, $title, $serviceLines, $scheduleLabel,
-            $subtotal, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress, $customerCity,
+            $subtotal, $commissionRatePct, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress, $customerCity,
             $appliedVoucherCode, $discountAmount, $scheduledPickupAt
         ) {
             $requestedServiceId = is_numeric($firstItem['id'] ?? null) ? (int) $firstItem['id'] : null;
@@ -1590,9 +1646,9 @@ class ServicePackageController extends Controller
                 'title' => $title,
                 'description' => "Direct Service Booking ({$shop->name})\n"
                     . "Schedule: {$scheduleLabel}\n"
-                    . "Logistics: {$validated['delivery_type']} (৳{$deliveryFee})\n"
+                    . "Platform Pickup & Delivery Logistics: {$validated['delivery_type']} (৳{$deliveryFee})\n"
                     . "Payment: {$validated['payment_method']}\n"
-                    . "Subtotal: ৳" . number_format($subtotal, 2) . " | Escrow Fee: ৳" . number_format($serviceCharge, 2) . $discountLine . " | Total: ৳" . number_format($totalAmount, 2) . "\n\n"
+                    . "Workshop Net (100% Listed Price): ৳" . number_format($subtotal, 2) . " | Platform Fee ({$commissionRatePct}% excl. pickup & delivery): ৳" . number_format($serviceCharge, 2) . $discountLine . " | Total: ৳" . number_format($totalAmount, 2) . "\n\n"
                     . "Selected Services:\n{$serviceLines}",
                 'problem' => !empty($validated['problem_note'])
                     ? trim($validated['problem_note']) . "\n\nBooked Services:\n" . $serviceLines
@@ -1611,6 +1667,7 @@ class ServicePackageController extends Controller
                 'pickup_address' => $fullAddress,
                 'dropoff_address' => $shop->public_address ?: ($shop->address ?? trim(implode(', ', array_filter([$shop->area, $shop->city ?: $customerCity])))),
                 'checkup_fee' => $serviceCharge,
+                'commission_amount' => $serviceCharge,
                 'quoted_final_amount' => $totalAmount,
                 'voucher_code' => $appliedVoucherCode,
                 'discount_amount' => $discountAmount,

@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\RepairShop;
 use App\Models\ServicePackage;
+use App\Models\SparePartListing;
 use App\Services\GeolocationService;
+use App\Services\MarketplaceSearchEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -117,19 +119,8 @@ class ShopDiscoveryController extends Controller
             ->where('is_active', true)
             ->where('is_public', true);
 
-        // 1. Text Search (q) across Brand Name, Branch Tag, Description, Public Address, Area, City, and Specialties
-        if ($request->filled('q')) {
-            $searchTerm = trim($request->input('q'));
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('name', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('branch_name', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('description', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('address', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('area', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('city', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhereRaw("specialties::text ILIKE ?", ["%{$searchTerm}%"]);
-            });
-        }
+        // 1. Fuzzy, Tokenized & Cross-Catalog Search (q) across Workshop Info, Offered Services & Stocked Parts
+        $searchRelevanceOrder = MarketplaceSearchEngine::applyShopSearch($query, $request->input('q'));
 
         // 2. Category Tab Filter (COURIER_PICKUP, IN_SHOP_REPAIR, SPARE_PARTS)
         if ($request->filled('category')) {
@@ -218,6 +209,9 @@ class ShopDiscoveryController extends Controller
         }
 
         // 9. Sorting Order
+        if ($searchRelevanceOrder !== null && ($sort === 'relevance' || !($searchRelevanceOrder['all_matched'] ?? true))) {
+            $query->orderByRaw($searchRelevanceOrder['sql'], $searchRelevanceOrder['bindings']);
+        }
         switch ($sort) {
             case 'price':
                 $query->orderBy('price_level', 'asc')
@@ -339,6 +333,16 @@ class ShopDiscoveryController extends Controller
 
         $siblingBranches = $shop->siblingBranches();
 
+        $shopSparePartsCount = SparePartListing::where('shop_id', $shop->id)
+            ->where('is_active', true)
+            ->count();
+
+        $shopSpareParts = SparePartListing::where('shop_id', $shop->id)
+            ->where('is_active', true)
+            ->orderByRaw('LOWER(TRIM(title)) ASC')
+            ->limit(48)
+            ->get();
+
         $relatedShops = RepairShop::where('is_active', true)
             ->where('is_public', true)
             ->where('id', '!=', $shop->id)
@@ -350,7 +354,7 @@ class ShopDiscoveryController extends Controller
             ->take(3)
             ->get();
 
-        return view('shops.show', compact('shop', 'siblingBranches', 'relatedShops'));
+        return view('shops.show', compact('shop', 'siblingBranches', 'relatedShops', 'shopSpareParts', 'shopSparePartsCount'));
     }
 
     /**
@@ -411,18 +415,7 @@ class ShopDiscoveryController extends Controller
             ->where('is_active', true)
             ->where('is_public', true);
 
-        if ($request->filled('q')) {
-            $searchTerm = trim($request->input('q'));
-            $query->where(function ($q) use ($searchTerm) {
-                $q->where('name', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('branch_name', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('description', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('address', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('area', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhere('city', 'ILIKE', "%{$searchTerm}%")
-                  ->orWhereRaw("specialties::text ILIKE ?", ["%{$searchTerm}%"]);
-            });
-        }
+        $apiSearchRelevanceOrder = MarketplaceSearchEngine::applyShopSearch($query, $request->input('q'));
 
         if ($request->filled('category')) {
             $query->whereRaw("categories::text ILIKE ?", ["%{$request->input('category')}%"]);
@@ -503,6 +496,10 @@ class ShopDiscoveryController extends Controller
         if ($hasDistanceRadius) {
             $maxDistance = (float) ($request->input('max_distance_km', $request->input('maxDistanceKm', 15)));
             $query->whereRaw("{$haversine} <= ?", [$userLat, $userLng, $userLat, $maxDistance]);
+        }
+
+        if ($apiSearchRelevanceOrder !== null && ($sort === 'relevance' || !($apiSearchRelevanceOrder['all_matched'] ?? true))) {
+            $query->orderByRaw($apiSearchRelevanceOrder['sql'], $apiSearchRelevanceOrder['bindings']);
         }
 
         switch ($sort) {

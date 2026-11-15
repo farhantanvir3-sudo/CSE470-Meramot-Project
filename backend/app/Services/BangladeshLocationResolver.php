@@ -339,6 +339,14 @@ class BangladeshLocationResolver
     }
 
     /**
+     * Backward-compatible alias for callers expecting `resolveNearestDistrict`.
+     */
+    public static function resolveNearestDistrict(float $lat, float $lng, array $tags = []): array
+    {
+        return self::resolve($lat, $lng, $tags);
+    }
+
+    /**
      * Match raw text strictly against one of Bangladesh's 64 canonical districts (or null).
      */
     public static function matchCanonicalDistrict(string $rawCity): ?string

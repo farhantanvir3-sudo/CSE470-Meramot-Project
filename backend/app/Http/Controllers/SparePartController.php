@@ -7,6 +7,7 @@ use App\Models\SparePartListing;
 use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
 use App\Services\GeolocationService;
+use App\Services\MarketplaceSearchEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -47,6 +48,14 @@ class SparePartController extends Controller
         'Laptop Casing & Touchpad',
         'SSD, RAM & Storage',
         'PC Display, Cable & Board',
+        'PC & Laptop Parts',
+    ];
+
+    public const OTHER_CATEGORIES = [
+        'Accessories & Chargers',
+        'Adapter & Charger',
+        'SIM Tray & Small Parts',
+        'Mobile Spare Parts',
         'PC & Laptop Parts',
     ];
 
@@ -111,31 +120,24 @@ class SparePartController extends Controller
             ->where('spare_part_listings.is_active', true)
             ->where('repair_shops.is_active', true);
 
-        // 1. Device Type segment (`all` | `mobile` | `pc`)
+        // 1. Device Type segment (`all` | `mobile` | `pc` | `others`)
         $deviceType = strtolower(trim((string) $request->input('device_type', 'all')));
         if ($deviceType === 'pc') {
             $query->whereIn('spare_part_listings.part_category', self::PC_CATEGORIES);
         } elseif ($deviceType === 'mobile') {
             $query->whereIn('spare_part_listings.part_category', self::MOBILE_CATEGORIES);
+        } elseif ($deviceType === 'others') {
+            $query->where(function ($oq) {
+                $oq->whereIn('spare_part_listings.part_category', self::OTHER_CATEGORIES)
+                   ->orWhere('spare_part_listings.brand', 'Universal');
+            });
         } else {
             $deviceType = 'all';
         }
 
-        // 2. Search query (`q`)
+        // 2. Fuzzy, Tokenized & Typo-Tolerant Search query (`q`)
         $search = trim((string) $request->input('q', ''));
-        if ($search !== '') {
-            $query->where(function ($q) use ($search, $likeOp) {
-                $q->where('spare_part_listings.title', $likeOp, "%{$search}%")
-                  ->orWhere('spare_part_listings.compatible_model', $likeOp, "%{$search}%")
-                  ->orWhere('spare_part_listings.brand', $likeOp, "%{$search}%")
-                  ->orWhere('spare_part_listings.part_category', $likeOp, "%{$search}%")
-                  ->orWhere('spare_part_listings.sku', $likeOp, "%{$search}%")
-                  ->orWhere('repair_shops.name', $likeOp, "%{$search}%")
-                  ->orWhere('repair_shops.branch_name', $likeOp, "%{$search}%")
-                  ->orWhere('repair_shops.city', $likeOp, "%{$search}%")
-                  ->orWhere('repair_shops.area', $likeOp, "%{$search}%");
-            });
-        }
+        $searchRelevanceOrder = MarketplaceSearchEngine::applySparePartSearch($query, $search);
 
         // 3. Part Category filter (`part_category`)
         $selectedCategory = trim((string) $request->input('part_category', 'All'));
@@ -200,8 +202,26 @@ class SparePartController extends Controller
         // Distinct product count before pagination
         $distinctProductCount = (clone $query)->distinct('spare_part_listings.product_group_key')->count('spare_part_listings.product_group_key');
 
-        // SQL Haversine distance, courier delivery fee, ETA & landed total (`effective_price + delivery_fee`)
-        $sort = trim((string) $request->input('sort', 'best_deal'));
+        // Determine search context: "Best Deal" tags and price-first sorting apply ONLY when searching
+        $hasSearchContext = ($search !== '' || $selectedGroup !== '');
+        $requestedSort = strtolower(trim((string) $request->input('sort', '')));
+        if ($requestedSort === 'fastest_delivery') {
+            $requestedSort = 'fastest_eta';
+        } elseif ($requestedSort === 'top_sold') {
+            $requestedSort = 'popular';
+        }
+
+        if (!$hasSearchContext) {
+            $allowedUnsearched = ['alphabetical', 'distance', 'fastest_eta', 'popular', 'wholesale', 'highest_price'];
+            $sort = in_array($requestedSort, $allowedUnsearched, true) ? $requestedSort : 'alphabetical';
+        } else {
+            $allowedSearched = ['best_deal', 'lowest_price', 'highest_price', 'distance', 'fastest_eta', 'popular', 'wholesale', 'alphabetical'];
+            $sort = in_array($requestedSort, $allowedSearched, true) ? $requestedSort : 'best_deal';
+        }
+
+        if ($searchRelevanceOrder !== null && ($sort === 'best_deal' || !($searchRelevanceOrder['all_matched'] ?? true))) {
+            $query->orderByRaw($searchRelevanceOrder['sql'], $searchRelevanceOrder['bindings']);
+        }
 
         if ($isPg) {
             $distSql = sprintf(
@@ -223,10 +243,17 @@ class SparePartController extends Controller
             $etaSql = "(GREATEST(15, COALESCE(spare_part_listings.handling_hours, 1) * 30) + CASE WHEN {$distSql} <= 3.5 THEN 35 WHEN {$distSql} <= 8.5 THEN 55 WHEN {$distSql} <= 18.0 THEN 90 WHEN {$distSql} <= 45.0 THEN 210 WHEN {$distSql} <= 150.0 THEN 720 ELSE 1200 END)";
             $landedSql = "({$effectivePriceSql} + {$feeSql})";
 
-            $isUnfilteredLanding = ($search === '' && $selectedCategory === 'All' && $selectedBrand === 'All' && $selectedGroup === '' && $deviceType === 'all' && !$wholesaleOnly && !$specsOnly && !$localOnly && !$onSaleOnly);
-
-            if ($sort === 'lowest_price') {
+            if ($sort === 'alphabetical') {
+                $query->orderByRaw('LOWER(TRIM(spare_part_listings.title)) ASC')
+                      ->orderBy('spare_part_listings.id', 'asc');
+            } elseif ($sort === 'lowest_price') {
                 $query->orderByRaw("{$effectivePriceSql} ASC")
+                      ->orderByRaw("{$landedSql} ASC");
+            } elseif ($sort === 'highest_price') {
+                $query->orderByRaw("{$landedSql} DESC")
+                      ->orderBy('spare_part_listings.id', 'asc');
+            } elseif ($sort === 'distance') {
+                $query->orderByRaw("{$distSql} ASC")
                       ->orderByRaw("{$landedSql} ASC");
             } elseif ($sort === 'fastest_eta') {
                 $query->orderByRaw("{$etaSql} ASC")
@@ -239,26 +266,24 @@ class SparePartController extends Controller
                       ->orderByDesc('spare_part_listings.wholesale_base_discount_pct')
                       ->orderByRaw("{$landedSql} ASC");
             } else {
-                if ($isUnfilteredLanding) {
-                    $query->orderByRaw("CASE
-                        WHEN spare_part_listings.product_group_key = 'samsung-galaxy-s21-fe-5g-display' THEN 1
-                        WHEN spare_part_listings.product_group_key LIKE 'asus-vivobook-15-x515%speaker%' THEN 2
-                        WHEN spare_part_listings.product_group_key LIKE 'dell-4gvmp%' THEN 3
-                        WHEN spare_part_listings.product_group_key LIKE '3dddg-battery-for-dell-latitude%' THEN 4
-                        WHEN spare_part_listings.product_group_key LIKE 'iphone-13-display%' THEN 5
-                        WHEN spare_part_listings.product_group_key LIKE 'apple-a1706-a1819-battery%' THEN 6
-                        WHEN spare_part_listings.has_specs = true THEN 7
-                        ELSE 8
-                    END ASC")
-                    ->orderByRaw("{$landedSql} ASC")
-                    ->orderByRaw("{$etaSql} ASC");
-                } else {
-                    $query->orderByRaw("{$landedSql} ASC")
-                          ->orderByRaw("{$etaSql} ASC");
-                }
+                $query->orderByRaw("{$landedSql} ASC")
+                      ->orderByRaw("{$etaSql} ASC");
             }
         } else {
-            $query->orderBy('spare_part_listings.base_price');
+            if ($sort === 'alphabetical') {
+                $query->orderByRaw('LOWER(TRIM(spare_part_listings.title)) ASC')
+                      ->orderBy('spare_part_listings.id', 'asc');
+            } elseif ($sort === 'highest_price') {
+                $query->orderByDesc('spare_part_listings.base_price');
+            } elseif ($sort === 'popular') {
+                $query->orderByDesc('spare_part_listings.sold_count')
+                      ->orderBy('spare_part_listings.base_price');
+            } elseif ($sort === 'wholesale') {
+                $query->orderByDesc('spare_part_listings.wholesale_enabled')
+                      ->orderBy('spare_part_listings.base_price');
+            } else {
+                $query->orderBy('spare_part_listings.base_price');
+            }
         }
 
         $listings = $query->with(['shop.vendorProfile', 'vendorProfile'])
@@ -343,8 +368,8 @@ class SparePartController extends Controller
                 'cheapest_raw_listing_ids' => [$item->id => true],
             ];
 
-            $isBestDeal = !empty($bench['best_deal_ids'][$item->id]);
-            $isBestRawPrice = !empty($bench['cheapest_raw_listing_ids'][$item->id]);
+            $isBestDeal = $hasSearchContext && !empty($bench['best_deal_ids'][$item->id]);
+            $isBestRawPrice = $hasSearchContext && !empty($bench['cheapest_raw_listing_ids'][$item->id]);
 
             $item->setAttribute('landed_quote', $quote);
             $item->setAttribute('seller_count', $bench['seller_count']);
@@ -352,8 +377,56 @@ class SparePartController extends Controller
             $item->setAttribute('is_best_raw_price', $isBestRawPrice);
             $item->setAttribute('best_landed_total', $bench['best_landed_total']);
             $item->setAttribute('min_raw_price', $bench['min_raw_price']);
-            $item->setAttribute('is_cheapest_raw_but_far', ($isBestRawPrice && !$isBestDeal));
+            $item->setAttribute('is_cheapest_raw_but_far', ($hasSearchContext && $isBestRawPrice && !$isBestDeal));
+            $item->setAttribute('commission_rate_pct', $item->shop?->effectiveCommissionRatePct() ?? VendorProfile::DEFAULT_COMMISSION_RATE);
         }
+
+        // Hierarchical Category -> Brands tree for the left sidebar (`laptopbd.net` style)
+        $treeQuery = SparePartListing::query()
+            ->join('repair_shops', 'repair_shops.id', '=', 'spare_part_listings.shop_id')
+            ->where('spare_part_listings.is_active', true)
+            ->where('repair_shops.is_active', true);
+
+        if ($deviceType === 'pc') {
+            $treeQuery->whereIn('spare_part_listings.part_category', self::PC_CATEGORIES);
+        } elseif ($deviceType === 'mobile') {
+            $treeQuery->whereIn('spare_part_listings.part_category', self::MOBILE_CATEGORIES);
+        } elseif ($deviceType === 'others') {
+            $treeQuery->where(function ($oq) {
+                $oq->whereIn('spare_part_listings.part_category', self::OTHER_CATEGORIES)
+                   ->orWhere('spare_part_listings.brand', 'Universal');
+            });
+        }
+
+        $rawTreeRows = $treeQuery
+            ->select('spare_part_listings.part_category', 'spare_part_listings.brand', DB::raw('COUNT(*) as total'))
+            ->groupBy('spare_part_listings.part_category', 'spare_part_listings.brand')
+            ->orderBy('spare_part_listings.part_category')
+            ->orderBy('spare_part_listings.brand')
+            ->get();
+
+        $categoryBrandTree = [];
+        $genericBrands = ['PC / Laptop', 'PC Component', 'Universal', 'Generic', 'Other', 'Unknown'];
+        foreach ($rawTreeRows->groupBy('part_category') as $catName => $rows) {
+            $catTotal = (int) $rows->sum('total');
+            $brandsList = $rows->map(fn ($r) => [
+                'name' => (string) $r->brand,
+                'count' => (int) $r->total,
+                'is_generic' => in_array((string) $r->brand, $genericBrands, true),
+            ])->sort(function ($a, $b) {
+                if ($a['is_generic'] !== $b['is_generic']) {
+                    return $a['is_generic'] <=> $b['is_generic'];
+                }
+                return strcasecmp($a['name'], $b['name']);
+            })->values()->all();
+
+            $categoryBrandTree[] = [
+                'name' => (string) $catName,
+                'total' => $catTotal,
+                'brands' => $brandsList,
+            ];
+        }
+        usort($categoryBrandTree, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
 
         $quickLocations = [
             ['city' => 'Dhaka', 'area' => 'Banani', 'label' => 'Banani, Dhaka', 'lat' => 23.7937, 'lng' => 90.4066],
@@ -369,6 +442,7 @@ class SparePartController extends Controller
         $activeCategories = match ($deviceType) {
             'pc' => self::PC_CATEGORIES,
             'mobile' => self::MOBILE_CATEGORIES,
+            'others' => self::OTHER_CATEGORIES,
             default => self::PART_CATEGORIES,
         };
 
@@ -379,6 +453,7 @@ class SparePartController extends Controller
             'customerLocation' => $customerLocation,
             'quickLocations' => $quickLocations,
             'partCategories' => $activeCategories,
+            'categoryBrandTree' => $categoryBrandTree,
             'popularBrands' => self::POPULAR_BRANDS,
             'deviceType' => $deviceType,
             'selectedCategory' => $selectedCategory,
@@ -386,6 +461,7 @@ class SparePartController extends Controller
             'selectedGroup' => $selectedGroup,
             'sort' => $sort,
             'search' => $search,
+            'hasSearchContext' => $hasSearchContext,
             'wholesaleOnly' => $wholesaleOnly,
             'specsOnly' => $specsOnly,
             'localOnly' => $localOnly,
@@ -511,6 +587,13 @@ class SparePartController extends Controller
             ['city' => 'Khulna', 'area' => 'Shib Bari', 'label' => 'Shib Bari, Khulna', 'lat' => 22.8206, 'lng' => 89.5535],
         ];
 
+        $commissionRatePct = $listing->shop?->effectiveCommissionRatePct() ?? VendorProfile::DEFAULT_COMMISSION_RATE;
+        $deviceSegment = in_array($listing->part_category, self::PC_CATEGORIES, true)
+            ? ['key' => 'pc', 'label' => 'Laptop & PC Parts']
+            : (in_array($listing->part_category, self::MOBILE_CATEGORIES, true)
+                ? ['key' => 'mobile', 'label' => 'Mobile & Gadget Parts']
+                : ['key' => 'others', 'label' => 'Others']);
+
         return view('spare-parts.show', [
             'listing' => $listing,
             'specOptions' => $specOptions,
@@ -522,6 +605,8 @@ class SparePartController extends Controller
             'relatedListings' => $relatedListings,
             'customerLocation' => $customerLocation,
             'quickLocations' => $quickLocations,
+            'commissionRatePct' => $commissionRatePct,
+            'deviceSegment' => $deviceSegment,
         ]);
     }
 
@@ -696,7 +781,7 @@ class SparePartController extends Controller
             $lat = (float) $request->input('lat');
             $lng = (float) $request->input('lng');
             if (!$hasExplicitCity) {
-                $resolved = BangladeshLocationResolver::resolveNearestDistrict($lat, $lng);
+                $resolved = BangladeshLocationResolver::resolve($lat, $lng);
                 $city = $resolved['city'] ?? $city;
                 if (!$hasExplicitArea) {
                     $area = $resolved['area'] ?? '';

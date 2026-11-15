@@ -350,7 +350,7 @@ class SprintOneEndToEndAuditTest extends TestCase
         $this->assertEquals(2, FinancialLedger::where('shop_id', $shop->id)->where('entry_type', 'VENDOR_EARNING')->count());
         $this->assertSame(1, AdminLedgerController::countUnsettledShops());
 
-        // Trigger batch auto-settlement: must disburse full ৳5,400 (2 x ৳2,700) AND link a PAID VendorPayout
+        // Trigger batch auto-settlement: must disburse full ৳6,000 (2 x ৳3,000 exclusive vendor subtotal) AND link a PAID VendorPayout
         $this->actingAs($admin)
             ->post('/admin/financial-overview/auto-settle', ['limit' => 20])
             ->assertRedirect(route('admin.financial-overview'));
@@ -361,12 +361,12 @@ class SprintOneEndToEndAuditTest extends TestCase
             ->where('entry_type', 'VENDOR_PAYOUT')
             ->firstOrFail();
 
-        $this->assertEquals(5400.00, (float) $payoutLedger->amount);
+        $this->assertEquals(6000.00, (float) $payoutLedger->amount);
         $this->assertNotNull($payoutLedger->vendor_payout_id);
 
         $vendorPayout = VendorPayout::findOrFail($payoutLedger->vendor_payout_id);
         $this->assertSame('PAID', $vendorPayout->status);
-        $this->assertEquals(5400.00, (float) $vendorPayout->amount);
+        $this->assertEquals(6000.00, (float) $vendorPayout->amount);
 
         // Zero orphan VENDOR_PAYOUT ledger rows across the entire ledger
         $this->assertSame(

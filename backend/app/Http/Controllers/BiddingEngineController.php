@@ -6,6 +6,7 @@ use App\Models\Bid;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\VendorProfile;
+use App\Services\MarketplaceSearchEngine;
 use Illuminate\Http\Request;
 
 /**
@@ -90,16 +91,12 @@ class BiddingEngineController extends Controller
                     $q->whereNull('source')->orWhere('source', '!=', 'DIRECT_SERVICE');
                 });
 
-            if ($search !== '') {
-                $like = '%' . strtolower($search) . '%';
-                $query->where(function ($sub) use ($like) {
-                    $sub->whereRaw('LOWER(COALESCE(title, \'\')) LIKE ?', [$like])
-                        ->orWhereRaw('LOWER(COALESCE(brand, \'\')) LIKE ?', [$like])
-                        ->orWhereRaw('LOWER(COALESCE(model_name, \'\')) LIKE ?', [$like])
-                        ->orWhereRaw('LOWER(COALESCE(problem, \'\')) LIKE ?', [$like])
-                        ->orWhereRaw('LOWER(COALESCE(pickup_address, \'\')) LIKE ?', [$like]);
-                });
-            }
+            $searchRelevanceOrder = MarketplaceSearchEngine::applySearch(
+                $query,
+                $search,
+                ['title', 'brand', 'model_name'],
+                ['problem', 'pickup_address']
+            );
 
             if ($deviceFilter !== '') {
                 $query->whereRaw('LOWER(COALESCE(device_type, \'\')) LIKE ?', ['%' . strtolower($deviceFilter) . '%']);
@@ -121,6 +118,10 @@ class BiddingEngineController extends Controller
                 $query->whereHas('bids', fn ($bq) => $bq->whereIn('shop_id', $myShopIds)->where('status', '!=', 'WITHDRAWN'));
             } elseif ($scopeFilter === 'unbid' && !empty($myShopIds)) {
                 $query->whereDoesntHave('bids', fn ($bq) => $bq->whereIn('shop_id', $myShopIds)->where('status', '!=', 'WITHDRAWN'));
+            }
+
+            if ($searchRelevanceOrder !== null) {
+                $query->orderByRaw($searchRelevanceOrder['sql'], $searchRelevanceOrder['bindings']);
             }
 
             if ($sort === 'fewest_bids') {

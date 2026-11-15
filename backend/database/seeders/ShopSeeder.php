@@ -1179,7 +1179,7 @@ class ShopSeeder extends Seeder
                     'courier_pickup' => in_array('COURIER_PICKUP', $entry['categories'], true),
                     'in_shop_repair' => in_array('IN_SHOP_REPAIR', $entry['categories'], true),
                     'spare_parts' => in_array('SPARE_PARTS', $entry['categories'], true),
-                    'commission_rate' => 10.00,
+                    'commission_rate' => VendorProfile::DEFAULT_COMMISSION_RATE,
                     'rating' => 0.00,
                     'reviewed_by_admin_id' => $meramotAdmin?->id,
                     'reviewed_at' => $reviewedAt,

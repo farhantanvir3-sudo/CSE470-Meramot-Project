@@ -337,7 +337,11 @@ class SparePartSeeder extends Seeder
                     ? $groupKey
                     : substr($groupKey, 0, 140) . '--' . $shop->slug;
 
-                $skuPrefix = strtoupper(substr((string) preg_replace('/[^A-Za-z0-9]/', '', $item['brand'] ?? 'MRM'), 0, 3) ?: 'MRM');
+                $resolvedBrand = \App\Models\SparePartListing::inferSpecificBrandFromTitle(
+                    (string) $item['title'],
+                    (string) ($item['brand'] ?? 'Universal')
+                );
+                $skuPrefix = strtoupper(substr((string) preg_replace('/[^A-Za-z0-9]/', '', $resolvedBrand), 0, 3) ?: 'MRM');
                 $sku = sprintf('%s-%d-S%d', $skuPrefix, (int) ($item['ext_id'] ?? $item['etel_id'] ?? ($idx + 1000)), $shop->id);
 
                 $gallery = is_array($item['gallery_urls'] ?? null) && !empty($item['gallery_urls'])
@@ -352,7 +356,7 @@ class SparePartSeeder extends Seeder
                     'sku' => $sku,
                     'title' => substr((string) $item['title'], 0, 250),
                     'part_category' => substr((string) ($item['part_category'] ?? 'Spare Part'), 0, 80),
-                    'brand' => substr((string) ($item['brand'] ?? 'Universal'), 0, 80),
+                    'brand' => substr($resolvedBrand, 0, 80),
                     'compatible_model' => substr((string) ($item['compatible_model'] ?? $item['title']), 0, 140),
                     'condition_label' => 'Brand New',
                     'image_url' => substr((string) $item['image_url'], 0, 500),
@@ -372,9 +376,9 @@ class SparePartSeeder extends Seeder
                     'offer_discount_pct' => $offerDiscountPct,
                     'offer_starts_at' => $offerStartsAt,
                     'offer_ends_at' => $offerEndsAt,
-                    'assembly_fee' => isset($item['assembly_fee']) && $item['assembly_fee'] !== null
+                    'assembly_fee' => (isset($item['assembly_fee']) && $item['assembly_fee'] !== null && ($item['part_category'] ?? '') !== 'Tools, Consumables & Soldering')
                         ? (float) $item['assembly_fee']
-                        : null,
+                        : 0.00,
                     'warranty_days' => (int) ($item['warranty_days'] ?? 30),
                     'stock_quantity' => 500 + (($idx * 37 + $sIdx * 85) % 900),
                     'sold_count' => 12 + (($idx * 29 + $sIdx * 41) % 320),
@@ -403,6 +407,7 @@ class SparePartSeeder extends Seeder
             DB::table('spare_part_listings')->upsert($batchRows, ['slug'], $upsertCols);
         }
 
-        $this->command?->info("Seeded {$totalSeeded} multi-vendor Mobile & PC spare part listings (from " . count($catalog) . " cloned catalog items).");
+        $normalizedBrandsCount = \App\Models\SparePartListing::normalizeGenericBrandsInDatabase();
+        $this->command?->info("Seeded {$totalSeeded} multi-vendor Mobile & PC spare part listings (from " . count($catalog) . " cloned catalog items; normalized {$normalizedBrandsCount} specific brand names).");
     }
 }

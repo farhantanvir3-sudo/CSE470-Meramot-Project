@@ -47,7 +47,7 @@ class FinancialLedgerSeeder extends Seeder
 {
     public function run(): void
     {
-        if (FinancialLedger::count() > 0) {
+        if (FinancialLedger::where('description', 'LIKE', '%Customer payment received:%')->exists()) {
             return;
         }
 
@@ -113,11 +113,39 @@ class FinancialLedgerSeeder extends Seeder
         $mirazBranches = $publicShops->where('name', 'Miraz Telecom')->values();
         $vendorUserByProfileId = VendorProfile::pluck('user_id', 'id')->all();
 
-        $primaryServiceByShopId = ShopService::where('is_active', true)
+        // Assign realistic 5.5%–10% performance-tiered commission rates across workshops
+        $shopCommissionTiers = [
+            'protech-solutions' => 6.00,
+            'dhaka-device-doctors' => 6.50,
+            'macmaster-repairs' => 7.00,
+            'the-gadget-den' => 7.50,
+            'the-idoc-garage' => 8.00,
+            'gulshan-gadget-care' => 8.00,
+            'bytesize-repairs' => 8.50,
+            'budget-fixer' => 9.00,
+            'applecore-solutions' => 8.50,
+            'main-street-tech' => 9.00,
+            'precision-fix' => 9.00,
+            'mirpur-laptop-lab' => 9.50,
+            'uttara-fixpoint' => 9.50,
+            'bashundhara-laptop-lounge' => 9.00,
+            'farmgate-tech-rescue' => 10.00,
+            'pixel-repair-station' => 8.50,
+        ];
+        foreach ($publicShops as $pShop) {
+            if (isset($shopCommissionTiers[$pShop->slug]) && $pShop->vendor_profile_id) {
+                VendorProfile::where('id', $pShop->vendor_profile_id)
+                    ->update(['commission_rate' => $shopCommissionTiers[$pShop->slug]]);
+                $pShop->setRelation('vendorProfile', VendorProfile::find($pShop->vendor_profile_id));
+            }
+        }
+
+        $servicesByShopId = ShopService::where('is_active', true)
             ->orderBy('sort_order')
-            ->get(['id', 'shop_id'])
-            ->unique('shop_id')
-            ->pluck('id', 'shop_id')
+            ->get(['id', 'shop_id', 'name', 'issue_category', 'device_type'])
+            ->groupBy('shop_id');
+        $primaryServiceByShopId = $servicesByShopId
+            ->map(fn ($svcs) => $svcs->first()?->id)
             ->all();
 
         $customerAddresses = [
@@ -144,48 +172,48 @@ class FinancialLedgerSeeder extends Seeder
         // Every (shop, customer) pair is strictly unique so each order maps 1:1 to a verified ShopReview!
         $orderBlueprints = [
             // --- ProTech Solutions [Banani DOHS Flagship] (7 completed orders: 6 visible reviews + 1 moderated review) ---
-            ['slug' => 'protech-solutions', 'cust' => 'customer@meramot.demo', 'days' => 34, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Apple', 'model' => 'iPhone 13 Pro', 'cat' => 'Screen / Display', 'title' => 'iPhone 13 Pro OLED Screen Replacement', 'parts' => 3700, 'labor' => 800, 'pm' => 'BKASH'],
+            ['slug' => 'protech-solutions', 'cust' => 'customer@meramot.demo', 'days' => 36, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Apple', 'model' => 'iPhone 13 Pro', 'cat' => 'Screen / Display', 'title' => 'iPhone 13 Pro OLED Screen Replacement', 'parts' => 3700, 'labor' => 800, 'pm' => 'BKASH'],
             ['slug' => 'protech-solutions', 'cust' => 'nusrat.jahan@meramot.demo', 'days' => 29, 'source' => 'DIRECT_SERVICE', 'pkg' => 'Laptop High-Capacity Battery Replacement', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Air M2', 'cat' => 'Battery / Power', 'title' => 'Laptop High-Capacity Battery Replacement', 'parts' => 2400, 'labor' => 800, 'pm' => 'NAGAD'],
-            ['slug' => 'protech-solutions', 'cust' => 'sadia.afrin@meramot.demo', 'days' => 25, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 14 M1', 'cat' => 'Water Damage', 'title' => 'Thunderbolt Logic Board Short & Ultrasonic Bath', 'parts' => 4200, 'labor' => 1600, 'pm' => 'SSLCOMMERZ'],
+            ['slug' => 'protech-solutions', 'cust' => 'sadia.afrin@meramot.demo', 'days' => 3, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 14 M1', 'cat' => 'Water Damage', 'title' => 'Thunderbolt Logic Board Short & Ultrasonic Bath', 'parts' => 4200, 'labor' => 1600, 'pm' => 'SSLCOMMERZ'],
             ['slug' => 'protech-solutions', 'cust' => 'mehedi.hasan@meramot.demo', 'days' => 21, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 13 M2', 'cat' => 'Battery / Power', 'title' => 'MacBook Pro OEM Battery Cell & Cycle Calibration', 'parts' => 3900, 'labor' => 900, 'pm' => 'CARD'],
             ['slug' => 'protech-solutions', 'cust' => 'tahmid.chowdhury@meramot.demo', 'days' => 17, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Dell', 'model' => 'XPS 15 (9520)', 'cat' => 'Overheating / Fan', 'title' => 'Dell XPS Dual Cooling Fan & Vapor Chamber Repaste', 'parts' => 2100, 'labor' => 900, 'pm' => 'BKASH'],
-            ['slug' => 'protech-solutions', 'cust' => 'tanvir.hasan@meramot.demo', 'days' => 12, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Apple', 'model' => 'iPhone 14 Pro Max', 'cat' => 'Charging Port', 'title' => 'iPhone 14 Pro Max Charging Flex & Tristar IC Fix', 'parts' => 2600, 'labor' => 800, 'pm' => 'SSLCOMMERZ'],
-            ['slug' => 'protech-solutions', 'cust' => 'imran.kabir@meramot.demo', 'days' => 9, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 14', 'cat' => 'Screen / Display', 'title' => 'MacBook Backlight Driver IC Restoration', 'parts' => 3100, 'labor' => 1200, 'pm' => 'CARD'],
+            ['slug' => 'protech-solutions', 'cust' => 'tanvir.hasan@meramot.demo', 'days' => 6, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Apple', 'model' => 'iPhone 14 Pro Max', 'cat' => 'Charging Port', 'title' => 'iPhone 14 Pro Max Charging Flex & Tristar IC Fix', 'parts' => 2600, 'labor' => 800, 'pm' => 'SSLCOMMERZ'],
+            ['slug' => 'protech-solutions', 'cust' => 'imran.kabir@meramot.demo', 'days' => 2, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 14', 'cat' => 'Screen / Display', 'title' => 'MacBook Backlight Driver IC Restoration', 'parts' => 3100, 'labor' => 1200, 'pm' => 'CARD'],
 
             // --- ProTech Solutions [Uttara Sector 7] (4 completed orders) ---
             ['slug' => 'protech-solutions-uttara', 'cust' => 'sadia.afrin@meramot.demo', 'days' => 27, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'HP', 'model' => 'Spectre x360', 'cat' => 'Motherboard / IC', 'title' => 'HP Spectre USB-C PD Controller IC Replacement', 'parts' => 2800, 'labor' => 1100, 'pm' => 'SSLCOMMERZ'],
             ['slug' => 'protech-solutions-uttara', 'cust' => 'mehedi.hasan@meramot.demo', 'days' => 20, 'source' => 'DIRECT_SERVICE', 'pkg' => 'Laptop High-Capacity Battery Replacement', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Air M1', 'cat' => 'Battery / Power', 'title' => 'Laptop High-Capacity Battery Replacement', 'parts' => 2400, 'labor' => 800, 'pm' => 'BKASH'],
             ['slug' => 'protech-solutions-uttara', 'cust' => 'tahmid.chowdhury@meramot.demo', 'days' => 14, 'source' => 'DIRECT_SERVICE', 'pkg' => 'Mechanical & Chiclet Keyboard Replacement', 'device' => 'Laptop', 'brand' => 'Lenovo', 'model' => 'Yoga Slim 7i', 'cat' => 'Keyboard', 'title' => 'Mechanical & Chiclet Keyboard Replacement', 'parts' => 1600, 'labor' => 600, 'pm' => 'NAGAD'],
-            ['slug' => 'protech-solutions-uttara', 'cust' => 'tasnim.akter@meramot.demo', 'days' => 8, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Samsung', 'model' => 'Galaxy S23+', 'cat' => 'Screen / Display', 'title' => 'Galaxy S23+ Dynamic AMOLED Calibration & Seal', 'parts' => 4400, 'labor' => 900, 'pm' => 'CARD'],
+            ['slug' => 'protech-solutions-uttara', 'cust' => 'tasnim.akter@meramot.demo', 'days' => 4, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Samsung', 'model' => 'Galaxy S23+', 'cat' => 'Screen / Display', 'title' => 'Galaxy S23+ Dynamic AMOLED Calibration & Seal', 'parts' => 4400, 'labor' => 900, 'pm' => 'CARD'],
 
             // --- ProTech Solutions [Agrabad, Chattogram] (3 completed orders — Chattogram courier!) ---
             ['slug' => 'protech-solutions-agrabad', 'cust' => 'rafiul.alam@meramot.demo', 'days' => 24, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Lenovo', 'model' => 'ThinkPad X1 Carbon', 'cat' => 'Motherboard / IC', 'title' => 'ThinkPad X1 Carbon Power Rail Diagnostics & Repair', 'parts' => 3200, 'labor' => 1200, 'pm' => 'SSLCOMMERZ'],
             ['slug' => 'protech-solutions-agrabad', 'cust' => 'nusrat.jahan@meramot.demo', 'days' => 16, 'source' => 'DIRECT_SERVICE', 'pkg' => 'Original Display Panel Replacement', 'device' => 'Phone', 'brand' => 'Samsung', 'model' => 'Galaxy S22', 'cat' => 'Screen / Display', 'title' => 'Original Display Panel Replacement', 'parts' => 2100, 'labor' => 700, 'pm' => 'BKASH'],
-            ['slug' => 'protech-solutions-agrabad', 'cust' => 'farzana.yasmin@meramot.demo', 'days' => 10, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 13', 'cat' => 'SSD / Storage', 'title' => 'Corporate MacBook Controller & Thermal Service', 'parts' => 2200, 'labor' => 800, 'pm' => 'CARD'],
+            ['slug' => 'protech-solutions-agrabad', 'cust' => 'farzana.yasmin@meramot.demo', 'days' => 5, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 13', 'cat' => 'SSD / Storage', 'title' => 'Corporate MacBook Controller & Thermal Service', 'parts' => 2200, 'labor' => 800, 'pm' => 'CARD'],
 
             // --- Dhaka Device Doctors (5 completed orders) ---
-            ['slug' => 'dhaka-device-doctors', 'cust' => 'rafiul.alam@meramot.demo', 'days' => 26, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Dell', 'model' => 'XPS 13 (9315)', 'cat' => 'Motherboard / IC', 'title' => 'Dell XPS 13 Motherboard Power IC & Trackpad Repair', 'parts' => 4700, 'labor' => 1500, 'pm' => 'SSLCOMMERZ'],
+            ['slug' => 'dhaka-device-doctors', 'cust' => 'rafiul.alam@meramot.demo', 'days' => 4, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Dell', 'model' => 'XPS 13 (9315)', 'cat' => 'Motherboard / IC', 'title' => 'Dell XPS 13 Motherboard Power IC & Trackpad Repair', 'parts' => 4700, 'labor' => 1500, 'pm' => 'SSLCOMMERZ'],
             ['slug' => 'dhaka-device-doctors', 'cust' => 'customer@meramot.demo', 'days' => 20, 'source' => 'DIRECT_SERVICE', 'pkg' => 'Motherboard Micro-Soldering & IC Diagnostic', 'device' => 'Laptop', 'brand' => 'ASUS', 'model' => 'ZenBook 14 OLED', 'cat' => 'Motherboard / IC', 'title' => 'Motherboard Micro-Soldering & IC Diagnostic', 'parts' => 3100, 'labor' => 1400, 'pm' => 'BKASH'],
             ['slug' => 'dhaka-device-doctors', 'cust' => 'nusrat.jahan@meramot.demo', 'days' => 15, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Google', 'model' => 'Pixel 7 Pro', 'cat' => 'Motherboard / IC', 'title' => 'Pixel 7 Pro Baseband PMIC Re-Balling', 'parts' => 2900, 'labor' => 1200, 'pm' => 'NAGAD'],
             ['slug' => 'dhaka-device-doctors', 'cust' => 'mahmudul.karim@meramot.demo', 'days' => 11, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'ASUS', 'model' => 'TUF Gaming A15', 'cat' => 'Motherboard / IC', 'title' => 'ASUS TUF Charging MOSFET & VRM Rail Replacement', 'parts' => 2600, 'labor' => 1100, 'pm' => 'CARD'],
-            ['slug' => 'dhaka-device-doctors', 'cust' => 'imran.kabir@meramot.demo', 'days' => 5, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'MSI', 'model' => 'Modern 15', 'cat' => 'Motherboard / IC', 'title' => 'MSI Modern Embedded Controller BGA Rework', 'parts' => 2800, 'labor' => 1200, 'pm' => 'SSLCOMMERZ'],
+            ['slug' => 'dhaka-device-doctors', 'cust' => 'imran.kabir@meramot.demo', 'days' => 2, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'MSI', 'model' => 'Modern 15', 'cat' => 'Motherboard / IC', 'title' => 'MSI Modern Embedded Controller BGA Rework', 'parts' => 2800, 'labor' => 1200, 'pm' => 'SSLCOMMERZ'],
 
             // --- The Gadget Den (4 walk-in completed orders) ---
-            ['slug' => 'the-gadget-den', 'cust' => 'tanvir.hasan@meramot.demo', 'days' => 28, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Samsung', 'model' => 'Galaxy S22 Ultra', 'cat' => 'Battery / Power', 'title' => 'Samsung S22 Ultra Battery Replacement', 'parts' => 2000, 'labor' => 800, 'pm' => 'SSLCOMMERZ'],
+            ['slug' => 'the-gadget-den', 'cust' => 'tanvir.hasan@meramot.demo', 'days' => 35, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Samsung', 'model' => 'Galaxy S22 Ultra', 'cat' => 'Battery / Power', 'title' => 'Samsung S22 Ultra Battery Replacement', 'parts' => 2000, 'labor' => 800, 'pm' => 'SSLCOMMERZ'],
             ['slug' => 'the-gadget-den', 'cust' => 'customer@meramot.demo', 'days' => 22, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'HP', 'model' => 'Envy 13', 'cat' => 'Keyboard', 'title' => 'HP Envy Backlit Keyboard Matrix Replacement', 'parts' => 1800, 'labor' => 800, 'pm' => 'CARD'],
             ['slug' => 'the-gadget-den', 'cust' => 'sadia.afrin@meramot.demo', 'days' => 15, 'source' => 'MARKETPLACE', 'device' => 'Smartwatch', 'brand' => 'Apple', 'model' => 'Watch Series 8', 'cat' => 'Screen / Display', 'title' => 'Apple Watch Series 8 Front Glass Lamination', 'parts' => 2200, 'labor' => 900, 'pm' => 'BKASH'],
-            ['slug' => 'the-gadget-den', 'cust' => 'mehedi.hasan@meramot.demo', 'days' => 7, 'source' => 'MARKETPLACE', 'device' => 'Tablet', 'brand' => 'Apple', 'model' => 'iPad Air 5', 'cat' => 'Screen / Display', 'title' => 'iPad Air 5 Touch Digitizer & Frame Alignment', 'parts' => 3400, 'labor' => 1000, 'pm' => 'CASH'],
+            ['slug' => 'the-gadget-den', 'cust' => 'mehedi.hasan@meramot.demo', 'days' => 3, 'source' => 'MARKETPLACE', 'device' => 'Tablet', 'brand' => 'Apple', 'model' => 'iPad Air 5', 'cat' => 'Screen / Display', 'title' => 'iPad Air 5 Touch Digitizer & Frame Alignment', 'parts' => 3400, 'labor' => 1000, 'pm' => 'CASH'],
 
             // --- Budget Fixer (4 walk-in completed orders) ---
-            ['slug' => 'budget-fixer', 'cust' => 'mahmudul.karim@meramot.demo', 'days' => 25, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Lenovo', 'model' => 'IdeaPad Slim 5', 'cat' => 'Screen / Display', 'title' => 'Lenovo IdeaPad Display Ribbon & Hinge Fix', 'parts' => 750, 'labor' => 450, 'pm' => 'CASH'],
-            ['slug' => 'budget-fixer', 'cust' => 'tasnim.akter@meramot.demo', 'days' => 19, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Xiaomi', 'model' => 'Redmi Note 12', 'cat' => 'Screen / Display', 'title' => 'Redmi Note 12 Replacement IPS Display Swap', 'parts' => 1100, 'labor' => 400, 'pm' => 'BKASH'],
+            ['slug' => 'budget-fixer', 'cust' => 'mahmudul.karim@meramot.demo', 'days' => 41, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Lenovo', 'model' => 'IdeaPad Slim 5', 'cat' => 'Screen / Display', 'title' => 'Lenovo IdeaPad Display Ribbon & Hinge Fix', 'parts' => 750, 'labor' => 450, 'pm' => 'CASH'],
+            ['slug' => 'budget-fixer', 'cust' => 'tasnim.akter@meramot.demo', 'days' => 39, 'source' => 'MARKETPLACE', 'device' => 'Phone', 'brand' => 'Xiaomi', 'model' => 'Redmi Note 12', 'cat' => 'Screen / Display', 'title' => 'Redmi Note 12 Replacement IPS Display Swap', 'parts' => 1100, 'labor' => 400, 'pm' => 'BKASH'],
             ['slug' => 'budget-fixer', 'cust' => 'imran.kabir@meramot.demo', 'days' => 13, 'source' => 'DIRECT_SERVICE', 'pkg' => 'Gaming Console Thermal Overhaul & Fan Deep Clean', 'device' => 'Gaming Console', 'brand' => 'Sony', 'model' => 'PlayStation 4 Slim', 'cat' => 'Overheating / Fan', 'title' => 'Gaming Console Thermal Overhaul & Fan Deep Clean', 'parts' => 1200, 'labor' => 600, 'pm' => 'NAGAD'],
-            ['slug' => 'budget-fixer', 'cust' => 'rafiul.alam@meramot.demo', 'days' => 6, 'source' => 'MARKETPLACE', 'device' => 'Printer', 'brand' => 'Canon', 'model' => 'PIXMA G2020', 'cat' => 'Mechanical Servicing', 'title' => 'Canon PIXMA Paper Feed Roller & Ink Pad Reset', 'parts' => 650, 'labor' => 350, 'pm' => 'CASH'],
+            ['slug' => 'budget-fixer', 'cust' => 'rafiul.alam@meramot.demo', 'days' => 37, 'source' => 'MARKETPLACE', 'device' => 'Printer', 'brand' => 'Canon', 'model' => 'PIXMA G2020', 'cat' => 'Mechanical Servicing', 'title' => 'Canon PIXMA Paper Feed Roller & Ink Pad Reset', 'parts' => 650, 'labor' => 350, 'pm' => 'CASH'],
 
             // --- MacMaster Repairs (4 walk-in completed orders) ---
-            ['slug' => 'macmaster-repairs', 'cust' => 'farzana.yasmin@meramot.demo', 'days' => 27, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 16 M1 Pro', 'cat' => 'Overheating / Fan', 'title' => 'MacBook Pro M1 Thermal Repasting & Fan Repair', 'parts' => 6500, 'labor' => 2000, 'pm' => 'CARD'],
+            ['slug' => 'macmaster-repairs', 'cust' => 'farzana.yasmin@meramot.demo', 'days' => 2, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 16 M1 Pro', 'cat' => 'Overheating / Fan', 'title' => 'MacBook Pro M1 Thermal Repasting & Fan Repair', 'parts' => 6500, 'labor' => 2000, 'pm' => 'CARD'],
             ['slug' => 'macmaster-repairs', 'cust' => 'customer@meramot.demo', 'days' => 21, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'iMac 24 M1', 'cat' => 'Motherboard / IC', 'title' => 'iMac 24 Power Supply Rail Restoration', 'parts' => 4100, 'labor' => 1400, 'pm' => 'SSLCOMMERZ'],
-            ['slug' => 'macmaster-repairs', 'cust' => 'sadia.afrin@meramot.demo', 'days' => 14, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Air M2', 'cat' => 'Screen / Display', 'title' => 'MacBook Air M2 True Tone Display Swap', 'parts' => 5800, 'labor' => 1400, 'pm' => 'CARD'],
+            ['slug' => 'macmaster-repairs', 'cust' => 'sadia.afrin@meramot.demo', 'days' => 4, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Air M2', 'cat' => 'Screen / Display', 'title' => 'MacBook Air M2 True Tone Display Swap', 'parts' => 5800, 'labor' => 1400, 'pm' => 'CARD'],
             ['slug' => 'macmaster-repairs', 'cust' => 'tahmid.chowdhury@meramot.demo', 'days' => 8, 'source' => 'MARKETPLACE', 'device' => 'Laptop', 'brand' => 'Apple', 'model' => 'MacBook Pro 14', 'cat' => 'Charging Port', 'title' => 'MagSafe 3 I/O Board & Ultrasonic Contact Service', 'parts' => 1900, 'labor' => 700, 'pm' => 'BKASH'],
 
             // --- The iDoc Garage (3 courier completed orders) ---
@@ -245,19 +273,24 @@ class FinancialLedgerSeeder extends Seeder
 
             $partsCost = (float) $bp['parts'];
             $laborCost = (float) $bp['labor'];
-            $gross = $pkg ? (float) $pkg->fixed_price : ($partsCost + $laborCost);
-            if ($pkg && ($partsCost + $laborCost) != $gross) {
-                $partsCost = round($gross * 0.72, 2);
-                $laborCost = round($gross - $partsCost, 2);
+            $vendorSubtotal = $pkg ? (float) $pkg->fixed_price : ($partsCost + $laborCost);
+            if ($pkg && ($partsCost + $laborCost) != $vendorSubtotal) {
+                $partsCost = round($vendorSubtotal * 0.72, 2);
+                $laborCost = round($vendorSubtotal - $partsCost, 2);
             }
+            $gross = $vendorSubtotal; // Quoted / listed service + parts total belongs 100% to vendor
 
-            $commission = round($gross * 0.10, 2);
-            $vendorNet = round($gross - $commission, 2);
+            $shopCommissionPct = $shop->effectiveCommissionRatePct();
+            $displayFeePct = rtrim(rtrim(number_format($shopCommissionPct, 2), '0'), '.');
+            $commission = round($vendorSubtotal * ($shopCommissionPct / 100.0), 2);
+            $vendorNet = $vendorSubtotal;
+            $customerPaidPartsAndService = round($vendorNet + $commission, 2);
 
             $cityKey = $shop->city === 'Chattogram' ? 'Chattogram' : 'Dhaka';
             $rider = $cityKey === 'Chattogram' ? $ctgRider : $dhakaRider;
             $usesCourier = (bool) $shop->supports_pickup && $rider !== null;
             $deliveryFee = $usesCourier ? 150.00 : 0.00;
+            $customerTotal = round($customerPaidPartsAndService + $deliveryFee, 2);
 
             $addrPool = $customerAddresses[$cityKey];
             $custAddress = $addrPool[$idx % count($addrPool)];
@@ -275,7 +308,18 @@ class FinancialLedgerSeeder extends Seeder
                 ? "{$shop->name} [{$shop->branch_name}]"
                 : $shop->name;
 
-            $primarySvcId = $primaryServiceByShopId[$shop->id] ?? null;
+            $shopServicesList = $servicesByShopId->get($shop->id, collect());
+            $matchedSvc = $shopServicesList->first(function ($s) use ($bp) {
+                $hay = strtolower(($s->name ?? '') . ' ' . ($s->issue_category ?? '') . ' ' . ($s->device_type ?? ''));
+                $catWords = preg_split('/[\s\/]+/', strtolower($bp['cat'] ?? '')) ?: [];
+                foreach ($catWords as $cw) {
+                    if (strlen($cw) >= 3 && str_contains($hay, $cw)) {
+                        return true;
+                    }
+                }
+                return false;
+            });
+            $primarySvcId = $matchedSvc?->id ?? $shopServicesList->get($idx % max(1, $shopServicesList->count()))?->id ?? ($primaryServiceByShopId[$shop->id] ?? null);
 
             // 1. Customer viewed shop before placing order (`recently_viewed`)
             DB::table('recently_viewed')->insert([
@@ -465,11 +509,11 @@ class FinancialLedgerSeeder extends Seeder
                 'type' => 'FINAL',
                 'status' => 'PAID',
                 'invoice_number' => $invoiceNo,
-                'subtotal_amount' => $gross,
+                'subtotal_amount' => $vendorSubtotal,
                 'delivery_amount' => $deliveryFee,
                 'discount_amount' => 0.00,
                 'commission_amount' => $commission,
-                'total_amount' => $gross + $deliveryFee,
+                'total_amount' => $customerTotal,
                 'issued_at' => $tCompleted,
                 'due_at' => $tPaid,
                 'paid_at' => $tPaid,
@@ -518,7 +562,7 @@ class FinancialLedgerSeeder extends Seeder
                 'user_id' => $customer->id,
                 'repair_request_id' => $repairRequest->id,
                 'invoice_id' => $invoiceId,
-                'amount' => $gross + $deliveryFee,
+                'amount' => $customerTotal,
                 'currency' => 'BDT',
                 'payment_method' => $bp['pm'],
                 'status' => 'PAID',
@@ -536,8 +580,8 @@ class FinancialLedgerSeeder extends Seeder
                     'repair_request_id' => $repairRequest->id,
                     'customer_user_id' => $customer->id,
                     'vendor_user_id' => $vendorUserId,
-                    'amount' => $gross,
-                    'gross_amount' => $gross,
+                    'amount' => $customerPaidPartsAndService,
+                    'gross_amount' => $customerPaidPartsAndService,
                     'platform_commission_amount' => $commission,
                     'vendor_net_amount' => $vendorNet,
                     'action' => 'HOLD',
@@ -550,8 +594,8 @@ class FinancialLedgerSeeder extends Seeder
                     'repair_request_id' => $repairRequest->id,
                     'customer_user_id' => $customer->id,
                     'vendor_user_id' => $vendorUserId,
-                    'amount' => $gross,
-                    'gross_amount' => $gross,
+                    'amount' => $customerPaidPartsAndService,
+                    'gross_amount' => $customerPaidPartsAndService,
                     'platform_commission_amount' => $commission,
                     'vendor_net_amount' => $vendorNet,
                     'action' => 'RELEASE',
@@ -568,7 +612,7 @@ class FinancialLedgerSeeder extends Seeder
                 'invoice_id' => $invoiceId,
                 'entry_type' => 'CUSTOMER_PAYMENT',
                 'direction' => 'CREDIT',
-                'amount' => $gross,
+                'amount' => $customerPaidPartsAndService,
                 'currency' => 'BDT',
                 'description' => "Customer payment received: {$bp['title']} ({$shopDisplayName})",
                 'effective_at' => $tPaid,
@@ -582,7 +626,7 @@ class FinancialLedgerSeeder extends Seeder
                 'direction' => 'CREDIT',
                 'amount' => $commission,
                 'currency' => 'BDT',
-                'description' => "10% platform commission retained on {$invoiceNo} (Gross: ৳{$gross})",
+                'description' => "{$displayFeePct}% platform fee retained on {$invoiceNo} (Workshop subtotal: ৳{$vendorNet}, excl. delivery)",
                 'effective_at' => (clone $tPaid)->addMinute(),
             ]);
 
@@ -594,7 +638,7 @@ class FinancialLedgerSeeder extends Seeder
                 'direction' => 'DEBIT',
                 'amount' => $vendorNet,
                 'currency' => 'BDT',
-                'description' => "Net earning allocated to {$shopDisplayName} (90% of ৳{$gross})",
+                'description' => "100% listed price earning allocated to {$shopDisplayName} (৳{$vendorNet})",
                 'effective_at' => (clone $tPaid)->addMinutes(2),
             ]);
 
@@ -966,7 +1010,7 @@ class FinancialLedgerSeeder extends Seeder
                     'currency' => 'BDT',
                     'status' => 'PENDING',
                     'reference_code' => 'PYT-2026-0002',
-                    'notes' => 'Pending bi-weekly net commission settlement queued for Admin Payouts Desk',
+                    'notes' => 'Pending bi-weekly vendor payout settlement queued for Admin Payouts Desk',
                     'paid_at' => null,
                     'created_at' => now()->subDay(),
                     'updated_at' => now()->subDay(),

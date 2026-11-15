@@ -79,9 +79,13 @@
                     <span class="sm:hidden">৳{{ number_format($kpis['platform_volume'], 0) }}</span>
                     <span class="hidden sm:inline">৳{{ number_format($kpis['platform_volume'], 2) }}</span>
                 </div>
+                @php
+                    $dashAvgRate = rtrim(rtrim(number_format((float) ($avgCommissionRatePct ?? 8.0), 2), '0'), '.');
+                    $dashTrend = $platformIncomeTrend ?? [];
+                @endphp
                 <p class="mt-1.5 sm:mt-1 text-[10px] sm:text-xs leading-snug text-emerald-800 font-semibold">
-                    <span class="sm:hidden">Net 10%: ৳{{ number_format($kpis['platform_commission'], 0) }} &rarr;</span>
-                    <span class="hidden sm:inline">10% Net Revenue: ৳{{ number_format($kpis['platform_commission'], 2) }} ({{ $kpis['unsettled_tx_count'] }} unsettled) &rarr;</span>
+                    <span class="sm:hidden">Fee (~{{ $dashAvgRate }}%): ৳{{ number_format($kpis['platform_commission'], 0) }} &rarr;</span>
+                    <span class="hidden sm:inline">Platform Fee (~{{ $dashAvgRate }}%): ৳{{ number_format($kpis['platform_commission'], 2) }} ({{ $kpis['unsettled_tx_count'] }} unsettled) &rarr;</span>
                 </p>
             </div>
         </a>
@@ -224,6 +228,127 @@
                 </div>
                 <p class="mt-1 text-[10px] sm:text-[11px] leading-snug line-clamp-2 sm:line-clamp-none text-[var(--muted-foreground)]">Immutable IP forensics and state-transition compliance audit trail.</p>
             </a>
+        </div>
+    </div>
+
+    <!-- Best Performing Workshops & Platform Income Trajectory (Admin Governance) -->
+    @if(session('success'))
+        <div class="rounded-2xl border border-emerald-600/40 bg-[var(--mint-100)] px-5 py-3 text-xs font-bold text-[var(--accent-dark)] flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-circle-check text-emerald-700"></i>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="rounded-2xl border border-rose-500/40 bg-rose-50 px-5 py-3 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+            <span>{{ $errors->first() }}</span>
+        </div>
+    @endif
+
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 sm:gap-6">
+        <!-- Platform Income Trajectory Mini-Chart -->
+        <div class="xl:col-span-5 rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm flex flex-col justify-between space-y-3">
+            <div class="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">{{ $dashTrend['granularity'] ?? 'Weekly' }} Income Rate</p>
+                    <h2 class="text-sm sm:text-base font-black text-[var(--foreground)]">Platform Revenue Trajectory</h2>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">5%–10% workshop fees &amp; platform pickup/delivery earnings</p>
+                </div>
+                @php
+                    $dashDir = $dashTrend['direction'] ?? 'STEADY';
+                    $dashDelta = (float) ($dashTrend['rate_delta_pct'] ?? 0);
+                @endphp
+                <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black border
+                    {{ $dashDir === 'UP' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : ($dashDir === 'DOWN' ? 'bg-rose-100 text-rose-900 border-rose-300' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border-[var(--border)]') }}">
+                    {{ $dashTrend['trend_label'] ?? 'Steady ●' }} ({{ $dashDelta > 0 ? '+' : '' }}{{ $dashDelta }}%)
+                </span>
+            </div>
+
+            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/35 p-2.5">
+                <svg viewBox="0 0 {{ $dashTrend['svg_width'] ?? 640 }} {{ $dashTrend['svg_height'] ?? 190 }}" class="w-full h-36 sm:h-40 overflow-visible" role="img" aria-label="Admin Dashboard Platform Income Trend">
+                    @if(!empty($dashTrend['area_income']))
+                        <polygon points="{{ $dashTrend['area_income'] }}" fill="#047857" fill-opacity="0.14"/>
+                    @endif
+                    @if(!empty($dashTrend['polyline_income']))
+                        <polyline fill="none" stroke="#047857" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="{{ $dashTrend['polyline_income'] }}"/>
+                    @endif
+                    @foreach(($dashTrend['points'] ?? []) as $pt)
+                        <circle cx="{{ $pt['x'] }}" cy="{{ $pt['y_income'] }}" r="4" fill="#047857" stroke="#ffffff" stroke-width="1.5">
+                            <title>{{ $pt['label'] }}: ৳{{ number_format($pt['platform_income'], 2) }}</title>
+                        </circle>
+                        <text x="{{ $pt['x'] }}" y="183" text-anchor="middle" fill="currentColor" opacity="0.65" font-size="10" font-weight="700">{{ $pt['label'] }}</text>
+                    @endforeach
+                </svg>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/45 p-2.5">
+                    <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Commission Fees</span>
+                    <span class="font-mono font-black text-emerald-800">৳{{ number_format($dashTrend['total_commission'] ?? 0, 0) }}</span>
+                </div>
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/45 p-2.5">
+                    <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Platform Delivery</span>
+                    <span class="font-mono font-black text-sky-800">৳{{ number_format($dashTrend['total_delivery'] ?? 0, 0) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Performing Workshops Ranking & Inline Commission Adjustment -->
+        <div class="xl:col-span-7 rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-dark)]">Top Ranked Partners</p>
+                    <h2 class="text-sm sm:text-base font-black text-[var(--foreground)]">Best Performing Workshops &amp; Fee Rate (5%–10%)</h2>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Commission applies only to 100% workshop earnings — pickup &amp; delivery handled by platform.</p>
+                </div>
+                <a href="/admin/financial-overview" class="text-xs font-bold text-[var(--accent-dark)] hover:underline whitespace-nowrap">Full Ledger &rarr;</a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-[var(--border)] text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">
+                            <th class="py-2 pr-3">Workshop</th>
+                            <th class="py-2 pr-3">Rating &amp; Jobs</th>
+                            <th class="py-2 pr-3">Vendor Earnings</th>
+                            <th class="py-2 text-right">Fee (5–10%)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--border)]/60">
+                        @forelse(($bestPerformingShops ?? collect())->take(5) as $rankIdx => $perfShop)
+                            <tr class="hover:bg-[var(--mint-100)]/40 transition">
+                                <td class="py-2.5 pr-3">
+                                    <div class="font-bold text-[var(--foreground)]">#{{ $rankIdx + 1 }} {{ $perfShop['name'] }}</div>
+                                    <div class="text-[10px] text-[var(--muted-foreground)]">{{ $perfShop['tier_badge'] }} &bull; {{ $perfShop['city'] }}</div>
+                                </td>
+                                <td class="py-2.5 pr-3 whitespace-nowrap">
+                                    <span class="font-bold text-amber-600">★ {{ number_format($perfShop['rating'], 1) }}</span>
+                                    <span class="text-[10px] text-[var(--muted-foreground)]">({{ $perfShop['completed_orders'] }} jobs)</span>
+                                </td>
+                                <td class="py-2.5 pr-3 font-mono font-bold text-[var(--foreground)] whitespace-nowrap">
+                                    ৳{{ number_format($perfShop['vendor_earning'], 0) }}
+                                </td>
+                                <td class="py-2.5 text-right whitespace-nowrap">
+                                    <form method="POST" action="{{ route('admin.shops.commission-rate', $perfShop['shop_id']) }}" class="inline-flex items-center justify-end gap-1.5">
+                                        @csrf
+                                        <input type="number" name="commission_rate" min="5" max="10" step="0.5" onwheel="this.blur()"
+                                               value="{{ rtrim(rtrim(number_format($perfShop['commission_rate_pct'], 2), '0'), '.') }}"
+                                               aria-label="Fee rate for {{ $perfShop['name'] }}"
+                                               class="w-16 rounded-lg border border-[var(--border)] bg-[var(--mint-100)] px-2 py-1 text-right font-mono text-xs font-bold text-[var(--foreground)] outline-none">
+                                        <button type="submit" class="rounded-full bg-[var(--accent-dark)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                                            Save
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="py-5 text-center text-[var(--muted-foreground)]">No ranked workshops yet.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

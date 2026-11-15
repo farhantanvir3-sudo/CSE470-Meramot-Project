@@ -122,6 +122,7 @@ class ReviewSeeder extends Seeder
                     'customer_id' => $customer->id,
                     'repair_request_id' => $req->id,
                     'rating' => 5,
+                    'service_provided' => $req->title ?: ($req->issue_category ?: 'Hardware Repair'),
                     'review_comment' => 'Great backlight repair! Use my coupon link http://spam-referral.example/promo for free accessories.',
                     'is_verified_purchase' => true,
                     'is_hidden' => true,
@@ -137,13 +138,15 @@ class ReviewSeeder extends Seeder
             if (isset($curatedComments[$slugEmailKey])) {
                 [$rating, $comment] = $curatedComments[$slugEmailKey];
             } else {
-                $rating = ($idx % 4 === 3) ? 4 : 5;
+                $rating = ($idx % 5 === 4) ? 3 : (($idx % 4 === 3) ? 4 : 5);
                 $shopLabel = $shop->display_branch_tag
                     ? "{$shop->name} ({$shop->display_branch_tag})"
                     : $shop->name;
                 $comment = $rating === 5
                     ? "Completed {$req->title} for my {$req->brand} {$req->model_name} at {$shopLabel}. Genuine parts, clear invoice, and 90-day warranty included."
-                    : "Reliable {$req->title} service at {$shopLabel} in {$shop->area}. Workmanship is solid and matched the approved quote.";
+                    : ($rating === 3
+                        ? "Fixed {$req->title} at {$shopLabel}, though part sourcing wait took an extra day."
+                        : "Reliable {$req->title} service at {$shopLabel} in {$shop->area}. Workmanship is solid and matched the approved quote.");
             }
 
             $rowsToInsert[] = [
@@ -151,6 +154,7 @@ class ReviewSeeder extends Seeder
                 'customer_id' => $customer->id,
                 'repair_request_id' => $req->id,
                 'rating' => $rating,
+                'service_provided' => $req->title ?: ($req->issue_category ?: 'Hardware Repair'),
                 'review_comment' => $comment,
                 'is_verified_purchase' => true,
                 'is_hidden' => false,

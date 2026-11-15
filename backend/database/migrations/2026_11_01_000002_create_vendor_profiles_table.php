@@ -36,7 +36,7 @@ return new class extends Migration
             $table->string('documents_path')->nullable();
             $table->foreignId('reviewed_by_admin_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('reviewed_at')->nullable();
-            $table->decimal('commission_rate', 5, 2)->default(10.00);
+            $table->decimal('commission_rate', 5, 2)->default(8.00);
             $table->decimal('rating', 3, 2)->default(5.00);
             $table->timestamps();
         });

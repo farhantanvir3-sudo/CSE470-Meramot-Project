@@ -182,4 +182,20 @@ class RepairShop extends Model
             ->orderBy('branch_name')
             ->get();
     }
+
+    /**
+     * Effective platform fee percentage (5% to 10% max) configured by Admin on this workshop.
+     */
+    public function effectiveCommissionRatePct(): float
+    {
+        $profile = $this->relationLoaded('vendorProfile')
+            ? $this->vendorProfile
+            : $this->vendorProfile()->first();
+
+        if ($profile) {
+            return $profile->effectiveCommissionRatePct();
+        }
+
+        return VendorProfile::DEFAULT_COMMISSION_RATE;
+    }
 }

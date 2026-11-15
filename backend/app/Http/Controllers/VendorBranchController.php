@@ -4,18 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Bid;
 use App\Models\FinancialLedger;
+use App\Models\Invoice;
+use App\Models\InvoiceLineItem;
 use App\Models\PaymentTransaction;
 use App\Models\RepairJob;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
+use App\Models\ShopReview;
 use App\Models\ShopService;
+use App\Models\SparePartListing;
 use App\Models\User;
 use App\Models\UserNotification;
 use App\Models\VendorProfile;
 use App\Services\BangladeshLocationResolver;
 use App\Services\DeliveryLifecycleService;
+use App\Services\MarketplaceSearchEngine;
 use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -170,15 +176,12 @@ class VendorBranchController extends Controller
         ];
 
         $spSearch = trim((string) $request->query('sp_q', ''));
-        if ($spSearch !== '') {
-            $likeOp = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
-            $spQuery->where(function ($q) use ($spSearch, $likeOp) {
-                $q->where('title', $likeOp, "%{$spSearch}%")
-                  ->orWhere('sku', $likeOp, "%{$spSearch}%")
-                  ->orWhere('brand', $likeOp, "%{$spSearch}%")
-                  ->orWhere('part_category', $likeOp, "%{$spSearch}%");
-            });
-        }
+        $spRelevanceOrder = MarketplaceSearchEngine::applySearch(
+            $spQuery,
+            $spSearch,
+            ['title', 'compatible_model', 'brand', 'part_category'],
+            ['sku']
+        );
 
         $spFilter = trim((string) $request->query('sp_filter', 'all'));
         if ($spFilter === 'on_sale') {
@@ -191,6 +194,10 @@ class VendorBranchController extends Controller
             $spQuery->where('is_active', false);
         }
 
+        if ($spRelevanceOrder !== null) {
+            $spQuery->orderByRaw($spRelevanceOrder['sql'], $spRelevanceOrder['bindings']);
+        }
+
         $vendorSpareParts = $spQuery
             ->orderByDesc('updated_at')
             ->orderByDesc('id')
@@ -199,6 +206,7 @@ class VendorBranchController extends Controller
 
         $sparePartCategories = SparePartController::PART_CATEGORIES;
         $sparePartBrands = SparePartController::POPULAR_BRANDS;
+        $vendorAnalytics = $this->buildVendorPerformanceAnalytics($vendorProfile, $scopedShopIds);
 
         return view('vendor.dashboard', compact(
             'vendorProfile',
@@ -216,7 +224,8 @@ class VendorBranchController extends Controller
             'sparePartCategories',
             'sparePartBrands',
             'spSearch',
-            'spFilter'
+            'spFilter',
+            'vendorAnalytics'
         ));
     }
 
@@ -949,14 +958,16 @@ class VendorBranchController extends Controller
             return;
         }
 
-        $gross = (float) ($job->final_quoted_amount ?? $job->repairRequest->quoted_final_amount ?? 2500);
-        if ($gross <= 0) {
+        $vendorNet = round((float) ($job->final_quoted_amount ?? $job->repairRequest->quoted_final_amount ?? 2500), 2);
+        if ($vendorNet <= 0) {
             return;
         }
 
         $now = now();
-        $commission = round($gross * 0.10, 2);
-        $vendorNet = round($gross - $commission, 2);
+        $ratePct = ServicePackageController::resolveCommissionRatePct($job->shop);
+        $rateDecimal = $ratePct / 100.0;
+        $commission = round($vendorNet * $rateDecimal, 2);
+        $gross = $vendorNet; // Keep local variable `$gross` for invoice line-item sum checks
 
         $existingInvoice = DB::table('invoices')
             ->where(function ($q) use ($job) {
@@ -966,6 +977,8 @@ class VendorBranchController extends Controller
             ->orderByDesc('id')
             ->first();
 
+        $deliveryAmt = 0.0;
+
         if ($existingInvoice) {
             $invoiceId = (int) $existingInvoice->id;
             $existingLineSum = (float) DB::table('invoice_line_items')
@@ -974,11 +987,13 @@ class VendorBranchController extends Controller
             $deliveryAmt = (float) ($existingInvoice->delivery_amount ?? 0);
             $discountAmt = (float) ($existingInvoice->discount_amount ?? 0);
 
-            // Preserve pre-paid Direct-Order subtotal if line items already match; otherwise sync line items to $gross
+            // Preserve pre-paid Direct-Order vendor subtotal if line items already match; otherwise sync line items to $vendorNet
             $effectiveSubtotal = ($existingLineSum > 0 && abs($existingLineSum - (float) $existingInvoice->subtotal_amount) <= 0.02 && $existingInvoice->status === 'PAID')
                 ? round($existingLineSum, 2)
-                : $gross;
-            $effectiveCommission = round($effectiveSubtotal * 0.10, 2);
+                : $vendorNet;
+            $effectiveCommission = ($existingInvoice->status === 'PAID' && (float) $existingInvoice->commission_amount > 0)
+                ? round((float) $existingInvoice->commission_amount, 2)
+                : round($effectiveSubtotal * $rateDecimal, 2);
 
             DB::table('invoices')->where('id', $invoiceId)->update([
                 'repair_job_id' => $job->id,
@@ -986,7 +1001,7 @@ class VendorBranchController extends Controller
                 'status' => 'PAID',
                 'subtotal_amount' => $effectiveSubtotal,
                 'commission_amount' => $effectiveCommission,
-                'total_amount' => max(0.0, round($effectiveSubtotal + $deliveryAmt - $discountAmt, 2)),
+                'total_amount' => max(0.0, round($effectiveSubtotal + $effectiveCommission + $deliveryAmt - $discountAmt, 2)),
                 'paid_at' => $existingInvoice->paid_at ?? $now,
                 'updated_at' => $now,
             ]);
@@ -998,7 +1013,7 @@ class VendorBranchController extends Controller
                     'invoice_id' => $invoiceId,
                     'shop_service_id' => $primarySvcId,
                     'title' => $job->repairRequest->title,
-                    'description' => $job->diagnosis_notes ?: 'Completed workshop repair & quality calibration',
+                    'description' => $job->diagnosis_notes ?: '100% Vendor workshop repair price (excl. platform fee & courier)',
                     'quantity' => 1,
                     'unit_price' => $effectiveSubtotal,
                     'total_price' => $effectiveSubtotal,
@@ -1008,9 +1023,12 @@ class VendorBranchController extends Controller
             }
 
             $gross = $effectiveSubtotal;
+            $vendorNet = $effectiveSubtotal;
             $commission = $effectiveCommission;
-            $vendorNet = round($gross - $commission, 2);
         } else {
+            $deliveryAmt = ($job->repairRequest->preferred_pickup ?? false)
+                ? (($job->repairRequest->delivery_type === 'REGULAR') ? 80.0 : 150.0)
+                : 0.0;
             $invoiceId = DB::table('invoices')->insertGetId([
                 'repair_request_id' => $job->repairRequest->id,
                 'repair_job_id' => $job->id,
@@ -1018,11 +1036,11 @@ class VendorBranchController extends Controller
                 'type' => 'FINAL',
                 'status' => 'PAID',
                 'invoice_number' => 'INV-' . $now->format('Y') . '-' . str_pad((string) $job->id, 4, '0', STR_PAD_LEFT) . '-' . strtoupper(Str::random(3)),
-                'subtotal_amount' => $gross,
-                'delivery_amount' => 0.00,
+                'subtotal_amount' => $vendorNet,
+                'delivery_amount' => $deliveryAmt,
                 'discount_amount' => 0.00,
                 'commission_amount' => $commission,
-                'total_amount' => $gross,
+                'total_amount' => round($vendorNet + $commission + $deliveryAmt, 2),
                 'issued_at' => $now,
                 'due_at' => $now,
                 'paid_at' => $now,
@@ -1134,7 +1152,7 @@ class VendorBranchController extends Controller
                 'repair_request_id' => $job->repairRequest->id,
                 'user_id' => $job->repairRequest->customer_id,
                 'invoice_id' => $invoiceId,
-                'amount' => $gross,
+                'amount' => round($vendorNet + $commission + $deliveryAmt, 2),
                 'currency' => 'BDT',
                 'payment_method' => 'CASH',
                 'status' => 'PAID',
@@ -1146,7 +1164,7 @@ class VendorBranchController extends Controller
                 'invoice_id' => $invoiceId,
                 'status' => 'PAID',
                 'paid_at' => $payment->paid_at ?? $now,
-                'amount' => (float) $payment->amount > 0 ? $payment->amount : $gross,
+                'amount' => (float) $payment->amount > 0 ? $payment->amount : round($vendorNet + $commission + $deliveryAmt, 2),
             ]);
         }
 
@@ -1167,7 +1185,7 @@ class VendorBranchController extends Controller
                 'customer_user_id' => $job->repairRequest->customer_id,
                 'vendor_user_id' => $vendorUserId,
                 'amount' => (float) $payment->amount,
-                'gross_amount' => $gross,
+                'gross_amount' => round($vendorNet + $commission, 2),
                 'platform_commission_amount' => $commission,
                 'vendor_net_amount' => $vendorNet,
                 'action' => 'HOLD',
@@ -1184,7 +1202,7 @@ class VendorBranchController extends Controller
                 'customer_user_id' => $job->repairRequest->customer_id,
                 'vendor_user_id' => $vendorUserId,
                 'amount' => (float) $payment->amount,
-                'gross_amount' => $gross,
+                'gross_amount' => round($vendorNet + $commission, 2),
                 'platform_commission_amount' => $commission,
                 'vendor_net_amount' => $vendorNet,
                 'action' => 'RELEASE',
@@ -1201,29 +1219,42 @@ class VendorBranchController extends Controller
             ->where('entry_type', 'VENDOR_EARNING')
             ->exists();
 
+        $effectiveRateDecimal = $vendorNet > 0 ? ($commission / $vendorNet) : $rateDecimal;
+        $displayPct = rtrim(rtrim(number_format($effectiveRateDecimal * 100, 2), '0'), '.');
+
         if (!$hasCustomerPayment) {
             AdminLedgerController::settleOrderWithCommission(
-                $gross,
+                $vendorNet,
                 (int) $job->shop_id,
                 (int) $payment->id,
                 $invoiceId,
-                0.10,
+                $effectiveRateDecimal,
                 "Repair Job #{$job->id} ({$job->repairRequest->title})"
             );
+
+            if ($deliveryAmt > 0.009) {
+                AdminLedgerController::logEntry(
+                    'DELIVERY_FEE',
+                    'CREDIT',
+                    $deliveryAmt,
+                    "Platform pickup & delivery logistics fee for Repair Job #{$job->id}",
+                    ['shop_id' => (int) $job->shop_id, 'payment_id' => (int) $payment->id, 'invoice_id' => $invoiceId]
+                );
+            }
         } elseif (!$hasVendorEarning) {
             $noteSuffix = " — Note: Repair Job #{$job->id} ({$job->repairRequest->title})";
             AdminLedgerController::logEntry(
                 'PLATFORM_COMMISSION',
                 'CREDIT',
                 $commission,
-                "10% platform service fee deducted (Gross: ৳{$gross}){$noteSuffix}",
+                "{$displayPct}% platform fee on vendor earning ৳{$vendorNet} (excl. delivery){$noteSuffix}",
                 ['shop_id' => (int) $job->shop_id, 'payment_id' => (int) $payment->id, 'invoice_id' => $invoiceId]
             );
             AdminLedgerController::logEntry(
                 'VENDOR_EARNING',
                 'DEBIT',
                 $vendorNet,
-                "Net earning allocated to vendor escrow (90% of ৳{$gross}){$noteSuffix}",
+                "100% vendor listed price allocated to workshop escrow (৳{$vendorNet}){$noteSuffix}",
                 ['shop_id' => (int) $job->shop_id, 'payment_id' => (int) $payment->id, 'invoice_id' => $invoiceId]
             );
         }
@@ -1374,5 +1405,373 @@ class VendorBranchController extends Controller
             'commission_rate' => 10.00,
             'rating' => 0.00,
         ]);
+    }
+
+    /**
+     * Build vendor analytics: 5%–10% fee tier, chronological earnings trend,
+     * Most/Least Demanding & Most/Least Popular Services and Spare Parts.
+     */
+    private function buildVendorPerformanceAnalytics(VendorProfile $vendorProfile, array $scopedShopIds): array
+    {
+        $ratePct = $vendorProfile->effectiveCommissionRatePct();
+
+        // 1. Chronological Workshop Earnings & Orders Trend (SVG-ready)
+        $vendorLedgers = empty($scopedShopIds)
+            ? collect()
+            : FinancialLedger::whereIn('shop_id', $scopedShopIds)
+                ->where('entry_type', 'VENDOR_EARNING')
+                ->get(['amount', 'effective_at', 'created_at']);
+
+        $paidInvoices = empty($scopedShopIds)
+            ? collect()
+            : Invoice::whereIn('shop_id', $scopedShopIds)
+                ->where('status', 'PAID')
+                ->get(['id', 'subtotal_amount', 'paid_at', 'issued_at', 'created_at']);
+
+        $datedEarnings = $vendorLedgers->map(fn ($row) => [
+            'date' => Carbon::parse($row->effective_at ?: $row->created_at ?: now()),
+            'amount' => (float) $row->amount,
+        ]);
+        $datedInvoices = $paidInvoices->map(fn ($inv) => [
+            'date' => Carbon::parse($inv->paid_at ?: $inv->issued_at ?: $inv->created_at ?: now()),
+            'amount' => (float) $inv->subtotal_amount,
+        ]);
+
+        $allDates = $datedEarnings->pluck('date')->merge($datedInvoices->pluck('date'));
+        $minDate = $allDates->isNotEmpty() ? $allDates->min()->copy()->startOfDay() : now()->copy()->subWeeks(5)->startOfWeek();
+        $maxDate = $allDates->isNotEmpty() ? $allDates->max()->copy()->endOfDay() : now()->copy()->endOfDay();
+        if ($maxDate->lt(now()->copy()->startOfDay())) {
+            $maxDate = now()->copy()->endOfDay();
+        }
+        $spanDays = max(1, (int) $minDate->diffInDays($maxDate));
+        $useWeekly = $spanDays > 18;
+
+        $buckets = [];
+        if ($useWeekly) {
+            $bucketCount = min(8, max(5, (int) ceil($spanDays / 7)));
+            $startWeek = now()->copy()->startOfWeek()->subWeeks($bucketCount - 1);
+            for ($i = 0; $i < $bucketCount; $i++) {
+                $wStart = $startWeek->copy()->addWeeks($i);
+                $buckets[] = [
+                    'label' => $wStart->format('d M'),
+                    'start' => $wStart,
+                    'end' => $wStart->copy()->endOfWeek(),
+                    'earning' => 0.0,
+                    'orders' => 0,
+                ];
+            }
+        } else {
+            $dayCount = min(7, max(5, $spanDays + 1));
+            $startDay = now()->copy()->startOfDay()->subDays($dayCount - 1);
+            for ($i = 0; $i < $dayCount; $i++) {
+                $dStart = $startDay->copy()->addDays($i);
+                $buckets[] = [
+                    'label' => $dStart->format('d M'),
+                    'start' => $dStart,
+                    'end' => $dStart->copy()->endOfDay(),
+                    'earning' => 0.0,
+                    'orders' => 0,
+                ];
+            }
+        }
+
+        foreach ($datedEarnings as $e) {
+            foreach ($buckets as $bi => $b) {
+                if ($e['date']->betweenIncluded($b['start'], $b['end'])) {
+                    $buckets[$bi]['earning'] = round($buckets[$bi]['earning'] + $e['amount'], 2);
+                    break;
+                }
+            }
+        }
+        foreach ($datedInvoices as $inv) {
+            foreach ($buckets as $bi => $b) {
+                if ($inv['date']->betweenIncluded($b['start'], $b['end'])) {
+                    $buckets[$bi]['orders']++;
+                    break;
+                }
+            }
+        }
+        if ($datedEarnings->isEmpty() && $datedInvoices->isNotEmpty()) {
+            foreach ($datedInvoices as $inv) {
+                foreach ($buckets as $bi => $b) {
+                    if ($inv['date']->betweenIncluded($b['start'], $b['end'])) {
+                        $buckets[$bi]['earning'] = round($buckets[$bi]['earning'] + $inv['amount'], 2);
+                        break;
+                    }
+                }
+            }
+        }
+
+        $svgW = 640;
+        $svgH = 170;
+        $padX = 34;
+        $padTop = 18;
+        $padBottom = 24;
+        $plotH = $svgH - $padTop - $padBottom;
+        $plotW = $svgW - (2 * $padX);
+        $maxEarning = max(100.0, ...array_map(fn ($b) => (float) $b['earning'], $buckets));
+        $ptCount = max(1, count($buckets));
+
+        $svgPts = [];
+        $seriesPoints = [];
+        foreach ($buckets as $idx => $b) {
+            $x = $ptCount > 1 ? round($padX + ($idx * ($plotW / ($ptCount - 1))), 1) : round($svgW / 2, 1);
+            $y = round($padTop + $plotH - (($b['earning'] / $maxEarning) * $plotH), 1);
+            $svgPts[] = "{$x},{$y}";
+            $seriesPoints[] = [
+                'label' => $b['label'],
+                'earning' => round($b['earning'], 2),
+                'orders' => (int) $b['orders'],
+                'x' => $x,
+                'y' => $y,
+            ];
+        }
+        $firstX = $seriesPoints[0]['x'] ?? $padX;
+        $lastX = $seriesPoints[count($seriesPoints) - 1]['x'] ?? ($svgW - $padX);
+        $baseY = $padTop + $plotH;
+        $areaPoints = "{$firstX},{$baseY} " . implode(' ', $svgPts) . " {$lastX},{$baseY}";
+
+        $mid = max(1, (int) floor(count($seriesPoints) / 2));
+        $firstHalf = array_slice($seriesPoints, 0, $mid);
+        $secondHalf = array_slice($seriesPoints, $mid);
+        $prevAvg = count($firstHalf) > 0 ? array_sum(array_column($firstHalf, 'earning')) / count($firstHalf) : 0.0;
+        $recentAvg = count($secondHalf) > 0 ? array_sum(array_column($secondHalf, 'earning')) / count($secondHalf) : 0.0;
+        $deltaPct = $prevAvg > 0.01
+            ? round((($recentAvg - $prevAvg) / $prevAvg) * 100, 1)
+            : ($recentAvg > 0 ? 100.0 : 0.0);
+        $direction = $deltaPct > 1.0 ? 'UP' : ($deltaPct < -1.0 ? 'DOWN' : 'STEADY');
+        $trendLabel = $direction === 'UP' ? 'Going Up ▲' : ($direction === 'DOWN' ? 'Going Down ▼' : 'Steady ●');
+
+        // 2. Reviews & Paid Line Items for Demand / Popularity Ranking
+        $reviews = empty($scopedShopIds)
+            ? collect()
+            : ShopReview::with('repairRequest:id,title,issue_category,device_type')
+                ->whereIn('repair_shop_id', $scopedShopIds)
+                ->where('is_hidden', false)
+                ->get(['id', 'repair_shop_id', 'repair_request_id', 'rating', 'service_provided', 'review_comment']);
+
+        $paidLineItems = empty($scopedShopIds)
+            ? collect()
+            : InvoiceLineItem::whereHas('invoice', fn ($iq) => $iq->whereIn('shop_id', $scopedShopIds)->where('status', 'PAID'))
+                ->get(['invoice_id', 'shop_service_id', 'title', 'description', 'quantity', 'total_price']);
+
+        $completedRequests = empty($scopedShopIds)
+            ? collect()
+            : RepairRequest::whereIn('requested_shop_id', $scopedShopIds)
+                ->where('status', 'COMPLETED')
+                ->get(['id', 'title', 'issue_category', 'device_type', 'quoted_final_amount']);
+
+        $matchesItem = function (string $needleText, string $targetTitle, ?string $targetCategory = null): bool {
+            $hay = strtolower(trim($needleText));
+            $tgt = strtolower(trim($targetTitle));
+            $cat = strtolower(trim((string) $targetCategory));
+            if ($hay === '' || $tgt === '') {
+                return false;
+            }
+            if (str_contains($hay, $tgt) || str_contains($tgt, $hay)) {
+                return true;
+            }
+            $families = [
+                ['display', 'screen', 'oled', 'amoled', 'lcd', 'glass', 'digitizer', 'backlight'],
+                ['battery', 'power', 'cell'],
+                ['keyboard', 'keycap', 'backlit'],
+                ['motherboard', 'logic', 'pmic', 'ic', 'mosfet', 'bga', 'board', 'short'],
+                ['fan', 'cooling', 'thermal', 'overheating', 'repaste', 'heatsink'],
+                ['charging', 'port', 'usb-c', 'type-c', 'lightning', 'tristar', 'charger', 'magsafe'],
+                ['ssd', 'nvme', 'storage', 'ram', 'memory'],
+                ['water', 'liquid', 'spill', 'ultrasonic', 'corrosion'],
+                ['solder', 'soldering', 'flux'],
+                ['hinge', 'ribbon', 'trackpad', 'touchpad', 'speaker'],
+            ];
+            foreach ($families as $fam) {
+                $inHay = false;
+                $inTgt = false;
+                foreach ($fam as $kw) {
+                    if (str_contains($hay, $kw)) {
+                        $inHay = true;
+                    }
+                    if (str_contains($tgt, $kw) || ($cat !== '' && str_contains($cat, $kw))) {
+                        $inTgt = true;
+                    }
+                }
+                if ($inHay && $inTgt) {
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        $shopServices = empty($scopedShopIds)
+            ? collect()
+            : ShopService::with('shop:id,name,branch_name')
+                ->whereIn('shop_id', $scopedShopIds)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
+
+        $svcStatsById = [];
+        foreach ($paidLineItems as $li) {
+            if ($li->shop_service_id) {
+                $sid = (int) $li->shop_service_id;
+                if (!isset($svcStatsById[$sid])) {
+                    $svcStatsById[$sid] = ['invoices' => [], 'revenue' => 0.0];
+                }
+                $svcStatsById[$sid]['invoices'][(int) $li->invoice_id] = max(
+                    $svcStatsById[$sid]['invoices'][(int) $li->invoice_id] ?? 0,
+                    max(1, (int) $li->quantity)
+                );
+                $svcStatsById[$sid]['revenue'] = round($svcStatsById[$sid]['revenue'] + (float) $li->total_price, 2);
+            }
+        }
+
+        $serviceMetrics = $shopServices->map(function (ShopService $svc) use ($svcStatsById, $completedRequests, $reviews, $matchesItem) {
+            $stat = $svcStatsById[$svc->id] ?? null;
+            $salesCount = $stat ? array_sum($stat['invoices']) : 0;
+            $revenue = $stat ? (float) $stat['revenue'] : 0.0;
+
+            if ($salesCount === 0 && $completedRequests->isNotEmpty()) {
+                foreach ($completedRequests as $cr) {
+                    if ($matchesItem((string) ($cr->title . ' ' . $cr->issue_category), (string) $svc->name, $svc->issue_category)) {
+                        $salesCount++;
+                        $revenue += (float) ($cr->quoted_final_amount ?? $svc->base_price ?? 0);
+                    }
+                }
+            }
+
+            $matchedRatings = [];
+            foreach ($reviews as $rev) {
+                $revText = trim(($rev->service_provided ?? '') . ' ' . ($rev->repairRequest?->title ?? '') . ' ' . ($rev->repairRequest?->issue_category ?? ''));
+                if ($matchesItem($revText, (string) $svc->name, $svc->issue_category)) {
+                    $matchedRatings[] = (int) $rev->rating;
+                }
+            }
+
+            $reviewCount = count($matchedRatings);
+            $avgRating = $reviewCount > 0 ? round(array_sum($matchedRatings) / $reviewCount, 2) : null;
+
+            return [
+                'id' => (int) $svc->id,
+                'name' => $svc->name,
+                'category' => $svc->issue_category ?: $svc->device_type ?: 'Repair Service',
+                'price' => (float) ($svc->base_price ?? 0),
+                'sales_count' => $salesCount,
+                'revenue' => round($revenue, 2),
+                'avg_rating' => $avgRating,
+                'review_count' => $reviewCount,
+            ];
+        })->values();
+
+        $reviewedServices = $serviceMetrics->filter(fn ($s) => $s['review_count'] > 0)->values();
+        $popularSourceSvcs = $reviewedServices->isNotEmpty() ? $reviewedServices : $serviceMetrics;
+
+        $servicesAnalytics = [
+            'total_count' => $serviceMetrics->count(),
+            'most_demanding' => $serviceMetrics->sort(function ($a, $b) {
+                return ($b['sales_count'] <=> $a['sales_count'])
+                    ?: ($b['revenue'] <=> $a['revenue'])
+                    ?: ($b['price'] <=> $a['price']);
+            })->take(3)->values(),
+            'least_demanding' => $serviceMetrics->sort(function ($a, $b) {
+                return ($a['sales_count'] <=> $b['sales_count'])
+                    ?: ($a['revenue'] <=> $b['revenue'])
+                    ?: ($a['id'] <=> $b['id']);
+            })->take(3)->values(),
+            'most_popular' => $popularSourceSvcs->sort(function ($a, $b) {
+                return (($b['avg_rating'] ?? 0) <=> ($a['avg_rating'] ?? 0))
+                    ?: ($b['review_count'] <=> $a['review_count'])
+                    ?: ($b['sales_count'] <=> $a['sales_count']);
+            })->take(3)->values(),
+            'least_popular' => $popularSourceSvcs->sort(function ($a, $b) {
+                return (($a['avg_rating'] ?? 5.0) <=> ($b['avg_rating'] ?? 5.0))
+                    ?: ($b['review_count'] <=> $a['review_count'])
+                    ?: ($a['sales_count'] <=> $b['sales_count']);
+            })->take(3)->values(),
+        ];
+
+        $spareParts = empty($scopedShopIds)
+            ? collect()
+            : SparePartListing::whereIn('shop_id', $scopedShopIds)
+                ->where('is_active', true)
+                ->get(['id', 'shop_id', 'slug', 'title', 'part_category', 'brand', 'base_price', 'normal_price', 'offer_enabled', 'offer_price', 'offer_discount_pct', 'offer_starts_at', 'offer_ends_at', 'sold_count', 'stock_quantity']);
+
+        $partMetrics = $spareParts->map(function (SparePartListing $part) use ($paidLineItems, $reviews, $matchesItem) {
+            $unitPrice = $part->effectiveBasePrice();
+            $invoiceQty = 0;
+            foreach ($paidLineItems as $li) {
+                if (str_contains(strtolower((string) $li->title), strtolower($part->title))) {
+                    $invoiceQty += (int) $li->quantity;
+                }
+            }
+            $salesCount = (int) $part->sold_count + $invoiceQty;
+
+            $matchedRatings = [];
+            foreach ($reviews as $rev) {
+                $revText = trim(($rev->service_provided ?? '') . ' ' . ($rev->review_comment ?? '') . ' ' . ($rev->repairRequest?->title ?? ''));
+                if ($matchesItem($revText, (string) $part->title, $part->part_category)) {
+                    $matchedRatings[] = (int) $rev->rating;
+                }
+            }
+            $reviewCount = count($matchedRatings);
+            $avgRating = $reviewCount > 0 ? round(array_sum($matchedRatings) / $reviewCount, 2) : null;
+
+            return [
+                'id' => (int) $part->id,
+                'slug' => $part->slug,
+                'title' => $part->title,
+                'category' => $part->part_category,
+                'brand' => $part->brand,
+                'price' => $unitPrice,
+                'stock_quantity' => (int) $part->stock_quantity,
+                'sales_count' => $salesCount,
+                'revenue' => round($salesCount * $unitPrice, 2),
+                'avg_rating' => $avgRating,
+                'review_count' => $reviewCount,
+            ];
+        })->values();
+
+        $reviewedParts = $partMetrics->filter(fn ($p) => $p['review_count'] > 0)->values();
+        $popularSourceParts = $reviewedParts->isNotEmpty() ? $reviewedParts : $partMetrics;
+
+        $partsAnalytics = [
+            'total_count' => $partMetrics->count(),
+            'most_demanding' => $partMetrics->sort(function ($a, $b) {
+                return ($b['sales_count'] <=> $a['sales_count'])
+                    ?: ($b['revenue'] <=> $a['revenue']);
+            })->take(3)->values(),
+            'least_demanding' => $partMetrics->sort(function ($a, $b) {
+                return ($a['sales_count'] <=> $b['sales_count'])
+                    ?: ($a['revenue'] <=> $b['revenue'])
+                    ?: ($a['id'] <=> $b['id']);
+            })->take(3)->values(),
+            'most_popular' => $popularSourceParts->sort(function ($a, $b) {
+                return (($b['avg_rating'] ?? 0) <=> ($a['avg_rating'] ?? 0))
+                    ?: ($b['review_count'] <=> $a['review_count'])
+                    ?: ($b['sales_count'] <=> $a['sales_count']);
+            })->take(3)->values(),
+            'least_popular' => $popularSourceParts->sort(function ($a, $b) {
+                return (($a['avg_rating'] ?? 5.0) <=> ($b['avg_rating'] ?? 5.0))
+                    ?: ($b['review_count'] <=> $a['review_count'])
+                    ?: ($a['sales_count'] <=> $b['sales_count']);
+            })->take(3)->values(),
+        ];
+
+        return [
+            'commission_rate_pct' => $ratePct,
+            'earnings_trend' => [
+                'granularity' => $useWeekly ? 'Weekly' : 'Daily',
+                'direction' => $direction,
+                'trend_label' => $trendLabel,
+                'rate_delta_pct' => $deltaPct,
+                'total_earning' => round(array_sum(array_column($seriesPoints, 'earning')), 2),
+                'total_orders' => array_sum(array_column($seriesPoints, 'orders')),
+                'svg_width' => $svgW,
+                'svg_height' => $svgH,
+                'polyline_earning' => implode(' ', $svgPts),
+                'area_earning' => $areaPoints,
+                'points' => $seriesPoints,
+            ],
+            'services' => $servicesAnalytics,
+            'spare_parts' => $partsAnalytics,
+        ];
     }
 }

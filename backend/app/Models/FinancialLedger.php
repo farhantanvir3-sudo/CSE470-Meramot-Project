@@ -60,12 +60,12 @@ class FinancialLedger extends Model
 
     // Allowed Entry Types
     public const ENTRY_TYPES = [
-        'CUSTOMER_PAYMENT'    => 'Customer Payment',
-        'PLATFORM_COMMISSION' => 'Platform Commission (10%)',
-        'VENDOR_EARNING'      => 'Vendor Net Earning',
+        'CUSTOMER_PAYMENT'    => 'Customer Settlement Inflow',
+        'PLATFORM_COMMISSION' => 'Platform Fee / Commission (5%–10%)',
+        'VENDOR_EARNING'      => 'Vendor Net Earning (100% Listed Price)',
         'VENDOR_PAYOUT'       => 'Vendor Payout Disbursed',
-        'DELIVERY_FEE'        => 'Logistics Delivery Fee',
-        'DELIVERY_PAYOUT'     => 'Rider Fee Disbursed',
+        'DELIVERY_FEE'        => 'Platform Pickup & Delivery Fee',
+        'DELIVERY_PAYOUT'     => 'Platform Rider Fee Disbursed',
         'REFUND'              => 'Customer Refund',
         'ADJUSTMENT'          => 'Manual Audit Adjustment',
     ];

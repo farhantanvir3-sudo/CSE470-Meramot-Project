@@ -654,8 +654,8 @@ class SparePartsMarketplaceTest extends TestCase
         $indexResp->assertDontSee('Select Specs');
         $indexResp->assertDontSee('View / Buy');
         $indexResp->assertDontSee('View Now');
-        $indexResp->assertSee('+৳50 delivery');
-        $indexResp->assertSee('Total');
+        $indexResp->assertSee('Delivery: ৳50');
+        $indexResp->assertSee('Est. Total');
 
         $items = $indexResp->viewData('listings')->getCollection()->keyBy('id');
         $this->assertTrue($items[$partA->id]->is_best_deal, 'Lowest landed deal (৳1,799) must be tagged Best Deal.');
@@ -666,5 +666,127 @@ class SparePartsMarketplaceTest extends TestCase
         $showB = $this->get('/spare-parts/' . $partB->slug . '?city=Dhaka&area=Banani&lat=23.7937&lng=90.4066');
         $showB->assertStatus(200);
         $this->assertTrue($showB->viewData('listing')->is_best_deal);
+    }
+
+    /** @test */
+    public function optional_workshop_installation_is_capped_at_three_units_fuzzy_search_works_and_vendor_bi_renders(): void
+    {
+        [$vendorUser, $profile, $shop] = $this->createApprovedVendorWithShop([], 'Biometrics Repair Co');
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+
+        $displayPart = SparePartListing::create([
+            'shop_id' => $shop->id,
+            'vendor_profile_id' => $profile->id,
+            'slug' => 'iphone-13-pro-display--bio',
+            'product_group_key' => 'iphone-13-pro-display',
+            'title' => 'iPhone 13 Pro Display Assembly',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Apple',
+            'compatible_model' => 'iPhone 13 Pro',
+            'base_price' => 8500,
+            'normal_price' => 8500,
+            'assembly_fee' => 300,
+            'stock_quantity' => 200,
+            'sold_count' => 25,
+            'wholesale_enabled' => true,
+            'wholesale_min_qty' => 100,
+            'wholesale_base_discount_pct' => 5,
+            'wholesale_step_qty' => 100,
+            'wholesale_step_discount_pct' => 2,
+            'wholesale_max_discount_pct' => 25,
+            'is_active' => true,
+        ]);
+
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'vendor_profile_id' => $profile->id,
+            'slug' => 's23-battery--bio',
+            'product_group_key' => 's23-battery',
+            'title' => 'Samsung Galaxy S23 Battery Pack',
+            'part_category' => 'Battery',
+            'brand' => 'Samsung',
+            'compatible_model' => 'Galaxy S23',
+            'base_price' => 2100,
+            'normal_price' => 2100,
+            'assembly_fee' => 250,
+            'stock_quantity' => 100,
+            'sold_count' => 4,
+            'is_active' => true,
+        ]);
+
+        \App\Models\ShopService::create([
+            'shop_id' => $shop->id,
+            'slug' => 'oled-display-calibration-' . uniqid(),
+            'name' => 'OLED Display Calibration',
+            'description' => 'Precision color & TrueTone calibration',
+            'device_type' => 'Smartphone',
+            'issue_category' => 'Display',
+            'pricing_type' => 'FIXED',
+            'base_price' => 1500,
+            'is_active' => true,
+        ]);
+
+        \App\Models\ShopReview::create([
+            'repair_shop_id' => $shop->id,
+            'customer_id' => $customer->id,
+            'rating' => 5,
+            'service_provided' => 'OLED Display Calibration',
+            'review_comment' => 'Crisp OLED replacement calibration with zero dust.',
+            'is_hidden' => false,
+        ]);
+
+        // 1. Clean wholesale copy without ambiguous + / - signs
+        $detail = $this->get('/spare-parts/' . $displayPart->slug);
+        $detail->assertStatus(200)
+            ->assertSee('Save 5% on 100+ pcs')
+            ->assertDontSee('-5% at 100+, +2% / 100 pcs')
+            ->assertSee('Include Certified Workshop Installation')
+            ->assertSee('Limited to retail orders of 1–3 units.');
+
+        // 2. Installation allowed up to 3 units, blocked (422) for bulk quantities (100 pcs)
+        $okAdd = $this->actingAs($customer)->postJson('/cart/add', [
+            'spare_part_id' => $displayPart->id,
+            'quantity' => 2,
+            'include_installation' => true,
+        ]);
+        $okAdd->assertStatus(200)
+            ->assertJsonPath('item.include_installation', true);
+
+        $itemKey = $okAdd->json('item.id');
+
+        $bulkAdd = $this->actingAs($customer)->postJson('/cart/add', [
+            'spare_part_id' => $displayPart->id,
+            'quantity' => 100,
+            'include_installation' => true,
+        ]);
+        $bulkAdd->assertStatus(422)
+            ->assertJsonValidationErrors('include_installation');
+
+        // 3. Updating cart qty > 3 automatically clears include_installation to false
+        $updBulk = $this->actingAs($customer)->patchJson('/cart/update/' . urlencode($itemKey), [
+            'quantity' => 10,
+        ]);
+        $updBulk->assertStatus(200)
+            ->assertJsonPath('item.include_installation', false)
+            ->assertJsonPath('item.installation_fee_per_unit', 0);
+
+        // 4. Fuzzy & synonym search matches compound names and typos
+        $this->get('/spare-parts?q=iphone13+screen')
+            ->assertStatus(200)
+            ->assertSee('iPhone 13 Pro Display Assembly');
+
+        $this->get('/spare-parts?q=s23+battry')
+            ->assertStatus(200)
+            ->assertSee('Samsung Galaxy S23 Battery Pack');
+
+        // 5. Vendor Dashboard BI graphs, demand & rating matrices render cleanly
+        $this->actingAs($vendorUser)
+            ->get('/vendor/dashboard')
+            ->assertStatus(200)
+            ->assertSee('Vendor Earnings Trend Chart')
+            ->assertSee('Services Demand (Sales Volume)')
+            ->assertSee('Spare Parts Demand (Units Sold)')
+            ->assertSee('Most Demanding')
+            ->assertSee('Least Popular');
     }
 }

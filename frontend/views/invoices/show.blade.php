@@ -132,13 +132,22 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
             </div>
 
             <!-- Totals & Governance Split -->
+            @php
+                $invSubtotal = (float) $invoice->subtotal_amount;
+                $invCommission = (float) $invoice->commission_amount;
+                $invDelivery = (float) $invoice->delivery_amount;
+                $invDiscount = (float) $invoice->discount_amount;
+                $invRatePct = $invSubtotal > 0 && $invCommission > 0
+                    ? rtrim(rtrim(number_format(($invCommission / $invSubtotal) * 100, 2), '0'), '.')
+                    : rtrim(rtrim(number_format(\App\Http\Controllers\ServicePackageController::resolveCommissionRatePct($shop), 2), '0'), '.');
+            @endphp
             <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
                 <div class="md:col-span-7 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-2">
                     <p class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
-                        <i class="fa-solid fa-scale-balanced mr-1"></i> Escrow &amp; Warranty Audit Record
+                        <i class="fa-solid fa-scale-balanced mr-1"></i> Transparent Pricing &amp; Warranty Audit Record
                     </p>
                     <p class="text-[11px] text-[var(--muted-foreground)]">
-                        <strong>Governance Split:</strong> 10% Meramot Platform Commission (৳{{ number_format((float) $invoice->commission_amount, 2) }}) • 90% Net Workshop Allocation (৳{{ number_format(max(0, (float) $invoice->subtotal_amount - (float) $invoice->commission_amount), 2) }}).
+                        <strong>Pricing Breakdown:</strong> 100% Listed Workshop Price goes to Seller/Workshop (৳{{ number_format($invSubtotal, 2) }}) • {{ $invRatePct }}% Meramot Platform Fee (৳{{ number_format($invCommission, 2) }}, excluding pickup &amp; delivery) • Pickup &amp; Delivery handled by Meramot Platform.
                     </p>
                     @if($warranty)
                         <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-[11px] text-emerald-950">
@@ -153,18 +162,22 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
                 </div>
 
                 <div class="md:col-span-5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 space-y-2">
-                    <div class="flex justify-between text-[var(--muted-foreground)]">
-                        <span>Service &amp; Parts Subtotal:</span>
-                        <span class="font-bold text-[var(--foreground)]">৳{{ number_format((float) $invoice->subtotal_amount, 2) }}</span>
+                    <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
+                        <span>Vendor Services &amp; Parts (100% Workshop):</span>
+                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invSubtotal, 2) }}</span>
                     </div>
-                    <div class="flex justify-between text-[var(--muted-foreground)]">
-                        <span>Doorstep Logistics Fee:</span>
-                        <span class="font-bold text-[var(--foreground)]">৳{{ number_format((float) $invoice->delivery_amount, 2) }}</span>
+                    <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
+                        <span>Meramot Platform Fee ({{ $invRatePct }}%, excl. courier):</span>
+                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invCommission, 2) }}</span>
                     </div>
-                    @if((float) $invoice->discount_amount > 0)
-                        <div class="flex justify-between text-emerald-800 font-bold">
+                    <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
+                        <span>Platform Pickup &amp; Delivery Logistics:</span>
+                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invDelivery, 2) }}</span>
+                    </div>
+                    @if($invDiscount > 0)
+                        <div class="flex justify-between gap-2 text-emerald-800 font-bold">
                             <span>Promo Discount {{ !empty($req?->voucher_code) ? '(' . $req->voucher_code . ')' : '' }}:</span>
-                            <span>- ৳{{ number_format((float) $invoice->discount_amount, 2) }}</span>
+                            <span class="shrink-0">- ৳{{ number_format($invDiscount, 2) }}</span>
                         </div>
                     @endif
                     <div class="border-t border-[var(--border)] pt-2.5 flex justify-between text-base font-black text-[var(--accent-dark)]">

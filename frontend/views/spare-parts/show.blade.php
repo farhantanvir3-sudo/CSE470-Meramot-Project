@@ -50,6 +50,22 @@
 
     $initialQty = max(1, min((int) ($listing->stock_quantity ?: 1), (int) request('qty', 1)));
     $deliveryFee = (float) ($activeQuote['delivery_fee'] ?? 60);
+    $commissionRatePct = (float) ($commissionRatePct ?? $shop?->effectiveCommissionRatePct() ?? \App\Models\VendorProfile::DEFAULT_COMMISSION_RATE);
+    $initialSubtotal = (float) ($activeQuote['subtotal'] ?? ($effBase * $initialQty));
+    $initialPlatformFee = $initialSubtotal > 0 ? round($initialSubtotal * ($commissionRatePct / 100), 2) : 0.0;
+    $initialCheckoutTotal = round($initialSubtotal + $initialPlatformFee + $deliveryFee, 2);
+
+    $deviceSegment = $deviceSegment ?? (
+        in_array($listing->part_category, \App\Http\Controllers\SparePartController::PC_CATEGORIES, true)
+            ? ['key' => 'pc', 'label' => 'Laptop & PC Parts']
+            : (in_array($listing->part_category, \App\Http\Controllers\SparePartController::MOBILE_CATEGORIES, true)
+                ? ['key' => 'mobile', 'label' => 'Mobile & Gadget Parts']
+                : ['key' => 'others', 'label' => 'Others'])
+    );
+
+    $supportsInstallation = $listing->supportsWorkshopInstallation();
+    $installationFeePerUnit = $supportsInstallation ? round((float) $listing->assembly_fee, 2) : 0.0;
+    $maxInstallQty = $listing->maxInstallationQuantity();
 
     $jsPricingConfig = [
         'hasSpecs' => (bool) $listing->has_specs,
@@ -67,60 +83,34 @@
         'wholesaleStepQty' => max(1, (int) ($listing->wholesale_step_qty ?: 100)),
         'wholesaleStepPct' => (float) ($listing->wholesale_step_discount_pct ?? 2),
         'wholesaleMaxPct' => (float) ($listing->wholesale_max_discount_pct ?? 25),
+        'supportsInstallation' => $supportsInstallation,
+        'installationFeePerUnit' => $installationFeePerUnit,
+        'maxInstallQty' => $maxInstallQty,
+        'commissionRatePct' => $commissionRatePct,
         'deliveryFee' => $deliveryFee,
         'maxStock' => max(0, (int) $listing->stock_quantity),
     ];
 @endphp
 
 <div class="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-3 sm:py-6">
-    {{-- Breadcrumb --}}
-    <nav class="text-[11px] sm:text-xs font-medium text-[var(--muted-foreground)] mb-2.5 sm:mb-4 flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap">
-        <a href="{{ url('/') }}" class="hover:underline shrink-0">Home</a>
-        <span class="shrink-0">/</span>
-        <a href="{{ route('spare-parts.index') }}" class="hover:underline shrink-0">Spare Parts</a>
-        <span class="shrink-0">/</span>
-        <a href="{{ route('spare-parts.index', ['part_category' => $listing->part_category]) }}" class="hover:underline shrink-0">
-            {{ $listing->part_category }}
-        </a>
-        <span class="shrink-0">/</span>
-        <span class="text-[var(--foreground)] font-bold truncate max-w-[180px] sm:max-w-md">{{ $listing->title }}</span>
-    </nav>
-
-    {{-- Top Destination Switcher Bar (Shows live Courier & Best-Deal impact) --}}
-    <div class="rounded-2xl bg-[var(--card)] border border-[var(--border)] px-3 py-2 sm:px-3.5 sm:py-2.5 mb-3.5 sm:mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 shadow-xs">
-        <div class="flex items-center justify-between sm:justify-start gap-2 text-[11px] sm:text-xs text-[var(--foreground)] min-w-0">
+    {{-- Top Destination Bar (Clean single location pin — no redundant quick city pills) --}}
+    <div class="rounded-2xl bg-[var(--card)] border border-[var(--border)] px-3 py-2 sm:px-4 sm:py-2.5 mb-3.5 sm:mb-5 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+        <div class="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs text-[var(--foreground)] min-w-0">
             <div class="flex items-center gap-1.5 min-w-0">
-                <span class="font-extrabold text-emerald-800 shrink-0">📍 To:</span>
-                <strong class="px-2 py-0.5 rounded-full bg-[var(--mint-50)] border border-[var(--border)] font-extrabold truncate max-w-[130px] sm:max-w-none">{{ $locLabel }}</strong>
+                <span class="font-extrabold text-emerald-800 shrink-0">📍 Pickup &amp; Delivery To:</span>
+                <strong class="px-2 py-0.5 rounded-full bg-[var(--mint-50)] border border-[var(--border)] font-extrabold truncate max-w-[160px] sm:max-w-none">{{ $locLabel }}</strong>
             </div>
             <span class="text-[var(--muted-foreground)] shrink-0">
-                🚚 <strong class="text-[var(--foreground)]">+৳{{ number_format($deliveryFee, 0) }}</strong>
+                🚚 Platform Courier: <strong class="text-[var(--foreground)]">+৳{{ number_format($deliveryFee, 0) }}</strong>
                 <span class="hidden sm:inline">({{ $activeQuote['distance_formatted'] ?? '—' }}, ETA {{ $activeQuote['eta_label'] ?? 'Same day' }})</span>
                 <span class="sm:hidden">({{ $activeQuote['eta_label'] ?? 'Same day' }})</span>
             </span>
         </div>
-        <div class="flex items-center gap-1.5 min-w-0 select-none">
-            <span class="text-[10px] sm:text-[11px] font-bold text-[var(--muted-foreground)] shrink-0">City:</span>
-            <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                @foreach($quickLocations as $ql)
-                    @php
-                        $isActiveCity = strcasecmp((string) ($customerLocation['city'] ?? ''), $ql['city']) === 0;
-                        $locUrl = route('spare-parts.show', array_filter([
-                            'slug' => $listing->slug,
-                            'city' => $ql['city'],
-                            'area' => $ql['area'],
-                            'lat' => $ql['lat'],
-                            'lng' => $ql['lng'],
-                            'spec' => $selectedSpec['code'] ?? null,
-                        ]));
-                    @endphp
-                    <a href="{{ $locUrl }}"
-                       class="shrink-0 px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] font-bold border transition {{ $isActiveCity ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
-                        {{ $ql['city'] }}
-                    </a>
-                @endforeach
-            </div>
-        </div>
+        <button type="button"
+                onclick="if(window.openMeramotLocationModal){window.openMeramotLocationModal();}"
+                class="shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-900 text-white text-[11px] font-bold hover:bg-emerald-800 transition">
+            <span>📍 Change Location</span>
+        </button>
     </div>
 
     {{-- Main 2-Column Product Showcase --}}
@@ -231,18 +221,29 @@
         {{-- Right Column: Specs, Offer Price, Wholesale Tiers & Order Form --}}
         <div class="lg:col-span-7 space-y-4">
             <div class="rounded-2xl bg-white/95 border border-emerald-900/15 p-4 sm:p-6 shadow-sm space-y-4">
-                {{-- Category / Brand / SKU Meta --}}
-                <div class="flex flex-wrap items-center gap-2 text-xs">
-                    <span class="px-2.5 py-0.5 rounded-full bg-emerald-900 text-white font-bold">
+                {{-- Compact Horizontally-Slidable Folder-Path Breadcrumb (Mobile & Desktop Friendly) --}}
+                <nav aria-label="Category folder path"
+                     class="flex items-center gap-1.5 overflow-x-auto no-scrollbar whitespace-nowrap px-3 py-1.5 rounded-xl bg-emerald-950/[0.04] border border-emerald-950/10 text-[11px] sm:text-xs font-mono text-emerald-950">
+                    <a href="{{ route('spare-parts.index') }}" class="shrink-0 font-bold text-emerald-900 hover:underline">
+                        📁 Spare Parts
+                    </a>
+                    <span class="text-emerald-900/40 shrink-0">/</span>
+                    <a href="{{ route('spare-parts.index', ['device_type' => $deviceSegment['key']]) }}" class="shrink-0 font-semibold text-emerald-900/85 hover:underline">
+                        {{ $deviceSegment['label'] }}
+                    </a>
+                    <span class="text-emerald-900/40 shrink-0">/</span>
+                    <a href="{{ route('spare-parts.index', ['part_category' => $listing->part_category]) }}" class="shrink-0 font-bold text-emerald-950 hover:underline">
                         {{ $listing->part_category }}
-                    </span>
-                    <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-950 font-bold border border-emerald-900/15">
-                        Brand: {{ $listing->brand }}
-                    </span>
+                    </a>
+                    <span class="text-emerald-900/40 shrink-0">/</span>
+                    <a href="{{ route('spare-parts.index', ['part_category' => $listing->part_category, 'brand' => $listing->brand]) }}" class="shrink-0 font-extrabold text-emerald-900 hover:underline">
+                        {{ $listing->brand }}
+                    </a>
                     @if($listing->sku)
-                        <span class="text-emerald-900/65 font-mono">SKU: {{ $listing->sku }}</span>
+                        <span class="text-emerald-900/40 shrink-0">/</span>
+                        <span class="shrink-0 text-emerald-900/65">SKU: {{ $listing->sku }}</span>
                     @endif
-                </div>
+                </nav>
 
                 {{-- Title --}}
                 <h1 class="text-xl sm:text-2xl font-extrabold text-emerald-950 leading-snug">
@@ -267,6 +268,7 @@
 
                     @if($competingListings->count() > 1)
                         <a href="#compare-sellers"
+                           onclick="event.preventDefault(); const el = document.getElementById('compare-sellers'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });"
                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-900/15 text-emerald-900 text-xs font-bold hover:bg-emerald-100 transition">
                             ⚖️ {{ $competingListings->count() }} Sellers from ৳{{ number_format($competingListings->min(fn($c) => $c->effectiveBasePrice()), 0) }}
                         </a>
@@ -333,12 +335,6 @@
                                 <span>{{ $hl }}</span>
                             </li>
                         @endforeach
-                        @if((float) $listing->assembly_fee > 0)
-                            <li class="flex items-start gap-2 text-emerald-900 font-semibold">
-                                <span class="text-emerald-700 font-bold mt-0.5">•</span>
-                                <span>Optional Workshop Installation Charge: ৳{{ number_format((float) $listing->assembly_fee, 0) }} (if fitted at seller branch)</span>
-                            </li>
-                        @endif
                     </ul>
                 </div>
 
@@ -360,7 +356,7 @@
                                 </span>
                             </div>
 
-                            {{-- Dropdown Select (Matches Etel Screenshot) --}}
+                            {{-- Dropdown Select (Compact single spec picker) --}}
                             <select id="spSpecSelect"
                                     name="spec_code"
                                     onchange="window.spOnSpecChange(this.value)"
@@ -375,38 +371,6 @@
                                 @endforeach
                             </select>
 
-                            {{-- Interactive Spec Grade Pills --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                                @foreach($specOptions as $opt)
-                                    @php
-                                        $isOptSelected = $selectedSpec && $selectedSpec['code'] === $opt['code'];
-                                    @endphp
-                                    <button type="button"
-                                            data-spec-code="{{ $opt['code'] }}"
-                                            onclick="window.spSelectSpecPill('{{ e($opt['code']) }}')"
-                                            class="sp-spec-pill text-left rounded-xl p-2.5 border transition flex items-center justify-between gap-2 {{ $isOptSelected ? 'bg-emerald-900 text-white border-emerald-900 shadow-sm' : 'bg-white hover:bg-emerald-50 text-emerald-950 border-emerald-900/15' }}">
-                                        <div class="min-w-0">
-                                            <div class="text-xs font-extrabold truncate">{{ $opt['name'] }}</div>
-                                            @if(!empty($opt['subtitle']))
-                                                <div class="sp-spec-sub text-[10px] truncate {{ $isOptSelected ? 'text-emerald-100' : 'text-emerald-900/65' }}">
-                                                    {{ $opt['subtitle'] }}
-                                                </div>
-                                            @endif
-                                        </div>
-                                        <div class="text-right shrink-0">
-                                            @if(!empty($opt['has_offer']) && $opt['normal_price'] > $opt['price'])
-                                                <div class="sp-spec-old text-[10px] line-through {{ $isOptSelected ? 'text-emerald-200' : 'text-slate-400' }}">
-                                                    ৳{{ number_format((float) $opt['normal_price'], 0) }}
-                                                </div>
-                                            @endif
-                                            <div class="text-xs font-extrabold">
-                                                ৳{{ number_format((float) $opt['price'], 0) }}
-                                            </div>
-                                        </div>
-                                    </button>
-                                @endforeach
-                            </div>
-
                             <p id="spSpecValidationError" class="hidden text-xs font-extrabold text-red-600 pt-1">
                                 ⚠ Please select a {{ $listing->spec_label ?: 'Quality' }} option above before adding to cart.
                             </p>
@@ -417,11 +381,10 @@
                     @if($listing->wholesale_enabled && !empty($wholesaleTiers))
                         <div class="rounded-2xl bg-amber-50/75 border border-amber-300/70 p-3.5 sm:p-4 space-y-2.5">
                             <div class="flex flex-wrap items-center justify-between gap-1.5">
-                                <div class="text-xs sm:text-sm font-extrabold text-emerald-950 flex items-center gap-1.5">
+                                <div class="text-xs sm:text-sm font-extrabold text-emerald-950 flex flex-wrap items-center gap-1.5">
                                     <span>📦 Wholesale Bulk Discount</span>
-                                    <span class="px-2 py-0.5 rounded-full bg-emerald-900 text-white text-[10px] font-extrabold">
-                                        -{{ number_format((float) $listing->wholesale_base_discount_pct, 0) }}% at {{ (int) $listing->wholesale_min_qty }}+,
-                                        +{{ number_format((float) $listing->wholesale_step_discount_pct, 0) }}% / {{ (int) $listing->wholesale_step_qty }} pcs
+                                    <span class="px-2.5 py-0.5 rounded-full bg-emerald-900 text-white text-[10px] font-extrabold">
+                                        Save {{ number_format((float) $listing->wholesale_base_discount_pct, 0) }}% on {{ (int) $listing->wholesale_min_qty }}+ pcs • Extra {{ number_format((float) $listing->wholesale_step_discount_pct, 0) }}% off / {{ (int) $listing->wholesale_step_qty }} pcs
                                     </span>
                                 </div>
                                 <span class="text-[11px] font-semibold text-emerald-900/75">Click any tier to apply qty</span>
@@ -440,12 +403,43 @@
                                             ৳{{ number_format((float) $tier['unit_price'], 0) }}
                                         </div>
                                         <div class="text-[10px] font-extrabold {{ $tier['discount_pct'] > 0 ? 'text-red-600 sp-tier-badge' : 'opacity-70' }}">
-                                            {{ $tier['discount_pct'] > 0 ? ('-' . number_format((float) $tier['discount_pct'], 0) . '% off') : 'Standard' }}
+                                            {{ $tier['discount_pct'] > 0 ? (number_format((float) $tier['discount_pct'], 0) . '% OFF') : 'Standard' }}
                                         </div>
                                     </button>
                                 @endforeach
                             </div>
                         </div>
+                    @endif
+
+                    {{-- Optional Certified Workshop Installation (Industry-Standard Retail Cap: Max 3 units) --}}
+                    @if($supportsInstallation)
+                        <label id="spInstallToggleCard"
+                               for="spIncludeInstallation"
+                               class="flex items-start gap-3 rounded-2xl border border-emerald-900/20 bg-white p-3.5 cursor-pointer hover:border-emerald-800/40 transition">
+                            <input type="checkbox"
+                                   id="spIncludeInstallation"
+                                   name="include_installation"
+                                   value="1"
+                                   onchange="window.spRecalculateLiveQuote()"
+                                   {{ $initialQty > $maxInstallQty ? 'disabled' : '' }}
+                                   class="mt-0.5 h-4 w-4 rounded border-emerald-900/30 text-emerald-900 focus:ring-emerald-800">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <span class="text-xs sm:text-sm font-extrabold text-emerald-950">
+                                        Include Certified Workshop Installation
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-950 text-[11px] font-extrabold">
+                                        ৳{{ number_format($installationFeePerUnit, 0) }} / unit
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-emerald-900/75 mt-0.5">
+                                    Fitted at {{ $shop?->name ?? 'seller workshop' }} (100% goes to workshop) • Limited to retail orders of 1–{{ $maxInstallQty }} units.
+                                </p>
+                                <p id="spInstallLimitNotice" class="{{ $initialQty > $maxInstallQty ? '' : 'hidden' }} text-[11px] font-bold text-amber-800 mt-1">
+                                    Workshop installation is capped at {{ $maxInstallQty }} units and is automatically disabled for bulk/wholesale quantities.
+                                </p>
+                            </div>
+                        </label>
                     @endif
 
                     {{-- Quantity Stepper + Live Landed Total Calculator --}}
@@ -490,31 +484,39 @@
                             </div>
                         </div>
 
-                        {{-- Live Cost Breakdown --}}
+                        {{-- Foodpanda-Style Live Transparent Fee Breakdown --}}
                         <div class="rounded-xl bg-white/90 border border-emerald-900/10 p-3 space-y-1.5 text-xs">
                             <div class="flex items-center justify-between">
-                                <span class="text-emerald-900/80">Effective Unit Price:</span>
+                                <span class="text-emerald-900/80">Seller Unit Price (100% to Workshop):</span>
                                 <span class="font-extrabold text-emerald-950">
                                     <span id="spLiveUnitPrice">৳{{ number_format((float) $activeQuote['effective_unit_price'], 2) }}</span>
                                     <span id="spWholesaleActivePill" class="hidden ml-1 px-2 py-0.5 rounded-full bg-emerald-900 text-white text-[10px] font-extrabold"></span>
                                 </span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="text-emerald-900/80">Items Subtotal (<span id="spLiveQtyLabel">{{ $initialQty }}</span> pcs):</span>
-                                <span class="font-bold text-emerald-950" id="spLiveSubtotal">৳{{ number_format((float) $activeQuote['subtotal'], 2) }}</span>
+                                <span class="text-emerald-900/80">Part Subtotal (<span id="spLiveQtyLabel">{{ $initialQty }}</span> pcs — 100% Workshop Earning):</span>
+                                <span class="font-bold text-emerald-950" id="spLiveSubtotal">৳{{ number_format($initialSubtotal, 2) }}</span>
+                            </div>
+                            <div id="spLiveInstallRow" class="hidden items-center justify-between text-emerald-900 font-semibold">
+                                <span>Workshop Installation (<span id="spLiveInstallQty">0</span> × ৳{{ number_format($installationFeePerUnit, 0) }} — 100% Workshop):</span>
+                                <span id="spLiveInstallFee">৳0.00</span>
                             </div>
                             <div id="spLiveSavingsRow" class="{{ (($activeQuote['wholesale_savings'] ?? 0) + ($activeQuote['offer_savings'] ?? 0)) > 0 ? 'flex' : 'hidden' }} items-center justify-between text-red-600 font-bold">
                                 <span>Total Promo &amp; Wholesale Savings:</span>
                                 <span id="spLiveSavingsAmount">−৳{{ number_format((float) (($activeQuote['wholesale_savings'] ?? 0) + ($activeQuote['offer_savings'] ?? 0)), 2) }}</span>
                             </div>
                             <div class="flex items-center justify-between">
-                                <span class="text-emerald-900/80">Courier Delivery to {{ $locLabel }}:</span>
-                                <span class="font-bold text-emerald-950">+৳{{ number_format($deliveryFee, 0) }}</span>
+                                <span class="text-emerald-900/80">Meramot Platform Fee (<span id="spLiveCommissionPct">{{ rtrim(rtrim(number_format($commissionRatePct, 2), '0'), '.') }}</span>% of workshop total, excl. courier):</span>
+                                <span class="font-bold text-amber-800" id="spLivePlatformFee">৳{{ number_format($initialPlatformFee, 2) }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-emerald-900/80">Platform Pickup &amp; Delivery Logistics ({{ $locLabel }}):</span>
+                                <span class="font-bold text-emerald-950">৳{{ number_format($deliveryFee, 2) }}</span>
                             </div>
                             <div class="flex items-center justify-between pt-1.5 border-t border-emerald-900/10 text-sm">
-                                <span class="font-extrabold text-emerald-950">Estimated Total (incl. Delivery):</span>
+                                <span class="font-extrabold text-emerald-950">Estimated Checkout Total:</span>
                                 <span class="font-extrabold text-emerald-900 text-base" id="spLiveLandedTotal">
-                                    ৳{{ number_format((float) $activeQuote['landed_total'], 2) }}
+                                    ৳{{ number_format($initialCheckoutTotal, 2) }}
                                 </span>
                             </div>
                         </div>
@@ -540,6 +542,7 @@
                                 </a>
                                 @if($competingListings->count() > 1)
                                     <a href="#compare-sellers"
+                                       onclick="event.preventDefault(); const el = document.getElementById('compare-sellers'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });"
                                        class="px-4 py-2 rounded-full bg-white border border-amber-400 text-amber-950 text-xs font-bold hover:bg-amber-100 transition">
                                         Order from Another Seller ({{ $competingListings->count() - 1 }})
                                     </a>
@@ -642,6 +645,9 @@
                     $cNormal = (float) ($cQuote['normal_unit_price'] ?? $sellerListing->resolvedNormalBasePrice());
                     $cRaw = (float) ($cQuote['raw_unit_price'] ?? $sellerListing->effectiveBasePrice());
                     $cBranch = $cShop?->display_branch_tag;
+                    $cRate = $cShop?->effectiveCommissionRatePct() ?? \App\Models\VendorProfile::DEFAULT_COMMISSION_RATE;
+                    $cPlatformFee = round($cRaw * ($cRate / 100), 2);
+                    $cCheckoutTotal = round((float) $cQuote['landed_total'] + $cPlatformFee, 2);
                 @endphp
                 <div class="rounded-2xl p-3.5 sm:p-4 border transition flex flex-col lg:flex-row lg:items-center justify-between gap-3 {{ $sellerListing->is_best_deal ? 'bg-emerald-50/75 border-emerald-700 ring-1 ring-emerald-700/25' : 'bg-white border-emerald-900/15' }}">
                     <div class="space-y-1">
@@ -673,7 +679,7 @@
                             <span>★ {{ number_format((float) ($cShop?->rating ?: 4.8), 1) }}</span>
                             @if($sellerListing->wholesale_enabled)
                                 <span class="text-amber-900 font-bold">
-                                    📦 Wholesale -{{ number_format((float) $sellerListing->wholesale_base_discount_pct, 0) }}% ({{ (int) $sellerListing->wholesale_min_qty }}+)
+                                    📦 Wholesale: {{ number_format((float) $sellerListing->wholesale_base_discount_pct, 0) }}% off ({{ (int) $sellerListing->wholesale_min_qty }}+ pcs)
                                 </span>
                             @endif
                         </div>
@@ -687,10 +693,11 @@
                                     <span class="line-through text-slate-400">৳{{ number_format($cNormal, 0) }}</span>
                                 @endif
                                 <strong class="{{ $cOffer ? 'text-red-600' : 'text-emerald-950' }}">৳{{ number_format($cRaw, 0) }}</strong>
+                                + Fee ({{ rtrim(rtrim(number_format($cRate, 2), '0'), '.') }}%): <strong>৳{{ number_format($cPlatformFee, 0) }}</strong>
                                 + Courier: <strong>৳{{ number_format((float) $cQuote['delivery_fee'], 0) }}</strong>
                             </div>
                             <div class="text-base font-extrabold text-emerald-950">
-                                Total: ৳{{ number_format((float) $cQuote['landed_total'], 0) }}
+                                Checkout Total: ৳{{ number_format($cCheckoutTotal, 0) }}
                             </div>
                         </div>
 
@@ -816,26 +823,10 @@
         }
     };
 
-    window.spSelectSpecPill = function (code) {
-        const sel = document.getElementById('spSpecSelect');
-        if (sel) {
-            sel.value = code;
-        }
-        window.spOnSpecChange(code);
-    };
-
     window.spOnSpecChange = function (code) {
         cfg.selectedSpecCode = code || '';
         const err = document.getElementById('spSpecValidationError');
         if (err && code) err.classList.add('hidden');
-
-        document.querySelectorAll('.sp-spec-pill').forEach(btn => {
-            const active = btn.getAttribute('data-spec-code') === code;
-            btn.className = 'sp-spec-pill text-left rounded-xl p-2.5 border transition flex items-center justify-between gap-2 ' +
-                (active
-                    ? 'bg-emerald-900 text-white border-emerald-900 shadow-sm'
-                    : 'bg-white hover:bg-emerald-50 text-emerald-950 border-emerald-900/15');
-        });
 
         const spec = findSpec(code);
         const stockLabel = document.getElementById('spStockCountLabel');
@@ -899,28 +890,72 @@
         const normalUnit = spec ? Number(spec.normal_price || spec.price) : Number(cfg.normalBasePrice || cfg.effBasePrice);
         const pct = calcWholesalePct(qty);
         const effUnit = pct > 0 ? Math.round(rawUnit * (1 - pct / 100) * 100) / 100 : rawUnit;
-        const subtotal = Math.round(effUnit * qty * 100) / 100;
-        const wholesaleSavings = Math.max(0, Math.round((rawUnit * qty - subtotal) * 100) / 100);
+        const partSubtotal = Math.round(effUnit * qty * 100) / 100;
+
+        // Industry-standard installation cap: auto-disable & uncheck above maxInstallQty (e.g. > 3 units)
+        const installCb = document.getElementById('spIncludeInstallation');
+        const installCard = document.getElementById('spInstallToggleCard');
+        const installNotice = document.getElementById('spInstallLimitNotice');
+        const installRow = document.getElementById('spLiveInstallRow');
+        const installQtyEl = document.getElementById('spLiveInstallQty');
+        const installFeeEl = document.getElementById('spLiveInstallFee');
+        const maxInstall = Number(cfg.maxInstallQty || 3);
+        let installTotal = 0;
+
+        if (cfg.supportsInstallation && installCb) {
+            if (qty > maxInstall) {
+                installCb.checked = false;
+                installCb.disabled = true;
+                if (installCard) installCard.classList.add('opacity-70');
+                if (installNotice) installNotice.classList.remove('hidden');
+            } else {
+                installCb.disabled = false;
+                if (installCard) installCard.classList.remove('opacity-70');
+                if (installNotice) installNotice.classList.add('hidden');
+                if (installCb.checked) {
+                    installTotal = Math.round(Number(cfg.installationFeePerUnit || 0) * qty * 100) / 100;
+                }
+            }
+        }
+
+        if (installRow) {
+            if (installTotal > 0) {
+                if (installQtyEl) installQtyEl.textContent = qty.toLocaleString('en-BD');
+                if (installFeeEl) installFeeEl.textContent = formatBdt(installTotal, 2);
+                installRow.classList.remove('hidden');
+                installRow.classList.add('flex');
+            } else {
+                installRow.classList.add('hidden');
+                installRow.classList.remove('flex');
+            }
+        }
+
+        const workshopSubtotal = Math.round((partSubtotal + installTotal) * 100) / 100;
+        const wholesaleSavings = Math.max(0, Math.round((rawUnit * qty - partSubtotal) * 100) / 100);
         const offerSavings = (cfg.offerActive && normalUnit > rawUnit) ? Math.round((normalUnit - rawUnit) * qty * 100) / 100 : 0;
         const totalSavings = wholesaleSavings + offerSavings;
-        const landed = Math.round((subtotal + Number(cfg.deliveryFee || 0)) * 100) / 100;
+        const feePct = Number(cfg.commissionRatePct || 8);
+        const platformFee = workshopSubtotal > 0 ? Math.round(workshopSubtotal * (feePct / 100) * 100) / 100 : 0;
+        const landed = Math.round((workshopSubtotal + platformFee + Number(cfg.deliveryFee || 0)) * 100) / 100;
 
         const unitEl = document.getElementById('spLiveUnitPrice');
         const pillEl = document.getElementById('spWholesaleActivePill');
         const qtyEl = document.getElementById('spLiveQtyLabel');
         const subEl = document.getElementById('spLiveSubtotal');
+        const feeEl = document.getElementById('spLivePlatformFee');
         const savRow = document.getElementById('spLiveSavingsRow');
         const savEl = document.getElementById('spLiveSavingsAmount');
         const totEl = document.getElementById('spLiveLandedTotal');
 
         if (unitEl) unitEl.textContent = formatBdt(effUnit, 2);
         if (qtyEl) qtyEl.textContent = qty.toLocaleString('en-BD');
-        if (subEl) subEl.textContent = formatBdt(subtotal, 2);
+        if (subEl) subEl.textContent = formatBdt(partSubtotal, 2);
+        if (feeEl) feeEl.textContent = formatBdt(platformFee, 2);
         if (totEl) totEl.textContent = formatBdt(landed, 2);
 
         if (pillEl) {
             if (pct > 0) {
-                pillEl.textContent = `-${pct}% Wholesale`;
+                pillEl.textContent = `${pct}% Wholesale Off`;
                 pillEl.classList.remove('hidden');
             } else {
                 pillEl.classList.add('hidden');

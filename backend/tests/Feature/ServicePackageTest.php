@@ -733,8 +733,8 @@ class ServicePackageTest extends TestCase
         $this->assertNotNull($createdReq);
         $placeRes->assertRedirect(route('requests.track', $createdReq->id));
 
-        // Expected total: (2800 * 2 = 5600) + 5% escrow (280) + EXPRESS (150) = 6030
-        $this->assertEquals(6030.0, (float) $createdReq->quoted_final_amount);
+        // Expected total: (2800 * 2 = 5600) + 8% default platform fee (448) + EXPRESS (150) = 6198
+        $this->assertEquals(6198.0, (float) $createdReq->quoted_final_amount);
         $this->assertEquals(2, $package->fresh()->order_count);
         $this->assertDatabaseHas('carts', [
             'user_id' => $customer->id,
@@ -803,7 +803,7 @@ class ServicePackageTest extends TestCase
             'quantity' => 1,
         ])->assertOk();
 
-        // Subtotal: 1200, Escrow (5%): 60, EXPRESS courier: 150 -> Total = 1410.00
+        // Subtotal: 1200, Platform Fee (8% default): 96, EXPRESS courier: 150 -> Total = 1446.00
         $res = $this->actingAs($customer)->post('/cart/checkout/place', [
             'shop_id' => $shop->id,
             'schedule_type' => 'NOW',
@@ -816,16 +816,16 @@ class ServicePackageTest extends TestCase
 
         $createdReq = RepairRequest::where('source', 'DIRECT_SERVICE')->latest('id')->first();
         $this->assertNotNull($createdReq);
-        $this->assertEquals(1410.0, (float) $createdReq->quoted_final_amount);
+        $this->assertEquals(1446.0, (float) $createdReq->quoted_final_amount);
         $res->assertRedirect("/checkout/payment/{$createdReq->id}");
 
         $checkoutView = $this->actingAs($customer)->get("/checkout/payment/{$createdReq->id}");
         $checkoutView->assertOk()
             ->assertSee('1,200.00')
-            ->assertSee('60.00')
+            ->assertSee('96.00')
             ->assertSee('150.00')
-            ->assertSee('1,410.00')
-            ->assertDontSee('1,560.00');
+            ->assertSee('1,446.00')
+            ->assertDontSee('1,596.00');
     }
 
     /** @test */

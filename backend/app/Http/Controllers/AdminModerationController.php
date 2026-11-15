@@ -574,6 +574,8 @@ class AdminModerationController extends Controller
                     ]);
                 }
 
+                $split = AdminLedgerController::computeRefundSplit($payment, $refundAmt, $shopId ? (int) $shopId : null);
+
                 DB::table('escrow_ledgers')->insert([
                     'payment_id' => $payment->id,
                     'repair_request_id' => $dispute->repair_request_id,
@@ -581,8 +583,8 @@ class AdminModerationController extends Controller
                     'vendor_user_id' => $dispute->against_id,
                     'amount' => $refundAmt,
                     'gross_amount' => $refundAmt,
-                    'platform_commission_amount' => round($refundAmt * 0.10, 2),
-                    'vendor_net_amount' => round($refundAmt * 0.90, 2),
+                    'platform_commission_amount' => $split['commission_reversal'],
+                    'vendor_net_amount' => $split['vendor_clawback'],
                     'action' => 'REFUND',
                     'note' => "Dispute #{$dispute->id} arbitration refund: {$resolutionText}",
                     'created_at' => now(),
@@ -600,6 +602,20 @@ class AdminModerationController extends Controller
                         'invoice_id' => $payment->invoice_id,
                     ]
                 );
+
+                if ($split['commission_reversal'] > 0.009) {
+                    AdminLedgerController::logEntry(
+                        'PLATFORM_COMMISSION',
+                        'DEBIT',
+                        $split['commission_reversal'],
+                        "Platform commission reversal for refunded Dispute #{$dispute->id} ({$payment->transaction_reference})",
+                        [
+                            'shop_id' => $shopId,
+                            'payment_id' => $payment->id,
+                            'invoice_id' => $payment->invoice_id,
+                        ]
+                    );
+                }
             }
 
             $dispute->update([

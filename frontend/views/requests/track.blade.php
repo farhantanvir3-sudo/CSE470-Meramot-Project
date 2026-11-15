@@ -164,7 +164,10 @@
                 @php
                     $bookedSubtotal = collect($bookedItems)->sum(fn ($it) => ((float) ($it['price'] ?? 0)) * ((int) ($it['quantity'] ?? 1)));
                     $bookedCourierFee = ($repairRequest->delivery_type === 'EXPRESS') ? 150 : 80;
-                    $bookedEscrowFee = (float) ($repairRequest->checkup_fee ?? 0);
+                    $bookedEscrowFee = (float) ($repairRequest->commission_amount ?? $repairRequest->checkup_fee ?? 0);
+                    $bookedRatePct = $bookedSubtotal > 0 && $bookedEscrowFee > 0
+                        ? rtrim(rtrim(number_format(($bookedEscrowFee / $bookedSubtotal) * 100, 2), '0'), '.')
+                        : rtrim(rtrim(number_format(\App\Http\Controllers\ServicePackageController::resolveCommissionRatePct($repairRequest->requestedShop), 2), '0'), '.');
                 @endphp
                 <div class="meramot-card p-5 sm:p-6 shadow-sm space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -209,15 +212,15 @@
 
                     <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)]/80 px-4 py-3 text-xs space-y-1.5">
                         <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                            <span>Services Subtotal</span>
+                            <span>Vendor Services &amp; Parts (100% Vendor)</span>
                             <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedSubtotal, 2) }}</span>
                         </div>
                         <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                            <span>Escrow Protection Fee (5%)</span>
+                            <span>Meramot Platform Fee ({{ $bookedRatePct }}%, excl. courier)</span>
                             <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedEscrowFee, 2) }}</span>
                         </div>
                         <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                            <span>Two-Way Courier ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }})</span>
+                            <span>Platform Pickup &amp; Delivery ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }})</span>
                             <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedCourierFee, 2) }}</span>
                         </div>
                     </div>

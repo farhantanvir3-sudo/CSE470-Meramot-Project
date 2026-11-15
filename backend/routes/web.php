@@ -236,6 +236,7 @@ Route::prefix('admin')->middleware('admin.access')->group(function () {
     Route::post('/financial-overview/auto-settle', [AdminLedgerController::class, 'autoSettleBatch'])->name('admin.financial-overview.auto-settle'); // R16
     Route::post('/financial-overview/bulk-delete', [AdminLedgerController::class, 'bulkDelete'])->name('admin.financial-overview.bulk-delete'); // R16
     Route::post('/financial-overview/issue-refund', [AdminLedgerController::class, 'issueRefund'])->name('admin.financial-overview.issue-refund'); // R16
+    Route::post('/shops/{shop}/commission-rate', [AdminLedgerController::class, 'updateShopCommissionRate'])->name('admin.shops.commission-rate'); // R16 Dynamic 5-10% Commission
 
     // Feature R18: Automated Vendor & Courier Payout Settlements
     Route::get('/payouts/manage', [VendorPayoutController::class, 'index'])->name('admin.payouts.manage');                // R18

@@ -211,7 +211,7 @@ class SprintOneDemoReadinessTest extends TestCase
 
         $this->assertEquals('REPAIRING', $repairRequest->fresh()->status);
 
-        // 6. Vendor marks RepairJob COMPLETED -> triggers automatic 10% / 90% R16 Ledger Settlement!
+        // 6. Vendor marks RepairJob COMPLETED -> triggers automatic exclusive 8% default / 100% vendor R16 Ledger Settlement!
         $this->actingAs($vendorUser)->post(route('vendor.jobs.status', $job->id), [
             'status' => 'COMPLETED',
         ])->assertRedirect();
@@ -223,19 +223,19 @@ class SprintOneDemoReadinessTest extends TestCase
             'shop_id' => $shop->id,
             'entry_type' => 'CUSTOMER_PAYMENT',
             'direction' => 'CREDIT',
-            'amount' => 4500.00,
+            'amount' => 4860.00,
         ]);
         $this->assertDatabaseHas('financial_ledgers', [
             'shop_id' => $shop->id,
             'entry_type' => 'PLATFORM_COMMISSION',
             'direction' => 'CREDIT',
-            'amount' => 450.00,
+            'amount' => 360.00,
         ]);
         $this->assertDatabaseHas('financial_ledgers', [
             'shop_id' => $shop->id,
             'entry_type' => 'VENDOR_EARNING',
             'direction' => 'DEBIT',
-            'amount' => 4050.00,
+            'amount' => 4500.00,
         ]);
 
         // Runtime completion also generates PAID Invoice + Line Item + 90-Day Warranty + Escrow Hold/Release
@@ -253,7 +253,7 @@ class SprintOneDemoReadinessTest extends TestCase
         $this->assertDatabaseHas('escrow_ledgers', [
             'repair_request_id' => $repairRequest->id,
             'action' => 'RELEASE',
-            'amount' => 4500.00,
+            'amount' => 5010.00,
         ]);
 
         // Customer leaves a review -> automatically interconnects `repair_request_id` to the completed order!
