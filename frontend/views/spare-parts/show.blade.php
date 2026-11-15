@@ -26,7 +26,7 @@
         ->all();
 
     if (empty($gallery)) {
-        $gallery = ['/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp'];
+        $gallery = [$listing->fallbackImageUrl()];
     }
 
     $highlights = is_array($listing->highlights) ? array_values(array_filter($listing->highlights)) : [];
@@ -59,8 +59,8 @@
         in_array($listing->part_category, \App\Http\Controllers\SparePartController::PC_CATEGORIES, true)
             ? ['key' => 'pc', 'label' => 'Laptop & PC Parts']
             : (in_array($listing->part_category, \App\Http\Controllers\SparePartController::MOBILE_CATEGORIES, true)
-                ? ['key' => 'mobile', 'label' => 'Mobile & Gadget Parts']
-                : ['key' => 'others', 'label' => 'Others'])
+                ? ['key' => 'mobile', 'label' => 'Mobile Parts']
+                : ['key' => 'others', 'label' => 'Repair Tools & Soldering'])
     );
 
     $supportsInstallation = $listing->supportsWorkshopInstallation();
@@ -101,7 +101,7 @@
                 <strong class="px-2 py-0.5 rounded-full bg-[var(--mint-50)] border border-[var(--border)] font-extrabold truncate max-w-[160px] sm:max-w-none">{{ $locLabel }}</strong>
             </div>
             <span class="text-[var(--muted-foreground)] shrink-0">
-                🚚 Platform Courier: <strong class="text-[var(--foreground)]">+৳{{ number_format($deliveryFee, 0) }}</strong>
+                🚚 Platform Courier: <strong class="text-[var(--foreground)]">৳{{ number_format($deliveryFee, 0) }}</strong>
                 <span class="hidden sm:inline">({{ $activeQuote['distance_formatted'] ?? '—' }}, ETA {{ $activeQuote['eta_label'] ?? 'Same day' }})</span>
                 <span class="sm:hidden">({{ $activeQuote['eta_label'] ?? 'Same day' }})</span>
             </span>
@@ -137,7 +137,7 @@
                     <img id="spMainProductImage"
                          src="{{ $gallery[0] }}"
                          alt="{{ $listing->title }}"
-                         onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
+                         onerror="this.onerror=null;this.src='{{ e($listing->fallbackImageUrl()) }}';"
                          class="w-full h-full object-contain transition duration-300">
                 </div>
 
@@ -150,7 +150,7 @@
                                     class="sp-thumb-btn w-16 h-16 rounded-xl border-2 {{ $gIdx === 0 ? 'border-emerald-800 ring-2 ring-emerald-700/25' : 'border-emerald-900/15 opacity-80 hover:opacity-100' }} bg-white p-1.5 shrink-0 overflow-hidden transition">
                                 <img src="{{ $gUrl }}"
                                      alt="Thumbnail {{ $gIdx + 1 }}"
-                                     onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
+                                     onerror="this.onerror=null;this.src='{{ e($listing->fallbackImageUrl()) }}';"
                                      class="w-full h-full object-contain">
                             </button>
                         @endforeach
@@ -179,7 +179,7 @@
                         </div>
                         <div class="text-right shrink-0">
                             <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-xs font-extrabold text-amber-900">
-                                ★ {{ number_format((float) ($shop->rating ?: 4.8), 1) }}
+                                ★ {{ ((float) ($shop->rating ?? 0)) > 0 ? number_format((float) $shop->rating, 1) : '4.8' }}
                             </div>
                             <div class="text-[11px] text-emerald-900/70 mt-1">
                                 {{ $activeQuote['distance_formatted'] ?? '' }} away
@@ -280,7 +280,7 @@
                     @if($offerActive)
                         <div class="flex flex-wrap items-center gap-2 mb-1">
                             <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[11px] font-extrabold uppercase tracking-wide">
-                                🔴 Sale! -{{ number_format($listing->effectiveOfferPercent(), 0) }}% Off
+                                🔴 Sale! {{ number_format($listing->effectiveOfferPercent(), 0) }}% Off
                             </span>
                             <span class="text-xs font-bold text-red-800">
                                 {{ $offerWindow }}
@@ -473,14 +473,6 @@
                                         class="w-9 h-9 rounded-xl bg-white border border-emerald-900/20 text-emerald-950 font-extrabold hover:bg-emerald-50 transition">
                                     +
                                 </button>
-
-                                @if($listing->wholesale_enabled)
-                                    <button type="button"
-                                            onclick="window.spApplyQuantity({{ max(2, (int) $listing->wholesale_min_qty) }})"
-                                            class="px-2.5 h-9 rounded-xl bg-emerald-900 text-white text-xs font-bold hover:bg-emerald-800 transition">
-                                        {{ (int) $listing->wholesale_min_qty }}+ Wholesale
-                                    </button>
-                                @endif
                             </div>
                         </div>
 
@@ -598,7 +590,7 @@
                         </div>
                         <div class="text-right shrink-0">
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-extrabold text-amber-900">
-                                ★ {{ number_format((float) ($shop->rating ?: 4.8), 1) }}
+                                ★ {{ ((float) ($shop->rating ?? 0)) > 0 ? number_format((float) $shop->rating, 1) : '4.8' }}
                             </span>
                             <div class="text-[10px] text-[var(--muted-foreground)] mt-0.5">{{ $activeQuote['distance_formatted'] ?? '' }}</div>
                         </div>
@@ -621,18 +613,13 @@
 
     {{-- Multi-Seller Comparison Table (eBay / Location-Aware Best Deal Engine) --}}
     <section id="compare-sellers" class="mt-8 rounded-2xl bg-white/95 border border-emerald-900/15 p-4 sm:p-6 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-            <div>
-                <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">
-                    Compare All {{ $competingListings->count() }} {{ Str::plural('Seller', $competingListings->count()) }} for {{ $locLabel }}
-                </h2>
-                <p class="text-xs text-emerald-900/75">
-                    Ranked automatically by <strong>Part Price + Distance Courier Fee</strong> to your active location ({{ $locLabel }}).
-                </p>
-            </div>
-            <span class="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-900/15 text-xs font-bold text-emerald-950 shrink-0">
-                📍 Destination: {{ $locLabel }}
-            </span>
+        <div class="mb-4">
+            <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">
+                Compare All {{ $competingListings->count() }} {{ Str::plural('Seller', $competingListings->count()) }} for {{ $locLabel }}
+            </h2>
+            <p class="text-xs text-emerald-900/75">
+                Ranked automatically by <strong>Part Price + Distance Courier Fee</strong> to your active location ({{ $locLabel }}).
+            </p>
         </div>
 
         <div class="space-y-3">
@@ -676,7 +663,7 @@
                         <div class="text-xs text-emerald-900/80 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <span>📍 {{ collect([$cShop?->area, $cShop?->city])->filter()->unique()->implode(', ') }} ({{ $cQuote['distance_formatted'] }})</span>
                             <span>🚚 ETA: <strong>{{ $cQuote['eta_label'] }}</strong></span>
-                            <span>★ {{ number_format((float) ($cShop?->rating ?: 4.8), 1) }}</span>
+                            <span>★ {{ ((float) ($cShop?->rating ?? 0)) > 0 ? number_format((float) $cShop->rating, 1) : '4.8' }}</span>
                             @if($sellerListing->wholesale_enabled)
                                 <span class="text-amber-900 font-bold">
                                     📦 Wholesale: {{ number_format((float) $sellerListing->wholesale_base_discount_pct, 0) }}% off ({{ (int) $sellerListing->wholesale_min_qty }}+ pcs)
@@ -754,7 +741,7 @@
                             <img src="{{ $rel->image_url }}"
                                  alt="{{ $rel->title }}"
                                  loading="lazy"
-                                 onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
+                                 onerror="this.onerror=null;this.src='{{ e($rel->fallbackImageUrl()) }}';"
                                  class="w-full h-full object-contain group-hover:scale-105 transition">
                         </div>
                         <div class="p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between gap-1.5 min-w-0">
@@ -769,7 +756,7 @@
                                     </span>
                                 </div>
                                 <div class="pt-1.5 border-t border-slate-200/70 dark:border-[var(--border)]/50 space-y-0.5 text-[10px] sm:text-[11px]">
-                                    <div class="text-[var(--muted-foreground)]">+৳{{ number_format((float) $rQuote['delivery_fee'], 0) }} delivery</div>
+                                    <div class="text-[var(--muted-foreground)]">Delivery: ৳{{ number_format((float) $rQuote['delivery_fee'], 0) }}</div>
                                     <div class="flex items-center justify-between text-[11px] sm:text-xs">
                                         <span class="text-[var(--muted-foreground)]">Total</span>
                                         <span class="font-extrabold text-[var(--foreground)]">৳{{ number_format((float) $rQuote['landed_total'], 0) }}</span>

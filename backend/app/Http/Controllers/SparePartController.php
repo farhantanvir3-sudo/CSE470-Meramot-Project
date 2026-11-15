@@ -35,28 +35,21 @@ class SparePartController extends Controller
         'Camera & Lens',
         'Backshell & Housing',
         'SIM Tray & Small Parts',
-        'Accessories & Chargers',
-        'Mobile Spare Parts',
     ];
 
     public const PC_CATEGORIES = [
         'Laptop Battery',
-        'Laptop Cooling Fan',
         'Laptop Keyboard',
-        'Laptop Speaker',
-        'Adapter & Charger',
-        'Laptop Casing & Touchpad',
-        'SSD, RAM & Storage',
+        'Laptop Cooling Fan',
         'PC Display, Cable & Board',
-        'PC & Laptop Parts',
+        'SSD, RAM & Storage',
+        'Laptop Speaker',
+        'Laptop Casing & Touchpad',
+        'Adapter & Charger',
     ];
 
     public const OTHER_CATEGORIES = [
-        'Accessories & Chargers',
-        'Adapter & Charger',
-        'SIM Tray & Small Parts',
-        'Mobile Spare Parts',
-        'PC & Laptop Parts',
+        'Tools, Consumables & Soldering',
     ];
 
     public const PART_CATEGORIES = [
@@ -67,15 +60,235 @@ class SparePartController extends Controller
         'Backshell & Housing',
         'SIM Tray & Small Parts',
         'Laptop Battery',
-        'Laptop Cooling Fan',
         'Laptop Keyboard',
-        'Laptop Speaker',
-        'Adapter & Charger',
-        'Laptop Casing & Touchpad',
-        'SSD, RAM & Storage',
+        'Laptop Cooling Fan',
         'PC Display, Cable & Board',
-        'Accessories & Chargers',
+        'SSD, RAM & Storage',
+        'Laptop Speaker',
+        'Laptop Casing & Touchpad',
+        'Adapter & Charger',
+        'Tools, Consumables & Soldering',
     ];
+
+    /**
+     * Root directory metadata + clean display labels + sub-categories for the hierarchical explorer sidebar.
+     */
+    public static function directorySchema(): array
+    {
+        return [
+            [
+                'key' => 'mobile',
+                'label' => 'Mobile Replacement Parts',
+                'categories' => [
+                    'Display & Touch' => [
+                        'label' => 'Display & Touch',
+                        'sub_categories' => [
+                            'amoled_oled' => 'AMOLED & OLED Screens',
+                            'fold_pro' => 'Pro Max, Ultra & Fold Panels',
+                            'ips_lcd' => 'IPS & LCD Assemblies',
+                        ],
+                    ],
+                    'Battery' => [
+                        'label' => 'Phone & Tablet Battery',
+                        'sub_categories' => [
+                            'apple_iphone' => 'iPhone & iPad Cells',
+                            'flagship_series' => 'Galaxy S / Note / Pixel / OnePlus',
+                            'android_series' => 'Xiaomi, Oppo, Vivo & Realme',
+                        ],
+                    ],
+                    'Charging Port & Flex' => [
+                        'label' => 'Charging Port & Flex',
+                        'sub_categories' => [
+                            'charging_pcb' => 'Charging Logic Boards & Ports',
+                            'flex_ribbon' => 'Mainboard, Power & Volume Flex',
+                        ],
+                    ],
+                    'Camera & Lens' => [
+                        'label' => 'Camera & Lens',
+                        'sub_categories' => [
+                            'camera_module' => 'Front & Rear Camera Modules',
+                            'camera_glass' => 'Camera Lens Glass & Bezels',
+                        ],
+                    ],
+                    'Backshell & Housing' => [
+                        'label' => 'Backshell & Housing',
+                        'sub_categories' => [
+                            'back_glass' => 'Back Glass & Battery Covers',
+                            'housing_frame' => 'Middle Frames & Full Housing',
+                        ],
+                    ],
+                    'SIM Tray & Small Parts' => [
+                        'label' => 'SIM Tray & Small Parts',
+                        'sub_categories' => [
+                            'sim_holder' => 'SIM & SD Card Trays',
+                            'audio_speaker' => 'Loudspeaker, Ringer & Earpiece',
+                            'small_parts' => 'Side Keys, Sensors & Small Parts',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'key' => 'pc',
+                'label' => 'Laptop & PC Replacement Parts',
+                'categories' => [
+                    'Laptop Battery' => [
+                        'label' => 'Laptop Battery',
+                        'sub_categories' => [
+                            'business_pro' => 'ThinkPad, Latitude & EliteBook',
+                            'mac_surface_ultra' => 'MacBook, Surface, ZenBook & XPS',
+                            'everyday_gaming' => 'Pavilion, IdeaPad & Inspiron',
+                        ],
+                    ],
+                    'Laptop Keyboard' => [
+                        'label' => 'Laptop Keyboard',
+                        'sub_categories' => [
+                            'backlit_keyboard' => 'Backlit Keyboards',
+                            'standard_keyboard' => 'Standard US / UK Layout',
+                        ],
+                    ],
+                    'Laptop Cooling Fan' => [
+                        'label' => 'Laptop Cooling Fan',
+                        'sub_categories' => [
+                            'blower_fan' => 'Gaming & Dual-Fan Blowers',
+                            'internal_cpu_gpu' => 'CPU & Heatsink Fans',
+                        ],
+                    ],
+                    'PC Display, Cable & Board' => [
+                        'label' => 'Display, Cable & Board',
+                        'sub_categories' => [
+                            'laptop_panel' => 'FHD / HD LED Laptop Screens',
+                            'dc_power_jack' => 'DC Power Jacks & Ports',
+                            'cable_board_cam' => 'LVDS Cables, Boards & Webcams',
+                        ],
+                    ],
+                    'SSD, RAM & Storage' => [
+                        'label' => 'SSD, RAM & Storage',
+                        'sub_categories' => [
+                            'nvme_ssd' => 'M.2 NVMe PCIe SSDs',
+                            'so_dimm_ram' => 'DDR3L / DDR4 / DDR5 SO-DIMM RAM',
+                            'sata_hdd_caddy' => '2.5" SATA SSD, HDD & Caddies',
+                        ],
+                    ],
+                    'Laptop Speaker' => [
+                        'label' => 'Laptop Speaker',
+                        'sub_categories' => [
+                            'left_right_pair' => 'Left + Right Speaker Pairs',
+                            'internal_speaker' => 'Internal Speaker Modules',
+                        ],
+                    ],
+                    'Laptop Casing & Touchpad' => [
+                        'label' => 'Laptop Casing & Touchpad',
+                        'sub_categories' => [
+                            'touchpad_trackpad' => 'Trackpads & Touchpads',
+                            'shell_hinge_bezel' => 'Bezels, Bottom Base & Hinges',
+                        ],
+                    ],
+                    'Adapter & Charger' => [
+                        'label' => 'Adapter & Charger',
+                        'sub_categories' => [
+                            'usb_c_surface_mag' => 'USB-C PD, Surface & MagSafe',
+                            'oem_barrel_adapter' => 'OEM Barrel-Pin Adapters',
+                        ],
+                    ],
+                ],
+            ],
+            [
+                'key' => 'others',
+                'label' => 'Repair Tools & Soldering',
+                'categories' => [
+                    'Tools, Consumables & Soldering' => [
+                        'label' => 'Tools, Soldering & Adhesives',
+                        'sub_categories' => [
+                            'screwdrivers_pry' => 'Precision Screwdrivers & Kits',
+                            'soldering_bga' => 'Soldering Stations, Flux & Wire',
+                            'diagnostics_adhesives' => 'Multimeters, Adhesives & Tapes',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Build a mutually-exclusive SQL expression returning each listing's sub-category slug,
+     * plus flat lookup metadata so directory tree counts and `?sub_category=` filters stay 100% consistent.
+     */
+    private static function subCategorySqlCase(bool $isPg): string
+    {
+        $op = $isPg ? 'ILIKE' : 'LIKE';
+        $specsCast = $isPg ? "COALESCE(spare_part_listings.spec_options::text, '')" : "COALESCE(spare_part_listings.spec_options, '')";
+        $t = 'spare_part_listings.title';
+        $b = 'spare_part_listings.brand';
+        $c = 'spare_part_listings.part_category';
+
+        $likeAny = function (array $terms, bool $includeSpecs = false) use ($op, $t, $specsCast): string {
+            $parts = [];
+            foreach ($terms as $term) {
+                $safe = str_replace("'", "''", $term);
+                $parts[] = "{$t} {$op} '%{$safe}%'";
+                if ($includeSpecs) {
+                    $parts[] = "{$specsCast} {$op} '%{$safe}%'";
+                }
+            }
+            return '(' . implode(' OR ', $parts) . ')';
+        };
+
+        return "(CASE
+            WHEN {$c} = 'Display & Touch' AND " . $likeAny(['AMOLED', 'OLED'], true) . " THEN 'amoled_oled'
+            WHEN {$c} = 'Display & Touch' AND " . $likeAny(['Ultra', 'Pro Max', 'Fold', 'Flip', 'Pad', 'Tab']) . " THEN 'fold_pro'
+            WHEN {$c} = 'Display & Touch' THEN 'ips_lcd'
+
+            WHEN {$c} = 'Battery' AND {$b} = 'Apple' THEN 'apple_iphone'
+            WHEN {$c} = 'Battery' AND ({$b} IN ('Google', 'OnePlus') OR " . $likeAny(['Galaxy S', 'Galaxy Note', 'Galaxy Z', 'Pixel']) . ") THEN 'flagship_series'
+            WHEN {$c} = 'Battery' THEN 'android_series'
+
+            WHEN {$c} = 'Charging Port & Flex' AND " . $likeAny(['Logic', 'Board', 'Sub', 'PCB', 'Connector', 'Port']) . " THEN 'charging_pcb'
+            WHEN {$c} = 'Charging Port & Flex' THEN 'flex_ribbon'
+
+            WHEN {$c} = 'Camera & Lens' AND " . $likeAny(['Glass', 'Lens', 'Ring', 'Bezel']) . " THEN 'camera_glass'
+            WHEN {$c} = 'Camera & Lens' THEN 'camera_module'
+
+            WHEN {$c} = 'Backshell & Housing' AND " . $likeAny(['Housing', 'Frame', 'Chassis', 'Body']) . " THEN 'housing_frame'
+            WHEN {$c} = 'Backshell & Housing' THEN 'back_glass'
+
+            WHEN {$c} = 'SIM Tray & Small Parts' AND " . $likeAny(['SIM', 'Tray', 'Holder', 'Slot']) . " THEN 'sim_holder'
+            WHEN {$c} = 'SIM Tray & Small Parts' AND " . $likeAny(['Loudspeaker', 'Speaker', 'Ringer', 'Earpiece', 'Buzzer']) . " THEN 'audio_speaker'
+            WHEN {$c} = 'SIM Tray & Small Parts' THEN 'small_parts'
+
+            WHEN {$c} = 'Laptop Battery' AND " . $likeAny(['ThinkPad', 'Latitude', 'EliteBook', 'ProBook', 'Precision', 'X1']) . " THEN 'business_pro'
+            WHEN {$c} = 'Laptop Battery' AND ({$b} IN ('Apple', 'Microsoft') OR " . $likeAny(['MacBook', 'Surface', 'ZenBook', 'XPS', 'Spectre', 'Envy', 'Yoga']) . ") THEN 'mac_surface_ultra'
+            WHEN {$c} = 'Laptop Battery' THEN 'everyday_gaming'
+
+            WHEN {$c} = 'Laptop Keyboard' AND " . $likeAny(['Backlit', 'Backlight', 'RGB', 'Illuminated']) . " THEN 'backlit_keyboard'
+            WHEN {$c} = 'Laptop Keyboard' THEN 'standard_keyboard'
+
+            WHEN {$c} = 'Laptop Cooling Fan' AND " . $likeAny(['Predator', 'ROG', 'Legion', 'Nitro', 'Gaming', 'Dual', 'GPU']) . " THEN 'blower_fan'
+            WHEN {$c} = 'Laptop Cooling Fan' THEN 'internal_cpu_gpu'
+
+            WHEN {$c} = 'PC Display, Cable & Board' AND (" . $likeAny(['Display', 'Screen', 'LED', 'LCD', 'FHD', 'UHD', 'Inch']) . " AND NOT " . $likeAny(['Cable', 'LVDS']) . ") THEN 'laptop_panel'
+            WHEN {$c} = 'PC Display, Cable & Board' AND " . $likeAny(['DC ', 'Jack', 'Charging Port', 'Power Socket', 'Power Cable', 'Power Cord', 'Female Connector', 'HDD Connector']) . " THEN 'dc_power_jack'
+            WHEN {$c} = 'PC Display, Cable & Board' THEN 'cable_board_cam'
+
+            WHEN {$c} = 'SSD, RAM & Storage' AND " . $likeAny(['NVMe', 'M.2', 'PCIe']) . " THEN 'nvme_ssd'
+            WHEN {$c} = 'SSD, RAM & Storage' AND " . $likeAny(['RAM', 'DDR', 'SO-DIMM', 'SODIMM', 'MHz', 'PC3', 'PC4']) . " THEN 'so_dimm_ram'
+            WHEN {$c} = 'SSD, RAM & Storage' THEN 'sata_hdd_caddy'
+
+            WHEN {$c} = 'Laptop Speaker' AND " . $likeAny(['Left', 'Right', 'Pair', 'Set', 'L&R', 'L+R']) . " THEN 'left_right_pair'
+            WHEN {$c} = 'Laptop Speaker' THEN 'internal_speaker'
+
+            WHEN {$c} = 'Laptop Casing & Touchpad' AND " . $likeAny(['Touchpad', 'Trackpad']) . " THEN 'touchpad_trackpad'
+            WHEN {$c} = 'Laptop Casing & Touchpad' THEN 'shell_hinge_bezel'
+
+            WHEN {$c} = 'Adapter & Charger' AND " . $likeAny(['USB-C', 'Type-C', 'Surface', 'MagSafe', 'Apple', ' PD']) . " THEN 'usb_c_surface_mag'
+            WHEN {$c} = 'Adapter & Charger' THEN 'oem_barrel_adapter'
+
+            WHEN {$c} = 'Tools, Consumables & Soldering' AND " . $likeAny(['Screwdriver', 'Pry', 'Spudger', 'Tweezer', 'Separator']) . " THEN 'screwdrivers_pry'
+            WHEN {$c} = 'Tools, Consumables & Soldering' AND " . $likeAny(['Solder', 'Flux', 'Hot Air', 'Rework', 'Mat']) . " THEN 'soldering_bga'
+            WHEN {$c} = 'Tools, Consumables & Soldering' THEN 'diagnostics_adhesives'
+
+            ELSE 'general'
+        END)";
+    }
 
     public const POPULAR_BRANDS = [
         'Samsung',
@@ -120,17 +333,17 @@ class SparePartController extends Controller
             ->where('spare_part_listings.is_active', true)
             ->where('repair_shops.is_active', true);
 
-        // 1. Device Type segment (`all` | `mobile` | `pc` | `others`)
+        // 1. Device Type segment (`all` | `mobile` | `pc` | `others` / `tools`)
         $deviceType = strtolower(trim((string) $request->input('device_type', 'all')));
+        if ($deviceType === 'tools') {
+            $deviceType = 'others';
+        }
         if ($deviceType === 'pc') {
             $query->whereIn('spare_part_listings.part_category', self::PC_CATEGORIES);
         } elseif ($deviceType === 'mobile') {
             $query->whereIn('spare_part_listings.part_category', self::MOBILE_CATEGORIES);
         } elseif ($deviceType === 'others') {
-            $query->where(function ($oq) {
-                $oq->whereIn('spare_part_listings.part_category', self::OTHER_CATEGORIES)
-                   ->orWhere('spare_part_listings.brand', 'Universal');
-            });
+            $query->whereIn('spare_part_listings.part_category', self::OTHER_CATEGORIES);
         } else {
             $deviceType = 'all';
         }
@@ -139,12 +352,38 @@ class SparePartController extends Controller
         $search = trim((string) $request->input('q', ''));
         $searchRelevanceOrder = MarketplaceSearchEngine::applySparePartSearch($query, $search);
 
-        // 3. Part Category filter (`part_category`)
+        // 3. Part Category & Sub-Category filters (`part_category`, `sub_category`)
+        $subCategoryCaseSql = self::subCategorySqlCase($isPg);
         $selectedCategory = trim((string) $request->input('part_category', 'All'));
         if ($selectedCategory !== '' && strcasecmp($selectedCategory, 'All') !== 0) {
             $query->where('spare_part_listings.part_category', $selectedCategory);
         } else {
             $selectedCategory = 'All';
+        }
+
+        $selectedSubCategory = strtolower(trim((string) $request->input('sub_category', '')));
+        $selectedSubCategoryLabel = null;
+        if ($selectedSubCategory !== '' && $selectedSubCategory !== 'all') {
+            $validSubMap = [];
+            foreach (self::directorySchema() as $rootDef) {
+                foreach ($rootDef['categories'] as $catKey => $catMeta) {
+                    foreach ($catMeta['sub_categories'] as $subKey => $subLabel) {
+                        $validSubMap[$subKey] = ['category' => $catKey, 'label' => $subLabel];
+                    }
+                }
+            }
+            if (isset($validSubMap[$selectedSubCategory])) {
+                $selectedSubCategoryLabel = $validSubMap[$selectedSubCategory]['label'];
+                if ($selectedCategory === 'All') {
+                    $selectedCategory = $validSubMap[$selectedSubCategory]['category'];
+                    $query->where('spare_part_listings.part_category', $selectedCategory);
+                }
+                $query->whereRaw("{$subCategoryCaseSql} = ?", [$selectedSubCategory]);
+            } else {
+                $selectedSubCategory = '';
+            }
+        } else {
+            $selectedSubCategory = '';
         }
 
         // 4. Brand filter (`brand`)
@@ -202,22 +441,23 @@ class SparePartController extends Controller
         // Distinct product count before pagination
         $distinctProductCount = (clone $query)->distinct('spare_part_listings.product_group_key')->count('spare_part_listings.product_group_key');
 
-        // Determine search context: "Best Deal" tags and price-first sorting apply ONLY when searching
+        // Determine search context: "Best Deal" winner tags highlight when searching,
+        // while ALL sort options (including lowest-first and highest-first prices) are always available!
         $hasSearchContext = ($search !== '' || $selectedGroup !== '');
         $requestedSort = strtolower(trim((string) $request->input('sort', '')));
         if ($requestedSort === 'fastest_delivery') {
             $requestedSort = 'fastest_eta';
         } elseif ($requestedSort === 'top_sold') {
             $requestedSort = 'popular';
+        } elseif ($requestedSort === 'price_low') {
+            $requestedSort = 'lowest_price';
+        } elseif ($requestedSort === 'price_high') {
+            $requestedSort = 'highest_price';
         }
 
-        if (!$hasSearchContext) {
-            $allowedUnsearched = ['alphabetical', 'distance', 'fastest_eta', 'popular', 'wholesale', 'highest_price'];
-            $sort = in_array($requestedSort, $allowedUnsearched, true) ? $requestedSort : 'alphabetical';
-        } else {
-            $allowedSearched = ['best_deal', 'lowest_price', 'highest_price', 'distance', 'fastest_eta', 'popular', 'wholesale', 'alphabetical'];
-            $sort = in_array($requestedSort, $allowedSearched, true) ? $requestedSort : 'best_deal';
-        }
+        $allowedSorts = ['best_deal', 'lowest_price', 'highest_price', 'distance', 'fastest_eta', 'popular', 'wholesale', 'alphabetical'];
+        $defaultSort = $hasSearchContext ? 'best_deal' : 'alphabetical';
+        $sort = in_array($requestedSort, $allowedSorts, true) ? $requestedSort : $defaultSort;
 
         if ($searchRelevanceOrder !== null && ($sort === 'best_deal' || !($searchRelevanceOrder['all_matched'] ?? true))) {
             $query->orderByRaw($searchRelevanceOrder['sql'], $searchRelevanceOrder['bindings']);
@@ -381,52 +621,145 @@ class SparePartController extends Controller
             $item->setAttribute('commission_rate_pct', $item->shop?->effectiveCommissionRatePct() ?? VendorProfile::DEFAULT_COMMISSION_RATE);
         }
 
-        // Hierarchical Category -> Brands tree for the left sidebar (`laptopbd.net` style)
-        $treeQuery = SparePartListing::query()
+        // Minimalistic 3-level Hierarchical Folder Directory: Root Group -> Category Folder -> Sub-Categories & Brands
+        $treeBase = SparePartListing::query()
             ->join('repair_shops', 'repair_shops.id', '=', 'spare_part_listings.shop_id')
             ->where('spare_part_listings.is_active', true)
             ->where('repair_shops.is_active', true);
 
         if ($deviceType === 'pc') {
-            $treeQuery->whereIn('spare_part_listings.part_category', self::PC_CATEGORIES);
+            $treeBase->whereIn('spare_part_listings.part_category', self::PC_CATEGORIES);
         } elseif ($deviceType === 'mobile') {
-            $treeQuery->whereIn('spare_part_listings.part_category', self::MOBILE_CATEGORIES);
+            $treeBase->whereIn('spare_part_listings.part_category', self::MOBILE_CATEGORIES);
         } elseif ($deviceType === 'others') {
-            $treeQuery->where(function ($oq) {
-                $oq->whereIn('spare_part_listings.part_category', self::OTHER_CATEGORIES)
-                   ->orWhere('spare_part_listings.brand', 'Universal');
-            });
+            $treeBase->whereIn('spare_part_listings.part_category', self::OTHER_CATEGORIES);
         }
 
-        $rawTreeRows = $treeQuery
+        $rawBrandRows = (clone $treeBase)
             ->select('spare_part_listings.part_category', 'spare_part_listings.brand', DB::raw('COUNT(*) as total'))
             ->groupBy('spare_part_listings.part_category', 'spare_part_listings.brand')
             ->orderBy('spare_part_listings.part_category')
             ->orderBy('spare_part_listings.brand')
             ->get();
 
-        $categoryBrandTree = [];
+        $rawSubRows = (clone $treeBase)
+            ->select(
+                'spare_part_listings.part_category',
+                DB::raw("{$subCategoryCaseSql} as sub_key"),
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupBy('spare_part_listings.part_category', DB::raw($subCategoryCaseSql))
+            ->get();
+
+        $subCountsByCat = [];
+        foreach ($rawSubRows as $sr) {
+            $subCountsByCat[(string) $sr->part_category][(string) $sr->sub_key] = (int) $sr->total;
+        }
+
         $genericBrands = ['PC / Laptop', 'PC Component', 'Universal', 'Generic', 'Other', 'Unknown'];
-        foreach ($rawTreeRows->groupBy('part_category') as $catName => $rows) {
+        $categoryNodesByKey = [];
+        foreach ($rawBrandRows->groupBy('part_category') as $catName => $rows) {
             $catTotal = (int) $rows->sum('total');
             $brandsList = $rows->map(fn ($r) => [
-                'name' => (string) $r->brand,
+                'name' => in_array((string) $r->brand, ['PC / Laptop', 'PC Component'], true) ? 'Universal' : (string) $r->brand,
                 'count' => (int) $r->total,
                 'is_generic' => in_array((string) $r->brand, $genericBrands, true),
-            ])->sort(function ($a, $b) {
-                if ($a['is_generic'] !== $b['is_generic']) {
-                    return $a['is_generic'] <=> $b['is_generic'];
-                }
-                return strcasecmp($a['name'], $b['name']);
-            })->values()->all();
+            ])
+                ->groupBy('name')
+                ->map(fn ($grp, $bName) => [
+                    'name' => $bName,
+                    'count' => (int) $grp->sum('count'),
+                    'is_generic' => in_array($bName, $genericBrands, true),
+                ])
+                ->sort(function ($a, $b) {
+                    if ($a['is_generic'] !== $b['is_generic']) {
+                        return $a['is_generic'] <=> $b['is_generic'];
+                    }
+                    return strcasecmp($a['name'], $b['name']);
+                })
+                ->values()
+                ->all();
 
-            $categoryBrandTree[] = [
+            $categoryNodesByKey[(string) $catName] = [
                 'name' => (string) $catName,
                 'total' => $catTotal,
                 'brands' => $brandsList,
+                'sub_counts' => $subCountsByCat[(string) $catName] ?? [],
             ];
         }
-        usort($categoryBrandTree, fn ($a, $b) => strcasecmp($a['name'], $b['name']));
+
+        $directoryTree = [];
+        $categoryBrandTree = [];
+        $placedCategories = [];
+        foreach (self::directorySchema() as $rootDef) {
+            $rootCatNodes = [];
+            $rootTotal = 0;
+            foreach ($rootDef['categories'] as $catKey => $catMeta) {
+                if (!isset($categoryNodesByKey[$catKey])) {
+                    continue;
+                }
+                $placedCategories[$catKey] = true;
+                $node = $categoryNodesByKey[$catKey];
+                $rootTotal += $node['total'];
+
+                $subNodes = [];
+                foreach ($catMeta['sub_categories'] as $subKey => $subLabel) {
+                    $subCount = (int) ($node['sub_counts'][$subKey] ?? 0);
+                    if ($subCount > 0) {
+                        $subNodes[] = [
+                            'key' => $subKey,
+                            'label' => $subLabel,
+                            'count' => $subCount,
+                        ];
+                    }
+                }
+
+                $builtCat = [
+                    'name' => $catKey,
+                    'label' => $catMeta['label'],
+                    'total' => $node['total'],
+                    'sub_categories' => $subNodes,
+                    'brands' => $node['brands'],
+                ];
+                $rootCatNodes[] = $builtCat;
+                $categoryBrandTree[] = $builtCat;
+            }
+
+            if (!empty($rootCatNodes)) {
+                $directoryTree[] = [
+                    'key' => $rootDef['key'],
+                    'label' => $rootDef['label'],
+                    'total' => $rootTotal,
+                    'categories' => $rootCatNodes,
+                ];
+            }
+        }
+
+        // Preserve any custom vendor-entered category cleanly under a fallback folder
+        $extraCatNodes = [];
+        $extraTotal = 0;
+        foreach ($categoryNodesByKey as $catKey => $node) {
+            if (!isset($placedCategories[$catKey])) {
+                $extraTotal += $node['total'];
+                $builtExtra = [
+                    'name' => $catKey,
+                    'label' => $catKey,
+                    'total' => $node['total'],
+                    'sub_categories' => [],
+                    'brands' => $node['brands'],
+                ];
+                $extraCatNodes[] = $builtExtra;
+                $categoryBrandTree[] = $builtExtra;
+            }
+        }
+        if (!empty($extraCatNodes)) {
+            $directoryTree[] = [
+                'key' => 'custom',
+                'label' => 'Workshop Custom Parts',
+                'total' => $extraTotal,
+                'categories' => $extraCatNodes,
+            ];
+        }
 
         $quickLocations = [
             ['city' => 'Dhaka', 'area' => 'Banani', 'label' => 'Banani, Dhaka', 'lat' => 23.7937, 'lng' => 90.4066],
@@ -454,9 +787,12 @@ class SparePartController extends Controller
             'quickLocations' => $quickLocations,
             'partCategories' => $activeCategories,
             'categoryBrandTree' => $categoryBrandTree,
+            'directoryTree' => $directoryTree,
             'popularBrands' => self::POPULAR_BRANDS,
             'deviceType' => $deviceType,
             'selectedCategory' => $selectedCategory,
+            'selectedSubCategory' => $selectedSubCategory,
+            'selectedSubCategoryLabel' => $selectedSubCategoryLabel,
             'selectedBrand' => $selectedBrand,
             'selectedGroup' => $selectedGroup,
             'sort' => $sort,
@@ -591,8 +927,8 @@ class SparePartController extends Controller
         $deviceSegment = in_array($listing->part_category, self::PC_CATEGORIES, true)
             ? ['key' => 'pc', 'label' => 'Laptop & PC Parts']
             : (in_array($listing->part_category, self::MOBILE_CATEGORIES, true)
-                ? ['key' => 'mobile', 'label' => 'Mobile & Gadget Parts']
-                : ['key' => 'others', 'label' => 'Others']);
+                ? ['key' => 'mobile', 'label' => 'Mobile Parts']
+                : ['key' => 'others', 'label' => 'Repair Tools & Soldering']);
 
         return view('spare-parts.show', [
             'listing' => $listing,
@@ -1046,7 +1382,11 @@ class SparePartController extends Controller
         } elseif (!empty($validated['image_url'])) {
             $imageUrl = trim((string) $validated['image_url']);
         } elseif (!$imageUrl) {
-            $imageUrl = '/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';
+            $imageUrl = SparePartListing::resolveCategoryFallbackImage(
+                (string) $validated['part_category'],
+                (string) $validated['title'],
+                (string) $validated['brand']
+            );
         }
 
         $rawGroupKey = trim((string) ($validated['product_group_key'] ?? ''));

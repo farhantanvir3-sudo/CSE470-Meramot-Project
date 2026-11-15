@@ -789,4 +789,111 @@ class SparePartsMarketplaceTest extends TestCase
             ->assertSee('Most Demanding')
             ->assertSee('Least Popular');
     }
+
+    public function test_marketplace_directory_sorting_normalization_and_device_exclusion(): void
+    {
+        // 1. Whole devices & non-repair accessories are excluded from seed ingestion
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('Apple iPhone 11', 'Mobile Spare Parts', 44999));
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('Apple iPhone 12', 'Mobile Spare Parts', 60499));
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('HP Pavilion 15-eg2000 Core i5 Laptop', 'SSD, RAM & Storage', 78000));
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('Hp ProBook 4440s Core-i5 3rd Gen 256GB SSD 8GB DDR3 RAM', 'SSD, RAM & Storage', 11990));
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('Lenovo ThinkPad T14s Gen 3 512GB NVMe SSD', 'SSD, RAM & Storage', 65500));
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('Used Apple Macbook Air A2337 M1 2020 Full Box Battery 84%', 'Laptop Battery', 55500));
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('Aluminium Folding Laptop Desk Stand', 'Accessories & Chargers', 1500));
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('HV-F2056 External Laptop Cooling Pad', 'Laptop Cooling Fan', 1200));
+        $this->assertTrue(SparePartListing::isWholeDeviceOrInvalidSeedItem('QA partial dummy item', 'Mobile Spare Parts', 100));
+
+        $this->assertSame('Samsung J7 (2016) Camera Glass Lens', SparePartListing::cleanCatalogTitle('Samsung J7 (2016)', 'Camera & Lens'));
+
+        $this->assertFalse(SparePartListing::isWholeDeviceOrInvalidSeedItem('102W 15V 6.33A Charger for Microsoft Surface Book 3', 'Accessories & Chargers', 3450));
+        $this->assertFalse(SparePartListing::isWholeDeviceOrInvalidSeedItem('Samsung Galaxy S21 FE 5G Display', 'Display & Screen', 6200));
+        $this->assertFalse(SparePartListing::isWholeDeviceOrInvalidSeedItem('Precision SMD Hot Air Rework Station 858D', 'Tools, Consumables & Soldering', 4200));
+
+        // 2. Category, brand & category fallback image normalization
+        $this->assertSame('Adapter & Charger', SparePartListing::normalizePartCategory('Accessories & Chargers', '102W 15V 6.33A Charger for Microsoft Surface Book 3'));
+        $this->assertSame('Microsoft', SparePartListing::inferSpecificBrandFromTitle('102W 15V 6.33A Charger for Microsoft Surface Book 3', 'PC / Laptop'));
+        $chargerImg = SparePartListing::resolveCategoryFallbackImage('Adapter & Charger', '102W 15V 6.33A Charger for Microsoft Surface Book 3', 'Microsoft');
+        $this->assertNotSame('/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp', $chargerImg);
+        $this->assertSame('Display & Touch', SparePartListing::normalizePartCategory('Mobile Spare Parts', 'Samsung Galaxy S21 Display Assembly'));
+
+        // 3. Create seller with rating 0.00 + parts across OLED sub-category and Tools category
+        [$vendor, $profile, $shop] = $this->createApprovedVendorWithShop([], 'Directory Test Lab');
+        $shop->update(['rating' => 0.00]);
+
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'vendor_profile_id' => $profile->id,
+            'slug' => 'oled-s22-display-' . uniqid(),
+            'product_group_key' => 's22-oled',
+            'title' => 'Samsung S22 Super AMOLED Display Panel',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Samsung',
+            'base_price' => 8500,
+            'normal_price' => 8500,
+            'stock_quantity' => 20,
+            'is_active' => true,
+        ]);
+
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'vendor_profile_id' => $profile->id,
+            'slug' => 'lcd-j7-display-' . uniqid(),
+            'product_group_key' => 'j7-lcd',
+            'title' => 'Samsung J7 IPS LCD Screen',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Samsung',
+            'base_price' => 1400,
+            'normal_price' => 1400,
+            'stock_quantity' => 20,
+            'is_active' => true,
+        ]);
+
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'vendor_profile_id' => $profile->id,
+            'slug' => 'hot-air-858d-' . uniqid(),
+            'product_group_key' => 'hot-air-858d',
+            'title' => 'Precision SMD Hot Air Rework Station 858D',
+            'part_category' => 'Tools, Consumables & Soldering',
+            'brand' => 'Quick',
+            'base_price' => 4200,
+            'normal_price' => 4200,
+            'stock_quantity' => 15,
+            'is_active' => true,
+        ]);
+
+        // 4. Unsearched index shows directory folders, both lowest & highest sort options, no redundant badges, and defaults 0.00 shop rating to 4.8
+        $indexRes = $this->get('/spare-parts');
+        $indexRes->assertStatus(200)
+            ->assertSee('Catalog')
+            ->assertSee('Directory')
+            ->assertSee('Tools &amp; Soldering', false)
+            ->assertSee('Price + Shipping: lowest first (Best Deal)')
+            ->assertSee('Item Price: lowest first')
+            ->assertSee('Price + Shipping: highest first')
+            ->assertDontSee('Live Listings')
+            ->assertDontSee('★ 0.0')
+            ->assertSee('★ 4.8');
+
+        // 5. Sub-category filter (?part_category=Display & Touch&sub_category=amoled_oled) isolates AMOLED/OLED from IPS/LCD
+        $oledRes = $this->get('/spare-parts?part_category=' . urlencode('Display & Touch') . '&sub_category=amoled_oled');
+        $oledRes->assertStatus(200)
+            ->assertSee('Samsung S22 Super AMOLED Display Panel')
+            ->assertDontSee('Samsung J7 IPS LCD Screen');
+
+        // 6. Lowest-first vs Highest-first price sorting works cleanly when unsearched
+        $lowRes = $this->get('/spare-parts?sort=lowest_price');
+        $lowRes->assertStatus(200);
+        $lowTitles = $lowRes->viewData('listings')->getCollection()->pluck('title')->values()->all();
+        $this->assertTrue(
+            array_search('Samsung J7 IPS LCD Screen', $lowTitles, true) < array_search('Samsung S22 Super AMOLED Display Panel', $lowTitles, true)
+        );
+
+        $highRes = $this->get('/spare-parts?sort=highest_price');
+        $highRes->assertStatus(200);
+        $highTitles = $highRes->viewData('listings')->getCollection()->pluck('title')->values()->all();
+        $this->assertTrue(
+            array_search('Samsung S22 Super AMOLED Display Panel', $highTitles, true) < array_search('Samsung J7 IPS LCD Screen', $highTitles, true)
+        );
+    }
 }

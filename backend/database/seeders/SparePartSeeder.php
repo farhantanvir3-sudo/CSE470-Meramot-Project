@@ -122,7 +122,13 @@ class SparePartSeeder extends Seeder
             $thirdPool = $dhakaPool;
         }
 
-        // Mark all participating shops with SPARE_PARTS capability once
+        // Ensure every active RepairShop has a valid rating and SPARE_PARTS capability
+        RepairShop::where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('rating')->orWhere('rating', '<=', 0);
+            })
+            ->update(['rating' => 4.7]);
+
         $participatingShops = collect(array_merge($dhakaPool, $regionalPool, $thirdPool))->unique('id');
         foreach ($participatingShops as $pShop) {
             $cats = is_array($pShop->categories) ? $pShop->categories : [];
@@ -130,6 +136,42 @@ class SparePartSeeder extends Seeder
                 $cats[] = 'SPARE_PARTS';
                 $pShop->update(['categories' => array_values($cats)]);
             }
+        }
+
+        // Supplement with curated workshop repair tools, soldering consumables & adhesives
+        $curatedRepairTools = [
+            ['title' => 'Kaisi K-8126 126-in-1 Magnetic Precision Repair Screwdriver Kit', 'brand' => 'Kaisi', 'base_price' => 1450, 'warranty_days' => 90, 'ext_id' => 990001],
+            ['title' => 'Quick 861DW 1000W Hot Air BGA Rework & Soldering Station', 'brand' => 'Quick', 'base_price' => 16500, 'warranty_days' => 180, 'ext_id' => 990002],
+            ['title' => 'Mechanic UV50 BGA Solder Flux Paste (50g Jar)', 'brand' => 'Mechanic', 'base_price' => 380, 'warranty_days' => 30, 'ext_id' => 990003],
+            ['title' => 'Mechanic 0.3mm Lead-Free Rosin Core Solder Wire Roll', 'brand' => 'Mechanic', 'base_price' => 520, 'warranty_days' => 30, 'ext_id' => 990004],
+            ['title' => 'UNI-T UT89X True RMS Digital Multimeter for PCB Diagnostics', 'brand' => 'UNI-T', 'base_price' => 2850, 'warranty_days' => 180, 'ext_id' => 990005],
+            ['title' => 'Zhanlida B-7000 Frame & Display Bonding Adhesive (110ml)', 'brand' => 'Zhanlida', 'base_price' => 240, 'warranty_days' => 30, 'ext_id' => 990006],
+            ['title' => 'Relife RL-049B Anti-Static IC & Motherboard Pry Spudger Set', 'brand' => 'Relife', 'base_price' => 350, 'warranty_days' => 30, 'ext_id' => 990007],
+            ['title' => 'Sunshine S-918E LCD & OLED Screen Heating Separator Pad', 'brand' => 'Sunshine', 'base_price' => 4200, 'warranty_days' => 180, 'ext_id' => 990008],
+            ['title' => 'ESD-15 Stainless Steel Anti-Static Precision Micro Tweezers Set', 'brand' => 'Mechanic', 'base_price' => 290, 'warranty_days' => 30, 'ext_id' => 990009],
+            ['title' => 'Mechanic S-160 Heat-Resistant Silicone Soldering Repair Mat', 'brand' => 'Mechanic', 'base_price' => 680, 'warranty_days' => 30, 'ext_id' => 990010],
+            ['title' => '3M 300LSE Double-Sided Display & Battery Mounting Tape Roll', 'brand' => 'Universal', 'base_price' => 220, 'warranty_days' => 30, 'ext_id' => 990011],
+        ];
+        foreach ($curatedRepairTools as $toolRow) {
+            $catalog[] = [
+                'ext_id' => $toolRow['ext_id'],
+                'src' => 'meramot_tools',
+                'title' => $toolRow['title'],
+                'part_category' => 'Tools, Consumables & Soldering',
+                'brand' => $toolRow['brand'],
+                'compatible_model' => 'Smartphones, Tablets & Laptop Motherboard Repair',
+                'base_price' => $toolRow['base_price'],
+                'regular_price' => round($toolRow['base_price'] * 1.15),
+                'assembly_fee' => 0.00,
+                'warranty_days' => $toolRow['warranty_days'],
+                'image_url' => '',
+                'highlights' => [
+                    'Category: Tools, Consumables & Soldering',
+                    'Workshop Grade Bench Tool / Consumable',
+                    'Warranty: ' . $toolRow['warranty_days'] . ' Days',
+                ],
+                'description' => $toolRow['title'] . ' — professional electronics repair & micro-soldering tool for certified Meramot workshops.',
+            ];
         }
 
         $now = now();
@@ -184,24 +226,20 @@ class SparePartSeeder extends Seeder
 
         foreach ($catalog as $idx => $item) {
             $rawItemTitle = trim((string) ($item['title'] ?? ''));
+            $rawItemCategory = trim((string) ($item['part_category'] ?? ''));
             $rawItemBase = (float) ($item['base_price'] ?? 0);
 
-            // Exclude unpriced <=10 BDT "Call for Price" placeholders, QA POS test items, and repair-service ads
-            if (
-                $rawItemTitle === ''
-                || $rawItemBase <= 10
-                || stripos($rawItemTitle, 'Service In BD') !== false
-                || stripos($rawItemTitle, 'Repair Service') !== false
-                || preg_match('/^QA\s/i', $rawItemTitle) === 1
-                || stripos($rawItemTitle, 'mobile_pos') !== false
-                || stripos($rawItemTitle, 'mobile_erp') !== false
-                || stripos($rawItemTitle, 'test product') !== false
-            ) {
+            // Strictly exclude entire phones/laptops/tablets, external stands/cooling pads, QA dummy rows & service ads
+            if (\App\Models\SparePartListing::isWholeDeviceOrInvalidSeedItem($rawItemTitle, $rawItemCategory, $rawItemBase)) {
                 continue;
             }
 
-            $groupKey = substr((string) ($item['product_group_key'] ?? Str::slug($rawItemTitle ?: ('part-' . $idx))), 0, 160);
-            $isPcItem = in_array(($item['src'] ?? ''), ['laptopworld', 'dearit', 'laptopbd'], true);
+            $cleanTitle = \App\Models\SparePartListing::cleanCatalogTitle($rawItemTitle);
+            $normalizedCategory = \App\Models\SparePartListing::normalizePartCategory($rawItemCategory, $cleanTitle);
+            $cleanTitle = \App\Models\SparePartListing::cleanCatalogTitle($cleanTitle, $normalizedCategory);
+
+            $groupKey = substr((string) ($item['product_group_key'] ?? Str::slug($cleanTitle ?: ('part-' . $idx))), 0, 160);
+            $isPcItem = in_array(($item['src'] ?? ''), ['laptopworld', 'dearit', 'laptopbd', 'meramot_tools'], true);
             $hasSpecs = (bool) ($item['has_specs'] ?? false);
 
             // Seed 3 competing sellers for flagship items, all PC/Laptop items, and first 1,600 mobile items
@@ -338,15 +376,35 @@ class SparePartSeeder extends Seeder
                     : substr($groupKey, 0, 140) . '--' . $shop->slug;
 
                 $resolvedBrand = \App\Models\SparePartListing::inferSpecificBrandFromTitle(
-                    (string) $item['title'],
+                    $cleanTitle,
                     (string) ($item['brand'] ?? 'Universal')
                 );
                 $skuPrefix = strtoupper(substr((string) preg_replace('/[^A-Za-z0-9]/', '', $resolvedBrand), 0, 3) ?: 'MRM');
                 $sku = sprintf('%s-%d-S%d', $skuPrefix, (int) ($item['ext_id'] ?? $item['etel_id'] ?? ($idx + 1000)), $shop->id);
 
-                $gallery = is_array($item['gallery_urls'] ?? null) && !empty($item['gallery_urls'])
+                $rawImg = trim((string) ($item['image_url'] ?? ''));
+                $isBrokenImg = $rawImg === ''
+                    || (!str_starts_with($rawImg, 'http') && !str_starts_with($rawImg, '/images/'))
+                    || ($rawImg === '/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp' && stripos($cleanTitle, 'S21 FE') === false);
+                $resolvedImageUrl = $isBrokenImg
+                    ? \App\Models\SparePartListing::resolveCategoryFallbackImage($normalizedCategory, $cleanTitle, $resolvedBrand)
+                    : $rawImg;
+
+                $rawGallery = is_array($item['gallery_urls'] ?? null) && !empty($item['gallery_urls'])
                     ? $item['gallery_urls']
-                    : [(string) $item['image_url']];
+                    : [$resolvedImageUrl];
+                $gallery = [];
+                foreach ($rawGallery as $gEntry) {
+                    $gStr = trim((string) $gEntry);
+                    $gBroken = $gStr === ''
+                        || (!str_starts_with($gStr, 'http') && !str_starts_with($gStr, '/images/'))
+                        || ($gStr === '/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp' && stripos($cleanTitle, 'S21 FE') === false);
+                    $gallery[] = $gBroken ? $resolvedImageUrl : $gStr;
+                }
+                $gallery = array_values(array_unique(array_filter($gallery)));
+                if (empty($gallery)) {
+                    $gallery = [$resolvedImageUrl];
+                }
 
                 $batchRows[] = [
                     'slug' => $listingSlug,
@@ -354,12 +412,12 @@ class SparePartSeeder extends Seeder
                     'vendor_profile_id' => $shop->vendor_profile_id,
                     'product_group_key' => $groupKey,
                     'sku' => $sku,
-                    'title' => substr((string) $item['title'], 0, 250),
-                    'part_category' => substr((string) ($item['part_category'] ?? 'Spare Part'), 0, 80),
+                    'title' => substr($cleanTitle, 0, 250),
+                    'part_category' => substr($normalizedCategory, 0, 80),
                     'brand' => substr($resolvedBrand, 0, 80),
-                    'compatible_model' => substr((string) ($item['compatible_model'] ?? $item['title']), 0, 140),
+                    'compatible_model' => substr((string) ($item['compatible_model'] ?? $cleanTitle), 0, 140),
                     'condition_label' => 'Brand New',
-                    'image_url' => substr((string) $item['image_url'], 0, 500),
+                    'image_url' => substr($resolvedImageUrl, 0, 500),
                     'gallery_urls' => json_encode($gallery, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                     'highlights' => json_encode(is_array($item['highlights'] ?? null) ? $item['highlights'] : [], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
                     'description' => (string) ($item['description'] ?? ''),
@@ -376,7 +434,7 @@ class SparePartSeeder extends Seeder
                     'offer_discount_pct' => $offerDiscountPct,
                     'offer_starts_at' => $offerStartsAt,
                     'offer_ends_at' => $offerEndsAt,
-                    'assembly_fee' => (isset($item['assembly_fee']) && $item['assembly_fee'] !== null && ($item['part_category'] ?? '') !== 'Tools, Consumables & Soldering')
+                    'assembly_fee' => (isset($item['assembly_fee']) && $item['assembly_fee'] !== null && $normalizedCategory !== 'Tools, Consumables & Soldering')
                         ? (float) $item['assembly_fee']
                         : 0.00,
                     'warranty_days' => (int) ($item['warranty_days'] ?? 30),

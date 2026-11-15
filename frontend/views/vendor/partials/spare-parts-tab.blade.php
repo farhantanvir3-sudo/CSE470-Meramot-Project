@@ -598,7 +598,7 @@
                                 <img src="{{ $vItem->image_url }}"
                                      alt="{{ $vItem->title }}"
                                      loading="lazy"
-                                     onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
+                                     onerror="this.onerror=null;this.src='{{ e($vItem->fallbackImageUrl()) }}';"
                                      class="w-full h-full object-contain">
                             </div>
 

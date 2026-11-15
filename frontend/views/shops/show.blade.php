@@ -438,7 +438,7 @@
                                         <img src="{{ $spItem->image_url }}"
                                              alt="{{ $spItem->title }}"
                                              loading="lazy"
-                                             onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
+                                             onerror="this.onerror=null;this.src='{{ e($spItem->fallbackImageUrl()) }}';"
                                              class="w-full h-full object-contain group-hover:scale-105 transition">
                                     </div>
                                     <div class="p-3 flex-1 flex flex-col justify-between gap-1.5">

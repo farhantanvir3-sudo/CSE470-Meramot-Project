@@ -20,13 +20,15 @@
         return url('/spare-parts') . ($qs ? ('?' . $qs) : '');
     };
 
+    $selectedSubCategory = $selectedSubCategory ?? '';
+    $selectedSubCategoryLabel = $selectedSubCategoryLabel ?? '';
     $defaultSort = !empty($hasSearchContext) ? 'best_deal' : 'alphabetical';
-    $hasActiveFilters = ($search !== '' || $selectedCategory !== 'All' || $selectedBrand !== 'All' || $deviceType !== 'all' || $selectedGroup !== '' || $wholesaleOnly || $specsOnly || $localOnly || $onSaleOnly || $sort !== $defaultSort);
+    $hasActiveFilters = ($search !== '' || $selectedCategory !== 'All' || $selectedSubCategory !== '' || $selectedBrand !== 'All' || $deviceType !== 'all' || $selectedGroup !== '' || $wholesaleOnly || $specsOnly || $localOnly || $onSaleOnly || $sort !== $defaultSort);
 
     $sortOptions = !empty($hasSearchContext)
         ? [
             'best_deal' => 'Price + Shipping: lowest first (Best Deal)',
-            'lowest_price' => 'Price: lowest first',
+            'lowest_price' => 'Item Price: lowest first',
             'highest_price' => 'Price + Shipping: highest first',
             'distance' => 'Distance: nearest first',
             'fastest_eta' => 'Fastest Delivery',
@@ -36,13 +38,15 @@
         ]
         : [
             'alphabetical' => 'Alphabetical: A–Z',
+            'best_deal' => 'Price + Shipping: lowest first (Best Deal)',
+            'lowest_price' => 'Item Price: lowest first',
+            'highest_price' => 'Price + Shipping: highest first',
             'distance' => 'Distance: nearest first',
             'fastest_eta' => 'Fastest Delivery',
             'popular' => 'Top Sold',
             'wholesale' => 'Best Wholesale',
-            'highest_price' => 'Price + Shipping: highest first',
         ];
-    $activeSortLabel = $sortOptions[$sort] ?? ($hasSearchContext ? 'Price + Shipping: lowest first' : 'Alphabetical: A–Z');
+    $activeSortLabel = $sortOptions[$sort] ?? ($hasSearchContext ? 'Price + Shipping: lowest first (Best Deal)' : 'Alphabetical: A–Z');
 
     $authVendorProfileId = null;
     if (auth()->check() && auth()->user()->role === 'vendor') {
@@ -62,17 +66,16 @@
                     <span>/</span>
                     <span class="text-[var(--accent-dark)] font-bold truncate">{{ $selectedCategory }}</span>
                 @endif
+                @if($selectedSubCategoryLabel !== '')
+                    <span>/</span>
+                    <span class="text-[var(--foreground)] font-semibold truncate">{{ $selectedSubCategoryLabel }}</span>
+                @endif
             </nav>
-            <div class="flex flex-wrap items-center gap-2">
-                <h1 class="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight text-[var(--foreground)] leading-tight">
-                    Spare Parts Marketplace
-                </h1>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-bold bg-emerald-900 text-emerald-50">
-                    {{ number_format($totalListingsCount) }} Live Listings
-                </span>
-            </div>
+            <h1 class="text-lg sm:text-2xl lg:text-3xl font-black tracking-tight text-[var(--foreground)] leading-tight">
+                Spare Parts Marketplace
+            </h1>
             <p class="hidden sm:block text-xs sm:text-sm text-[var(--muted-foreground)] mt-0.5">
-                Compare genuine mobile, laptop &amp; PC parts across verified workshops — ranked by <strong class="font-semibold text-[var(--foreground)]">Item Price + Courier Delivery</strong> to your location, with AliExpress-style wholesale tiers.
+                Compare genuine mobile, laptop &amp; PC spare parts and repair tools — ranked by <strong class="font-semibold text-[var(--foreground)]">Item Price + Courier Delivery</strong> to your location, with bulk wholesale tiers.
             </p>
         </div>
 
@@ -105,10 +108,13 @@
                 @if($selectedCategory !== 'All')
                     <input type="hidden" name="part_category" value="{{ $selectedCategory }}">
                 @endif
+                @if($selectedSubCategory !== '')
+                    <input type="hidden" name="sub_category" value="{{ $selectedSubCategory }}">
+                @endif
                 @if($selectedBrand !== 'All')
                     <input type="hidden" name="brand" value="{{ $selectedBrand }}">
                 @endif
-                @if($sort !== 'best_deal')
+                @if($sort !== $defaultSort)
                     <input type="hidden" name="sort" value="{{ $sort }}">
                 @endif
                 @if($onSaleOnly)
@@ -152,19 +158,19 @@
             </div>
         </div>
 
-        {{-- Row 2 (Mobile): 4-Tab Segmented Switcher (Mobile / PC Parts / Others / Sale!) — tap active tab to clear --}}
+        {{-- Row 2 (Mobile): 4-Tab Segmented Switcher (Mobile / PC Parts / Tools / Sale!) — tap active tab to clear --}}
         <div class="grid grid-cols-4 gap-1 sm:hidden pt-0.5">
-            <a href="{{ $buildFilterUrl(['device_type' => $deviceType === 'mobile' ? null : 'mobile', 'part_category' => null]) }}"
+            <a href="{{ $buildFilterUrl(['device_type' => $deviceType === 'mobile' ? null : 'mobile', 'part_category' => null, 'sub_category' => null]) }}"
                class="text-center py-1.5 px-1 rounded-xl text-[11px] font-extrabold border transition truncate {{ $deviceType === 'mobile' ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)]' }}">
                 📱 Mobile
             </a>
-            <a href="{{ $buildFilterUrl(['device_type' => $deviceType === 'pc' ? null : 'pc', 'part_category' => null]) }}"
+            <a href="{{ $buildFilterUrl(['device_type' => $deviceType === 'pc' ? null : 'pc', 'part_category' => null, 'sub_category' => null]) }}"
                class="text-center py-1.5 px-1 rounded-xl text-[11px] font-extrabold border transition truncate {{ $deviceType === 'pc' ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)]' }}">
                 💻 PC Parts
             </a>
-            <a href="{{ $buildFilterUrl(['device_type' => $deviceType === 'others' ? null : 'others', 'part_category' => null]) }}"
+            <a href="{{ $buildFilterUrl(['device_type' => $deviceType === 'others' ? null : 'others', 'part_category' => null, 'sub_category' => null]) }}"
                class="text-center py-1.5 px-1 rounded-xl text-[11px] font-extrabold border transition truncate {{ $deviceType === 'others' ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)]' }}">
-                🧩 Others
+                🛠️ Tools
             </a>
             <a href="{{ $buildFilterUrl(['on_sale' => $onSaleOnly ? null : '1']) }}"
                class="text-center py-1.5 px-1 rounded-xl text-[11px] font-extrabold border transition truncate {{ $onSaleOnly ? 'bg-red-600 text-white border-red-600 shadow-xs' : 'bg-red-50 text-red-700 border-red-200' }}">
@@ -172,16 +178,16 @@
             </a>
         </div>
 
-        {{-- Desktop Catalog & Deal Toggles Row (No redundant "All Parts" pill; click active segment to show all) --}}
+        {{-- Desktop Catalog & Deal Toggles Row --}}
         <div class="hidden sm:flex items-center gap-2 min-w-0 border-t border-[var(--border)]/60 pt-2">
             <span class="w-20 shrink-0 text-[11px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Catalog:</span>
             <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                 @foreach([
-                    'mobile' => '📱 Mobile & Gadget Parts',
+                    'mobile' => '📱 Mobile Parts',
                     'pc' => '💻 Laptop & PC Parts',
-                    'others' => '🧩 Others',
+                    'others' => '🛠️ Tools & Soldering',
                 ] as $dtKey => $dtLabel)
-                    <a href="{{ $buildFilterUrl(['device_type' => $deviceType === $dtKey ? null : $dtKey, 'part_category' => null]) }}"
+                    <a href="{{ $buildFilterUrl(['device_type' => $deviceType === $dtKey ? null : $dtKey, 'part_category' => null, 'sub_category' => null]) }}"
                        class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold border transition {{ $deviceType === $dtKey ? 'bg-emerald-900 text-white border-emerald-900 shadow-xs' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
                         {{ $dtLabel }}
                     </a>
@@ -220,9 +226,15 @@
                 of <strong class="text-[var(--foreground)]">{{ number_format($totalListingsCount) }}</strong> results
             </span>
             @if($selectedCategory !== 'All')
-                <a href="{{ $buildFilterUrl(['part_category' => null, 'brand' => null]) }}"
+                <a href="{{ $buildFilterUrl(['part_category' => null, 'sub_category' => null, 'brand' => null]) }}"
                    class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-900/10 text-emerald-950 text-[11px] font-bold hover:bg-emerald-900/20">
                     {{ $selectedCategory }} <span class="text-red-600">✕</span>
+                </a>
+            @endif
+            @if($selectedSubCategory !== '' && $selectedSubCategoryLabel !== '')
+                <a href="{{ $buildFilterUrl(['sub_category' => null]) }}"
+                   class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-900/10 text-emerald-950 text-[11px] font-bold hover:bg-emerald-900/20">
+                    {{ $selectedSubCategoryLabel }} <span class="text-red-600">✕</span>
                 </a>
             @endif
             @if($selectedBrand !== 'All')
@@ -244,12 +256,6 @@
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
-            <button type="button"
-                    onclick="if(window.openMeramotLocationModal){window.openMeramotLocationModal();}"
-                    class="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">
-                <span>Shipping to <strong class="text-[var(--foreground)]">{{ $customerLocation['city'] ?? 'Dhaka' }}</strong></span>
-                <span>▾</span>
-            </button>
 
             {{-- eBay-Style Sort Popover Dropdown --}}
             <div class="relative" x-data="{ sortOpen: false }" @click.away="sortOpen = false" @keydown.escape.window="sortOpen = false">
@@ -289,73 +295,182 @@
         </div>
     </div>
 
-    {{-- Main 2-Column Catalog Layout: Left Hierarchical CATEGORIES Tree + Right Product Grid --}}
-    <div x-data="{ mobileCatsOpen: false, openCat: @js($selectedCategory !== 'All' ? $selectedCategory : '') }"
-         class="grid grid-cols-1 lg:grid-cols-[248px_minmax(0,1fr)] gap-4 items-start">
+    @php
+        $directoryTree = $directoryTree ?? [];
+        $defaultOpenRoots = collect($directoryTree)->pluck('key')->values()->all();
+        $defaultOpenBrandsCat = ($selectedBrand !== 'All' && $selectedCategory !== 'All') ? $selectedCategory : '';
+    @endphp
 
-        {{-- Mobile Collapsible Category Trigger --}}
+    {{-- Main 2-Column Catalog Layout: Minimalistic Hierarchical Folder Directory + Product Grid --}}
+    <div x-data="{
+            mobileCatsOpen: false,
+            openRoots: @js($defaultOpenRoots),
+            openCat: @js($selectedCategory !== 'All' ? $selectedCategory : ''),
+            openBrandsCat: @js($defaultOpenBrandsCat),
+            toggleRoot(k) {
+                if (this.openRoots.includes(k)) {
+                    this.openRoots = this.openRoots.filter(x => x !== k);
+                } else {
+                    this.openRoots = [...this.openRoots, k];
+                }
+            }
+         }"
+         class="grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] gap-4 items-start">
+
+        {{-- Mobile Collapsible Folder Directory Trigger --}}
         <div class="lg:hidden">
             <button type="button"
                     @click="mobileCatsOpen = !mobileCatsOpen"
-                    class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[var(--card)] border border-[var(--border)] text-xs font-extrabold text-[var(--foreground)] shadow-xs">
-                <span>📂 Categories &amp; Brands ({{ count($categoryBrandTree) }})</span>
-                <span x-text="mobileCatsOpen ? '▲ Hide' : '▼ Browse'">▼ Browse</span>
+                    class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/90 dark:bg-[var(--card)] border border-[var(--border)] text-xs font-semibold text-[var(--foreground)]">
+                <span class="inline-flex items-center gap-2">
+                    <svg class="w-4 h-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span>Directory ({{ count($directoryTree) }} groups)</span>
+                </span>
+                <span class="text-[11px] text-[var(--muted-foreground)]" x-text="mobileCatsOpen ? 'Hide ▴' : 'Open ▾'">Open ▾</span>
             </button>
         </div>
 
-        {{-- Left Hierarchical CATEGORIES Sidebar (`laptopbd.net` style: Category -> Expandable Brands) --}}
+        {{-- Left Minimalistic Hierarchical Folder Directory --}}
         <aside :class="mobileCatsOpen ? 'block' : 'hidden lg:block'"
-               class="rounded-2xl bg-[var(--card)] border border-[var(--border)] shadow-sm overflow-hidden">
-            <div class="px-4 py-3 bg-emerald-900 text-white flex items-center justify-between">
-                <span class="text-xs font-extrabold uppercase tracking-wider">Categories</span>
-                @if($selectedCategory !== 'All' || $selectedBrand !== 'All')
-                    <a href="{{ $buildFilterUrl(['part_category' => null, 'brand' => null]) }}"
-                       class="text-[10px] font-bold text-amber-200 hover:underline">
-                        Show All
+               aria-label="Parts directory tree"
+               class="rounded-xl bg-white/85 dark:bg-[var(--card)] border border-slate-200/85 dark:border-[var(--border)] overflow-hidden">
+            <div class="px-3 py-2 border-b border-slate-200/75 dark:border-[var(--border)] flex items-center justify-between bg-slate-50/70 dark:bg-transparent">
+                <div class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[var(--muted-foreground)]">
+                    <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    <span>Directory</span>
+                </div>
+                @if($deviceType !== 'all' || $selectedCategory !== 'All' || $selectedSubCategory !== '' || $selectedBrand !== 'All')
+                    <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => null, 'sub_category' => null, 'brand' => null]) }}"
+                       class="text-[11px] font-medium text-emerald-700 hover:underline">
+                        Show all
                     </a>
                 @endif
             </div>
 
-            <div class="divide-y divide-[var(--border)]/60 max-h-[68vh] lg:max-h-[calc(100vh-140px)] overflow-y-auto">
-                @foreach($categoryBrandTree as $catNode)
+            <div class="p-2 text-[12px] space-y-1 max-h-[70vh] lg:max-h-[calc(100vh-130px)] overflow-y-auto">
+                {{-- Top-Level Root Entry --}}
+                <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => null, 'sub_category' => null, 'brand' => null]) }}"
+                   class="flex items-center justify-between gap-2 px-2 py-1 rounded-md transition {{ ($deviceType === 'all' && $selectedCategory === 'All') ? 'bg-emerald-50/90 text-emerald-900 font-semibold dark:bg-emerald-950/40 dark:text-emerald-200' : 'text-[var(--foreground)] hover:bg-slate-100/70 dark:hover:bg-white/5 font-medium' }}">
+                    <span class="inline-flex items-center gap-1.5 min-w-0">
+                        <svg class="w-3.5 h-3.5 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/></svg>
+                        <span class="truncate">All Spare Parts &amp; Tools</span>
+                    </span>
+                </a>
+
+                {{-- Level 1: Root Directories -> Level 2: Category Folders -> Level 3: Sub-Categories & Brands --}}
+                @foreach($directoryTree as $rootNode)
                     @php
-                        $catName = $catNode['name'];
-                        $isCatSelected = strcasecmp($selectedCategory, $catName) === 0;
+                        $rKey = $rootNode['key'];
+                        $isRootActive = ($deviceType === $rKey && $selectedCategory === 'All');
                     @endphp
-                    <div class="px-3 py-2">
-                        <div class="flex items-center justify-between gap-1.5">
-                            <a href="{{ $buildFilterUrl(['part_category' => $catName, 'brand' => null]) }}"
-                               class="flex-1 min-w-0 py-1 text-xs font-bold truncate transition {{ $isCatSelected ? 'text-emerald-900 dark:text-emerald-300 font-extrabold' : 'text-[var(--foreground)] hover:text-emerald-800' }}">
-                                {{ $catName }}
-                                <span class="text-[10px] font-semibold text-[var(--muted-foreground)] ml-0.5">({{ number_format($catNode['total']) }})</span>
+                    <div class="space-y-0.5 pt-0.5">
+                        <div class="flex items-center gap-1 px-1 py-1 rounded-md {{ $isRootActive ? 'bg-emerald-50/90 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200' : 'hover:bg-slate-100/70 dark:hover:bg-white/5 text-[var(--foreground)]' }}">
+                            <button type="button"
+                                    @click="toggleRoot(@js($rKey))"
+                                    aria-label="Toggle {{ $rootNode['label'] }} folder"
+                                    class="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-slate-700 shrink-0 transition-transform"
+                                    :class="openRoots.includes(@js($rKey)) ? 'rotate-90' : ''">
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                            </button>
+                            <a href="{{ $buildFilterUrl(['device_type' => $isRootActive ? null : $rKey, 'part_category' => null, 'sub_category' => null, 'brand' => null]) }}"
+                               class="flex-1 min-w-0 flex items-center justify-between gap-1.5">
+                                <span class="inline-flex items-center gap-1.5 min-w-0">
+                                    <svg class="w-3.5 h-3.5 shrink-0 {{ $isRootActive ? 'text-emerald-700' : 'text-slate-500' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                    <span class="truncate font-semibold">{{ $rootNode['label'] }}</span>
+                                </span>
+                                <span class="text-[10px] text-slate-400 tabular-nums shrink-0">{{ number_format($rootNode['total']) }}</span>
                             </a>
-                            @if(!empty($catNode['brands']))
-                                <button type="button"
-                                        @click="openCat = (openCat === @js($catName) ? '' : @js($catName))"
-                                        aria-label="Toggle brands in {{ $catName }}"
-                                        class="w-6 h-6 rounded-md flex items-center justify-center text-[11px] text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] hover:text-[var(--foreground)] transition shrink-0">
-                                    <span x-text="openCat === @js($catName) ? '⌃' : '⌄'">⌄</span>
-                                </button>
-                            @endif
                         </div>
 
-                        @if(!empty($catNode['brands']))
-                            <div x-show="openCat === @js($catName)"
-                                 x-cloak
-                                 class="mt-1.5 pl-3 border-l-2 border-emerald-900/20 space-y-1 pb-1">
-                                @foreach($catNode['brands'] as $brandNode)
-                                    @php
-                                        $bName = $brandNode['name'];
-                                        $isBrandSelected = $isCatSelected && strcasecmp($selectedBrand, $bName) === 0;
-                                    @endphp
-                                    <a href="{{ $buildFilterUrl(['part_category' => $catName, 'brand' => $bName]) }}"
-                                       class="flex items-center justify-between py-0.5 text-[11px] rounded px-1.5 transition {{ $isBrandSelected ? 'bg-emerald-900 text-white font-bold' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
-                                        <span class="truncate">{{ $bName }}</span>
-                                        <span class="text-[10px] opacity-75 shrink-0">{{ number_format($brandNode['count']) }}</span>
-                                    </a>
-                                @endforeach
-                            </div>
-                        @endif
+                        {{-- Category Folders under Root --}}
+                        <div x-show="openRoots.includes(@js($rKey))"
+                             x-cloak
+                             class="ml-3 pl-2.5 border-l border-slate-200/85 dark:border-[var(--border)] space-y-0.5">
+                            @foreach($rootNode['categories'] as $catNode)
+                                @php
+                                    $catName = $catNode['name'];
+                                    $catLabel = $catNode['label'] ?? $catName;
+                                    $isCatSelected = strcasecmp($selectedCategory, $catName) === 0;
+                                    $hasChildren = !empty($catNode['sub_categories']) || !empty($catNode['brands']);
+                                @endphp
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center gap-1 px-1 py-0.5 rounded-md transition {{ $isCatSelected ? 'bg-emerald-50/90 text-emerald-950 font-semibold dark:bg-emerald-950/40 dark:text-emerald-200' : 'text-slate-700 dark:text-[var(--foreground)] hover:bg-slate-100/70 dark:hover:bg-white/5' }}">
+                                        @if($hasChildren)
+                                            <button type="button"
+                                                    @click="openCat = (openCat === @js($catName) ? '' : @js($catName))"
+                                                    aria-label="Toggle subfolders in {{ $catLabel }}"
+                                                    class="w-4 h-4 flex items-center justify-center text-slate-400 hover:text-slate-700 shrink-0 transition-transform"
+                                                    :class="openCat === @js($catName) ? 'rotate-90' : ''">
+                                                <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg>
+                                            </button>
+                                        @else
+                                            <span class="w-4 shrink-0"></span>
+                                        @endif
+
+                                        <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => $isCatSelected && $selectedSubCategory === '' && $selectedBrand === 'All' ? null : $catName, 'sub_category' => null, 'brand' => null]) }}"
+                                           class="flex-1 min-w-0 flex items-center justify-between gap-1.5 py-0.5">
+                                            <span class="inline-flex items-center gap-1.5 min-w-0">
+                                                <svg class="w-3.5 h-3.5 shrink-0 {{ $isCatSelected ? 'text-emerald-700' : 'text-slate-400' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                                <span class="truncate {{ $isCatSelected ? 'font-semibold' : 'font-medium' }}">{{ $catLabel }}</span>
+                                            </span>
+                                            <span class="text-[10px] text-slate-400 tabular-nums shrink-0">{{ number_format($catNode['total']) }}</span>
+                                        </a>
+                                    </div>
+
+                                    {{-- Level 3: Sub-Categories + Collapsible Brands Sub-Folder --}}
+                                    @if($hasChildren)
+                                        <div x-show="openCat === @js($catName)"
+                                             x-cloak
+                                             class="ml-3 pl-2.5 border-l border-slate-200/80 dark:border-[var(--border)] space-y-0.5 py-0.5">
+                                            @foreach($catNode['sub_categories'] as $subNode)
+                                                @php
+                                                    $subKey = $subNode['key'];
+                                                    $isSubSelected = $isCatSelected && ($selectedSubCategory === $subKey);
+                                                @endphp
+                                                <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => $catName, 'sub_category' => $isSubSelected ? null : $subKey, 'brand' => null]) }}"
+                                                   class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] transition {{ $isSubSelected ? 'bg-emerald-900/10 text-emerald-950 font-semibold dark:bg-emerald-900/40 dark:text-emerald-200' : 'text-slate-600 dark:text-[var(--muted-foreground)] hover:text-slate-950 hover:bg-slate-100/70 dark:hover:bg-white/5' }}">
+                                                    <span class="inline-flex items-center gap-1.5 min-w-0">
+                                                        <span class="text-slate-300 font-mono text-[10px] select-none shrink-0">└</span>
+                                                        <span class="truncate">{{ $subNode['label'] }}</span>
+                                                    </span>
+                                                    <span class="text-[10px] text-slate-400 tabular-nums shrink-0">{{ number_format($subNode['count']) }}</span>
+                                                </a>
+                                            @endforeach
+
+                                            @if(!empty($catNode['brands']))
+                                                <div class="pt-0.5">
+                                                    <button type="button"
+                                                            @click="openBrandsCat = (openBrandsCat === @js($catName) ? '' : @js($catName))"
+                                                            class="w-full flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] text-slate-500 hover:text-slate-900 hover:bg-slate-100/70 transition">
+                                                        <span class="inline-flex items-center gap-1.5 min-w-0">
+                                                            <svg class="w-3 h-3 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                                            <span class="font-medium truncate">Brands ({{ count($catNode['brands']) }})</span>
+                                                        </span>
+                                                        <span class="text-[10px] text-slate-400" x-text="openBrandsCat === @js($catName) ? '▾' : '▸'">▸</span>
+                                                    </button>
+
+                                                    <div x-show="openBrandsCat === @js($catName)"
+                                                         x-cloak
+                                                         class="ml-2.5 pl-2 border-l border-slate-200/75 dark:border-[var(--border)] space-y-0.5 mt-0.5">
+                                                        @foreach($catNode['brands'] as $brandNode)
+                                                            @php
+                                                                $bName = $brandNode['name'];
+                                                                $isBrandSelected = $isCatSelected && strcasecmp($selectedBrand, $bName) === 0;
+                                                            @endphp
+                                                            <a href="{{ $buildFilterUrl(['device_type' => null, 'part_category' => $catName, 'sub_category' => null, 'brand' => $isBrandSelected ? null : $bName]) }}"
+                                                               class="flex items-center justify-between gap-1.5 px-1.5 py-0.5 rounded text-[11px] transition {{ $isBrandSelected ? 'bg-emerald-900 text-white font-semibold' : 'text-slate-500 hover:text-slate-950 hover:bg-slate-100/70 dark:text-[var(--muted-foreground)]' }}">
+                                                                <span class="truncate">{{ $bName }}</span>
+                                                                <span class="text-[10px] {{ $isBrandSelected ? 'text-emerald-100' : 'text-slate-400' }} tabular-nums shrink-0">{{ number_format($brandNode['count']) }}</span>
+                                                            </a>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 @endforeach
             </div>
@@ -412,7 +527,7 @@
                         <img src="{{ $item->image_url }}"
                              alt="{{ $item->title }}"
                              loading="lazy"
-                             onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
+                             onerror="this.onerror=null;this.src='{{ e($item->fallbackImageUrl()) }}';"
                              class="w-full h-full object-contain group-hover:scale-105 transition duration-300">
                     </div>
 
@@ -464,7 +579,7 @@
                             @if($shop)
                                 <div class="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] text-[var(--muted-foreground)] pt-0.5 min-w-0">
                                     <span class="truncate">{{ $shop->name }}</span>
-                                    <span class="shrink-0">★ {{ number_format((float) ($shop->rating ?: 4.8), 1) }}</span>
+                                    <span class="shrink-0">★ {{ ((float) ($shop->rating ?? 0)) > 0 ? number_format((float) $shop->rating, 1) : '4.8' }}</span>
                                 </div>
                             @endif
                         </div>
