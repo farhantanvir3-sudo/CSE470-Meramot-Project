@@ -3,12 +3,12 @@
 @section('title', 'Explore Verified Repair Shops Across Bangladesh | Meramot')
 
 @section('content')
-<div class="mx-auto max-w-7xl px-4 py-6 md:px-6">
+<div class="mx-auto max-w-7xl px-3 py-3 sm:px-4 sm:py-6 md:px-6">
 
     <!-- Breadcrumb & Page Header -->
-    <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
+    <div class="mb-3 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4">
+        <div class="min-w-0">
+            <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[var(--muted-foreground)] mb-1 truncate">
                 <a href="/" class="hover:underline">Home</a>
                 <span>/</span>
                 <span class="text-[var(--foreground)] font-semibold">Repair Shops</span>
@@ -25,10 +25,10 @@
                     <span class="italic">"{{ request('q') }}"</span>
                 @endif
             </div>
-            <h1 class="text-2xl font-black text-[var(--foreground)]">
+            <h1 class="text-lg sm:text-2xl font-black text-[var(--foreground)] leading-tight">
                 Explore Verified Repair Shops
             </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-2">
+            <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R6 • Lead: Shanid Sajjatuz Islam [23201465]
                 </span>
@@ -37,8 +37,8 @@
         </div>
 
         <!-- Quick Action: Make Request Button -->
-        <div class="flex items-center gap-3">
-            <a href="/requests/create" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
+        <div class="flex items-center gap-3 shrink-0">
+            <a href="/requests/create" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-full bg-[var(--accent-dark)] px-3.5 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-xs font-bold text-white shadow hover:opacity-90 transition whitespace-nowrap">
                 <i class="fa-solid fa-plus"></i>
                 <span>Post Device Repair Request</span>
             </a>
@@ -46,7 +46,7 @@
     </div>
 
     <!-- Main Layout: 2 Columns on Desktop (Matching SidebarFilters.tsx & shops-results-client.tsx) -->
-    <div class="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-6 items-start">
+    <div class="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-4 sm:gap-6 items-start">
 
         <!-- ── Left Column: Sticky Sidebar Filters (Exact match to SidebarFilters.tsx) ── -->
         <aside class="space-y-4 lg:sticky lg:top-24 hidden lg:block shrink-0">
@@ -189,65 +189,79 @@
         </aside>
 
         <!-- ── Right Column: Area Pills, Sort Tabs & Rich Shop Cards ── -->
-        <main class="min-w-0 max-w-full space-y-4">
+        <main class="min-w-0 max-w-full space-y-3 sm:space-y-4">
             
             <!-- City / Area Selector Pills & Quick Filters Bar -->
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm space-y-3 min-w-0 max-w-full">
-                <!-- Row 1: Nationwide Bangladesh City / District Pills -->
-                <div class="flex flex-wrap items-center gap-1.5 text-xs">
-                    <span class="font-bold text-[var(--foreground)] text-[11px] uppercase tracking-wider mr-1 shrink-0">
-                        <i class="fa-solid fa-map text-[var(--accent-dark)] mr-1"></i> District:
+            <div x-data class="rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-2.5 sm:p-4 shadow-sm space-y-2 sm:space-y-2.5 min-w-0 max-w-full">
+                <!-- Row 1: Nationwide Bangladesh City / District Slider -->
+                <div class="flex items-center gap-1.5 text-xs min-w-0">
+                    <span class="font-bold text-[var(--foreground)] text-[10px] sm:text-[11px] uppercase tracking-wider shrink-0">
+                        <i class="fa-solid fa-map text-[var(--accent-dark)] mr-1"></i>District:
                     </span>
                     @php
                         $activeCity = request('city', 'All');
                         $cityList = $cities ?? ['All', 'Dhaka', 'Chattogram', 'Gazipur', 'Sylhet', 'Mymensingh', 'Narayanganj', 'Bogura', 'Rajshahi', 'Khulna', 'Cumilla', 'Rangpur', 'Barishal'];
                     @endphp
-                    @foreach($cityList as $cityItem)
-                        @php
-                            $cityParams = array_merge(request()->query(), [
-                                'city' => $cityItem === 'All' ? null : $cityItem,
-                                'area' => null,
-                                'lat' => null,
-                                'lng' => null,
-                                'page' => 1,
-                            ]);
-                        @endphp
-                        <a href="/shops?{{ http_build_query(array_filter($cityParams)) }}"
-                           class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition {{ ($activeCity === $cityItem || ($cityItem === 'All' && empty(request('city')))) ? 'bg-[var(--accent-dark)] text-white shadow-sm' : 'bg-[var(--mint-50)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
-                            {{ $cityItem }}
-                        </a>
-                    @endforeach
+                    <div
+                        class="relative flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5"
+                        x-init="const el = $el.querySelector('[data-active-pill=true]'); if (el && (el.offsetLeft + el.offsetWidth > $el.clientWidth)) { $el.scrollLeft = Math.max(0, el.offsetLeft - ($el.clientWidth - el.offsetWidth) / 2); }"
+                    >
+                        @foreach($cityList as $cityItem)
+                            @php
+                                $isCityActive = ($activeCity === $cityItem || ($cityItem === 'All' && empty(request('city'))));
+                                $cityParams = array_merge(request()->query(), [
+                                    'city' => $cityItem === 'All' ? null : $cityItem,
+                                    'area' => null,
+                                    'lat' => null,
+                                    'lng' => null,
+                                    'page' => 1,
+                                ]);
+                            @endphp
+                            <a href="/shops?{{ http_build_query(array_filter($cityParams)) }}"
+                               @if($isCityActive) data-active-pill="true" @endif
+                               class="shrink-0 whitespace-nowrap px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition {{ $isCityActive ? 'bg-[var(--accent-dark)] text-white font-bold shadow-sm' : 'bg-[var(--mint-50)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
+                                {{ $cityItem }}
+                            </a>
+                        @endforeach
+                    </div>
                 </div>
 
-                <!-- Row 2: Area / Hub Pills -->
-                <div class="border-t border-[var(--border)]/60 pt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-                    <span class="font-bold text-[var(--foreground)] text-[11px] uppercase tracking-wider mr-1 shrink-0">
-                        <i class="fa-solid fa-location-dot text-[var(--accent-dark)] mr-1"></i> Area:
+                <!-- Row 2: Area / Hub Slider -->
+                <div class="border-t border-[var(--border)]/60 pt-2 flex items-center gap-1.5 text-[11px] min-w-0">
+                    <span class="font-bold text-[var(--foreground)] text-[10px] sm:text-[11px] uppercase tracking-wider shrink-0">
+                        <i class="fa-solid fa-location-dot text-[var(--accent-dark)] mr-1"></i>Area:
                     </span>
                     @php
                         $activeArea = request('area', 'All');
                     @endphp
-                    @foreach($areas as $area)
-                        @php
-                            $areaParams = array_merge(request()->query(), [
-                                'area' => $area === 'All' ? null : $area,
-                                'lat' => null,
-                                'lng' => null,
-                                'page' => 1,
-                            ]);
-                        @endphp
-                        <a href="/shops?{{ http_build_query(array_filter($areaParams)) }}" 
-                           class="shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition {{ ($activeArea === $area || ($area === 'All' && empty(request('area')))) ? 'bg-[var(--accent-dark)] text-white shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
-                            {{ $area }}
-                        </a>
-                    @endforeach
+                    <div
+                        class="relative flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5"
+                        x-init="const el = $el.querySelector('[data-active-pill=true]'); if (el && (el.offsetLeft + el.offsetWidth > $el.clientWidth)) { $el.scrollLeft = Math.max(0, el.offsetLeft - ($el.clientWidth - el.offsetWidth) / 2); }"
+                    >
+                        @foreach($areas as $area)
+                            @php
+                                $isAreaActive = ($activeArea === $area || ($area === 'All' && empty(request('area'))));
+                                $areaParams = array_merge(request()->query(), [
+                                    'area' => $area === 'All' ? null : $area,
+                                    'lat' => null,
+                                    'lng' => null,
+                                    'page' => 1,
+                                ]);
+                            @endphp
+                            <a href="/shops?{{ http_build_query(array_filter($areaParams)) }}"
+                               @if($isAreaActive) data-active-pill="true" @endif
+                               class="shrink-0 whitespace-nowrap px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition {{ $isAreaActive ? 'bg-[var(--accent-dark)] text-white font-bold shadow-sm' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-200)]' }}">
+                                {{ $area }}
+                            </a>
+                        @endforeach
+                    </div>
                 </div>
 
-                <!-- Row 3: Sort Tabs & Promo / Branch Filters -->
-                <div class="border-t border-[var(--border)] pt-3 flex flex-wrap items-center justify-between gap-3 text-xs min-w-0">
-                    <!-- Quick Sort Tabs -->
-                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 max-w-full">
-                        <span class="font-bold text-[var(--foreground)] text-[11px] uppercase mr-1 shrink-0">Sort:</span>
+                <!-- Row 3: Sort Tabs & Quick Filter Sliders -->
+                <div class="border-t border-[var(--border)]/60 pt-2 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 xl:gap-3 text-xs min-w-0">
+                    <!-- Quick Sort Slider -->
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="font-bold text-[var(--foreground)] text-[10px] sm:text-[11px] uppercase tracking-wider shrink-0">Sort:</span>
                         @php
                             $sortTabs = [
                                 ['label' => 'Top Rated', 'value' => 'topRated', 'icon' => 'fa-star'],
@@ -256,21 +270,26 @@
                                 ['label' => 'Best Match', 'value' => 'relevance', 'icon' => 'fa-bullseye'],
                             ];
                         @endphp
-                        @foreach($sortTabs as $st)
-                            @php
-                                $sortParams = array_merge(request()->query(), ['sort' => $st['value'], 'page' => 1]);
-                            @endphp
-                            <a href="/shops?{{ http_build_query($sortParams) }}"
-                               data-sort-link="{{ $st['value'] }}"
-                               class="shrink-0 px-3 py-1 rounded-xl transition flex items-center gap-1.5 {{ $currSort === $st['value'] ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-50)]' }}">
-                                <i class="fa-solid {{ $st['icon'] }} text-[10px]"></i>
-                                <span>{{ $st['label'] }}</span>
-                            </a>
-                        @endforeach
+                        <div class="relative flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                            @foreach($sortTabs as $st)
+                                @php
+                                    $sortParams = array_merge(request()->query(), ['sort' => $st['value'], 'page' => 1]);
+                                @endphp
+                                <a href="/shops?{{ http_build_query($sortParams) }}"
+                                   data-sort-link="{{ $st['value'] }}"
+                                   class="shrink-0 whitespace-nowrap px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs transition flex items-center gap-1.5 {{ $currSort === $st['value'] ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] hover:bg-[var(--mint-50)]' }}">
+                                    <i class="fa-solid {{ $st['icon'] }} text-[10px]"></i>
+                                    <span>{{ $st['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
                     </div>
 
-                    <!-- Quick Promo & Multi-Branch Toggles -->
-                    <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <!-- Quick Promo, Multi-Branch & Map Slider -->
+                    <div class="flex items-center gap-1.5 min-w-0 border-t border-[var(--border)]/60 pt-2 xl:border-t-0 xl:pt-0">
+                        <span class="xl:hidden font-bold text-[var(--foreground)] text-[10px] uppercase tracking-wider shrink-0">
+                            <i class="fa-solid fa-sliders text-[var(--accent-dark)] mr-1"></i>Filter:
+                        </span>
                         @php
                             $hasBranched = request()->boolean('branched');
                             $branchedParams = array_merge(request()->query(), ['branched' => $hasBranched ? null : 'true', 'page' => 1]);
@@ -284,54 +303,55 @@
                             $hasDeals = request()->boolean('deals') || request()->boolean('has_deals');
                             $dealsParams = array_merge(request()->query(), ['deals' => $hasDeals ? null : 'true', 'has_deals' => null, 'page' => 1]);
                         @endphp
+                        <div class="relative flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                            <button
+                                type="button"
+                                @click="$dispatch('meramot-open-location-modal')"
+                                class="lg:hidden shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold transition flex items-center gap-1.5 text-[11px] hover:opacity-90"
+                            >
+                                <i class="fa-solid fa-map-location-dot text-[10px]"></i>
+                                <span>Pin on Map</span>
+                            </button>
 
-                        <a href="/shops?{{ http_build_query(array_filter($branchedParams)) }}"
-                           class="px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 {{ $hasBranched ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
-                            <i class="fa-solid fa-code-branch text-[10px] {{ $hasBranched ? 'text-emerald-200' : 'text-[var(--accent-dark)]' }}"></i>
-                            <span>Multi-Branch</span>
-                        </a>
+                            <button
+                                type="button"
+                                data-detect-location
+                                class="lg:hidden shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold transition flex items-center gap-1.5 text-[11px] hover:bg-[var(--mint-200)]"
+                            >
+                                <i class="fa-solid fa-location-crosshairs text-[10px]"></i>
+                                <span>Near Me</span>
+                            </button>
 
-                        <a href="/shops?{{ http_build_query(array_filter($voucherParams)) }}" 
-                           class="px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 {{ $hasVoucher ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
-                            <i class="fa-solid fa-ticket text-[10px] text-amber-600"></i>
-                            <span>Vouchers</span>
-                        </a>
-
-                        <a href="/shops?{{ http_build_query(array_filter($delParams)) }}" 
-                           class="px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 {{ $hasFreeDel ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
-                            <i class="fa-solid fa-truck-fast text-[10px] text-emerald-700"></i>
-                            <span>Free Delivery</span>
-                        </a>
-
-                        <a href="/shops?{{ http_build_query(array_filter($dealsParams)) }}" 
-                           class="px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 {{ $hasDeals ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
-                            <i class="fa-solid fa-fire text-[10px] text-rose-600"></i>
-                            <span>Deals</span>
-                        </a>
-
-                        <button
-                            type="button"
-                            @click="$dispatch('meramot-open-location-modal')"
-                            class="lg:hidden px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold transition flex items-center gap-1.5 hover:opacity-90"
-                        >
-                            <i class="fa-solid fa-map-location-dot text-[10px]"></i>
-                            <span>Pin on Map</span>
-                        </button>
-
-                        <button
-                            type="button"
-                            data-detect-location
-                            class="lg:hidden px-2.5 py-1 rounded-xl border border-[var(--border)] bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold transition flex items-center gap-1.5 hover:bg-[var(--mint-200)]"
-                        >
-                            <i class="fa-solid fa-location-crosshairs text-[10px]"></i>
-                            <span>Near Me</span>
-                        </button>
-
-                        @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm']))
-                            <a href="/shops" class="text-[11px] text-rose-700 font-bold hover:underline ml-1">
-                                Reset
+                            <a href="/shops?{{ http_build_query(array_filter($branchedParams)) }}"
+                               class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasBranched ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                                <i class="fa-solid fa-code-branch text-[10px] {{ $hasBranched ? 'text-emerald-200' : 'text-[var(--accent-dark)]' }}"></i>
+                                <span>Multi-Branch</span>
                             </a>
-                        @endif
+
+                            <a href="/shops?{{ http_build_query(array_filter($voucherParams)) }}"
+                               class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasVoucher ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                                <i class="fa-solid fa-ticket text-[10px] text-amber-600"></i>
+                                <span>Vouchers</span>
+                            </a>
+
+                            <a href="/shops?{{ http_build_query(array_filter($delParams)) }}"
+                               class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasFreeDel ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                                <i class="fa-solid fa-truck-fast text-[10px] text-emerald-700"></i>
+                                <span>Free Delivery</span>
+                            </a>
+
+                            <a href="/shops?{{ http_build_query(array_filter($dealsParams)) }}"
+                               class="shrink-0 whitespace-nowrap px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasDeals ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
+                                <i class="fa-solid fa-fire text-[10px] text-rose-600"></i>
+                                <span>Deals</span>
+                            </a>
+
+                            @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm']))
+                                <a href="/shops" class="shrink-0 whitespace-nowrap text-[11px] text-rose-700 font-bold hover:underline px-1.5">
+                                    Reset
+                                </a>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
