@@ -1162,14 +1162,14 @@
                             >
                                 <button
                                     type="button"
-                                    @click="currentLang = 'en'; localStorage.setItem('meramot_lang', 'en'); langMenuOpen = false; showToast({ message: 'Language set to English.', type: 'success' })"
+                                    @click="currentLang = 'en'; localStorage.setItem('meramot_lang', 'en'); langMenuOpen = false; window.MeramotI18n && window.MeramotI18n.apply('en'); showToast({ message: 'Language set to English.', type: 'success' })"
                                     class="block w-full rounded-xl px-4 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
                                 >
                                     English
                                 </button>
                                 <button
                                     type="button"
-                                    @click="currentLang = 'bn'; localStorage.setItem('meramot_lang', 'bn'); langMenuOpen = false; showToast({ message: 'Bangla interface selected. Expanded localized copy is rolling out progressively.', type: 'success' })"
+                                    @click="currentLang = 'bn'; localStorage.setItem('meramot_lang', 'bn'); langMenuOpen = false; window.MeramotI18n && window.MeramotI18n.apply('bn'); showToast({ message: 'Bangla interface selected.', type: 'success' })"
                                     class="block w-full rounded-xl px-4 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
                                 >
                                     বাংলা
@@ -3224,5 +3224,34 @@
             };
         })();
     </script>
+<script>
+window.MeramotI18n = (function () {
+  var bn = {
+    'offer_available': 'অফার উপলব্ধ',
+    'featured_shops': 'সেরা শপসমূহ',
+    'starting_from': 'শুরু',
+    'voucher': 'ভাউচার',
+    'free_delivery': 'ফ্রি ডেলিভারি',
+    'deal': 'ডিল',
+    'free_short': 'ফ্রি',
+    'explore_more_featured': 'আরও সেরা শপ দেখুন',
+    'popular_categories': 'জনপ্রিয় সার্ভিস ক্যাটাগরি',
+    'most_requested_repairs': 'সর্বাধিক চাওয়া ডিভাইস মেরামত',
+    'recently_viewed': 'সম্প্রতি দেখা',
+    'resume_searches': 'আপনার সাম্প্রতিক মেরামত সার্চ পুনরায় শুরু করুন'
+  };
+  function apply(lang) {
+    lang = lang || (localStorage.getItem('meramot_lang') || 'en');
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      if (!el.dataset.i18nOriginal) el.dataset.i18nOriginal = el.textContent;
+      var key = el.getAttribute('data-i18n');
+      el.textContent = (lang === 'bn' && bn[key]) ? bn[key] : el.dataset.i18nOriginal;
+    });
+    document.documentElement.lang = (lang === 'bn') ? 'bn' : 'en';
+  }
+  return { apply: apply };
+})();
+document.addEventListener('DOMContentLoaded', function () { window.MeramotI18n.apply(); });
+</script>
 </body>
 </html>

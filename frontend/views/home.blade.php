@@ -11,7 +11,7 @@
             @foreach($offerCards as $offer)
                 <article class="flex flex-col rounded-[1.4rem] bg-[var(--mint-100)] p-4 shadow-sm md:min-h-[260px] md:justify-center md:rounded-[2rem] md:p-10 lg:min-h-[280px]">
                     <div class="flex flex-1 flex-col">
-                        <p class="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)] md:mb-2 md:text-sm md:tracking-[0.2em] lg:text-base">
+                        <p class="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--foreground)] md:mb-2 md:text-sm md:tracking-[0.2em] lg:text-base" data-i18n="offer_available">
                             Offer available
                         </p>
 
@@ -35,7 +35,7 @@
 
         <!-- ── 2. Featured Shops (Exact match to FeaturedShops.tsx from commit 8e44218) ── -->
         <section class="mt-10">
-            <h2 class="mb-3 text-lg font-bold text-[var(--foreground)] md:mb-4 md:text-2xl">
+            <h2 class="mb-3 text-lg font-bold text-[var(--foreground)] md:mb-4 md:text-2xl" data-i18n="featured_shops">
                 Featured shops
             </h2>
 
@@ -82,7 +82,7 @@
                                             </div>
 
                                             <div class="flex shrink-0 flex-col items-end pl-2 text-right">
-                                                <span class="font-semibold text-[var(--muted-foreground)] uppercase tracking-wider text-[10px] md:text-[11px]">
+                                                <span class="font-semibold text-[var(--muted-foreground)] uppercase tracking-wider text-[10px] md:text-[11px]" data-i18n="starting_from">
                                                     {{ $shop->inspection_fee !== null ? 'Starting from' : 'From' }}
                                                 </span>
                                                 <span class="font-extrabold tracking-tight text-[var(--accent-dark)] leading-tight text-base md:text-xl">
@@ -97,17 +97,17 @@
                             <div class="mt-3 flex flex-wrap gap-2 md:mt-5">
                                 @if($shop->has_voucher)
                                     <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[var(--accent-dark)] text-xs md:text-sm">
-                                        Voucher
+                                        <span data-i18n="voucher">Voucher</span>
                                     </span>
                                 @endif
                                 @if($shop->free_delivery)
                                     <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[var(--accent-dark)] text-xs md:text-sm">
-                                        Free delivery
+                                        <span data-i18n="free_delivery">Free delivery</span>
                                     </span>
                                 @endif
                                 @if($shop->has_deals)
                                     <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[var(--accent-dark)] text-xs md:text-sm">
-                                        Deal
+                                        <span data-i18n="deal">Deal</span>
                                     </span>
                                 @endif
                             </div>
@@ -156,7 +156,7 @@
                         <!-- Bottom: Price & Badges -->
                         <div class="mt-auto pt-2 flex items-end justify-between gap-1">
                             <div class="flex flex-col min-w-0">
-                                <span class="text-[9px] font-bold uppercase text-[var(--muted-foreground)] leading-none truncate">
+                                <span class="text-[9px] font-bold uppercase text-[var(--muted-foreground)] leading-none truncate" data-i18n="starting_from">
                                     Starting from
                                 </span>
                                 <div class="text-sm font-black tracking-tight text-[var(--accent-dark)] leading-none mt-1.5 truncate">
@@ -166,12 +166,12 @@
                             
                             <div class="flex flex-col items-end gap-1 shrink-0">
                                 @if($shop->has_voucher)
-                                    <span class="rounded bg-[var(--accent-dark)] px-1.5 py-[3px] text-[7px] font-bold uppercase tracking-widest text-[var(--accent-foreground)] leading-none">
+                                    <span class="rounded bg-[var(--accent-dark)] px-1.5 py-[3px] text-[7px] font-bold uppercase tracking-widest text-[var(--accent-foreground)] leading-none" data-i18n="voucher">
                                         VOUCHER
                                     </span>
                                 @endif
                                 @if($shop->free_delivery)
-                                    <span class="rounded bg-[var(--mint-100)] px-1.5 py-[3px] text-[7px] font-bold uppercase tracking-widest text-[var(--accent-dark)] leading-none">
+                                    <span class="rounded bg-[var(--mint-100)] px-1.5 py-[3px] text-[7px] font-bold uppercase tracking-widest text-[var(--accent-dark)] leading-none" data-i18n="free_short">
                                         FREE
                                     </span>
                                 @endif
@@ -184,7 +184,7 @@
             <!-- Explore More Button -->
             <div class="mt-6 flex justify-center md:mt-8">
                 <a href="/shops" class="inline-flex items-center gap-2 rounded-full border-2 border-[var(--accent-dark)] bg-transparent px-6 py-2.5 text-sm font-bold text-[var(--accent-dark)] transition-colors hover:bg-[var(--mint-50)] md:px-8 md:py-3 md:text-base">
-                    <span>Explore More Featured Shops</span>
+                    <span data-i18n="explore_more_featured">Explore More Featured Shops</span>
                     <svg class="h-4 w-4 md:h-5 md:w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
@@ -196,10 +196,10 @@
         <section class="space-y-4">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                    Popular Service Categories
+                    <span data-i18n="popular_categories">Popular Service Categories</span>
                 </p>
                 <h2 class="text-lg font-bold text-[var(--foreground)] md:text-2xl lg:text-3xl">
-                    Most requested device repairs
+                    <span data-i18n="most_requested_repairs">Most requested device repairs</span>
                 </h2>
             </div>
 
@@ -226,10 +226,10 @@
         <section class="space-y-4">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
-                    Recently viewed
+                    <span data-i18n="recently_viewed">Recently viewed</span>
                 </p>
                 <h2 class="text-lg font-bold text-[var(--foreground)] md:text-2xl lg:text-3xl">
-                    Resume your recent repair searches
+                    <span data-i18n="resume_searches">Resume your recent repair searches</span>
                 </h2>
             </div>
 
