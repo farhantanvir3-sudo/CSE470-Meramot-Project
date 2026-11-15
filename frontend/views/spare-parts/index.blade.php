@@ -355,22 +355,24 @@
                     $detailUrl = route('spare-parts.show', ['slug' => $item->slug]);
                 @endphp
 
-                <article class="group rounded-xl sm:rounded-2xl bg-[var(--card)] border {{ $item->is_best_deal ? 'border-emerald-700 ring-1 ring-emerald-700/30' : 'border-[var(--border)]' }} hover:border-emerald-700 hover:shadow-md transition flex flex-col overflow-hidden min-w-0">
-                    {{-- Product Image with Circular Red "Sale!" Banner on Top-Left Corner --}}
-                    <a href="{{ $detailUrl }}" data-no-soft-nav="true" class="relative block aspect-square sm:aspect-[4/3] bg-white border-b border-emerald-900/10 overflow-hidden p-2 sm:p-3">
+                <a href="{{ $detailUrl }}"
+                   data-no-soft-nav="true"
+                   class="group rounded-xl sm:rounded-2xl bg-white/95 dark:bg-[var(--card)] border {{ ($item->is_best_deal && $item->seller_count > 1) ? 'border-emerald-700/50' : 'border-[var(--border)]' }} hover:border-emerald-700 hover:shadow-md transition flex flex-col overflow-hidden min-w-0">
+                    {{-- Product Image with Circular Red "Sale!" Banner on Top-Left Corner & Auto Best Deal Tag --}}
+                    <div class="relative aspect-square bg-white border-b border-slate-100 dark:border-[var(--border)]/40 overflow-hidden p-2.5 sm:p-3.5">
                         @if($offerActive)
-                            <span class="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 z-10 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-red-600 text-white text-[10px] sm:text-[11px] font-extrabold tracking-tight flex items-center justify-center shadow-md select-none"
+                            <span class="absolute top-2 left-2 sm:top-2.5 sm:left-2.5 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-red-600 text-white text-[10px] sm:text-[11px] font-extrabold tracking-tight flex items-center justify-center shadow-sm select-none"
                                   title="{{ $item->offerWindowLabel() }}">
                                 Sale!
                             </span>
                         @endif
 
                         @if($item->is_best_deal && $item->seller_count > 1)
-                            <span class="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 z-10 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-emerald-900 text-white text-[9px] sm:text-[10px] font-extrabold shadow-sm">
+                            <span class="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 z-10 px-2 py-0.5 rounded-full bg-emerald-800 text-white text-[9px] sm:text-[10px] font-bold tracking-tight shadow-xs">
                                 ★ Best Deal
                             </span>
                         @elseif($isOwnVendorListing)
-                            <span class="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 z-10 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-amber-600 text-white text-[9px] sm:text-[10px] font-extrabold shadow-sm">
+                            <span class="absolute top-2 right-2 sm:top-2.5 sm:right-2.5 z-10 px-2 py-0.5 rounded-full bg-amber-600 text-white text-[9px] sm:text-[10px] font-bold shadow-xs">
                                 Yours
                             </span>
                         @endif
@@ -380,113 +382,62 @@
                              loading="lazy"
                              onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
                              class="w-full h-full object-contain group-hover:scale-105 transition duration-300">
-                    </a>
+                    </div>
 
+                    {{-- Minimalistic Card Body: Title + Clean Unboxed Price Breakdown + Quiet Seller Line --}}
                     <div class="p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between gap-2 min-w-0">
-                        <div class="space-y-1 sm:space-y-1.5 min-w-0">
-                            {{-- Category & Brand Meta --}}
-                            <div class="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] min-w-0">
-                                <span class="font-bold text-emerald-800 truncate">{{ $item->part_category }}</span>
-                                <span class="px-1.5 py-0.5 rounded-full bg-[var(--mint-50)] text-[var(--foreground)] font-semibold border border-[var(--border)] shrink-0 max-w-[70px] sm:max-w-none truncate">
-                                    {{ $item->brand }}
-                                </span>
-                            </div>
+                        <h2 class="text-xs sm:text-[13px] font-semibold text-[var(--foreground)] leading-snug line-clamp-2 group-hover:text-emerald-800 transition">
+                            {{ $item->title }}
+                        </h2>
 
-                            {{-- Item Title --}}
-                            <h2 class="text-xs sm:text-sm font-extrabold text-[var(--foreground)] leading-snug line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem]">
-                                <a href="{{ $detailUrl }}" data-no-soft-nav="true" class="hover:text-emerald-700 transition">
-                                    {{ $item->title }}
-                                </a>
-                            </h2>
-
-                            {{-- Price / Spec Range + Strikethrough Normal Price --}}
-                            <div class="pt-0.5">
+                        <div class="space-y-1.5 min-w-0">
+                            {{-- Part Price / Spec Range + Strikethrough Normal Price --}}
+                            <div>
                                 @if($item->has_specs && $effMax && $effMax > $effBase)
                                     <div class="flex items-baseline gap-1 flex-wrap">
                                         @if($offerActive && $normalBase > $effBase)
-                                            <span class="text-[11px] sm:text-xs font-semibold text-slate-400 line-through">৳{{ number_format($normalBase, 0) }}</span>
+                                            <span class="text-[11px] text-slate-400 line-through">৳{{ number_format($normalBase, 0) }}</span>
                                         @endif
                                         <span class="text-sm sm:text-base font-extrabold {{ $offerActive ? 'text-red-600' : 'text-[var(--foreground)]' }}">
-                                            ৳{{ number_format($effBase, 0) }}<span class="text-xs sm:text-sm font-bold">–৳{{ number_format($effMax, 0) }}</span>
+                                            ৳{{ number_format($effBase, 0) }}<span class="text-xs font-bold">–৳{{ number_format($effMax, 0) }}</span>
                                         </span>
-                                    </div>
-                                    <div class="text-[10px] sm:text-[11px] font-semibold text-emerald-800 truncate">
-                                        {{ count($item->spec_options ?? []) }} {{ $item->spec_label ?: 'Quality' }} specs
                                     </div>
                                 @else
                                     <div class="flex items-baseline gap-1.5 flex-wrap">
                                         @if($offerActive && $normalBase > $effBase)
-                                            <span class="text-[11px] sm:text-xs font-semibold text-slate-400 line-through">৳{{ number_format($normalBase, 0) }}</span>
-                                            <span class="text-sm sm:text-lg font-extrabold text-red-600">৳{{ number_format($effBase, 0) }}</span>
-                                            <span class="hidden sm:inline-block px-1.5 py-0.5 rounded bg-red-50 text-red-700 border border-red-200 text-[10px] font-bold">
-                                                -{{ number_format($item->effectiveOfferPercent(), 0) }}%
-                                            </span>
+                                            <span class="text-[11px] text-slate-400 line-through">৳{{ number_format($normalBase, 0) }}</span>
+                                            <span class="text-sm sm:text-base font-extrabold text-red-600">৳{{ number_format($effBase, 0) }}</span>
                                         @else
-                                            <span class="text-sm sm:text-lg font-extrabold text-[var(--foreground)]">৳{{ number_format($effBase, 0) }}</span>
+                                            <span class="text-sm sm:text-base font-extrabold text-[var(--foreground)]">৳{{ number_format($effBase, 0) }}</span>
                                         @endif
                                     </div>
                                 @endif
                             </div>
 
-                            {{-- Attached Seller Shop & Branch Row --}}
+                            {{-- Minimalistic Unboxed Total Price Breakdown --}}
+                            <div class="pt-1.5 border-t border-slate-200/70 dark:border-[var(--border)]/50 space-y-0.5 text-[10px] sm:text-[11px]">
+                                <div class="flex items-center justify-between text-[var(--muted-foreground)] gap-1">
+                                    <span>+৳{{ number_format((float) $quote['delivery_fee'], 0) }} delivery</span>
+                                    <span class="hidden sm:inline truncate">{{ $quote['eta_label'] }}</span>
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] sm:text-xs">
+                                    <span class="text-[var(--muted-foreground)]">Total</span>
+                                    <span class="font-extrabold text-[var(--foreground)]">
+                                        {{ ($item->has_specs && $effMax && $effMax > $effBase) ? 'from ' : '' }}৳{{ number_format((float) $quote['landed_total'], 0) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {{-- Quiet 1-Line Seller Footer --}}
                             @if($shop)
-                                <div class="rounded-lg sm:rounded-xl bg-[var(--mint-50)] border border-[var(--border)] px-2 py-1 sm:px-2.5 sm:py-1.5 text-[10px] sm:text-[11px] text-[var(--foreground)] min-w-0">
-                                    <div class="flex items-center gap-1 font-bold min-w-0">
-                                        <span class="text-emerald-700 shrink-0" title="Verified Workshop">✔</span>
-                                        <span class="truncate">{{ $shop->name }}</span>
-                                        @if($branchTag)
-                                            <span class="hidden sm:inline-block px-1.5 py-0.5 rounded bg-emerald-900 text-white text-[9px] font-bold leading-none shrink-0">
-                                                {{ $branchTag }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                    <div class="flex items-center justify-between text-[9px] sm:text-[10px] text-[var(--muted-foreground)] mt-0.5 gap-1">
-                                        <span class="truncate">📍 {{ $shop->city }}</span>
-                                        <span class="shrink-0">★ {{ number_format((float) ($shop->rating ?: 4.8), 1) }} · {{ $quote['distance_formatted'] }}</span>
-                                    </div>
+                                <div class="flex items-center justify-between gap-1 text-[10px] sm:text-[11px] text-[var(--muted-foreground)] pt-0.5 min-w-0">
+                                    <span class="truncate">{{ $shop->name }}</span>
+                                    <span class="shrink-0">★ {{ number_format((float) ($shop->rating ?: 4.8), 1) }}</span>
                                 </div>
                             @endif
-
-                            {{-- AliExpress Wholesale Discount Badge --}}
-                            @if($item->wholesale_enabled)
-                                <div class="inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md bg-amber-50 border border-amber-300/80 text-amber-950 text-[9px] sm:text-[10px] font-bold max-w-full truncate">
-                                    <span>📦 -{{ rtrim(rtrim(number_format((float) $item->wholesale_base_discount_pct, 2), '0'), '.') }}% ≥{{ $item->wholesale_min_qty }}</span>
-                                    <span class="hidden sm:inline">(+{{ rtrim(rtrim(number_format((float) $item->wholesale_step_discount_pct, 2), '0'), '.') }}%/{{ $item->wholesale_step_qty }})</span>
-                                </div>
-                            @endif
-                        </div>
-
-                        {{-- Location-Based Delivery Cost + Landed Total + CTA --}}
-                        <div class="pt-1.5 sm:pt-2 border-t border-[var(--border)]/70 space-y-1.5 sm:space-y-2">
-                            <div class="rounded-lg sm:rounded-xl px-2 py-1 sm:px-2.5 sm:py-1.5 {{ $item->is_best_deal ? 'bg-emerald-900 text-white' : 'bg-[var(--mint-50)] text-[var(--foreground)]' }}">
-                                <div class="flex items-center justify-between text-[10px] sm:text-[11px] gap-1">
-                                    <span class="truncate">+৳{{ number_format((float) $quote['delivery_fee'], 0) }} courier</span>
-                                    <span class="font-semibold shrink-0 hidden sm:inline">{{ $quote['eta_label'] }}</span>
-                                </div>
-                                <div class="flex items-center justify-between text-[11px] sm:text-xs font-extrabold">
-                                    <span>Landed:</span>
-                                    <span>{{ $item->has_specs ? 'from ' : '' }}৳{{ number_format((float) $quote['landed_total'], 0) }}</span>
-                                </div>
-                            </div>
-
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-                                @if($item->seller_count > 1 && $selectedGroup === '')
-                                    <a href="{{ $buildFilterUrl(['group' => $item->product_group_key]) }}"
-                                       class="text-[10px] sm:text-[11px] font-bold text-emerald-800 hover:underline text-center sm:text-left truncate">
-                                        Compare {{ $item->seller_count }} sellers
-                                    </a>
-                                @else
-                                    <span class="hidden sm:inline text-[11px] text-[var(--muted-foreground)]">{{ number_format((int) $item->sold_count) }} sold</span>
-                                @endif
-
-                                <a href="{{ $detailUrl }}" data-no-soft-nav="true"
-                                   class="w-full sm:w-auto text-center px-2.5 sm:px-3 py-1.5 rounded-full bg-emerald-900 text-white text-[11px] sm:text-xs font-bold hover:bg-emerald-800 transition shrink-0">
-                                    {{ $item->has_specs ? 'Select Specs' : 'View / Buy' }}
-                                </a>
-                            </div>
                         </div>
                     </div>
-                </article>
+                </a>
             @endforeach
         </div>
 

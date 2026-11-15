@@ -566,4 +566,39 @@ class SparePartListing extends Model
             'landed_unit_equivalent' => round(($pricing['subtotal'] + $delivery['delivery_fee']) / max(1, $quantity), 2),
         ]);
     }
+
+    /**
+     * Allowed "very close" tolerance (in BDT) around the lowest landed total so two or more
+     * competing deals whose total landed prices match or are nearly identical both earn "Best Deal".
+     * Uses 2% of lowest landed total, bounded between ৳10 and ৳50.
+     */
+    public static function bestDealTolerance(float $bestLandedTotal): float
+    {
+        if ($bestLandedTotal <= 0) {
+            return 10.0;
+        }
+
+        return min(50.0, max(10.0, round($bestLandedTotal * 0.02, 2)));
+    }
+
+    /**
+     * Returns true when a candidate landed total matches or is within the close-price window of the best deal.
+     */
+    public static function isWithinBestDealWindow(float $candidateLandedTotal, float $bestLandedTotal): bool
+    {
+        return ($candidateLandedTotal - $bestLandedTotal) <= (self::bestDealTolerance($bestLandedTotal) + 0.001);
+    }
+
+    /**
+     * Normalizes product titles into a canonical group key so competing vendor listings
+     * automatically match for multi-seller Best Deal tagging.
+     */
+    public static function canonicalizeGroupKey(string $rawTitle): string
+    {
+        $clean = trim($rawTitle);
+        $clean = preg_replace('/^(Original|Genuine|Brand\s+New|OEM|100%\s+Original|Replacement)\s+/i', '', (string) $clean);
+        $clean = preg_replace('/\s+(Price\s+in\s+Bangladesh|In\s+Bangladesh|In\s+BD).*$/i', '', (string) $clean);
+
+        return \Illuminate\Support\Str::slug((string) $clean);
+    }
 }

@@ -283,17 +283,18 @@ class SparePartController extends Controller
             $bestLanded = PHP_FLOAT_MAX;
             $bestEta = PHP_INT_MAX;
             $minRawPrice = PHP_FLOAT_MAX;
-            $cheapestRawListingId = null;
+            $cheapestRawListingIds = [];
+            $quotesById = [];
 
             foreach ($groupItems as $gItem) {
                 $quote = $gItem->calculateLandedQuote($customerLocation, 1);
+                $quotesById[$gItem->id] = $quote;
                 $landed = (float) $quote['landed_total'];
                 $eta = (int) $quote['eta_minutes'];
                 $raw = $gItem->effectiveBasePrice();
 
                 if ($raw < $minRawPrice) {
                     $minRawPrice = $raw;
-                    $cheapestRawListingId = $gItem->id;
                 }
 
                 if ($landed < $bestLanded || ($landed === $bestLanded && $eta < $bestEta)) {
@@ -303,12 +304,31 @@ class SparePartController extends Controller
                 }
             }
 
+            $bestDealIds = [];
+            $resolvedBestLanded = $bestLanded === PHP_FLOAT_MAX ? 0.0 : $bestLanded;
+            $resolvedMinRaw = $minRawPrice === PHP_FLOAT_MAX ? 0.0 : $minRawPrice;
+            $rawCloseTolerance = min(25.0, max(5.0, round($resolvedMinRaw * 0.015, 2)));
+
+            foreach ($groupItems as $gItem) {
+                $q = $quotesById[$gItem->id];
+                $landed = (float) $q['landed_total'];
+                $raw = $gItem->effectiveBasePrice();
+
+                if (SparePartListing::isWithinBestDealWindow($landed, $resolvedBestLanded)) {
+                    $bestDealIds[$gItem->id] = true;
+                }
+                if (($raw - $resolvedMinRaw) <= ($rawCloseTolerance + 0.001)) {
+                    $cheapestRawListingIds[$gItem->id] = true;
+                }
+            }
+
             $groupBenchmarks[$gKey] = [
                 'seller_count' => $groupItems->count(),
                 'best_listing_id' => $bestId,
-                'best_landed_total' => $bestLanded === PHP_FLOAT_MAX ? 0.0 : $bestLanded,
-                'min_raw_price' => $minRawPrice === PHP_FLOAT_MAX ? 0.0 : $minRawPrice,
-                'cheapest_raw_listing_id' => $cheapestRawListingId,
+                'best_deal_ids' => $bestDealIds,
+                'best_landed_total' => $resolvedBestLanded,
+                'min_raw_price' => $resolvedMinRaw,
+                'cheapest_raw_listing_ids' => $cheapestRawListingIds,
             ];
         }
 
@@ -317,20 +337,22 @@ class SparePartController extends Controller
             $bench = $groupBenchmarks[$item->product_group_key] ?? [
                 'seller_count' => 1,
                 'best_listing_id' => $item->id,
+                'best_deal_ids' => [$item->id => true],
                 'best_landed_total' => $quote['landed_total'],
                 'min_raw_price' => (float) $item->base_price,
-                'cheapest_raw_listing_id' => $item->id,
+                'cheapest_raw_listing_ids' => [$item->id => true],
             ];
+
+            $isBestDeal = !empty($bench['best_deal_ids'][$item->id]);
+            $isBestRawPrice = !empty($bench['cheapest_raw_listing_ids'][$item->id]);
 
             $item->setAttribute('landed_quote', $quote);
             $item->setAttribute('seller_count', $bench['seller_count']);
-            $item->setAttribute('is_best_deal', $bench['best_listing_id'] === $item->id);
+            $item->setAttribute('is_best_deal', $isBestDeal);
+            $item->setAttribute('is_best_raw_price', $isBestRawPrice);
             $item->setAttribute('best_landed_total', $bench['best_landed_total']);
             $item->setAttribute('min_raw_price', $bench['min_raw_price']);
-            $item->setAttribute('is_cheapest_raw_but_far', (
-                $bench['cheapest_raw_listing_id'] === $item->id
-                && $bench['best_listing_id'] !== $item->id
-            ));
+            $item->setAttribute('is_cheapest_raw_but_far', ($isBestRawPrice && !$isBestDeal));
         }
 
         $quickLocations = [
@@ -424,8 +446,16 @@ class SparePartController extends Controller
             ->values();
 
         $bestDealListing = $competingListings->first();
-        foreach ($competingListings as $idx => $comp) {
-            $comp->setAttribute('is_best_deal', $idx === 0);
+        $minCompetingLanded = $bestDealListing
+            ? (float) $bestDealListing->landed_quote['landed_total']
+            : 0.0;
+
+        foreach ($competingListings as $comp) {
+            $compLanded = (float) $comp->landed_quote['landed_total'];
+            $comp->setAttribute(
+                'is_best_deal',
+                SparePartListing::isWithinBestDealWindow($compLanded, $minCompetingLanded)
+            );
         }
 
         if ($request->boolean('best_deal') && $bestDealListing && $bestDealListing->id !== $listing->id) {
@@ -439,8 +469,18 @@ class SparePartController extends Controller
             max(1, (int) $request->input('qty', 1)),
             $selectedSpec['code'] ?? null
         );
+        $unitQuoteForBestDeal = $listing->calculateLandedQuote(
+            $customerLocation,
+            1,
+            $selectedSpec['code'] ?? null
+        );
         $listing->setAttribute('landed_quote', $activeQuote);
-        $listing->setAttribute('is_best_deal', $bestDealListing ? ($bestDealListing->id === $listing->id) : true);
+        $listing->setAttribute(
+            'is_best_deal',
+            $bestDealListing
+                ? SparePartListing::isWithinBestDealWindow((float) $unitQuoteForBestDeal['landed_total'], $minCompetingLanded)
+                : true
+        );
 
         $previewUnitPrice = $selectedSpec ? (float) $selectedSpec['price'] : $listing->effectiveBasePrice();
         $wholesaleTiers = $listing->wholesaleTiersPreview($previewUnitPrice);
@@ -926,9 +966,7 @@ class SparePartController extends Controller
 
         $rawGroupKey = trim((string) ($validated['product_group_key'] ?? ''));
         if ($rawGroupKey === '') {
-            $canonicalTitle = preg_replace('/^Original\s+/i', '', trim((string) $validated['title']));
-            $canonicalTitle = preg_replace('/\s+Price\s+in\s+Bangladesh.*$/i', '', (string) $canonicalTitle);
-            $rawGroupKey = Str::slug((string) $canonicalTitle);
+            $rawGroupKey = SparePartListing::canonicalizeGroupKey((string) $validated['title']);
         } else {
             $rawGroupKey = Str::slug($rawGroupKey);
         }

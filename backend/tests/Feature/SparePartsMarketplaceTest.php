@@ -570,4 +570,101 @@ class SparePartsMarketplaceTest extends TestCase
         $this->actingAs($vendor)->delete('/vendor/spare-parts/' . $listing->id)->assertRedirect();
         $this->assertDatabaseMissing('spare_part_listings', ['id' => $listing->id]);
     }
+
+    /** @test */
+    public function matching_or_very_close_landed_totals_both_earn_auto_best_deal_tag_and_tiles_are_minimalistic(): void
+    {
+        // Seller A in Banani (23.7937, 90.4066): part ৳1,749 + courier ৳50 = ৳1,799
+        [, $profA, $shopA] = $this->createApprovedVendorWithShop([
+            'city' => 'Dhaka',
+            'area' => 'Banani',
+            'latitude' => 23.7937,
+            'longitude' => 90.4066,
+        ], 'Banani Parts One');
+
+        // Seller B in Dhanmondi (~5.9 km away -> courier ৳70): part ৳1,740 + courier ৳70 = ৳1,810 (within 2% / ৳11 of ৳1,799!)
+        [, $profB, $shopB] = $this->createApprovedVendorWithShop([
+            'city' => 'Dhaka',
+            'area' => 'Dhanmondi',
+            'latitude' => 23.7461,
+            'longitude' => 90.3742,
+        ], 'Dhanmondi Parts Two');
+
+        // Seller C in Banani: part ৳1,920 + courier ৳50 = ৳1,970 (noticeably higher -> NOT Best Deal)
+        [, $profC, $shopC] = $this->createApprovedVendorWithShop([
+            'city' => 'Dhaka',
+            'area' => 'Banani',
+            'latitude' => 23.7940,
+            'longitude' => 90.4070,
+        ], 'Premium Markup Parts');
+
+        $partA = SparePartListing::create([
+            'shop_id' => $shopA->id,
+            'vendor_profile_id' => $profA->id,
+            'slug' => 'tie-close-display--a',
+            'product_group_key' => 'tie-close-display',
+            'title' => 'iPhone 13 Pro Display Assembly',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Apple',
+            'has_specs' => true,
+            'spec_options' => [
+                ['code' => 'oled', 'name' => 'OLED', 'price' => 1749, 'stock' => 25],
+                ['code' => 'orig', 'name' => 'Original', 'price' => 9500, 'stock' => 10],
+            ],
+            'base_price' => 1749,
+            'normal_price' => 1749,
+            'max_price' => 9500,
+            'normal_max_price' => 9500,
+            'stock_quantity' => 35,
+            'is_active' => true,
+        ]);
+
+        $partB = SparePartListing::create([
+            'shop_id' => $shopB->id,
+            'vendor_profile_id' => $profB->id,
+            'slug' => 'tie-close-display--b',
+            'product_group_key' => 'tie-close-display',
+            'title' => 'iPhone 13 Pro Display Assembly',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Apple',
+            'base_price' => 1740,
+            'normal_price' => 1740,
+            'stock_quantity' => 35,
+            'is_active' => true,
+        ]);
+
+        $partC = SparePartListing::create([
+            'shop_id' => $shopC->id,
+            'vendor_profile_id' => $profC->id,
+            'slug' => 'tie-close-display--c',
+            'product_group_key' => 'tie-close-display',
+            'title' => 'iPhone 13 Pro Display Assembly',
+            'part_category' => 'Display & Touch',
+            'brand' => 'Apple',
+            'base_price' => 1920,
+            'normal_price' => 1920,
+            'stock_quantity' => 35,
+            'is_active' => true,
+        ]);
+
+        $indexResp = $this->get('/spare-parts?group=tie-close-display&city=Dhaka&area=Banani&lat=23.7937&lng=90.4066');
+        $indexResp->assertStatus(200);
+
+        // Outside tiles must NOT show View / Buy or Select Specs buttons, and must show minimalistic Total breakdown
+        $indexResp->assertDontSee('Select Specs');
+        $indexResp->assertDontSee('View / Buy');
+        $indexResp->assertDontSee('View Now');
+        $indexResp->assertSee('+৳50 delivery');
+        $indexResp->assertSee('Total');
+
+        $items = $indexResp->viewData('listings')->getCollection()->keyBy('id');
+        $this->assertTrue($items[$partA->id]->is_best_deal, 'Lowest landed deal (৳1,799) must be tagged Best Deal.');
+        $this->assertTrue($items[$partB->id]->is_best_deal, 'Very-close landed deal (৳1,810 vs ৳1,799) must also be tagged Best Deal.');
+        $this->assertFalse($items[$partC->id]->is_best_deal, 'Higher landed deal (৳1,970) must not be tagged Best Deal.');
+
+        // Product detail page for Seller B should ALSO recognize Seller B as a Best Deal winner alongside Seller A
+        $showB = $this->get('/spare-parts/' . $partB->slug . '?city=Dhaka&area=Banani&lat=23.7937&lng=90.4066');
+        $showB->assertStatus(200);
+        $this->assertTrue($showB->viewData('listing')->is_best_deal);
+    }
 }

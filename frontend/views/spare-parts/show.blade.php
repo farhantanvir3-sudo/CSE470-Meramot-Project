@@ -728,7 +728,7 @@
                     View all →
                 </a>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
                 @foreach($relatedListings as $rel)
                     @php
                         $rOffer = $rel->isOfferActive();
@@ -737,35 +737,38 @@
                         $rQuote = $rel->landed_quote ?? $rel->calculateLandedQuote($customerLocation, 1);
                     @endphp
                     <a href="{{ route('spare-parts.show', ['slug' => $rel->slug]) }}"
-                       class="group rounded-2xl bg-white/95 border border-emerald-900/15 hover:border-emerald-800 p-3 transition flex flex-col justify-between">
-                        <div>
-                            <div class="relative aspect-[4/3] rounded-xl bg-white border border-emerald-900/10 overflow-hidden p-2 mb-2.5">
-                                @if($rOffer)
-                                    <span class="absolute top-2 left-2 z-10 w-10 h-10 rounded-full bg-red-600 text-white text-[10px] font-extrabold flex items-center justify-center shadow">
-                                        Sale!
-                                    </span>
-                                @endif
-                                <img src="{{ $rel->image_url }}"
-                                     alt="{{ $rel->title }}"
-                                     loading="lazy"
-                                     onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
-                                     class="w-full h-full object-contain group-hover:scale-105 transition">
-                            </div>
-                            <div class="text-[11px] font-bold text-emerald-800">{{ $rel->brand }}</div>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-emerald-950 line-clamp-2 mt-0.5">{{ $rel->title }}</h3>
-                        </div>
-                        <div class="mt-2 pt-2 border-t border-emerald-900/10 flex items-baseline justify-between">
-                            <div>
-                                @if($rOffer && $rNorm > $rEff)
-                                    <span class="text-[11px] text-slate-400 line-through mr-1">৳{{ number_format($rNorm, 0) }}</span>
-                                @endif
-                                <span class="text-sm font-extrabold {{ $rOffer ? 'text-red-600' : 'text-emerald-950' }}">
-                                    ৳{{ number_format($rEff, 0) }}
+                       class="group rounded-xl sm:rounded-2xl bg-white/95 dark:bg-[var(--card)] border border-[var(--border)] hover:border-emerald-700 hover:shadow-md overflow-hidden transition flex flex-col justify-between min-w-0">
+                        <div class="relative aspect-square bg-white border-b border-slate-100 dark:border-[var(--border)]/40 overflow-hidden p-2.5 sm:p-3">
+                            @if($rOffer)
+                                <span class="absolute top-2 left-2 z-10 w-9 h-9 rounded-full bg-red-600 text-white text-[10px] font-extrabold flex items-center justify-center shadow-sm">
+                                    Sale!
                                 </span>
+                            @endif
+                            <img src="{{ $rel->image_url }}"
+                                 alt="{{ $rel->title }}"
+                                 loading="lazy"
+                                 onerror="this.onerror=null;this.src='/images/spare-parts/samsung-galaxy-s21-fe-5g-display.webp';"
+                                 class="w-full h-full object-contain group-hover:scale-105 transition">
+                        </div>
+                        <div class="p-2.5 sm:p-3.5 flex-1 flex flex-col justify-between gap-1.5 min-w-0">
+                            <h3 class="text-xs sm:text-[13px] font-semibold text-[var(--foreground)] line-clamp-2 leading-snug">{{ $rel->title }}</h3>
+                            <div class="space-y-1">
+                                <div>
+                                    @if($rOffer && $rNorm > $rEff)
+                                        <span class="text-[11px] text-slate-400 line-through mr-1">৳{{ number_format($rNorm, 0) }}</span>
+                                    @endif
+                                    <span class="text-sm sm:text-base font-extrabold {{ $rOffer ? 'text-red-600' : 'text-[var(--foreground)]' }}">
+                                        ৳{{ number_format($rEff, 0) }}
+                                    </span>
+                                </div>
+                                <div class="pt-1.5 border-t border-slate-200/70 dark:border-[var(--border)]/50 space-y-0.5 text-[10px] sm:text-[11px]">
+                                    <div class="text-[var(--muted-foreground)]">+৳{{ number_format((float) $rQuote['delivery_fee'], 0) }} delivery</div>
+                                    <div class="flex items-center justify-between text-[11px] sm:text-xs">
+                                        <span class="text-[var(--muted-foreground)]">Total</span>
+                                        <span class="font-extrabold text-[var(--foreground)]">৳{{ number_format((float) $rQuote['landed_total'], 0) }}</span>
+                                    </div>
+                                </div>
                             </div>
-                            <span class="text-[10px] font-bold text-emerald-900/75">
-                                +৳{{ number_format((float) $rQuote['delivery_fee'], 0) }} courier
-                            </span>
                         </div>
                     </a>
                 @endforeach
