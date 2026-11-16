@@ -8,6 +8,7 @@ use App\Models\SparePartListing;
 use App\Services\GeolocationService;
 use App\Services\MarketplaceSearchEngine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -40,17 +41,10 @@ class ShopDiscoveryController extends Controller
      */
     public function home()
     {
-        $featuredQuery = RepairShop::where('is_active', true)
+        $featuredShops = RepairShop::where('is_active', true)
             ->where('is_public', true)
-            ->where('is_featured', true);
-
-        if (Schema::hasColumn('repair_shops', 'featured_at')) {
-            $featuredQuery->orderByRaw('COALESCE(featured_at, updated_at) DESC');
-        } else {
-            $featuredQuery->orderByDesc('updated_at');
-        }
-
-        $featuredShops = $featuredQuery
+            ->where('is_featured', true)
+            ->orderByRaw('COALESCE(featured_at, updated_at) DESC')
             ->orderByDesc('id')
             ->take(6)
             ->get();
@@ -58,23 +52,23 @@ class ShopDiscoveryController extends Controller
         $offerCards = [
             [
                 'title' => 'Free pickup on your first repair',
-                'subtitle' => 'Complimentary doorstep pickup and return on eligible first-time repair bookings.',
+                'subtitle' => 'Complimentary doorstep pickup and return on eligible first bookings.',
                 'href' => '/shops?sort=distance&freeDelivery=true&deals=true&q=pickup',
             ],
             [
                 'title' => 'Laptop battery week',
-                'subtitle' => 'Save up to 15% on genuine replacement batteries from participating workshops.',
+                'subtitle' => 'Save up to 15% on replacement batteries at participating shops.',
                 'href' => '/shops?q=battery&sort=price&deals=true',
             ],
         ];
 
         $popularCategories = [
-            ['label' => 'Phone', 'sprite' => '📱', 'trend' => 'Screen, battery & charging repairs', 'href' => '/shops?q=phone'],
-            ['label' => 'Laptop', 'sprite' => '💻', 'trend' => 'Keyboard, thermal & board servicing', 'href' => '/shops?q=laptop'],
-            ['label' => 'Tablet', 'sprite' => '🧾', 'trend' => 'Display glass & port replacements', 'href' => '/shops?q=tablet'],
-            ['label' => 'Smartwatch', 'sprite' => '⌚', 'trend' => 'Crown, sensor & screen restoration', 'href' => '/shops?q=smartwatch'],
-            ['label' => 'Gaming Console', 'sprite' => '🎮', 'trend' => 'HDMI port, cooling & controller care', 'href' => '/shops?q=console'],
-            ['label' => 'Printer', 'sprite' => '🖨️', 'trend' => 'Roller, feed & printhead servicing', 'href' => '/shops?q=printer'],
+            ['label' => 'Phone', 'sprite' => 'fa-mobile-screen-button', 'trend' => 'Screens & batteries', 'href' => '/shops?q=phone'],
+            ['label' => 'Laptop', 'sprite' => 'fa-laptop', 'trend' => 'Boards & cooling', 'href' => '/shops?q=laptop'],
+            ['label' => 'Tablet', 'sprite' => 'fa-tablet-screen-button', 'trend' => 'Glass & ports', 'href' => '/shops?q=tablet'],
+            ['label' => 'Smartwatch', 'sprite' => 'fa-clock', 'trend' => 'Sensors & straps', 'href' => '/shops?q=smartwatch'],
+            ['label' => 'Gaming Console', 'sprite' => 'fa-gamepad', 'trend' => 'HDMI & controllers', 'href' => '/shops?q=console'],
+            ['label' => 'Printer', 'sprite' => 'fa-print', 'trend' => 'Feed & printheads', 'href' => '/shops?q=printer'],
         ];
 
         $recentlyViewed = [
@@ -563,5 +557,73 @@ class ShopDiscoveryController extends Controller
             ]),
             'data' => $shops,
         ]);
+    }
+
+    /**
+     * Localhost-only fallback that queries Windows Location Services (Wi-Fi BSSID triangulation)
+     * when Chromium desktop Geolocation API times out or drops to IP-level precision.
+     * Route: GET /api/geolocation/device-fix
+     */
+    public function detectLocalDeviceLocation(Request $request)
+    {
+        if (app()->environment('testing') || PHP_OS_FAMILY !== 'Windows' || !in_array($request->ip(), ['127.0.0.1', '::1'], true)) {
+            return response()->json(['ok' => false, 'reason' => 'unsupported']);
+        }
+
+        $cached = Cache::get('meramot.local_os_wifi_fix');
+        if (is_array($cached) && !empty($cached['ok'])) {
+            return response()->json($cached);
+        }
+
+        $psScript = 'Add-Type -AssemblyName System.Device; $w = New-Object System.Device.Location.GeoCoordinateWatcher([System.Device.Location.GeoPositionAccuracy]::Default); $w.Start(); $ms = 0; while ($w.Position.Location.IsUnknown -and $w.Permission -ne \'Denied\' -and $ms -lt 4200) { Start-Sleep -Milliseconds 80; $ms += 80 }; $c = $w.Position.Location; $w.Stop(); if (-not $c.IsUnknown) { Write-Output (\'{0:F7},{1:F7},{2:F1}\' -f $c.Latitude, $c.Longitude, $c.HorizontalAccuracy) }';
+
+        $winDir = getenv('SystemRoot') ?: (getenv('WINDIR') ?: 'C:\\Windows');
+        $tempDir = getenv('TEMP') ?: (getenv('TMP') ?: sys_get_temp_dir());
+        $psExe = $winDir . '\\System32\\WindowsPowerShell\\v1.0\\powershell.exe';
+        if (!is_file($psExe)) {
+            $psExe = 'powershell.exe';
+        }
+        $procEnv = [
+            'SystemRoot' => $winDir,
+            'SYSTEMROOT' => $winDir,
+            'WINDIR' => $winDir,
+            'PATH' => getenv('PATH') ?: ($winDir . '\\System32;' . $winDir . ';' . $winDir . '\\System32\\WindowsPowerShell\\v1.0'),
+            'TEMP' => $tempDir,
+            'TMP' => $tempDir,
+        ];
+
+        try {
+            $process = new \Symfony\Component\Process\Process([
+                $psExe,
+                '-NoProfile',
+                '-NonInteractive',
+                '-Command',
+                $psScript,
+            ], null, $procEnv);
+            $process->setTimeout(7);
+            $process->run();
+            $out = trim($process->getOutput());
+
+            if (preg_match('/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/', $out, $m)) {
+                $lat = (float) $m[1];
+                $lng = (float) $m[2];
+                $acc = (float) $m[3];
+                if (is_finite($lat) && is_finite($lng) && $lat >= -90 && $lat <= 90 && $lng >= -180 && $lng <= 180) {
+                    $payload = [
+                        'ok' => true,
+                        'lat' => $lat,
+                        'lng' => $lng,
+                        'accuracy' => max(15.0, is_finite($acc) ? $acc : 120.0),
+                        'source' => 'windows_wifi',
+                    ];
+                    Cache::put('meramot.local_os_wifi_fix', $payload, 45);
+                    return response()->json($payload);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Silently return unavailable when OS location sensor is unreachable
+        }
+
+        return response()->json(['ok' => false, 'reason' => 'unavailable']);
     }
 }

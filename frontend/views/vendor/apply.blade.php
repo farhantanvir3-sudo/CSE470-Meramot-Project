@@ -140,7 +140,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
     }"
     @meramot-location-changed.window="applyMapLocation($event.detail)"
 >
-    <div class="rounded-[1.5rem] md:rounded-[2rem] border border-white/60 bg-white/90 p-5 md:p-8 shadow-2xl backdrop-blur">
+    <div class="rounded-lg md:rounded-lg border border-white/60 bg-white/90 p-5 md:p-8 shadow-2xl backdrop-blur">
         <div class="mb-5 md:mb-6 flex items-start justify-between gap-4">
             <div>
                 <h1 class="text-2xl md:text-3xl font-bold text-[#244229]">
@@ -154,12 +154,12 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
             </div>
             <div class="flex items-center gap-2.5 shrink-0">
                 @guest
-                    <a href="/login" class="hidden sm:inline-flex items-center gap-2 rounded-full border border-[#c8dac2] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[#244229] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#244229] hover:bg-[var(--mint-200)] hover:shadow">
+                    <a href="/login" class="hidden sm:inline-flex items-center gap-2 rounded-md border border-[#c8dac2] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[#244229] shadow-sm transition-all duration-200 hover:border-[#244229] hover:bg-[var(--mint-200)] hover:shadow">
                         Already applied? Sign in
                     </a>
                 @else
                     @if($isEditMode)
-                        <a href="/vendor/status" class="hidden sm:inline-flex items-center gap-2 rounded-full border border-[#c8dac2] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[#244229] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#244229] hover:bg-[var(--mint-200)] hover:shadow">
+                        <a href="/vendor/status" class="hidden sm:inline-flex items-center gap-2 rounded-md border border-[#c8dac2] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[#244229] shadow-sm transition-all duration-200 hover:border-[#244229] hover:bg-[var(--mint-200)] hover:shadow">
                             Application Status
                         </a>
                     @endif
@@ -168,7 +168,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     href="{{ $isEditMode ? '/vendor/onboarding' : (auth()->check() ? '/' : '/login') }}"
                     title="{{ $isEditMode ? 'Back to Vendor Onboarding' : (auth()->check() ? 'Back to Home' : 'Back to Sign In') }}"
                     aria-label="{{ $isEditMode ? 'Back to Vendor Onboarding' : (auth()->check() ? 'Back to Home' : 'Back to Sign In') }}"
-                    class="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#244229] hover:bg-[#244229] hover:text-[#E4FCD5] hover:shadow-md"
+                    class="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition-all duration-200 hover:border-[#244229] hover:bg-[#244229] hover:text-[#E4FCD5] hover:shadow-md"
                 >
                     <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
                 </a>
@@ -177,7 +177,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
 
         @if($isEditMode)
             @if(($profile?->verification_status ?? '') === 'rejected')
-                <div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3.5 text-xs md:text-sm text-rose-900 space-y-1">
+                <div class="mb-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3.5 text-xs md:text-sm text-rose-900 space-y-1">
                     <p class="font-bold flex items-center gap-1.5">
                         <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
                         <span>Application Returned for Revision</span>
@@ -188,14 +188,14 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     <p class="text-[11px] text-rose-700">Update the requested details below and resubmit your application for administrative review.</p>
                 </div>
             @else
-                <div class="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs md:text-sm text-amber-900">
+                <div class="mb-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs md:text-sm text-amber-900">
                     Update your submitted application details below and resubmit for administrative review.
                 </div>
             @endif
         @endif
 
         @if($errors->any())
-            <div class="mb-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs md:text-sm text-rose-800 space-y-1.5">
+            <div class="mb-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs md:text-sm text-rose-800 space-y-1.5">
                 @foreach($errors->all() as $error)
                     <div class="font-medium">{{ $error }}</div>
                 @endforeach
@@ -258,7 +258,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     @dragleave.prevent="draggingLogo = false"
                     @drop.prevent="dropLogo($event)"
                     :class="draggingLogo ? 'border-[#244229] bg-[#e4f3df] scale-[1.01]' : (logoPreview ? 'border-emerald-600/60 bg-white' : 'border-[#b9cfb2] bg-[var(--mint-50)]/60 hover:border-[#244229] hover:bg-white')"
-                    class="relative rounded-2xl border-2 border-dashed p-4 transition-all duration-200 shadow-sm"
+                    class="relative rounded-lg border-2 border-dashed p-4 transition-all duration-200 shadow-sm"
                 >
                     <input type="hidden" name="remove_logo" :value="removeLogo ? '1' : '0'">
                     <input
@@ -271,18 +271,18 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     >
 
                     <div class="mb-2 flex items-center justify-between">
-                        <span class="text-xs font-extrabold text-[#203126] flex items-center gap-1.5">
+                        <span class="text-xs font-semibold text-[#203126] flex items-center gap-1.5">
                             <i class="fa-solid fa-store text-[#244229]"></i>
                             <span>Shop Logo / Storefront Photo</span>
                         </span>
                         <template x-if="logoPreview">
-                            <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">Ready ✓</span>
+                            <span class="rounded bg-emerald-100 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-800">Ready ✓</span>
                         </template>
                     </div>
 
                     <template x-if="!logoPreview">
                         <div @click="$refs.logoInput.click()" class="group flex cursor-pointer flex-col items-center justify-center py-4 text-center">
-                            <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition group-hover:scale-105 group-hover:bg-[#244229] group-hover:text-[#E4FCD5]">
+                            <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-lg border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition group-hover:scale-105 group-hover:bg-[#244229] group-hover:text-[#E4FCD5]">
                                 <i class="fa-solid fa-image text-base"></i>
                             </div>
                             <p class="text-xs font-bold text-[#203126]">Click to upload logo <span class="font-normal text-[#5e6d64]">or drag &amp; drop</span></p>
@@ -305,11 +305,11 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                             </div>
                             <div class="flex items-center justify-between gap-2 text-[11px]">
                                 <div class="flex items-center gap-1.5 min-w-0">
-                                    <span class="rounded bg-[#eef5ea] border border-[#c8dac2] px-2 py-0.5 text-[10px] font-extrabold text-[#163625]" x-text="logoType"></span>
+                                    <span class="rounded bg-[#eef5ea] border border-[#c8dac2] px-2 py-0.5 text-[10px] font-semibold text-[#163625]" x-text="logoType"></span>
                                     <span class="truncate font-semibold text-[#163625]" x-text="logoName || 'Saved shop logo'"></span>
                                     <span x-show="logoSize" class="text-[10px] text-[#5e6d64]" x-text="'(' + logoSize + ')'"></span>
                                 </div>
-                                <button type="button" @click="$refs.logoInput.click()" class="rounded-full border border-[#c8dac2] bg-[#eef5ea] px-2.5 py-1 text-[10px] font-bold text-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] transition">
+                                <button type="button" @click="$refs.logoInput.click()" class="rounded border border-[#c8dac2] bg-[#eef5ea] px-2.5 py-1 text-[10px] font-bold text-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] transition">
                                     Replace
                                 </button>
                             </div>
@@ -356,7 +356,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     @dragleave.prevent="draggingDoc = false"
                     @drop.prevent="dropDoc($event)"
                     :class="draggingDoc ? 'border-[#244229] bg-[#e4f3df] scale-[1.01]' : (docPreview ? 'border-emerald-600/60 bg-white' : 'border-[#b9cfb2] bg-[var(--mint-50)]/60 hover:border-[#244229] hover:bg-white')"
-                    class="relative rounded-2xl border-2 border-dashed p-4 transition-all duration-200 shadow-sm"
+                    class="relative rounded-lg border-2 border-dashed p-4 transition-all duration-200 shadow-sm"
                 >
                     <input
                         x-ref="docInput"
@@ -368,18 +368,18 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     >
 
                     <div class="mb-2 flex items-center justify-between">
-                        <span class="text-xs font-extrabold text-[#203126] flex items-center gap-1.5">
+                        <span class="text-xs font-semibold text-[#203126] flex items-center gap-1.5">
                             <i class="fa-solid fa-file-shield text-[#244229]"></i>
                             <span>Trade License / NID Scan <span class="font-normal text-[#5e6d64]">(Optional)</span></span>
                         </span>
                         <template x-if="docPreview">
-                            <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-extrabold text-emerald-800">Attached ✓</span>
+                            <span class="rounded bg-emerald-100 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-800">Attached ✓</span>
                         </template>
                     </div>
 
                     <template x-if="!docPreview">
                         <div @click="$refs.docInput.click()" class="group flex cursor-pointer flex-col items-center justify-center py-4 text-center">
-                            <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition group-hover:scale-105 group-hover:bg-[#244229] group-hover:text-[#E4FCD5]">
+                            <div class="mb-2 flex h-11 w-11 items-center justify-center rounded-lg border border-[#c8dac2] bg-white text-[#244229] shadow-sm transition group-hover:scale-105 group-hover:bg-[#244229] group-hover:text-[#E4FCD5]">
                                 <i class="fa-solid fa-cloud-arrow-up text-base"></i>
                             </div>
                             <p class="text-xs font-bold text-[#203126]">Click to attach scan <span class="font-normal text-[#5e6d64]">or drag &amp; drop</span></p>
@@ -410,7 +410,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                         <i class="fa-solid fa-file-pdf text-xl"></i>
                                     </div>
                                     <div class="min-w-0 flex-1">
-                                        <p class="truncate text-xs font-extrabold text-[#163625]" x-text="docName || 'Trade License / NID PDF'"></p>
+                                        <p class="truncate text-xs font-semibold text-[#163625]" x-text="docName || 'Trade License / NID PDF'"></p>
                                         <a :href="docPreview" target="_blank" class="text-[11px] font-bold text-emerald-800 hover:underline">Preview PDF ↗</a>
                                     </div>
                                 </div>
@@ -418,11 +418,11 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
 
                             <div class="flex items-center justify-between gap-2 text-[11px]">
                                 <div class="flex items-center gap-1.5 min-w-0">
-                                    <span class="rounded bg-[#eef5ea] border border-[#c8dac2] px-2 py-0.5 text-[10px] font-extrabold text-[#163625]" x-text="docType"></span>
+                                    <span class="rounded bg-[#eef5ea] border border-[#c8dac2] px-2 py-0.5 text-[10px] font-semibold text-[#163625]" x-text="docType"></span>
                                     <span class="truncate font-semibold text-[#163625]" x-text="docName || 'Verification scan'"></span>
                                     <span x-show="docSize" class="text-[10px] text-[#5e6d64]" x-text="'(' + docSize + ')'"></span>
                                 </div>
-                                <button type="button" @click="$refs.docInput.click()" class="rounded-full border border-[#c8dac2] bg-[#eef5ea] px-2.5 py-1 text-[10px] font-bold text-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] transition">
+                                <button type="button" @click="$refs.docInput.click()" class="rounded border border-[#c8dac2] bg-[#eef5ea] px-2.5 py-1 text-[10px] font-bold text-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] transition">
                                     Replace
                                 </button>
                             </div>
@@ -441,7 +441,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         x-model="ownerName"
                         required
                         placeholder="Owner full name"
-                        class="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                        class="rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                     >
                 </div>
 
@@ -455,7 +455,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         required
                         placeholder="owner@yourworkshop.bd"
                         :class="emailTakenMsg ? 'border-red-400' : 'border-[var(--border)]'"
-                        class="rounded-2xl border bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                        class="rounded-lg border bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                     >
                     <p x-show="emailTakenMsg" x-text="emailTakenMsg" class="text-[11px] font-medium text-red-600 pl-1"></p>
                 </div>
@@ -472,7 +472,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         required
                         placeholder="01XXXXXXXXX"
                         :class="phoneInvalid ? 'border-red-400' : 'border-[var(--border)]'"
-                        class="rounded-2xl border bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                        class="rounded-lg border bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                     >
                     <p x-show="phoneInvalid" x-cloak class="text-[11px] font-medium text-red-600 pl-1">
                         Enter a valid Bangladeshi phone number (e.g. 01712345678).
@@ -487,7 +487,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         x-model="shopName"
                         required
                         placeholder="e.g. Dhaka Circuit Care"
-                        class="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                        class="rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                     >
                 </div>
 
@@ -505,7 +505,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 required
                                 minlength="8"
                                 placeholder="Min. 8 characters"
-                                class="w-full rounded-2xl border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                                class="w-full rounded-lg border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                             >
                             <button type="button" @click="showPass = !showPass" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">
                                 <span x-text="showPass ? 'Hide' : 'Show'">Show</span>
@@ -529,7 +529,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 autocomplete="new-password"
                                 required
                                 placeholder="Confirm password"
-                                class="w-full rounded-2xl border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                                class="w-full rounded-lg border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                             >
                             <button type="button" @click="showConfirmPass = !showConfirmPass" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500">
                                 <span x-text="showConfirmPass ? 'Hide' : 'Show'">Show</span>
@@ -546,7 +546,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         name="business_license_no"
                         value="{{ old('business_license_no', $profile->business_license_no ?? '') }}"
                         placeholder="e.g. TRAD/DNCC/129482"
-                        class="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                        class="rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                     >
                 </div>
 
@@ -561,7 +561,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         data-digits-only
                         value="{{ old('nid_number', $profile->nid_number ?? '') }}"
                         placeholder="Owner NID number (10, 13, or 17 digits)"
-                        class="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                        class="rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                     >
                 </div>
 
@@ -580,7 +580,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     <input type="hidden" name="gps_address" :value="gpsAddress">
 
                     <template x-if="shopLat && shopLng">
-                        <div class="flex items-center justify-between gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                        <div class="flex items-center justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
                             <div class="flex items-center gap-2 text-xs font-semibold text-emerald-800">
                                 <i class="fa-solid fa-map-pin"></i>
                                 <span>
@@ -602,7 +602,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         <button
                             type="button"
                             @click="$dispatch('meramot-open-location-modal')"
-                            class="flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--border)] bg-[var(--mint-50)] px-4 py-4 text-sm font-semibold text-[#244229] transition hover:border-[#244229] hover:bg-[var(--mint-100)]"
+                            class="flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--mint-50)] px-4 py-4 text-sm font-semibold text-[#244229] transition hover:border-[#244229] hover:bg-[var(--mint-100)]"
                         >
                             <i class="fa-solid fa-location-dot"></i>
                             <span>Pick shop location on map</span>
@@ -627,7 +627,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                         x-model="shopAddress"
                         :readonly="sameAsGps"
                         placeholder="e.g. Shop 12, Level 3, Multiplan Center, Dhaka"
-                        class="rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                        class="rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                     >
                 </div>
 
@@ -648,7 +648,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
             <!-- Multi-Select & Creatable Specialties -->
             <div class="space-y-2">
                 <label class="text-xs font-semibold text-slate-700 pl-1 block">Specialties</label>
-                <div class="rounded-2xl border border-[var(--border)] bg-white p-3.5 space-y-3">
+                <div class="rounded-lg border border-[var(--border)] bg-white p-3.5 space-y-3">
                     <div class="flex flex-wrap gap-1.5">
                         <template x-for="spec in selectedSpecialties" :key="spec">
                             <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-900">
@@ -679,7 +679,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                                 type="button"
                                 @click="toggleSpecialty(opt)"
                                 :class="selectedSpecialties.includes(opt) ? 'bg-[#244229] text-white border-[#244229]' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50'"
-                                class="rounded-full border px-3 py-1 text-[11px] font-medium leading-snug text-left sm:text-center transition"
+                                class="rounded-md border px-3 py-1 text-[11px] font-medium leading-snug text-left sm:text-center transition"
                                 x-text="opt"
                             ></button>
                         </template>
@@ -688,7 +688,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
             </div>
 
             <!-- Optional Multi-Branch Toggle -->
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/40 p-3.5 space-y-2">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/40 p-3.5 space-y-2">
                 <label class="flex items-center gap-2.5 cursor-pointer text-xs font-semibold text-[#203126]">
                     <input type="checkbox" name="is_branched" value="1" x-model="isBranched" class="h-4 w-4 accent-[#244229]">
                     <span>Operate multiple branches under this brand (optional — can also enable later)</span>
@@ -710,7 +710,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     name="notes"
                     rows="3"
                     placeholder="Additional notes about your workshop, equipment, or experience (optional)"
-                    class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
+                    class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] outline-none focus:border-[#244229]"
                 >{{ old('notes', $profile->notes ?? '') }}</textarea>
             </div>
 
@@ -729,7 +729,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                 <div class="grid gap-3 sm:grid-cols-3">
                     <label
                         :class="capCourier ? 'border-[#244229] bg-[#f4faf1] ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white'"
-                        class="flex items-start gap-2.5 rounded-2xl border p-3.5 text-sm text-[#203126] cursor-pointer transition"
+                        class="flex items-start gap-2.5 rounded-lg border p-3.5 text-sm text-[#203126] cursor-pointer transition"
                     >
                         <input
                             type="checkbox"
@@ -747,7 +747,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
 
                     <label
                         :class="capInShop ? 'border-[#244229] bg-[#f4faf1] ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white'"
-                        class="flex items-start gap-2.5 rounded-2xl border p-3.5 text-sm text-[#203126] cursor-pointer transition"
+                        class="flex items-start gap-2.5 rounded-lg border p-3.5 text-sm text-[#203126] cursor-pointer transition"
                     >
                         <input
                             type="checkbox"
@@ -765,7 +765,7 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
 
                     <label
                         :class="capSpareParts ? 'border-[#244229] bg-[#f4faf1] ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white'"
-                        class="flex items-start gap-2.5 rounded-2xl border p-3.5 text-sm text-[#203126] cursor-pointer transition"
+                        class="flex items-start gap-2.5 rounded-lg border p-3.5 text-sm text-[#203126] cursor-pointer transition"
                     >
                         <input
                             type="checkbox"
@@ -782,18 +782,18 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                     </label>
                 </div>
 
-                <div x-show="isPureWholesaler" x-cloak class="rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-2.5 text-xs text-emerald-900">
+                <div x-show="isPureWholesaler" x-cloak class="rounded-lg border border-emerald-200 bg-emerald-50/70 px-4 py-2.5 text-xs text-emerald-900">
                     <i class="fa-solid fa-boxes-stacked mr-1.5 text-emerald-700"></i>
                     <strong>Spare Parts Wholesaler / Store mode:</strong> your storefront will list your parts inventory without repair service intake.
                 </div>
 
-                <div x-show="capError" x-cloak class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-800" x-text="capError"></div>
+                <div x-show="capError" x-cloak class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-800" x-text="capError"></div>
             </div>
 
             <button
                 type="submit"
                 :disabled="(!isEditMode && passwordsMismatch) || Boolean(emailTakenMsg)"
-                class="w-full rounded-2xl bg-[#244229] px-5 py-3.5 text-sm font-semibold text-white shadow-md transition hover:opacity-95 disabled:opacity-60"
+                class="w-full rounded-lg bg-[#244229] px-5 py-3.5 text-sm font-semibold text-white shadow-md transition hover:opacity-95 disabled:opacity-60"
             >
                 {{ $isEditMode ? 'Update submitted information' : 'Submit vendor application' }}
             </button>

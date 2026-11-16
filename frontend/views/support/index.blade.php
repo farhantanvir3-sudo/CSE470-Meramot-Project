@@ -14,42 +14,42 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
 @section('content')
 <div class="mx-auto max-w-6xl px-4 py-6 md:px-6 space-y-6">
     <!-- Hero Banner -->
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm flex flex-wrap items-center justify-between gap-4">
+    <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div class="max-w-2xl">
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
+            <span class="inline-flex items-center gap-1.5 rounded bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">
                 <i class="fa-solid fa-headset"></i> Meramot Trust &amp; Resolution Center
             </span>
-            <h1 class="mt-2 text-2xl md:text-3xl font-black text-[var(--foreground)]">Support &amp; Dispute Desk</h1>
+            <h1 class="mt-2 text-2xl md:text-3xl font-bold text-[var(--foreground)]">Support &amp; Dispute Desk</h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
                 Protected by Meramot Buyer Protection — open a refund claim if a completed service differs from your approved quote, or reach our customer support team.
             </p>
         </div>
         @if(auth()->user()?->role === 'admin')
-            <a href="/admin/moderation" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+            <a href="/admin/moderation" class="rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                 Open Admin Governance Panel &rarr;
             </a>
         @endif
     </div>
 
     @if(session('success'))
-        <div class="rounded-2xl border border-emerald-400 bg-emerald-50 p-4 text-xs font-bold text-emerald-950 flex items-center gap-3">
+        <div class="rounded-lg border border-emerald-400 bg-emerald-50 p-4 text-xs font-bold text-emerald-950 flex items-center gap-3">
             <i class="fa-solid fa-circle-check text-emerald-700 text-base"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     @if($errors->any())
-        <div class="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs font-bold text-rose-900">
+        <div class="rounded-lg border border-rose-300 bg-rose-50 p-4 text-xs font-bold text-rose-900">
             {{ $errors->first() }}
         </div>
     @endif
 
     @guest
-        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--mint-100)] p-6 text-center space-y-3 text-xs">
-            <p class="text-sm font-black text-[var(--foreground)]">Sign in to file an Order Dispute or track your Support Tickets</p>
+        <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-6 text-center space-y-3 text-xs">
+            <p class="text-sm font-bold text-[var(--foreground)]">Sign in to file an Order Dispute or track your Support Tickets</p>
             <p class="text-[var(--muted-foreground)]">Emergency hotline: <strong>+880 9648-908088</strong> • Email: <strong>support@meramot.bd</strong></p>
             <div class="pt-1">
-                <a href="/login" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-2.5 font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                <a href="/login" class="inline-flex items-center gap-2 rounded-md bg-[var(--accent-dark)] px-6 py-2.5 font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                     Sign In to Continue &rarr;
                 </a>
             </div>
@@ -57,9 +57,9 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
     @else
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
             <!-- Left: File Order Dispute -->
-            <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+            <div class="lg:col-span-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
                 <div>
-                    <h2 class="text-base font-black text-[var(--foreground)]"><i class="fa-solid fa-scale-balanced mr-1.5 text-amber-700"></i> Open Order Dispute</h2>
+                    <h2 class="text-base font-bold text-[var(--foreground)]"><i class="fa-solid fa-scale-balanced mr-1.5 text-amber-700"></i> Open Order Dispute</h2>
                     <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Places workshop payout on hold while our resolution team reviews diagnostic notes and handover records.</p>
                 </div>
 
@@ -82,21 +82,21 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
                                       placeholder="Describe the issue with parts quality, warranty terms, or courier handover..."
                                       class="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-[var(--foreground)]"></textarea>
                         </div>
-                        <button type="submit" class="w-full rounded-full bg-amber-700 hover:bg-amber-800 text-white font-black py-3 px-5 transition shadow">
+                        <button type="submit" class="w-full rounded-md bg-amber-700 hover:bg-amber-800 text-white font-bold py-3 px-5 transition shadow">
                             Submit Dispute Claim
                         </button>
                     </form>
                 @else
-                    <div class="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--mint-100)]/60 p-6 text-center text-[var(--muted-foreground)]">
+                    <div class="rounded-lg border border-dashed border-[var(--border)] bg-[var(--mint-100)]/60 p-6 text-center text-[var(--muted-foreground)]">
                         You have no repair orders to attach to a dispute yet. Use the General Support form on the right for account or platform inquiries.
                     </div>
                 @endif
             </div>
 
             <!-- Right: General Support Ticket -->
-            <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+            <div class="lg:col-span-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
                 <div>
-                    <h2 class="text-base font-black text-[var(--foreground)]"><i class="fa-solid fa-life-ring mr-1.5 text-[var(--accent-dark)]"></i> Open Help &amp; Support Ticket</h2>
+                    <h2 class="text-base font-bold text-[var(--foreground)]"><i class="fa-solid fa-life-ring mr-1.5 text-[var(--accent-dark)]"></i> Open Help &amp; Support Ticket</h2>
                     <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Ask about billing, courier scheduling, workshop onboarding, or technical assistance.</p>
                 </div>
 
@@ -123,7 +123,7 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
                                   placeholder="How can our support engineers help you today?"
                                   class="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-[var(--foreground)]"></textarea>
                     </div>
-                    <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] font-black py-3 px-5 transition shadow">
+                    <button type="submit" class="w-full rounded-md bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] font-bold py-3 px-5 transition shadow">
                         Create Support Ticket
                     </button>
                 </form>
@@ -132,13 +132,13 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
 
         <!-- Active Disputes & Support Threads -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-3">
-                <h3 class="text-base font-black text-[var(--foreground)]">My Dispute Cases ({{ ($myDisputes ?? collect())->count() }})</h3>
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-3">
+                <h3 class="text-base font-bold text-[var(--foreground)]">My Dispute Cases ({{ ($myDisputes ?? collect())->count() }})</h3>
                 @forelse($myDisputes ?? [] as $dc)
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4 space-y-2">
+                    <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/60 p-4 space-y-2">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="font-black text-[var(--foreground)]">Dispute #{{ $dc->id }} • Order #{{ $dc->repair_request_id }}</span>
-                            <span class="rounded-full bg-white border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-black">{{ $dc->status }}</span>
+                            <span class="font-bold text-[var(--foreground)]">Dispute #{{ $dc->id }} • Order #{{ $dc->repair_request_id }}</span>
+                            <span class="rounded bg-white border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold">{{ $dc->status }}</span>
                         </div>
                         @foreach($dc->notes as $n)
                             <p class="text-[11px] text-[var(--muted-foreground)]"><strong>{{ $n->author?->name ?? 'Participant' }}:</strong> {{ $n->note }}</p>
@@ -148,7 +148,7 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
                                 @csrf
                                 <input type="text" name="note" required placeholder="Add follow-up note..."
                                        class="flex-1 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5">
-                                <button type="submit" class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-3.5 py-1.5 font-bold">Post</button>
+                                <button type="submit" class="rounded-md bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-3.5 py-1.5 font-bold">Post</button>
                             </form>
                         @endif
                     </div>
@@ -157,13 +157,13 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
                 @endforelse
             </div>
 
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-3">
-                <h3 class="text-base font-black text-[var(--foreground)]">My Support Tickets ({{ ($myTickets ?? collect())->count() }})</h3>
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-3">
+                <h3 class="text-base font-bold text-[var(--foreground)]">My Support Tickets ({{ ($myTickets ?? collect())->count() }})</h3>
                 @forelse($myTickets ?? [] as $tk)
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4 space-y-2">
+                    <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/60 p-4 space-y-2">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="font-black text-[var(--foreground)]">#{{ $tk->id }} — {{ $tk->subject }}</span>
-                            <span class="rounded-full bg-white border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-black">{{ $tk->status }}</span>
+                            <span class="font-bold text-[var(--foreground)]">#{{ $tk->id }} — {{ $tk->subject }}</span>
+                            <span class="rounded bg-white border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold">{{ $tk->status }}</span>
                         </div>
                         @foreach($tk->messages as $msg)
                             <p class="text-[11px] {{ $msg->sender_type === 'admin' ? 'text-emerald-900 font-semibold' : 'text-[var(--muted-foreground)]' }}">
@@ -175,7 +175,7 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
                                 @csrf
                                 <input type="text" name="message" required placeholder="Write a reply..."
                                        class="flex-1 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5">
-                                <button type="submit" class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-3.5 py-1.5 font-bold">Reply</button>
+                                <button type="submit" class="rounded-md bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-3.5 py-1.5 font-bold">Reply</button>
                             </form>
                         @endif
                     </div>

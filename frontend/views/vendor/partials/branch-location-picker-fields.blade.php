@@ -198,7 +198,7 @@
             x-show="suggestionsOpen && suggestions.length > 0"
             x-cloak
             data-area-suggestions
-            class="absolute left-0 right-0 top-full mt-1 max-h-60 overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--card)] p-1.5 shadow-xl z-[700]"
+            class="absolute left-0 right-0 top-full mt-1 max-h-60 overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--card)] p-1.5 shadow-xl z-[700]"
         >
             <template x-for="(item, idx) in suggestions" :key="'{{ $contextKey }}-s-' + item.city + '-' + item.area + '-' + idx">
                 <button
@@ -211,7 +211,7 @@
                         <p class="truncate text-xs font-bold" x-text="item.area"></p>
                         <p class="truncate text-[10px] text-[var(--muted-foreground)]" x-text="item.address"></p>
                     </div>
-                    <span class="shrink-0 rounded-full bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]" x-text="item.city"></span>
+                    <span class="shrink-0 rounded bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]" x-text="item.city"></span>
                 </button>
             </template>
         </div>

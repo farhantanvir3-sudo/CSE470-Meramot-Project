@@ -40,73 +40,73 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
     </div>
 
     @if(session('error'))
-        <div class="rounded-2xl border border-red-300 bg-red-50 p-4 text-xs text-red-900 flex items-start gap-3">
+        <div class="rounded-lg border border-red-300 bg-red-50 p-4 text-xs text-red-900 flex items-start gap-3">
             <i class="fa-solid fa-circle-xmark text-red-600 mt-0.5"></i>
             <div>
-                <p class="font-extrabold">Payment Authorization Failed</p>
+                <p class="font-semibold">Payment Authorization Failed</p>
                 <p class="mt-0.5">{{ session('error') }}</p>
             </div>
         </div>
     @endif
 
     @if(session('warning'))
-        <div class="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950 flex items-start gap-3">
+        <div class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-xs text-amber-950 flex items-start gap-3">
             <i class="fa-solid fa-triangle-exclamation text-amber-700 mt-0.5"></i>
             <div>
-                <p class="font-extrabold">Payment Session Interrupted</p>
+                <p class="font-semibold">Payment Session Interrupted</p>
                 <p class="mt-0.5">{{ session('warning') }}</p>
             </div>
         </div>
     @endif
 
     @if($paidTxn)
-        <div class="rounded-[2rem] border border-emerald-400 bg-emerald-50/95 p-6 shadow-sm space-y-4">
+        <div class="rounded-lg border border-emerald-400 bg-emerald-50/95 p-6 shadow-sm space-y-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
-                    <span class="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-700 text-white shadow-sm">
+                    <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-700 text-white shadow-sm">
                         <i class="fa-solid fa-shield-check text-lg"></i>
                     </span>
                     <div>
-                        <p class="text-sm font-black text-emerald-950">Payment Received &amp; Protected</p>
+                        <p class="text-sm font-bold text-emerald-950">Payment Received &amp; Protected</p>
                         <p class="text-xs text-emerald-900">Ref: <span class="font-mono font-bold">{{ $paidTxn->transaction_reference }}</span> • Method: <strong>{{ $paidTxn->payment_method }}</strong></p>
                     </div>
                 </div>
-                <span class="rounded-full bg-emerald-700 px-3.5 py-1 text-xs font-extrabold text-white">
+                <span class="rounded-md bg-emerald-700 px-3.5 py-1 text-xs font-semibold text-white">
                     PAID ৳{{ number_format((float) $paidTxn->amount, 2) }}
                 </span>
             </div>
             <div class="flex flex-wrap gap-3 pt-1">
                 @if($invoiceDoc)
-                    <a href="{{ route('invoices.show', $invoiceDoc->id) }}" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                    <a href="{{ route('invoices.show', $invoiceDoc->id) }}" class="inline-flex items-center gap-2 rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                         <i class="fa-solid fa-file-invoice"></i> View Official Invoice
                     </a>
-                    <a href="{{ route('invoices.pdf', $invoiceDoc->id) }}" class="inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-white px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+                    <a href="{{ route('invoices.pdf', $invoiceDoc->id) }}" class="inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-white px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
                         <i class="fa-solid fa-file-pdf text-red-600"></i> Download PDF Receipt
                     </a>
                 @endif
-                <a href="{{ route('requests.track', $repairRequest->id) }}" class="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-100/70 px-5 py-2.5 text-xs font-bold text-emerald-950 hover:bg-emerald-200/70 transition">
+                <a href="{{ route('requests.track', $repairRequest->id) }}" class="inline-flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-100/70 px-5 py-2.5 text-xs font-bold text-emerald-950 hover:bg-emerald-200/70 transition">
                     <i class="fa-solid fa-arrow-left"></i> Back to Order Tracker
                 </a>
             </div>
         </div>
     @endif
 
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
+    <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
         <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
             <div class="min-w-0">
-                <h1 class="text-2xl font-black text-[var(--foreground)]">Secure Checkout</h1>
+                <h1 class="text-2xl font-bold text-[var(--foreground)]">Secure Checkout</h1>
                 <p class="text-xs text-[var(--muted-foreground)] mt-1 break-words">Order #{{ $repairRequest->id }} — {{ $repairRequest->title }}</p>
             </div>
-            <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3.5 py-1.5 rounded-full border border-[var(--border)] whitespace-nowrap">
+            <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3.5 py-1.5 rounded-md border border-[var(--border)] whitespace-nowrap">
                 <i class="fa-solid fa-shield-halved mr-1"></i> 100% Buyer Protected
             </span>
         </div>
 
         <!-- Order Financial Breakdown -->
-        <div class="border border-[var(--border)] rounded-2xl p-5 bg-[var(--mint-100)] mb-6 text-xs space-y-2.5">
+        <div class="border border-[var(--border)] rounded-lg p-5 bg-[var(--mint-100)] mb-6 text-xs space-y-2.5">
             @if($isDirectService && !empty($quoteItems))
                 <div class="border-b border-[var(--border)] pb-3 mb-1 space-y-1.5">
-                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Booked Services</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Booked Services</p>
                     @foreach($quoteItems as $item)
                         @php
                             $itemQty = max(1, (int) ($item['quantity'] ?? 1));
@@ -208,7 +208,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                 </div>
             @endif
 
-            <div class="border-t border-[var(--border)] pt-2.5 flex justify-between gap-3 font-black text-base text-[var(--foreground)]">
+            <div class="border-t border-[var(--border)] pt-2.5 flex justify-between gap-3 font-bold text-base text-[var(--foreground)]">
                 <span>Total Payable:</span>
                 <span class="text-[var(--accent-dark)] shrink-0">৳{{ number_format($totalPayable, 2) }}</span>
             </div>
@@ -222,7 +222,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                 <input type="hidden" name="payment_method" :value="selectedChannel">
 
                 <div>
-                    <p class="text-[11px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)] mb-2.5">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-2.5">
                         Select Payment Method
                     </p>
                     <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
@@ -242,14 +242,14 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                                 :class="selectedChannel === '{{ $ch['code'] }}'
                                     ? 'border-[var(--accent-dark)] bg-[var(--mint-100)] ring-2 ring-[var(--accent-dark)]/20'
                                     : 'border-[var(--border)] bg-white/80 hover:bg-[var(--mint-100)]/60'"
-                                class="rounded-2xl border p-3 text-left transition flex flex-col justify-between gap-1"
+                                class="rounded-lg border p-3 text-left transition flex flex-col justify-between gap-1"
                             >
                                 <div class="flex items-center justify-between">
                                     <i class="fa-solid {{ $ch['icon'] }} {{ $ch['accent'] }} text-sm"></i>
                                     <span x-show="selectedChannel === '{{ $ch['code'] }}'" class="h-2 w-2 rounded-full bg-[var(--accent-dark)]"></span>
                                 </div>
                                 <div>
-                                    <p class="font-black text-[var(--foreground)]">{{ $ch['label'] }}</p>
+                                    <p class="font-bold text-[var(--foreground)]">{{ $ch['label'] }}</p>
                                     <p class="text-[10px] text-[var(--muted-foreground)]">{{ $ch['sub'] }}</p>
                                 </div>
                             </button>
@@ -257,17 +257,17 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-[var(--border)] bg-white/70 px-4 py-3 text-[11px] text-[var(--muted-foreground)] flex items-start gap-2.5">
+                <div class="rounded-lg border border-[var(--border)] bg-white/70 px-4 py-3 text-[11px] text-[var(--muted-foreground)] flex items-start gap-2.5">
                     <i class="fa-solid fa-lock text-[var(--accent-dark)] mt-0.5"></i>
                     <span>Your payment is held <strong>safely by Meramot</strong> and only released to the workshop after repair verification and device return.</span>
                 </div>
 
-                <button type="submit" class="w-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] font-bold py-3.5 px-5 rounded-full text-xs transition flex items-center justify-center gap-2 shadow">
+                <button type="submit" class="w-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] font-bold py-3.5 px-5 rounded-md text-xs transition flex items-center justify-center gap-2 shadow">
                     <i class="fa-solid fa-lock"></i>
                     <span>Authorize ৳{{ number_format($totalPayable, 0) }} via SSLCommerz</span>
                 </button>
 
-                <a href="{{ route('requests.track', $repairRequest->id) }}" class="block w-full text-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] py-3 px-4 text-xs font-bold text-[var(--foreground)] transition">
+                <a href="{{ route('requests.track', $repairRequest->id) }}" class="block w-full text-center rounded-md border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] py-3 px-4 text-xs font-bold text-[var(--foreground)] transition">
                     &larr; Return to Order Tracker &middot; Pay on Delivery
                 </a>
             </form>

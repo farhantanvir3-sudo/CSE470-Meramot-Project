@@ -6,10 +6,18 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Delivery Workspace | Meramot')</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+    @php
+        $cssAssetVer = @filemtime(base_path('../frontend/src/styles/compiled.css')) ?: 1;
+    @endphp
+    <link rel="stylesheet" href="/styles/compiled.css?v={{ $cssAssetVer }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    @if(request()->is('delivery/map*'))
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    @endif
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <style>
@@ -26,7 +34,8 @@
         html, body {
             background-color: var(--background);
             color: var(--foreground);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: Inter, "Hind Siliguri", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            letter-spacing: -0.01em;
             min-height: 100vh;
         }
         [x-cloak] { display: none !important; }
@@ -75,11 +84,11 @@
             </button>
             <a href="/delivery" class="flex items-center gap-2">
                 <img src="/images/meramot.svg" alt="Meramot" class="h-8 w-auto object-contain">
-                <span class="text-xs font-extrabold text-[#163625]">Delivery Workspace</span>
+                <span class="text-xs font-semibold text-[#163625]">Delivery Workspace</span>
             </a>
         </div>
         @auth
-            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+            <span class="inline-flex items-center gap-1 rounded bg-emerald-100 px-2.5 py-1 text-[10px] font-bold text-emerald-800 border border-emerald-200">
                 <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
                 {{ $authRider?->status ?? 'AVAILABLE' }}
             </span>
@@ -98,10 +107,10 @@
         </div>
 
         @auth
-            <div class="mx-4 mt-4 rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] px-3.5 py-3">
+            <div class="mx-4 mt-4 rounded-lg border border-[#d9e5d5] bg-[#f8fbf6] px-3.5 py-3">
                 <p class="truncate text-xs font-bold text-[#163625]">{{ auth()->user()->name }}</p>
                 <p class="truncate font-mono text-[11px] text-[#163625]/70">{{ $authRider?->company_email ?: auth()->user()->email }}</p>
-                <span class="mt-1.5 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                <span class="mt-1.5 inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
                     <span class="h-1.5 w-1.5 rounded-full bg-emerald-600"></span>
                     {{ $authRider?->status ?? 'AVAILABLE' }}
                 </span>
@@ -120,7 +129,7 @@
                         <span class="truncate">{{ $item['name'] }}</span>
                     </span>
                     @if(!empty($item['badge']))
-                        <span class="shrink-0 rounded-full bg-[#163625] px-2 py-0.5 text-[10px] font-bold text-[#E4FCD5]">
+                        <span class="shrink-0 rounded bg-[#163625] px-2 py-0.5 text-[10px] font-bold text-[#E4FCD5]">
                             {{ $item['badge'] }}
                         </span>
                     @endif
@@ -162,28 +171,28 @@
     <main class="min-h-screen flex-1 min-w-0">
         <div class="mx-auto w-full max-w-6xl px-4 py-5 pb-10 sm:px-5 md:px-5 lg:px-8 lg:py-8 space-y-5">
             @if(session('success'))
-                <div class="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
+                <div class="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
                     <i class="fa-solid fa-circle-check text-emerald-700"></i>
                     <span>{{ session('success') }}</span>
                 </div>
             @endif
 
             @if(session('warning'))
-                <div class="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-950 flex items-center gap-2 shadow-sm">
+                <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-950 flex items-center gap-2 shadow-sm">
                     <i class="fa-solid fa-triangle-exclamation text-amber-700"></i>
                     <span>{{ session('warning') }}</span>
                 </div>
             @endif
 
             @if(session('error'))
-                <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
+                <div class="rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
                     <i class="fa-solid fa-circle-exclamation text-rose-700"></i>
                     <span>{{ session('error') }}</span>
                 </div>
             @endif
 
             @if($errors->any())
-                <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-900 space-y-1 shadow-sm">
+                <div class="rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-900 space-y-1 shadow-sm">
                     @foreach($errors->all() as $err)
                         <div class="flex items-center gap-2 font-bold">
                             <i class="fa-solid fa-circle-exclamation text-rose-700"></i>

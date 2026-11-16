@@ -12,9 +12,9 @@
             </a>
         </div>
 
-        <div class="rounded-[2rem] border border-white/60 bg-white/95 px-8 py-7 shadow-2xl backdrop-blur">
+        <div class="rounded-lg border border-white/60 bg-white/95 px-8 py-7 shadow-2xl backdrop-blur">
             <div class="mb-5 text-center">
-                <span class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef5ea] text-[#214c34] mb-3">
+                <span class="inline-flex h-12 w-12 items-center justify-center rounded-lg bg-[#eef5ea] text-[#214c34] mb-3">
                     <i class="fa-solid fa-envelope-circle-check text-xl"></i>
                 </span>
                 <h1 class="text-2xl font-bold leading-tight text-[#214c34]">
@@ -23,19 +23,19 @@
                 <p class="mt-1.5 text-sm text-[#5e6d64]">
                     Enter the 6-digit verification code sent to:
                 </p>
-                <p class="mt-1 inline-block rounded-full bg-[#eef5ea] px-3.5 py-1 text-xs font-semibold text-[#214c34]">
+                <p class="mt-1 inline-block rounded-md bg-[#eef5ea] px-3.5 py-1 text-xs font-semibold text-[#214c34]">
                     {{ $user->email }}
                 </p>
             </div>
 
             @if(session('success'))
-                <div class="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-medium text-emerald-800">
+                <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-medium text-emerald-800">
                     {{ session('success') }}
                 </div>
             @endif
 
             @if($errors->any())
-                <div class="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-600">
+                <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-600">
                     {{ $errors->first() }}
                 </div>
             @endif
@@ -57,7 +57,7 @@
                         data-digits-only
                         required
                         autofocus
-                        class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3.5 text-center text-2xl font-bold tracking-[0.45em] text-[#214c34] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3.5 text-center text-2xl font-bold tracking-[0.45em] text-[#214c34] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="000000"
                     />
                 </div>

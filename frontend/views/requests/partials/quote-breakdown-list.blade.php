@@ -12,7 +12,7 @@
 
 <div class="rounded-xl border {{ $boxBorder }} {{ $compact ? 'p-2.5 space-y-1.5' : 'p-3.5 space-y-2' }} text-xs">
     <div class="flex items-center justify-between gap-2">
-        <span class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
+        <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">
             Parts Pricing Breakdown
         </span>
         <span class="text-[11px] font-bold text-[var(--foreground)]">
@@ -36,7 +36,7 @@
                         <span class="text-[var(--foreground)] min-w-0 break-words">
                             <span class="font-bold text-[var(--accent-dark)] mr-1">{{ $index + 1 }}.</span>{{ $part['name'] ?? ('Part #' . ($index + 1)) }}
                         </span>
-                        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 {{ $partWarranty ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--mint-100)] text-[var(--muted-foreground)] border border-[var(--border)]' }}">
+                        <span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold shrink-0 {{ $partWarranty ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--mint-100)] text-[var(--muted-foreground)] border border-[var(--border)]' }}">
                             <i class="{{ $partWarranty ? 'fa-solid fa-shield-halved text-[9px] text-emerald-700' : 'fa-regular fa-circle-xmark text-[9px]' }}"></i>
                             {{ $partWarranty ? "{$partDays}d warranty" : 'No warranty' }}
                         </span>
@@ -57,7 +57,7 @@
         <span class="text-[var(--muted-foreground)]">
             Bench Labor: <strong class="text-[var(--foreground)]">৳{{ number_format($laborTotal, 2) }}</strong>
         </span>
-        <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold {{ $warrantyActive ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--mint-100)] text-[var(--muted-foreground)] border border-[var(--border)]' }}">
+        <span class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold {{ $warrantyActive ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--mint-100)] text-[var(--muted-foreground)] border border-[var(--border)]' }}">
             <i class="{{ $warrantyActive ? 'fa-solid fa-circle-check text-emerald-700' : 'fa-regular fa-circle-xmark' }}"></i>
             {{ $warrantySummary }}
         </span>

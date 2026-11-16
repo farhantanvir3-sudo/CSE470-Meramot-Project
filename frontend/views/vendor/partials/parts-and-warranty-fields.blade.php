@@ -4,10 +4,10 @@
 @endphp
 
 <!-- Separate Section: Itemized Parts Pricing & Per-Part Warranty Breakdown -->
-<div class="rounded-2xl border border-[var(--border)] {{ $containerBg }} p-3 sm:p-3.5 space-y-2.5">
+<div class="rounded-lg border border-[var(--border)] {{ $containerBg }} p-3 sm:p-3.5 space-y-2.5">
     <div class="flex items-center justify-between gap-2">
         <div class="min-w-0">
-            <span class="block text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
+            <span class="block text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">
                 Parts Pricing &amp; Warranty Breakdown
             </span>
             <span class="block text-[10px] text-[var(--muted-foreground)]">
@@ -17,7 +17,7 @@
         <button
             type="button"
             @click="addPart()"
-            class="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dark)] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm hover:opacity-90 transition shrink-0"
+            class="inline-flex items-center gap-1 rounded-md bg-[var(--accent-dark)] px-2.5 py-1 text-[11px] font-bold text-white shadow-sm hover:opacity-90 transition shrink-0"
             title="Add another part line item"
         >
             <i class="fa-solid fa-plus text-[10px]"></i>
@@ -31,7 +31,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div class="flex items-center gap-2 min-w-0 flex-1">
                         <span
-                            class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--mint-200)] text-[11px] font-black text-[var(--accent-dark)]"
+                            class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--mint-200)] text-[11px] font-bold text-[var(--accent-dark)]"
                             x-text="(idx + 1) + '.'"
                         ></span>
                         <input
@@ -109,7 +109,7 @@
                     <span
                         x-show="!part.has_warranty"
                         x-cloak
-                        class="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--mint-100)]/60 px-2 py-0.5 text-[10px] font-semibold text-[var(--muted-foreground)]"
+                        class="inline-flex items-center gap-1 rounded border border-[var(--border)] bg-[var(--mint-100)]/60 px-2 py-0.5 text-[10px] font-semibold text-[var(--muted-foreground)]"
                     >
                         No warranty
                     </span>
@@ -121,9 +121,9 @@
     <div class="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--border)]/60 pt-2 text-[11px]">
         <div class="flex flex-wrap items-center gap-2">
             <span class="font-semibold text-[var(--muted-foreground)]">Parts Subtotal</span>
-            <span class="inline-flex items-center gap-1 rounded-full border border-[var(--border)] bg-[var(--card)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]" x-text="warrantySummaryText"></span>
+            <span class="inline-flex items-center gap-1 rounded border border-[var(--border)] bg-[var(--card)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]" x-text="warrantySummaryText"></span>
         </div>
-        <span class="font-black text-[var(--foreground)]">৳<span x-text="formatMoney(partsSubtotal)">0.00</span></span>
+        <span class="font-bold text-[var(--foreground)]">৳<span x-text="formatMoney(partsSubtotal)">0.00</span></span>
     </div>
     <input type="hidden" name="parts_cost" :value="partsSubtotal.toFixed(2)">
 </div>

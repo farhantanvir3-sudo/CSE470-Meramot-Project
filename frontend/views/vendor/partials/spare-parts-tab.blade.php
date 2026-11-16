@@ -20,13 +20,13 @@
 
 <div x-show="activeTab === 'spare_parts'" x-cloak class="space-y-4 sm:space-y-6">
     {{-- Top Summary Banner & Quick Actions --}}
-    <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 shadow-sm">
+    <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 shadow-sm">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
             <div>
-                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-900 text-white text-[10px] font-extrabold uppercase tracking-wider mb-1">
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-emerald-900 text-white text-[10px] font-semibold uppercase tracking-wider mb-1">
                     🔩 Multi-Vendor Spare Parts Center
                 </div>
-                <h2 class="text-base sm:text-xl font-black text-[var(--foreground)]">
+                <h2 class="text-base sm:text-xl font-bold text-[var(--foreground)]">
                     Spare Parts Catalog, Sale Offers &amp; Wholesale Tiers
                 </h2>
                 <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
@@ -36,16 +36,16 @@
 
             <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <a href="{{ url('/spare-parts') }}"
-                   class="px-3.5 py-2 rounded-full border border-[var(--border)] bg-white hover:bg-[var(--mint-50)] text-[var(--foreground)] text-xs font-bold transition">
+                   class="px-3.5 py-2 rounded-md border border-[var(--border)] bg-white hover:bg-[var(--mint-50)] text-[var(--foreground)] text-xs font-bold transition">
                     🛒 Buy Parts from Other Vendors
                 </a>
                 <a href="{{ url('/orders') }}"
-                   class="px-3.5 py-2 rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] text-[var(--accent-dark)] text-xs font-bold transition">
+                   class="px-3.5 py-2 rounded-md border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] text-[var(--accent-dark)] text-xs font-bold transition">
                     📦 My Spare Part Purchases
                 </a>
                 <button type="button"
                         onclick="window.vspOpenCreateForm()"
-                        class="px-4 py-2 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-extrabold shadow-sm hover:opacity-90 transition">
+                        class="px-4 py-2 rounded-md bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-semibold shadow-sm hover:opacity-90 transition">
                     + List New Spare Part
                 </button>
             </div>
@@ -53,34 +53,34 @@
 
         {{-- 4 KPI Stat Cards --}}
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)]/70 p-3 sm:p-4">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-50)]/70 p-3 sm:p-4">
                 <div class="text-[10px] sm:text-xs font-bold uppercase text-[var(--muted-foreground)]">Total Spare Parts</div>
-                <div class="text-xl sm:text-2xl font-black text-[var(--foreground)] mt-0.5">{{ number_format($spStats['total_count']) }}</div>
+                <div class="text-xl sm:text-2xl font-bold text-[var(--foreground)] mt-0.5">{{ number_format($spStats['total_count']) }}</div>
                 <div class="text-[10px] text-[var(--muted-foreground)] mt-0.5">In selected branch scope</div>
             </div>
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)]/70 p-3 sm:p-4">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-50)]/70 p-3 sm:p-4">
                 <div class="text-[10px] sm:text-xs font-bold uppercase text-[var(--muted-foreground)]">Active in Marketplace</div>
-                <div class="text-xl sm:text-2xl font-black text-emerald-800 mt-0.5">{{ number_format($spStats['active_count']) }}</div>
+                <div class="text-xl sm:text-2xl font-bold text-emerald-800 mt-0.5">{{ number_format($spStats['active_count']) }}</div>
                 <div class="text-[10px] text-[var(--muted-foreground)] mt-0.5">Live on /spare-parts</div>
             </div>
-            <div class="rounded-2xl border border-red-200 bg-red-50/60 p-3 sm:p-4">
+            <div class="rounded-lg border border-red-200 bg-red-50/60 p-3 sm:p-4">
                 <div class="text-[10px] sm:text-xs font-bold uppercase text-red-800">Active "Sale!" Offers</div>
-                <div class="text-xl sm:text-2xl font-black text-red-600 mt-0.5">{{ number_format($spStats['offer_count']) }}</div>
+                <div class="text-xl sm:text-2xl font-bold text-red-600 mt-0.5">{{ number_format($spStats['offer_count']) }}</div>
                 <div class="text-[10px] text-red-800/80 mt-0.5">Circular Red Sale! banner</div>
             </div>
-            <div class="rounded-2xl border border-amber-200 bg-amber-50/60 p-3 sm:p-4">
+            <div class="rounded-lg border border-amber-200 bg-amber-50/60 p-3 sm:p-4">
                 <div class="text-[10px] sm:text-xs font-bold uppercase text-amber-900">Wholesale Enabled</div>
-                <div class="text-xl sm:text-2xl font-black text-amber-900 mt-0.5">{{ number_format($spStats['wholesale_count']) }}</div>
+                <div class="text-xl sm:text-2xl font-bold text-amber-900 mt-0.5">{{ number_format($spStats['wholesale_count']) }}</div>
                 <div class="text-[10px] text-amber-900/80 mt-0.5">Progressive 100+ bulk tiers</div>
             </div>
         </div>
     </div>
 
     {{-- Create / Edit Spare Part Listing Builder Drawer --}}
-    <div id="vspFormWrapper" class="{{ $errors->any() ? '' : 'hidden' }} rounded-2xl border-2 border-[var(--accent-dark)]/35 bg-[var(--card)] p-4 sm:p-6 shadow-md">
+    <div id="vspFormWrapper" class="{{ $errors->any() ? '' : 'hidden' }} rounded-lg border-2 border-[var(--accent-dark)]/35 bg-[var(--card)] p-4 sm:p-6 shadow-md">
         <div class="flex items-center justify-between gap-2 pb-3 mb-4 border-b border-[var(--border)]">
             <div>
-                <h3 id="vspFormTitle" class="text-base sm:text-lg font-black text-[var(--foreground)]">
+                <h3 id="vspFormTitle" class="text-base sm:text-lg font-bold text-[var(--foreground)]">
                     + Publish New Spare Part Listing
                 </h3>
                 <p class="text-xs text-[var(--muted-foreground)]">
@@ -89,7 +89,7 @@
             </div>
             <button type="button"
                     onclick="window.vspCloseForm()"
-                    class="px-3 py-1.5 rounded-full border border-[var(--border)] bg-white text-xs font-bold text-[var(--foreground)] hover:bg-rose-50 hover:text-rose-700 transition">
+                    class="px-3 py-1.5 rounded-md border border-[var(--border)] bg-white text-xs font-bold text-[var(--foreground)] hover:bg-rose-50 hover:text-rose-700 transition">
                 ✕ Close
             </button>
         </div>
@@ -106,7 +106,7 @@
             {{-- Row 1: Seller Branch, Part Category, Brand --}}
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                 <div>
-                    <label for="vspShopId" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspShopId" class="block font-semibold text-[var(--foreground)] mb-1">
                         Attached Seller Shop / Branch <span class="text-red-600">*</span>
                     </label>
                     <select name="shop_id" id="vspShopId" required
@@ -120,7 +120,7 @@
                 </div>
 
                 <div>
-                    <label for="vspCategory" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspCategory" class="block font-semibold text-[var(--foreground)] mb-1">
                         Part Category <span class="text-red-600">*</span>
                     </label>
                     <select name="part_category" id="vspCategory" required
@@ -132,7 +132,7 @@
                 </div>
 
                 <div>
-                    <label for="vspBrand" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspBrand" class="block font-semibold text-[var(--foreground)] mb-1">
                         Device / Component Brand <span class="text-red-600">*</span>
                     </label>
                     <input type="text" name="brand" id="vspBrand" list="vspBrandDatalist" required
@@ -150,7 +150,7 @@
             {{-- Row 2: Listing Title, Compatible Model, Condition & SKU --}}
             <div class="grid grid-cols-1 md:grid-cols-12 gap-3.5">
                 <div class="md:col-span-6">
-                    <label for="vspTitle" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspTitle" class="block font-semibold text-[var(--foreground)] mb-1">
                         Spare Part Title <span class="text-red-600">*</span>
                     </label>
                     <input type="text" name="title" id="vspTitle" required
@@ -159,7 +159,7 @@
                            class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 font-bold text-[var(--foreground)]">
                 </div>
                 <div class="md:col-span-3">
-                    <label for="vspModel" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspModel" class="block font-semibold text-[var(--foreground)] mb-1">
                         Compatible Model
                     </label>
                     <input type="text" name="compatible_model" id="vspModel"
@@ -168,7 +168,7 @@
                            class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2.5 text-[var(--foreground)]">
                 </div>
                 <div class="md:col-span-3">
-                    <label for="vspCondition" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspCondition" class="block font-semibold text-[var(--foreground)] mb-1">
                         Condition Grade
                     </label>
                     <input type="text" name="condition_label" id="vspCondition"
@@ -181,7 +181,7 @@
             {{-- Row 3: Stock, Handling Hours, Warranty, Optional Fitting Fee, SKU --}}
             <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
                 <div>
-                    <label for="vspStock" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspStock" class="block font-semibold text-[var(--foreground)] mb-1">
                         Total Stock Qty <span class="text-red-600">*</span>
                     </label>
                     <input type="number" name="stock_quantity" id="vspStock" min="0" max="100000" required
@@ -189,7 +189,7 @@
                            class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 font-bold text-[var(--foreground)]">
                 </div>
                 <div>
-                    <label for="vspHandling" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspHandling" class="block font-semibold text-[var(--foreground)] mb-1">
                         Dispatch Prep (Hrs)
                     </label>
                     <input type="number" name="handling_hours" id="vspHandling" min="1" max="72"
@@ -197,7 +197,7 @@
                            class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
                 </div>
                 <div>
-                    <label for="vspWarranty" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspWarranty" class="block font-semibold text-[var(--foreground)] mb-1">
                         Warranty (Days)
                     </label>
                     <input type="number" name="warranty_days" id="vspWarranty" min="0" max="1095"
@@ -205,7 +205,7 @@
                            class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
                 </div>
                 <div>
-                    <label for="vspAssemblyFee" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspAssemblyFee" class="block font-semibold text-[var(--foreground)] mb-1">
                         Fitting Fee (Optional ৳)
                     </label>
                     <input type="number" step="0.01" name="assembly_fee" id="vspAssemblyFee" min="0"
@@ -213,7 +213,7 @@
                            class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
                 </div>
                 <div class="col-span-2 md:col-span-1">
-                    <label for="vspSku" class="block font-extrabold text-[var(--foreground)] mb-1">
+                    <label for="vspSku" class="block font-semibold text-[var(--foreground)] mb-1">
                         SKU (Optional)
                     </label>
                     <input type="text" name="sku" id="vspSku"
@@ -226,9 +226,9 @@
             {{-- ==============================================================
                  MODULE A: SINGLE PRICE vs SPECIFICATION OPTIONS (`has_specs`)
                  ============================================================== --}}
-            <div class="rounded-2xl border border-emerald-900/20 bg-emerald-50/55 p-4 space-y-3">
+            <div class="rounded-lg border border-emerald-900/20 bg-emerald-50/55 p-4 space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <label class="inline-flex items-center gap-2 cursor-pointer font-extrabold text-sm text-emerald-950">
+                    <label class="inline-flex items-center gap-2 cursor-pointer font-semibold text-sm text-emerald-950">
                         <input type="checkbox" name="has_specs" id="vspHasSpecs" value="1"
                                {{ old('has_specs') ? 'checked' : '' }}
                                onchange="window.vspSyncPricingMode()"
@@ -243,17 +243,17 @@
                 {{-- Single-Price Inputs (Shown when `has_specs` is OFF) --}}
                 <div id="vspSinglePriceBox" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label for="vspBasePrice" class="block font-extrabold text-emerald-950 mb-1">
+                        <label for="vspBasePrice" class="block font-semibold text-emerald-950 mb-1">
                             Normal Selling Price (BDT ৳) <span class="text-red-600">*</span>
                         </label>
                         <input type="number" step="0.01" min="1" name="base_price" id="vspBasePrice"
                                value="{{ old('base_price', 3000) }}"
                                oninput="window.vspUpdatePromoPreview()"
                                placeholder="3000"
-                               class="w-full rounded-xl border border-emerald-900/25 bg-white px-3 py-2.5 text-sm font-extrabold text-emerald-950">
+                               class="w-full rounded-xl border border-emerald-900/25 bg-white px-3 py-2.5 text-sm font-semibold text-emerald-950">
                     </div>
                     <div>
-                        <label for="vspGroupKey" class="block font-extrabold text-emerald-950 mb-1">
+                        <label for="vspGroupKey" class="block font-semibold text-emerald-950 mb-1">
                             Product Comparison Group Key (Optional)
                         </label>
                         <input type="text" name="product_group_key" id="vspGroupKey"
@@ -267,7 +267,7 @@
                 <div id="vspSpecBuilderBox" class="hidden space-y-3 pt-1">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label for="vspSpecLabel" class="block font-extrabold text-emerald-950 mb-1">
+                            <label for="vspSpecLabel" class="block font-semibold text-emerald-950 mb-1">
                                 Specification Dropdown Label
                             </label>
                             <input type="text" name="spec_label" id="vspSpecLabel"
@@ -278,7 +278,7 @@
                         <div class="flex items-end">
                             <button type="button"
                                     onclick="window.vspAddSpecRow()"
-                                    class="px-3.5 py-2 rounded-xl bg-emerald-900 text-white text-xs font-extrabold hover:bg-emerald-800 transition">
+                                    class="px-3.5 py-2 rounded-xl bg-emerald-900 text-white text-xs font-semibold hover:bg-emerald-800 transition">
                                 + Add Specification Option
                             </button>
                         </div>
@@ -294,16 +294,16 @@
                  MODULE B: PROMOTIONAL OFFER PRICE & DATE-FIXING SYSTEM (`From ___ , To ___`)
                  Circular Red "Sale!" Banner + Strikethrough Normal Price
                  ============================================================== --}}
-            <div class="rounded-2xl border border-red-300 bg-red-50/55 p-4 space-y-3.5">
+            <div class="rounded-lg border border-red-300 bg-red-50/55 p-4 space-y-3.5">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <label class="inline-flex items-center gap-2 cursor-pointer font-extrabold text-sm text-red-900">
+                    <label class="inline-flex items-center gap-2 cursor-pointer font-semibold text-sm text-red-900">
                         <input type="checkbox" name="offer_enabled" id="vspOfferEnabled" value="1"
                                {{ old('offer_enabled') ? 'checked' : '' }}
                                onchange="window.vspSyncOfferBox()"
                                class="w-4 h-4 rounded text-red-600 focus:ring-red-600">
                         <span>🔴 Enable Promotional Offer Price (Circular Red "Sale!" Banner + Strikethrough Normal Price)</span>
                     </label>
-                    <span class="px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-extrabold">
+                    <span class="px-2.5 py-0.5 rounded bg-red-600 text-white text-[10px] font-semibold">
                         Leave "To" empty for indefinite offer
                     </span>
                 </div>
@@ -312,19 +312,19 @@
                     <div class="lg:col-span-8 space-y-3">
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div id="vspOfferPriceWrap">
-                                <label for="vspOfferPrice" class="block font-extrabold text-red-950 mb-1">
+                                <label for="vspOfferPrice" class="block font-semibold text-red-950 mb-1">
                                     Offer Sale Price (BDT ৳)
                                 </label>
                                 <input type="number" step="0.01" min="1" name="offer_price" id="vspOfferPrice"
                                        value="{{ old('offer_price', 2850) }}"
                                        oninput="window.vspUpdatePromoPreview()"
                                        placeholder="e.g. 2850 (cuts 3000 with a line)"
-                                       class="w-full rounded-xl border border-red-300 bg-white px-3 py-2 text-sm font-extrabold text-red-700">
+                                       class="w-full rounded-xl border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-700">
                                 <span class="text-[10px] text-red-800/80 block mt-0.5">Must be lower than normal price.</span>
                             </div>
 
                             <div>
-                                <label for="vspOfferPct" class="block font-extrabold text-red-950 mb-1">
+                                <label for="vspOfferPct" class="block font-semibold text-red-950 mb-1">
                                     Or Offer Discount % (Required for Multi-Spec)
                                 </label>
                                 <input type="number" step="0.5" min="0.5" max="90" name="offer_discount_pct" id="vspOfferPct"
@@ -338,7 +338,7 @@
                         {{-- Date Fixing System: From ___ , To ___ (To can be empty for indefinite!) --}}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
-                                <label for="vspOfferStart" class="block font-extrabold text-red-950 mb-1">
+                                <label for="vspOfferStart" class="block font-semibold text-red-950 mb-1">
                                     Offer Period — From:
                                 </label>
                                 <input type="datetime-local" name="offer_starts_at" id="vspOfferStart"
@@ -350,12 +350,12 @@
 
                             <div>
                                 <div class="flex items-center justify-between mb-1">
-                                    <label for="vspOfferEnd" class="font-extrabold text-red-950">
+                                    <label for="vspOfferEnd" class="font-semibold text-red-950">
                                         To (Optional — Empty = Indefinite):
                                     </label>
                                     <button type="button"
                                             onclick="document.getElementById('vspOfferEnd').value=''; window.vspUpdatePromoPreview();"
-                                            class="text-[10px] font-extrabold text-red-700 underline">
+                                            class="text-[10px] font-semibold text-red-700 underline">
                                         Keep Indefinite
                                     </button>
                                 </div>
@@ -369,18 +369,18 @@
                     </div>
 
                     {{-- Live Visual Preview of Circular Red "Sale!" Banner & Strikethrough Price --}}
-                    <div class="lg:col-span-4 rounded-2xl bg-white border border-red-200 p-3 flex items-center gap-3 shadow-xs">
+                    <div class="lg:col-span-4 rounded-lg bg-white border border-red-200 p-3 flex items-center gap-3 shadow-xs">
                         <div class="relative w-20 h-20 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 overflow-hidden">
-                            <span class="absolute top-1.5 left-1.5 w-9 h-9 rounded-full bg-red-600 text-white text-[9px] font-extrabold flex items-center justify-center shadow">
+                            <span class="absolute top-1.5 left-1.5 w-9 h-9 rounded-full bg-red-600 text-white text-[9px] font-semibold flex items-center justify-center shadow">
                                 Sale!
                             </span>
                             <span class="text-2xl opacity-40">🔩</span>
                         </div>
                         <div class="min-w-0">
-                            <div class="text-[10px] font-extrabold uppercase text-red-700">Live Card Preview</div>
+                            <div class="text-[10px] font-semibold uppercase text-red-700">Live Card Preview</div>
                             <div class="flex items-baseline gap-1.5 flex-wrap mt-0.5">
                                 <span id="vspPrevNormal" class="text-xs text-slate-400 line-through font-semibold">৳3,000</span>
-                                <span id="vspPrevOffer" class="text-base font-extrabold text-red-600">৳2,850</span>
+                                <span id="vspPrevOffer" class="text-base font-semibold text-red-600">৳2,850</span>
                             </div>
                             <div id="vspPrevWindow" class="text-[10px] font-bold text-emerald-800 mt-1">
                                 Special Offer · Ongoing (Indefinite)
@@ -393,9 +393,9 @@
             {{-- ==============================================================
                  MODULE C: ALIEXPRESS PROGRESSIVE WHOLESALE TIERS (`wholesale_enabled`)
                  ============================================================== --}}
-            <div class="rounded-2xl border border-amber-300 bg-amber-50/55 p-4 space-y-3">
+            <div class="rounded-lg border border-amber-300 bg-amber-50/55 p-4 space-y-3">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                    <label class="inline-flex items-center gap-2 cursor-pointer font-extrabold text-sm text-amber-950">
+                    <label class="inline-flex items-center gap-2 cursor-pointer font-semibold text-sm text-amber-950">
                         <input type="checkbox" name="wholesale_enabled" id="vspWholesaleEnabled" value="1"
                                {{ old('wholesale_enabled', true) ? 'checked' : '' }}
                                onchange="window.vspSyncWholesaleBox()"
@@ -409,35 +409,35 @@
 
                 <div id="vspWholesaleConfigBox" class="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
                     <div>
-                        <label class="block font-extrabold text-amber-950 mb-1">Min Wholesale Qty</label>
+                        <label class="block font-semibold text-amber-950 mb-1">Min Wholesale Qty</label>
                         <input type="number" name="wholesale_min_qty" id="vspWsMin" min="2" max="10000"
                                value="{{ old('wholesale_min_qty', 100) }}"
                                oninput="window.vspRenderWholesalePreview()"
                                class="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 font-bold text-amber-950">
                     </div>
                     <div>
-                        <label class="block font-extrabold text-amber-950 mb-1">Base Discount %</label>
+                        <label class="block font-semibold text-amber-950 mb-1">Base Discount %</label>
                         <input type="number" step="0.5" name="wholesale_base_discount_pct" id="vspWsBasePct" min="0.5" max="75"
                                value="{{ old('wholesale_base_discount_pct', 5) }}"
                                oninput="window.vspRenderWholesalePreview()"
                                class="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 font-bold text-amber-950">
                     </div>
                     <div>
-                        <label class="block font-extrabold text-amber-950 mb-1">Step Every X Qty</label>
+                        <label class="block font-semibold text-amber-950 mb-1">Step Every X Qty</label>
                         <input type="number" name="wholesale_step_qty" id="vspWsStepQty" min="1" max="10000"
                                value="{{ old('wholesale_step_qty', 100) }}"
                                oninput="window.vspRenderWholesalePreview()"
                                class="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 font-bold text-amber-950">
                     </div>
                     <div>
-                        <label class="block font-extrabold text-amber-950 mb-1">+Extra % / Step</label>
+                        <label class="block font-semibold text-amber-950 mb-1">+Extra % / Step</label>
                         <input type="number" step="0.5" name="wholesale_step_discount_pct" id="vspWsStepPct" min="0" max="50"
                                value="{{ old('wholesale_step_discount_pct', 2) }}"
                                oninput="window.vspRenderWholesalePreview()"
                                class="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 font-bold text-amber-950">
                     </div>
                     <div class="col-span-2 sm:col-span-1">
-                        <label class="block font-extrabold text-amber-950 mb-1">Max Discount Cap %</label>
+                        <label class="block font-semibold text-amber-950 mb-1">Max Discount Cap %</label>
                         <input type="number" step="0.5" name="wholesale_max_discount_pct" id="vspWsMaxPct" min="1" max="80"
                                value="{{ old('wholesale_max_discount_pct', 25) }}"
                                oninput="window.vspRenderWholesalePreview()"
@@ -451,12 +451,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                 <div class="space-y-2.5">
                     <div>
-                        <label class="block font-extrabold text-[var(--foreground)] mb-1">Upload Product Photo (JPG/PNG/WEBP)</label>
+                        <label class="block font-semibold text-[var(--foreground)] mb-1">Upload Product Photo (JPG/PNG/WEBP)</label>
                         <input type="file" name="image_file" accept="image/*"
                                class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
                     </div>
                     <div>
-                        <label for="vspImageUrl" class="block font-extrabold text-[var(--foreground)] mb-1">Or Direct Image URL</label>
+                        <label for="vspImageUrl" class="block font-semibold text-[var(--foreground)] mb-1">Or Direct Image URL</label>
                         <input type="text" name="image_url" id="vspImageUrl"
                                value="{{ old('image_url') }}"
                                placeholder="https://... or /images/spare-parts/..."
@@ -466,13 +466,13 @@
 
                 <div class="space-y-2.5">
                     <div>
-                        <label for="vspHighlights" class="block font-extrabold text-[var(--foreground)] mb-1">Key Bullet Highlights (One per line)</label>
+                        <label for="vspHighlights" class="block font-semibold text-[var(--foreground)] mb-1">Key Bullet Highlights (One per line)</label>
                         <textarea name="highlights_text" id="vspHighlights" rows="3"
                                   placeholder="Condition: Brand New&#10;Quality: Tested 100% Working&#10;Warranty: 180 Days"
                                   class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">{{ old('highlights_text') }}</textarea>
                     </div>
                     <div>
-                        <label for="vspDescription" class="block font-extrabold text-[var(--foreground)] mb-1">Compatibility &amp; Technical Description</label>
+                        <label for="vspDescription" class="block font-semibold text-[var(--foreground)] mb-1">Compatibility &amp; Technical Description</label>
                         <textarea name="description" id="vspDescription" rows="2"
                                   placeholder="Detailed part numbers, supported laptop/phone sub-models, connector pin count..."
                                   class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">{{ old('description') }}</textarea>
@@ -483,12 +483,12 @@
             <div class="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-[var(--border)]">
                 <button type="button"
                         onclick="window.vspCloseForm()"
-                        class="px-5 py-2.5 rounded-full border border-[var(--border)] bg-white text-xs font-bold text-[var(--foreground)] hover:bg-slate-50 transition">
+                        class="px-5 py-2.5 rounded-md border border-[var(--border)] bg-white text-xs font-bold text-[var(--foreground)] hover:bg-slate-50 transition">
                     Cancel
                 </button>
                 <button type="submit"
                         id="vspSubmitBtn"
-                        class="px-6 py-2.5 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-black shadow-sm hover:opacity-90 transition">
+                        class="px-6 py-2.5 rounded-md bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-bold shadow-sm hover:opacity-90 transition">
                     Publish Spare Part Listing
                 </button>
             </div>
@@ -496,7 +496,7 @@
     </div>
 
     {{-- Search & Filter Bar for Vendor's Own Spare Part Inventory --}}
-    <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3.5 sm:p-4 shadow-sm space-y-3">
+    <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-3.5 sm:p-4 shadow-sm space-y-3">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-2.5">
             <form action="{{ route('vendor.dashboard') }}" method="GET" class="flex-1 flex items-center gap-2">
                 <input type="hidden" name="tab" value="spare_parts">
@@ -506,9 +506,9 @@
                 @endif
                 <input type="text" name="sp_q" value="{{ $spSearchVal }}"
                        placeholder="Search your spare parts by title, SKU, brand, category..."
-                       class="flex-1 rounded-full border border-[var(--border)] bg-white px-4 py-2 text-xs font-semibold text-[var(--foreground)]">
+                       class="flex-1 rounded-md border border-[var(--border)] bg-white px-4 py-2 text-xs font-semibold text-[var(--foreground)]">
                 <button type="submit"
-                        class="px-4 py-2 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-bold shrink-0">
+                        class="px-4 py-2 rounded-md bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-xs font-bold shrink-0">
                     Search Inventory
                 </button>
             </form>
@@ -523,7 +523,7 @@
                     'paused' => '⏸️ Paused',
                 ] as $fKey => $fLabel)
                     <a href="{{ route('vendor.dashboard', array_filter(['tab' => 'spare_parts', 'shop_id' => $selectedShopId, 'sp_q' => $spSearchVal ?: null, 'sp_filter' => $fKey === 'all' ? null : $fKey])) }}"
-                       class="shrink-0 px-3 py-1.5 rounded-full font-bold border transition {{ $spFilterVal === $fKey ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] border-[var(--accent-dark)]' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
+                       class="shrink-0 px-3 py-1.5 rounded-md font-bold border transition {{ $spFilterVal === $fKey ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] border-[var(--accent-dark)]' : 'bg-[var(--mint-50)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--mint-100)]' }}">
                         {{ $fLabel }}
                     </a>
                 @endforeach
@@ -537,7 +537,7 @@
                 <p class="font-bold text-[var(--foreground)]">No spare part listings found in this filter.</p>
                 <button type="button"
                         onclick="window.vspOpenCreateForm()"
-                        class="mt-3 px-4 py-2 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold">
+                        class="mt-3 px-4 py-2 rounded-md bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold">
                     + Create Your First Spare Part Listing
                 </button>
             </div>
@@ -586,12 +586,12 @@
                         ];
                     @endphp
 
-                    <div class="rounded-2xl border {{ $vItem->is_active ? 'border-[var(--border)] bg-white' : 'border-slate-300 bg-slate-50 opacity-80' }} p-3.5 flex flex-col justify-between gap-3 shadow-xs">
+                    <div class="rounded-lg border {{ $vItem->is_active ? 'border-[var(--border)] bg-white' : 'border-slate-300 bg-slate-50 opacity-80' }} p-3.5 flex flex-col justify-between gap-3 shadow-xs">
                         <div class="flex items-start gap-3">
                             {{-- Thumbnail with Circular Red "Sale!" Badge --}}
                             <div class="relative w-20 h-20 rounded-xl border border-emerald-900/10 bg-white p-1.5 shrink-0 overflow-hidden">
                                 @if($vOfferActive)
-                                    <span class="absolute top-1 left-1 z-10 w-8 h-8 rounded-full bg-red-600 text-white text-[9px] font-extrabold flex items-center justify-center shadow">
+                                    <span class="absolute top-1 left-1 z-10 w-8 h-8 rounded-full bg-red-600 text-white text-[9px] font-semibold flex items-center justify-center shadow">
                                         Sale!
                                     </span>
                                 @endif
@@ -604,7 +604,7 @@
 
                             <div class="min-w-0 flex-1 space-y-1">
                                 <div class="flex items-center gap-1.5 flex-wrap text-[10px]">
-                                    <span class="px-2 py-0.5 rounded-full font-bold {{ $vItem->is_active ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-200 text-slate-700' }}">
+                                    <span class="px-2 py-0.5 rounded font-bold {{ $vItem->is_active ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-200 text-slate-700' }}">
                                         {{ $vItem->is_active ? '● Live' : '⏸ Paused' }}
                                     </span>
                                     <span class="font-bold text-emerald-800 truncate">{{ $vItem->part_category }}</span>
@@ -615,7 +615,7 @@
                                     @endif
                                 </div>
 
-                                <h4 class="text-xs sm:text-sm font-extrabold text-[var(--foreground)] line-clamp-2 leading-snug">
+                                <h4 class="text-xs sm:text-sm font-semibold text-[var(--foreground)] line-clamp-2 leading-snug">
                                     {{ $vItem->title }}
                                 </h4>
 
@@ -624,7 +624,7 @@
                                     @if($vOfferActive && $vNormBase > $vEffBase)
                                         <span class="text-[11px] text-slate-400 line-through font-semibold">৳{{ number_format($vNormBase, 0) }}</span>
                                     @endif
-                                    <span class="text-sm font-black {{ $vOfferActive ? 'text-red-600' : 'text-[var(--foreground)]' }}">
+                                    <span class="text-sm font-bold {{ $vOfferActive ? 'text-red-600' : 'text-[var(--foreground)]' }}">
                                         ৳{{ number_format($vEffBase, 0) }}{{ ($vItem->has_specs && $vEffMax && $vEffMax > $vEffBase) ? (' – ৳' . number_format($vEffMax, 0)) : '' }}
                                     </span>
                                 </div>
@@ -659,7 +659,7 @@
                             <div class="flex items-center gap-1.5">
                                 <button type="button"
                                         onclick='window.vspOpenEditForm(@json($editPayload))'
-                                        class="px-3 py-1 rounded-full bg-[var(--mint-100)] hover:bg-[var(--mint-200)] text-[var(--accent-dark)] font-extrabold transition">
+                                        class="px-3 py-1 rounded-md bg-[var(--mint-100)] hover:bg-[var(--mint-200)] text-[var(--accent-dark)] font-semibold transition">
                                     ✏️ Edit / Offer
                                 </button>
 
@@ -667,7 +667,7 @@
                                     @csrf
                                     <input type="hidden" name="return_shop_id" value="{{ $selectedShopId }}">
                                     <button type="submit"
-                                            class="px-2.5 py-1 rounded-full border border-[var(--border)] bg-white hover:bg-slate-50 font-bold text-[var(--foreground)] transition">
+                                            class="px-2.5 py-1 rounded-md border border-[var(--border)] bg-white hover:bg-slate-50 font-bold text-[var(--foreground)] transition">
                                         {{ $vItem->is_active ? 'Pause' : 'Activate' }}
                                     </button>
                                 </form>
@@ -676,7 +676,7 @@
                             <div class="flex items-center gap-1.5">
                                 @if($vItem->is_active)
                                     <a href="{{ route('spare-parts.show', ['slug' => $vItem->slug]) }}"
-                                       class="px-2.5 py-1 rounded-full text-emerald-900 font-bold hover:underline">
+                                       class="px-2.5 py-1 rounded-md text-emerald-900 font-bold hover:underline">
                                         View ↗
                                     </a>
                                 @endif
@@ -689,7 +689,7 @@
                                     @method('DELETE')
                                     <input type="hidden" name="return_shop_id" value="{{ $selectedShopId }}">
                                     <button type="submit"
-                                            class="px-2.5 py-1 rounded-full text-rose-700 hover:bg-rose-50 font-bold transition">
+                                            class="px-2.5 py-1 rounded-md text-rose-700 hover:bg-rose-50 font-bold transition">
                                         Delete
                                     </button>
                                 </form>
@@ -726,7 +726,7 @@
                 <div class="col-span-3">
                     <input type="number" step="0.01" min="1" name="spec_prices[]" value="${price}" placeholder="Price ৳"
                            oninput="window.vspUpdatePromoPreview()"
-                           class="vsp-spec-price-input w-full rounded-lg border border-emerald-900/20 px-2.5 py-1.5 text-xs font-extrabold text-emerald-950">
+                           class="vsp-spec-price-input w-full rounded-lg border border-emerald-900/20 px-2.5 py-1.5 text-xs font-semibold text-emerald-950">
                 </div>
                 <div class="col-span-3">
                     <input type="text" name="spec_subtitles[]" value="${sub}" placeholder="Note (e.g. 100% Genuine)"

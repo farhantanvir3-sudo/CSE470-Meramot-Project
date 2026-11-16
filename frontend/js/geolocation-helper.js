@@ -117,7 +117,8 @@ const CORE_BANGLADESH_PLACES = [
     { area: 'Gulshan 1', city: 'Dhaka', lat: 23.7805, lng: 90.4168, address: 'Gulshan 1 Circle, Dhaka 1212', keywords: 'gulshan circle 1 dcc market' },
     { area: 'Gulshan 2', city: 'Dhaka', lat: 23.7925, lng: 90.4158, address: 'Gulshan 2 Circle, Dhaka 1212', keywords: 'gulshan 2 pink city ave' },
     { area: 'Multiplan Center (Elephant Rd)', city: 'Dhaka', lat: 23.7393, lng: 90.3887, address: 'New Elephant Road, Multiplan Center, Dhaka 1205', keywords: 'ecs computer city laptop hardware' },
-    { area: 'Hatirpool', city: 'Dhaka', lat: 23.7422, lng: 90.3918, address: 'Hatirpool Eastern Plaza Rd, Dhaka 1205', keywords: 'eastern plaza motaleb plaza mobile market' },
+    { area: 'Hatirpool', city: 'Dhaka', lat: 23.7422, lng: 90.3918, address: 'Hatirpool Eastern Plaza Rd, Dhaka 1205', keywords: 'hatirpul circular road eastern plaza motaleb plaza paribagh mobile market' },
+    { area: 'Paribagh', city: 'Dhaka', lat: 23.7448, lng: 90.3955, address: 'Paribagh, Shahbagh, Dhaka 1000', keywords: 'paribag motaleb plaza' },
     { area: 'Motaleb Plaza (Hatirpool)', city: 'Dhaka', lat: 23.7453, lng: 90.3941, address: 'Motaleb Plaza, Paribagh, Hatirpool, Dhaka 1205', keywords: 'phone mobile repair plaza' },
     { area: 'BCS Computer City (IDB Bhaban)', city: 'Dhaka', lat: 23.7787, lng: 90.3794, address: 'IDB Bhaban, Agargaon, Dhaka 1207', keywords: 'idb bcs computer city agargaon laptop' },
     { area: 'Bashundhara City (Panthapath)', city: 'Dhaka', lat: 23.7510, lng: 90.3907, address: 'Bashundhara City Complex, Panthapath, Dhaka 1215', keywords: 'bashundhara shopping mobile repair' },
@@ -499,30 +500,96 @@ const MeramotGeolocation = {
         });
     },
 
-    async getCurrentPosition(options = {}) {
+    async fetchLocalDeviceFix(timeoutMs = 5500) {
+        if (typeof window === 'undefined' || !['127.0.0.1', 'localhost', '[::1]'].includes(window.location.hostname) || typeof fetch !== 'function') {
+            return null;
+        }
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
         try {
-            return await this.watchForBestFix(options);
+            const res = await fetch('/api/geolocation/device-fix', {
+                headers: { 'Accept': 'application/json' },
+                signal: controller ? controller.signal : undefined
+            });
+            if (!res.ok) return null;
+            const d = await res.json();
+            if (d && d.ok && Number.isFinite(Number(d.lat)) && Number.isFinite(Number(d.lng))) {
+                return {
+                    lat: Number(d.lat),
+                    lng: Number(d.lng),
+                    accuracy: Number.isFinite(Number(d.accuracy)) ? Number(d.accuracy) : 120,
+                    source: d.source || 'windows_wifi'
+                };
+            }
+            return null;
+        } catch (e) {
+            return null;
+        } finally {
+            if (timer) clearTimeout(timer);
+        }
+    },
+
+    async getCurrentPosition(options = {}) {
+        const isLocalLoopback = typeof window !== 'undefined' && ['127.0.0.1', 'localhost', '[::1]'].includes(window.location.hostname);
+        const effectiveMaxWait = isLocalLoopback ? Math.min(options.maxWaitMs || 6500, 2600) : (options.maxWaitMs || 6500);
+
+        try {
+            const pos = await this.acquireAccuratePosition({ ...options, maxWaitMs: effectiveMaxWait });
+            if (pos && pos.accuracy <= 220) {
+                return pos;
+            }
+            if (isLocalLoopback) {
+                const osFix = await this.fetchLocalDeviceFix();
+                if (osFix && (!pos || osFix.accuracy < pos.accuracy)) {
+                    if (typeof options.onProgress === 'function') {
+                        try { options.onProgress(osFix); } catch (e) {}
+                    }
+                    return osFix;
+                }
+            }
+            return pos;
         } catch (primaryError) {
             if (primaryError && primaryError.code === 1) {
                 throw primaryError;
             }
-            // Indoor / no-satellite fallback: accept a recent network-based fix rather than failing outright
-            return await this.requestPosition({
-                enableHighAccuracy: false,
-                timeout: 6000,
-                maximumAge: 120000
-            });
+            if (isLocalLoopback) {
+                const osFix = await this.fetchLocalDeviceFix();
+                if (osFix) {
+                    if (typeof options.onProgress === 'function') {
+                        try { options.onProgress(osFix); } catch (e) {}
+                    }
+                    return osFix;
+                }
+            }
+            // Retry with a 30s OS-cached high-accuracy fix before ever downgrading off Wi-Fi/GNSS
+            try {
+                return await this.requestPosition({
+                    enableHighAccuracy: true,
+                    timeout: 4000,
+                    maximumAge: 30000
+                });
+            } catch (retryError) {
+                if (retryError && retryError.code === 1) {
+                    throw retryError;
+                }
+                // Final fallback for hardware with no Wi-Fi/GNSS provider
+                return await this.requestPosition({
+                    enableHighAccuracy: false,
+                    timeout: 4000,
+                    maximumAge: 60000
+                });
+            }
         }
     },
 
     /**
-     * Collect fresh fixes for a short window and keep the most precise one.
-     * The first fix a device reports is usually a coarse Wi-Fi / cell estimate; real GPS
-     * readings typically arrive a few seconds later and are far tighter.
+     * Race single-shot getCurrentPosition (triggers OS Wi-Fi BSSID lookup on Windows/macOS)
+     * alongside watchPosition (streams sharpening GNSS fixes on phones), settling quickly once
+     * accurate readings stabilize and computing an inverse-variance weighted fix.
      *
-     * @param {{desiredAccuracy?: number, maxWaitMs?: number, onProgress?: Function}} options
+     * @param {{desiredAccuracy?: number, maxWaitMs?: number, settleWindowMs?: number, onProgress?: Function}} options
      */
-    watchForBestFix({ desiredAccuracy = 20, maxWaitMs = 12000, onProgress = null } = {}) {
+    acquireAccuratePosition({ desiredAccuracy = 15, maxWaitMs = 6500, settleWindowMs = 1400, onProgress = null } = {}) {
         return new Promise((resolve, reject) => {
             if (!this.isSupported()) {
                 const err = new Error('GPS is not available in this browser.');
@@ -531,60 +598,177 @@ const MeramotGeolocation = {
                 return;
             }
 
-            let best = null;
+            const goodFixes = [];
+            let bestGood = null;
+            let bestCoarse = null;
             let settled = false;
             let watchId = null;
-            let timer = null;
+            let maxTimer = null;
+            let settleTimer = null;
+            let fallbackTimer = null;
+            let activeProviders = 2;
+            let providerDenied = false;
+
+            const weightedResult = () => {
+                if (!bestGood) return bestCoarse;
+                if (goodFixes.length === 1) return bestGood;
+
+                const thresholdAcc = Math.max(bestGood.accuracy * 2, desiredAccuracy);
+                const maxClusterDistM = Math.min(Math.max(bestGood.accuracy * 1.8, 25), 90);
+                const cluster = goodFixes.filter((f) =>
+                    f.accuracy <= thresholdAcc
+                    && (this.calculateDistance(bestGood.lat, bestGood.lng, f.lat, f.lng) * 1000) <= maxClusterDistM
+                );
+                if (cluster.length <= 1) return bestGood;
+
+                let weightSum = 0;
+                let latSum = 0;
+                let lngSum = 0;
+                let minAcc = Infinity;
+                for (const f of cluster) {
+                    const acc = Math.max(f.accuracy, 1);
+                    const w = 1 / (acc * acc);
+                    weightSum += w;
+                    latSum += f.lat * w;
+                    lngSum += f.lng * w;
+                    if (f.accuracy < minAcc) minAcc = f.accuracy;
+                }
+                return {
+                    lat: latSum / weightSum,
+                    lng: lngSum / weightSum,
+                    accuracy: minAcc,
+                    timestamp: bestGood.timestamp
+                };
+            };
 
             const finish = (result, error) => {
                 if (settled) return;
                 settled = true;
                 if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-                if (timer) clearTimeout(timer);
+                if (maxTimer) clearTimeout(maxTimer);
+                if (settleTimer) clearTimeout(settleTimer);
+                if (fallbackTimer) clearTimeout(fallbackTimer);
                 if (result) resolve(result);
                 else reject(error);
             };
 
-            const toFix = (position) => ({
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                timestamp: position.timestamp
-            });
+            const buildError = (code) => {
+                let message = 'Unable to get your location.';
+                if (code === 1) {
+                    message = 'Location access is disabled. Tap anywhere on the map or search an area to set your address.';
+                } else if (code === 2) {
+                    message = 'Current location is unavailable. Tap anywhere on the map to pin your location.';
+                } else if (code === 3) {
+                    message = 'Location lookup timed out. Tap anywhere on the map to pin your location.';
+                }
+                const err = new Error(message);
+                err.code = code;
+                return err;
+            };
 
-            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    const fix = toFix(position);
-                    if (!Number.isFinite(fix.lat) || !Number.isFinite(fix.lng) || !Number.isFinite(fix.accuracy)) return;
+            const ingestPosition = (position) => {
+                if (settled) return;
+                const fix = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : 9999,
+                    timestamp: position.timestamp
+                };
+                if (!Number.isFinite(fix.lat) || !Number.isFinite(fix.lng)) return;
 
-                    // Keep only readings that are tighter than what we already have
-                    if (best && fix.accuracy >= best.accuracy) return;
-                    best = fix;
+                if (fix.accuracy > 350) {
+                    if (!bestCoarse || fix.accuracy < bestCoarse.accuracy) {
+                        bestCoarse = fix;
+                    }
+                    return;
+                }
+
+                goodFixes.push(fix);
+                const improved = !bestGood || fix.accuracy < bestGood.accuracy;
+                if (improved) {
+                    bestGood = fix;
                     if (typeof onProgress === 'function') {
-                        try { onProgress(fix); } catch (e) { /* UI callback errors must not break GPS */ }
+                        try { onProgress(bestGood); } catch (e) { /* UI callback errors must not break GPS */ }
                     }
-                    if (fix.accuracy <= desiredAccuracy) {
-                        finish(fix);
-                    }
-                },
-                (error) => {
-                    // Permission denied ends immediately; transient errors keep waiting for a later fix
-                    if (error.code === error.PERMISSION_DENIED) {
-                        const err = new Error('Location access is disabled. Tap anywhere on the map or search an area to set your address.');
-                        err.code = error.code;
-                        finish(null, err);
-                    }
-                },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: maxWaitMs }
-            );
+                }
 
-            timer = setTimeout(() => {
-                if (best) {
-                    finish(best);
+                if (fix.accuracy <= desiredAccuracy) {
+                    finish(weightedResult());
+                    return;
+                }
+
+                // Settle quickly once a solid sub-250m Wi-Fi/GPS fix has arrived
+                if (fix.accuracy <= 250 && !settleTimer) {
+                    settleTimer = setTimeout(() => {
+                        finish(weightedResult() || buildError(3), !bestGood && !bestCoarse ? buildError(3) : null);
+                    }, settleWindowMs);
+                }
+            };
+
+            const onProviderError = (error) => {
+                if (settled) return;
+                if (error && error.code === 1) {
+                    providerDenied = true;
+                    finish(null, buildError(1));
+                    return;
+                }
+                activeProviders--;
+                if (activeProviders <= 0 && !bestGood && !bestCoarse) {
+                    finish(null, buildError(providerDenied ? 1 : (error?.code || 2)));
+                }
+            };
+
+            try {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        ingestPosition(position);
+                        activeProviders--;
+                    },
+                    onProviderError,
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: maxWaitMs }
+                );
+            } catch (e) {
+                activeProviders--;
+            }
+
+            try {
+                watchId = navigator.geolocation.watchPosition(
+                    ingestPosition,
+                    onProviderError,
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: maxWaitMs }
+                );
+            } catch (e) {
+                activeProviders--;
+            }
+
+            if (activeProviders <= 0 && !settled) {
+                finish(null, buildError(2));
+                return;
+            }
+
+            fallbackTimer = setTimeout(() => {
+                if (settled || (bestGood && bestGood.accuracy <= 100)) return;
+                activeProviders++;
+                try {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => {
+                            ingestPosition(pos);
+                            activeProviders--;
+                        },
+                        onProviderError,
+                        { enableHighAccuracy: false, maximumAge: 0, timeout: Math.max(2000, maxWaitMs - 800) }
+                    );
+                } catch (e) {
+                    activeProviders--;
+                }
+            }, 800);
+
+            maxTimer = setTimeout(() => {
+                const candidate = weightedResult();
+                if (candidate) {
+                    finish(candidate);
                 } else {
-                    const err = new Error('Location lookup timed out. Tap anywhere on the map to pin your location.');
-                    err.code = 3;
-                    finish(null, err);
+                    finish(null, buildError(3));
                 }
             }, maxWaitMs);
         });
@@ -603,10 +787,9 @@ const MeramotGeolocation = {
      * Map zoom level that comfortably frames a fix of the given accuracy.
      */
     zoomForAccuracy(accuracyMeters) {
-        if (!Number.isFinite(accuracyMeters)) return 15;
-        if (accuracyMeters <= 30) return 18;
-        if (accuracyMeters <= 80) return 17;
-        if (accuracyMeters <= 250) return 16;
+        if (!Number.isFinite(accuracyMeters)) return 16;
+        if (accuracyMeters <= 180) return 18;
+        if (accuracyMeters <= 400) return 17;
         if (accuracyMeters <= 1000) return 15;
         return 14;
     },
@@ -675,8 +858,8 @@ const MeramotGeolocation = {
         // Clear confining district/area text filters so Near Me includes all nearby shops across boundaries
         url.searchParams.delete('city');
         url.searchParams.delete('area');
-        url.searchParams.set('lat', Number(lat).toFixed(5));
-        url.searchParams.set('lng', Number(lng).toFixed(5));
+        url.searchParams.set('lat', Number(lat).toFixed(6));
+        url.searchParams.set('lng', Number(lng).toFixed(6));
         url.searchParams.set('maxDistanceKm', String(resolvedRadius));
         url.searchParams.set('sort', 'distance');
         url.searchParams.set('page', '1');
@@ -723,8 +906,8 @@ const MeramotGeolocation = {
         }
 
         try {
-            // Nearby-shop distances only need neighbourhood precision, so settle faster here
-            const position = await this.getCurrentPosition({ desiredAccuracy: 100, maxWaitMs: 7000 });
+            // Settle swiftly onto accurate local Wi-Fi / GNSS coordinates
+            const position = await this.getCurrentPosition({ desiredAccuracy: 15, maxWaitMs: 6500 });
             this.updateUrlWithLocation(position.lat, position.lng);
             // Persist resolved coordinates & neighborhood asynchronously without triggering a second reload
             if (window.MeramotLocationPicker && typeof MeramotLocationPicker.reverseGeocode === 'function') {
@@ -801,10 +984,14 @@ const MeramotLocationPicker = {
     buildLocationLabel(location) {
         if (!location) return 'Choose your location';
 
+        const street = (location.street || '').trim();
         const area = (location.area || '').trim();
         const city = (location.city || '').trim();
         const address = (location.address || '').trim();
 
+        if (street && area && !area.toLowerCase().includes(street.toLowerCase())) {
+            return `${street}, ${area}`;
+        }
         if (area && city) return `${area}, ${city}`;
         if (area) return area;
         if (city) return city;
@@ -838,21 +1025,90 @@ const MeramotLocationPicker = {
     },
 
     /**
-     * Match raw Nominatim area/address text to closest known Dhaka neighborhood
+     * Find closest Bangladesh district centroid when reverse geocoding has no network/city field
+     */
+    inferNearestDistrict(lat, lng) {
+        if (typeof lat !== 'number' || typeof lng !== 'number' || Number.isNaN(lat) || Number.isNaN(lng)) {
+            return 'Dhaka';
+        }
+        let bestCity = 'Dhaka';
+        let bestDist = Infinity;
+        for (const dist of BANGLADESH_DISTRICTS) {
+            const d = MeramotGeolocation.calculateDistance(lat, lng, dist.lat, dist.lng);
+            if (d < bestDist) {
+                bestDist = d;
+                bestCity = dist.city;
+            }
+        }
+        return bestCity;
+    },
+
+    normalizeAreaToken(str) {
+        return String(str || '')
+            .toLowerCase()
+            .replace(/pool/g, 'pul')
+            .replace(/kawran/g, 'karwan')
+            .replace(/moghbazar/g, 'maghbazar')
+            .replace(/paribag\b/g, 'paribagh')
+            .replace(/[^a-z0-9]/g, '');
+    },
+
+    /**
+     * Match geocoded neighborhood text to known local hubs within realistic proximity,
+     * handling common romanization variants and ignoring road-name false hits.
      */
     inferDhakaArea(rawArea, displayName, lat, lng) {
-        const haystack = `${rawArea || ''} ${displayName || ''}`.toLowerCase();
-        for (const hub of BANGLADESH_PLACES_CATALOG) {
-            if (haystack.includes(hub.area.toLowerCase())) {
-                return hub.area;
+        const hasCoords = typeof lat === 'number' && typeof lng === 'number' && !Number.isNaN(lat) && !Number.isNaN(lng);
+        const candidates = (hasCoords
+            ? BANGLADESH_PLACES_CATALOG
+                .map((hub) => ({ hub, dist: MeramotGeolocation.calculateDistance(lat, lng, hub.lat, hub.lng) }))
+                .filter((entry) => entry.dist <= 2.4)
+            : BANGLADESH_PLACES_CATALOG.map((hub) => ({ hub, dist: 0 }))
+        ).sort((a, b) => b.hub.area.length - a.hub.area.length || a.dist - b.dist);
+
+        const rawTok = this.normalizeAreaToken(rawArea);
+        if (rawTok) {
+            // Pass 1: Exact normalized hub match (e.g. "Hatirpul" -> "Hatirpool")
+            for (const { hub } of candidates) {
+                if (this.normalizeAreaToken(hub.area) === rawTok) {
+                    return hub.area;
+                }
+            }
+            // Pass 2: Geo rawArea contains a more specific hub name (longest first, then closest)
+            for (const { hub } of candidates) {
+                const hubTok = this.normalizeAreaToken(hub.area);
+                if (hubTok && rawTok.includes(hubTok)) {
+                    return hub.area;
+                }
+            }
+            // Pass 3: Catalog hub contains short rawArea token outside parentheses (e.g. "Sector 11" -> "Uttara Sector 11"), closest first
+            const byDist = [...candidates].sort((a, b) => a.dist - b.dist);
+            for (const { hub } of byDist) {
+                const baseTok = this.normalizeAreaToken(String(hub.area || '').replace(/\([^)]*\)/g, ''));
+                if (baseTok && baseTok.includes(rawTok)) {
+                    return hub.area;
+                }
             }
         }
 
-        if (rawArea && rawArea.trim()) {
-            return rawArea.trim();
+        const displayLower = String(displayName || '').toLowerCase();
+        if ((!rawArea || !String(rawArea).trim()) && displayLower) {
+            for (const { hub, dist } of candidates) {
+                if (hasCoords && dist > 1.4) continue;
+                const areaLower = hub.area.toLowerCase();
+                const escaped = areaLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const re = new RegExp(`(?:^|[,\\s/])${escaped}(?!\\s+(?:road|rd|sarani|ave|avenue|lane|street)\\b)(?:$|[,\\s/])`, 'i');
+                if (re.test(displayLower)) {
+                    return hub.area;
+                }
+            }
         }
 
-        if (typeof lat === 'number' && typeof lng === 'number') {
+        if (rawArea && String(rawArea).trim()) {
+            return String(rawArea).trim();
+        }
+
+        if (hasCoords) {
             let bestHub = null;
             let bestDist = Infinity;
             for (const hub of BANGLADESH_PLACES_CATALOG) {
@@ -862,7 +1118,7 @@ const MeramotLocationPicker = {
                     bestHub = hub;
                 }
             }
-            if (bestHub && bestDist <= 5.0) {
+            if (bestHub && bestDist <= 1.8) {
                 return bestHub.area;
             }
         }
@@ -870,61 +1126,124 @@ const MeramotLocationPicker = {
         return '';
     },
 
+    async fetchJsonWithTimeout(url, timeoutMs = 3500) {
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+        try {
+            const res = await fetch(url, {
+                headers: { 'Accept': 'application/json' },
+                signal: controller ? controller.signal : undefined
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return await res.json();
+        } finally {
+            if (timer) clearTimeout(timer);
+        }
+    },
+
     /**
-     * Reverse geocode [lat, lng] using OpenStreetMap Nominatim (No API key needed)
+     * Reverse geocode [lat, lng] using OpenStreetMap Nominatim (zoom=19 street/building precision)
+     * with BigDataCloud fallback when Nominatim rate-limits or times out.
      */
     async reverseGeocode(lat, lng, source = 'map') {
+        const latNum = Number(lat);
+        const lngNum = Number(lng);
+
         try {
-            const res = await fetch(
-                `${REVERSE_GEOCODE_ENDPOINT}?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&format=json&addressdetails=1`,
-                {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                }
+            const data = await this.fetchJsonWithTimeout(
+                `${REVERSE_GEOCODE_ENDPOINT}?lat=${encodeURIComponent(latNum)}&lon=${encodeURIComponent(lngNum)}&zoom=19&format=jsonv2&addressdetails=1&accept-language=en`,
+                3500
             );
-
-            if (!res.ok) throw new Error('Reverse geocode failed');
-
-            const data = await res.json();
             const addressParts = data.address || {};
 
-            const city =
+            const rawCity =
                 addressParts.city ||
                 addressParts.town ||
                 addressParts.state_district ||
                 addressParts.county ||
-                'Dhaka';
+                this.inferNearestDistrict(latNum, lngNum);
+            const city = MeramotLocationCatalog.findDistrict(rawCity);
 
+            // Prefer immediate quarter/neighbourhood ("Hatirpul") ahead of wider suburb ("Kathalbagan")
             const rawArea =
-                addressParts.suburb ||
                 addressParts.neighbourhood ||
                 addressParts.quarter ||
-                addressParts.road ||
+                addressParts.suburb ||
+                addressParts.residential ||
+                addressParts.village ||
+                addressParts.hamlet ||
                 '';
 
-            const area = this.inferDhakaArea(rawArea, data.display_name, lat, lng);
+            const area = this.inferDhakaArea(rawArea, data.display_name, latNum, lngNum);
+            const street = String(addressParts.road || addressParts.pedestrian || '').trim();
+            const houseRoad = (addressParts.house_number && street)
+                ? `${addressParts.house_number} ${street}`
+                : (street || String(addressParts.building || addressParts.amenity || '').trim());
+
+            const segs = [];
+            const seenSegs = new Set();
+            for (const part of [
+                houseRoad,
+                addressParts.neighbourhood || addressParts.quarter || '',
+                addressParts.suburb || '',
+                city ? (addressParts.postcode ? `${city} ${addressParts.postcode}` : city) : ''
+            ]) {
+                const cleanPart = String(part || '').trim();
+                if (!cleanPart) continue;
+                const key = cleanPart.toLowerCase();
+                if (!seenSegs.has(key)) {
+                    seenSegs.add(key);
+                    segs.push(cleanPart);
+                }
+            }
+            const formattedAddress = segs.length >= 2
+                ? segs.join(', ')
+                : (data.display_name || `${latNum.toFixed(6)}, ${lngNum.toFixed(6)}`);
 
             return {
-                address: data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+                address: formattedAddress,
+                street,
                 city,
                 area,
-                lat: Number(lat),
-                lng: Number(lng),
+                lat: latNum,
+                lng: lngNum,
                 source
             };
         } catch (e) {
-            const inferredArea = this.inferDhakaArea('', '', lat, lng);
-            return {
-                address: inferredArea
-                    ? `${inferredArea}, Dhaka (${lat.toFixed(5)}, ${lng.toFixed(5)})`
-                    : `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
-                city: 'Dhaka',
-                area: inferredArea || 'Banani',
-                lat: Number(lat),
-                lng: Number(lng),
-                source
-            };
+            try {
+                const bdc = await this.fetchJsonWithTimeout(
+                    `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(latNum)}&longitude=${encodeURIComponent(lngNum)}&localityLanguage=en`,
+                    2800
+                );
+                const rawCity = bdc.city || bdc.principalSubdivision || this.inferNearestDistrict(latNum, lngNum);
+                const city = MeramotLocationCatalog.findDistrict(rawCity);
+                const rawArea = String(bdc.locality || '').trim();
+                const area = this.inferDhakaArea(rawArea, rawArea, latNum, lngNum);
+                const address = [area || rawArea, city].filter(Boolean).join(', ') || `${latNum.toFixed(6)}, ${lngNum.toFixed(6)}`;
+                return {
+                    address,
+                    street: '',
+                    city,
+                    area,
+                    lat: latNum,
+                    lng: lngNum,
+                    source
+                };
+            } catch (bdcErr) {
+                const city = this.inferNearestDistrict(latNum, lngNum);
+                const inferredArea = this.inferDhakaArea('', '', latNum, lngNum);
+                return {
+                    address: inferredArea
+                        ? `${inferredArea}, ${city} (${latNum.toFixed(6)}, ${lngNum.toFixed(6)})`
+                        : `${city} (${latNum.toFixed(6)}, ${lngNum.toFixed(6)})`,
+                    street: '',
+                    city,
+                    area: inferredArea || '',
+                    lat: latNum,
+                    lng: lngNum,
+                    source
+                };
+            }
         }
     },
 
@@ -1109,12 +1428,13 @@ const MeramotLocationPicker = {
         const normalized = {
             address: nextLocation.address ||
                 (typeof nextLocation.lat === 'number' && typeof nextLocation.lng === 'number'
-                    ? `${nextLocation.lat.toFixed(5)}, ${nextLocation.lng.toFixed(5)}`
+                    ? `${nextLocation.lat.toFixed(6)}, ${nextLocation.lng.toFixed(6)}`
                     : 'Pinned location'),
+            street: (nextLocation.street || '').trim(),
             city: nextLocation.city || 'Dhaka',
             area: nextLocation.area || '',
-            lat: typeof nextLocation.lat === 'number' ? Number(nextLocation.lat) : null,
-            lng: typeof nextLocation.lng === 'number' ? Number(nextLocation.lng) : null,
+            lat: typeof nextLocation.lat === 'number' ? Number(nextLocation.lat.toFixed(6)) : null,
+            lng: typeof nextLocation.lng === 'number' ? Number(nextLocation.lng.toFixed(6)) : null,
             source: nextLocation.source || 'map'
         };
 
@@ -1313,8 +1633,8 @@ function renderShopDistanceBadges(userLat, userLng) {
     document.querySelectorAll('a[data-sort-link="distance"]').forEach((link) => {
         try {
             const u = new URL(link.href, window.location.origin);
-            u.searchParams.set('lat', userLat.toFixed(5));
-            u.searchParams.set('lng', userLng.toFixed(5));
+            u.searchParams.set('lat', userLat.toFixed(6));
+            u.searchParams.set('lng', userLng.toFixed(6));
             link.href = u.pathname + '?' + u.searchParams.toString();
         } catch (e) {}
     });
@@ -1331,8 +1651,8 @@ function renderShopDistanceBadges(userLat, userLng) {
                     input.name = field;
                     form.appendChild(input);
                 }
-                if (field === 'lat') input.value = userLat.toFixed(5);
-                if (field === 'lng') input.value = userLng.toFixed(5);
+                if (field === 'lat') input.value = userLat.toFixed(6);
+                if (field === 'lng') input.value = userLng.toFixed(6);
                 if (field === 'sort') input.value = 'distance';
             });
         });
@@ -1364,7 +1684,14 @@ function refreshShopDistanceState() {
         if (sessionStorage.getItem('meramot.syncedLocationSig') !== sig) {
             const path = window.location.pathname || '';
             const shouldReload = path === '/cart' || path === '/cart/checkout' || path.startsWith('/packages/catalog');
-            MeramotLocationPicker.syncLocationWithServer(stored, shouldReload);
+            if (shouldReload) {
+                MeramotLocationPicker.syncLocationWithServer(stored, true);
+            } else {
+                // Defer background session sync so it never competes with page navigation
+                setTimeout(() => {
+                    MeramotLocationPicker.syncLocationWithServer(stored, false);
+                }, 800);
+            }
         }
     }
 
@@ -1374,8 +1701,8 @@ function refreshShopDistanceState() {
         // If user selected sort=distance or maxDistanceKm without lat/lng in URL, sync URL with their pinned coordinates
         if ((urlParams.get('sort') === 'distance' || urlParams.has('maxDistanceKm')) && window.location.pathname.startsWith('/shops')) {
             const nextUrl = new URL(window.location.href);
-            nextUrl.searchParams.set('lat', stored.lat.toFixed(5));
-            nextUrl.searchParams.set('lng', stored.lng.toFixed(5));
+            nextUrl.searchParams.set('lat', stored.lat.toFixed(6));
+            nextUrl.searchParams.set('lng', stored.lng.toFixed(6));
             if (window.MeramotSoftNav) {
                 window.MeramotSoftNav.visit(nextUrl.toString(), { replace: true });
             } else {
@@ -1420,8 +1747,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
             const currentParams = new URLSearchParams(window.location.search);
-            const nextLat = loc.lat.toFixed(5);
-            const nextLng = loc.lng.toFixed(5);
+            const nextLat = loc.lat.toFixed(6);
+            const nextLng = loc.lng.toFixed(6);
             if ((currentParams.get('sort') === 'distance' || currentParams.has('maxDistanceKm')) && window.location.pathname.startsWith('/shops')) {
                 if (currentParams.get('lat') !== nextLat || currentParams.get('lng') !== nextLng) {
                     const nextUrl = new URL(window.location.href);

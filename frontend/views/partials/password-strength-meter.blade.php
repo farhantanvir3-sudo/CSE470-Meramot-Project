@@ -22,14 +22,14 @@
     x-cloak
     data-password-strength-meter
     :data-strength-tier="{{ $evalVar }}.label"
-    class="mt-2.5 rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] px-4 py-3 text-xs transition-all"
+    class="mt-2.5 rounded-lg border border-[var(--border)] bg-[var(--mint-50)] px-4 py-3 text-xs transition-all"
 >
     <div class="flex items-center justify-between gap-2 mb-2">
         <span class="font-bold text-[var(--muted-foreground)] uppercase tracking-wider text-[10px]">
             Password Strength
         </span>
         <span
-            class="inline-flex items-center gap-1 rounded-full bg-[var(--card)] px-2.5 py-0.5 text-[11px] font-extrabold border border-[var(--border)]"
+            class="inline-flex items-center gap-1 rounded bg-[var(--card)] px-2.5 py-0.5 text-[11px] font-semibold border border-[var(--border)]"
             :class="{{ $evalVar }}.color"
             x-text="({{ $passwordExpr }} || '').length === 0 ? 'Enter password' : {{ $evalVar }}.label"
             data-strength-label

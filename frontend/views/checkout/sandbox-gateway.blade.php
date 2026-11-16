@@ -28,29 +28,29 @@ Controller: PaymentGatewayController@showSandbox, handleSuccess, handleFail, han
         pinCode: '12121'
      }">
 
-    <div class="rounded-[2rem] border-2 border-[var(--accent-dark)]/25 bg-[var(--card)] shadow-xl overflow-hidden">
+    <div class="rounded-lg border-2 border-[var(--accent-dark)]/25 bg-[var(--card)] shadow-xl overflow-hidden">
         <!-- Gateway Top Bar -->
         <div class="bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-6 py-5 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-3">
-                <div class="h-11 w-11 rounded-2xl bg-white/15 flex items-center justify-center">
+                <div class="h-11 w-11 rounded-lg bg-white/15 flex items-center justify-center">
                     <i class="fa-solid fa-shield-halved text-lg text-[var(--mint-100)]"></i>
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h1 class="text-base font-black tracking-tight">SSLCommerz × Meramot Secure Pay</h1>
-                        <span class="rounded-full bg-amber-300/95 px-2.5 py-0.5 text-[10px] font-black uppercase text-amber-950">Sandbox Simulator</span>
+                        <h1 class="text-base font-bold tracking-tight">SSLCommerz × Meramot Secure Pay</h1>
+                        <span class="rounded bg-amber-300/95 px-2.5 py-0.5 text-[10px] font-bold uppercase text-amber-950">Sandbox Simulator</span>
                     </div>
                     <p class="text-[11px] text-white/80 font-mono mt-0.5">TXN: {{ $payment->transaction_reference }} • {{ $inv?->invoice_number ?? 'INV-PENDING' }}</p>
                 </div>
             </div>
             <div class="text-right">
                 <p class="text-[10px] uppercase tracking-wider text-white/75 font-bold">Amount to Pay</p>
-                <p class="text-2xl font-black text-white">৳{{ number_format((float) $payment->amount, 2) }}</p>
+                <p class="text-2xl font-bold text-white">৳{{ number_format((float) $payment->amount, 2) }}</p>
             </div>
         </div>
 
         <!-- Channel Tabs -->
-        <div class="grid grid-cols-4 border-b border-[var(--border)] bg-[var(--mint-100)] text-xs font-extrabold">
+        <div class="grid grid-cols-4 border-b border-[var(--border)] bg-[var(--mint-100)] text-xs font-semibold">
             <button type="button" @click="tab = 'BKASH'"
                     :class="tab === 'BKASH' ? 'bg-white text-pink-700 border-b-2 border-pink-600' : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'"
                     class="py-3.5 px-2 text-center transition">
@@ -75,14 +75,14 @@ Controller: PaymentGatewayController@showSandbox, handleSuccess, handleFail, han
 
         <div class="p-6 md:p-7 space-y-5">
             <!-- Order Context -->
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/80 p-4 text-xs flex flex-wrap justify-between gap-3">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/80 p-4 text-xs flex flex-wrap justify-between gap-3">
                 <div>
-                    <p class="font-black text-[var(--foreground)]">{{ $req?->title ?? 'Verified Electronics Repair' }}</p>
+                    <p class="font-bold text-[var(--foreground)]">{{ $req?->title ?? 'Verified Electronics Repair' }}</p>
                     <p class="text-[var(--muted-foreground)] mt-0.5">
                         Customer: {{ $req?->customer?->name ?? 'Meramot Customer' }} • Workshop: {{ $inv?->shop?->name ?? 'Assigned Partner Shop' }}
                     </p>
                 </div>
-                <span class="self-start rounded-full border border-[var(--border)] bg-white px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
+                <span class="self-start rounded-md border border-[var(--border)] bg-white px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
                     Order #{{ $payment->repair_request_id }}
                 </span>
             </div>
@@ -132,7 +132,7 @@ Controller: PaymentGatewayController@showSandbox, handleSuccess, handleFail, han
                     <span><i class="fa-solid fa-flask mr-1 text-emerald-700"></i> <strong>Sandbox Test Mode:</strong> Pre-filled test wallet &amp; OTP <code class="font-mono font-bold">123456</code> simulate real SSLCommerz callback &amp; payment settlement.</span>
                 </div>
 
-                <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-95 text-[var(--accent-foreground)] py-3.5 px-6 text-xs font-black tracking-wide transition shadow-md flex items-center justify-center gap-2">
+                <button type="submit" class="w-full rounded-md bg-[var(--accent-dark)] hover:opacity-95 text-[var(--accent-foreground)] py-3.5 px-6 text-xs font-bold tracking-wide transition shadow-md flex items-center justify-center gap-2">
                     <i class="fa-solid fa-circle-check"></i>
                     <span>Authorize Payment — ৳{{ number_format((float) $payment->amount, 2) }}</span>
                 </button>
@@ -144,7 +144,7 @@ Controller: PaymentGatewayController@showSandbox, handleSuccess, handleFail, han
                     @csrf
                     <input type="hidden" name="tran_id" value="{{ $payment->transaction_reference }}">
                     <input type="hidden" name="error_reason" value="Simulated issuer decline / insufficient wallet balance">
-                    <button type="submit" class="w-full rounded-full border border-red-300 bg-red-50 hover:bg-red-100 text-red-800 py-2.5 px-4 text-xs font-bold transition">
+                    <button type="submit" class="w-full rounded-md border border-red-300 bg-red-50 hover:bg-red-100 text-red-800 py-2.5 px-4 text-xs font-bold transition">
                         <i class="fa-solid fa-ban mr-1"></i> Simulate Declined Payment
                     </button>
                 </form>
@@ -152,7 +152,7 @@ Controller: PaymentGatewayController@showSandbox, handleSuccess, handleFail, han
                 <form method="POST" action="{{ route('payment.cancel') }}">
                     @csrf
                     <input type="hidden" name="tran_id" value="{{ $payment->transaction_reference }}">
-                    <button type="submit" class="w-full rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] text-[var(--foreground)] py-2.5 px-4 text-xs font-bold transition">
+                    <button type="submit" class="w-full rounded-md border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] text-[var(--foreground)] py-2.5 px-4 text-xs font-bold transition">
                         <i class="fa-solid fa-arrow-rotate-left mr-1"></i> Cancel &amp; Return to Checkout
                     </button>
                 </form>

@@ -22,33 +22,33 @@
     </div>
 
     <!-- Shop Summary Banner -->
-    <div class="mb-6 flex items-center justify-between gap-4 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
+    <div class="mb-6 flex items-center justify-between gap-4 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
         <div class="flex items-center gap-3.5 min-w-0">
-            <div class="h-12 w-12 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] flex items-center justify-center font-black text-xl text-[var(--accent-dark)] shrink-0">
+            <div class="h-12 w-12 rounded-lg bg-[var(--mint-100)] border border-[var(--border)] flex items-center justify-center font-bold text-xl text-[var(--accent-dark)] shrink-0">
                 {{ strtoupper(substr($shop->name, 0, 1)) }}
             </div>
             <div class="min-w-0">
                 <span class="dev-only-badge text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 inline-block mb-1">
                     Feature R9 • Shanid Sajjatuz Islam [23201465]
                 </span>
-                <h2 class="text-lg font-black text-[var(--foreground)] truncate">{{ $shop->name }}</h2>
+                <h2 class="text-lg font-bold text-[var(--foreground)] truncate">{{ $shop->name }}</h2>
                 <p class="text-xs text-[var(--muted-foreground)] truncate">{{ $shop->area }} • {{ $shop->address }}</p>
             </div>
         </div>
-        <div class="text-right shrink-0 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] px-4 py-2">
+        <div class="text-right shrink-0 rounded-lg bg-[var(--mint-100)] border border-[var(--border)] px-4 py-2">
             @if((int) ($shop->review_count ?? 0) > 0)
-                <div class="text-xl font-black text-[var(--accent-dark)]">★ {{ number_format($shop->rating, 1) }}</div>
+                <div class="text-xl font-bold text-[var(--accent-dark)]">★ {{ number_format($shop->rating, 1) }}</div>
                 <div class="text-[10px] text-[var(--muted-foreground)]">{{ $shop->review_count }} {{ \Illuminate\Support\Str::plural('review', $shop->review_count) }}</div>
             @else
-                <div class="text-base font-black text-[var(--accent-dark)]">First Review</div>
+                <div class="text-base font-bold text-[var(--accent-dark)]">First Review</div>
                 <div class="text-[10px] text-[var(--muted-foreground)]">0 reviews yet</div>
             @endif
         </div>
     </div>
 
     <!-- Review Submission Card -->
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
-        <h1 class="mb-6 text-2xl font-black text-[var(--foreground)]">Share Your Repair Experience</h1>
+    <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
+        <h1 class="mb-6 text-2xl font-bold text-[var(--foreground)]">Share Your Repair Experience</h1>
 
         <form action="/reviews" method="POST" class="space-y-6 text-xs">
             @csrf
@@ -58,13 +58,13 @@
                 <input type="hidden" name="repair_request_id" value="{{ $selectedOrder->id }}">
                 <input type="hidden" name="from_past_orders" value="1">
 
-                <div class="rounded-2xl border border-emerald-400/60 bg-emerald-50/80 dark:bg-emerald-950/40 p-4 flex items-start gap-3">
+                <div class="rounded-lg border border-emerald-400/60 bg-emerald-50/80 dark:bg-emerald-950/40 p-4 flex items-start gap-3">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
                         <i class="fa-solid fa-certificate text-sm"></i>
                     </div>
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="rounded-full bg-emerald-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                            <span class="rounded bg-emerald-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
                                 Verified Repair Review
                             </span>
                             <span class="font-mono text-[11px] font-bold text-emerald-900 dark:text-emerald-300">
@@ -80,10 +80,10 @@
                     </div>
                 </div>
             @else
-                <div class="rounded-2xl border border-amber-300/70 bg-amber-50/80 dark:bg-amber-950/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="rounded-lg border border-amber-300/70 bg-amber-50/80 dark:bg-amber-950/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2">
-                            <span class="rounded-full bg-amber-200 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-amber-950">
+                            <span class="rounded bg-amber-200 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-amber-950">
                                 General Public Review
                             </span>
                         </div>
@@ -93,7 +93,7 @@
                     </div>
                     <a
                         href="/requests?filter=COMPLETED"
-                        class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-4 py-2 text-[11px] font-bold text-white shadow-sm hover:opacity-90 transition shrink-0"
+                        class="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-[11px] font-bold text-white shadow-sm hover:opacity-90 transition shrink-0"
                     >
                         <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
                         <span>Review from Past Orders</span>
@@ -114,7 +114,7 @@
                     {{ !empty($isFromPastOrders) ? 'required' : '' }}
                     maxlength="180"
                     placeholder="e.g. OLED Screen Replacement, Logic Board Micro-Soldering, Battery Swap"
-                    class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-xs font-semibold text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none transition"
+                    class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-2.5 text-xs font-semibold text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none transition"
                 >
                 <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">
                     Helps future customers identify the specific repair services {{ $shop->name }} performed for your order.
@@ -126,7 +126,7 @@
                             <button
                                 type="button"
                                 onclick="document.getElementById('service_provided').value = @js($srv->name)"
-                                class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition"
+                                class="rounded border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition"
                             >
                                 + {{ $srv->name }}
                             </button>
@@ -169,7 +169,7 @@
                     minlength="10"
                     maxlength="1000"
                     placeholder="How was the diagnostic accuracy, spare part quality, pricing transparency, and doorstep courier turnaround?"
-                    class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-3 text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none leading-relaxed transition"
+                    class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] px-4 py-3 text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none leading-relaxed transition"
                 >{{ old('review_comment') }}</textarea>
                 <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">Minimum 10 characters • Verified repair review</p>
                 @error('review_comment')
@@ -179,10 +179,10 @@
 
             <!-- Action Buttons -->
             <div class="flex items-center gap-3 pt-2 border-t border-[var(--border)]">
-                <a href="{{ route('shops.show', $shop->slug) }}" class="flex-1 rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-5 py-3 text-center font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                <a href="{{ route('shops.show', $shop->slug) }}" class="flex-1 rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-5 py-3 text-center font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
                     Cancel
                 </a>
-                <button type="submit" class="flex-1 rounded-full bg-[var(--accent-dark)] px-5 py-3 font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                <button type="submit" class="flex-1 rounded-md bg-[var(--accent-dark)] px-5 py-3 font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                     Submit Verified Review
                 </button>
             </div>
@@ -190,8 +190,8 @@
     </div>
 
     <!-- Mint Review Guidelines -->
-    <div class="mt-6 rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 text-xs">
-        <h3 class="mb-2 font-black text-[var(--foreground)] flex items-center gap-1.5">
+    <div class="mt-6 rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-5 text-xs">
+        <h3 class="mb-2 font-bold text-[var(--foreground)] flex items-center gap-1.5">
             <i class="fa-solid fa-shield-check text-emerald-700"></i>
             <span>Verified Review Guidelines</span>
         </h3>

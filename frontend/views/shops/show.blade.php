@@ -66,10 +66,10 @@
 
     <!-- Pre-Onboarding / Inactive Storefront Preview Banner -->
     @if(!$isOperational)
-        <div class="mb-6 rounded-[1.6rem] border-2 {{ $verificationStatus === 'rejected' ? 'border-rose-400 bg-rose-50/95 text-rose-950' : 'border-amber-400 bg-amber-50/95 text-amber-950' }} p-4 md:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="mb-6 rounded-lg border-2 {{ $verificationStatus === 'rejected' ? 'border-rose-400 bg-rose-50/95 text-rose-950' : 'border-amber-400 bg-amber-50/95 text-amber-950' }} p-4 md:p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="space-y-1">
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded-full {{ $verificationStatus === 'rejected' ? 'bg-rose-700' : 'bg-amber-600' }} px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                    <span class="rounded {{ $verificationStatus === 'rejected' ? 'bg-rose-700' : 'bg-amber-600' }} px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
                         {{ $verificationStatus === 'rejected' ? 'Application Declined · Inactive' : 'Preview Mode · Pending Admin Verification' }}
                     </span>
                     <span class="text-xs font-bold">
@@ -86,11 +86,11 @@
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 @if(auth()->check() && auth()->user()->role === 'admin')
-                    <a href="/admin/vendors/pending" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                    <a href="/admin/vendors/pending" class="rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                         <i class="fa-solid fa-shield-halved mr-1"></i> Return to Vendor Audit Desk
                     </a>
                 @else
-                    <a href="/shops" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                    <a href="/shops" class="rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                         Browse Verified Shops &rarr;
                     </a>
                 @endif
@@ -100,7 +100,7 @@
 
     <!-- Shop Profile Hero Header -->
     <div
-        class="overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm mb-6 min-w-0 max-w-full"
+        class="overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm mb-6 min-w-0 max-w-full"
         data-shop-lat="{{ $shop->latitude }}"
         data-shop-lng="{{ $shop->longitude }}"
     >
@@ -115,7 +115,7 @@
         <div class="grid gap-5 sm:gap-6 sm:grid-cols-[auto_minmax(0,1fr)] lg:grid-cols-[130px_minmax(0,1fr)_260px] lg:items-start">
 
             <!-- Left: Shop Logo / Avatar -->
-            <div class="h-24 w-24 sm:h-28 sm:w-28 lg:h-[130px] lg:w-[130px] rounded-[1.5rem] border-2 border-[var(--border)] bg-[var(--mint-100)] flex items-center justify-center font-black text-4xl text-[var(--accent-dark)] shrink-0 overflow-hidden shadow-sm">
+            <div class="h-24 w-24 sm:h-28 sm:w-28 lg:h-[130px] lg:w-[130px] rounded-lg border-2 border-[var(--border)] bg-[var(--mint-100)] flex items-center justify-center font-bold text-4xl text-[var(--accent-dark)] shrink-0 overflow-hidden shadow-sm">
                 @if($shop->logo_url)
                     <img src="{{ $shop->logo_url }}" alt="{{ $shop->name }}" class="h-full w-full object-cover">
                 @else
@@ -134,11 +134,11 @@
                 </p>
 
                 <div class="mt-1 flex flex-wrap items-center gap-2.5">
-                    <h1 class="break-words text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[var(--foreground)]">
+                    <h1 class="break-words text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-[var(--foreground)]">
                         {{ $shop->name }}
                     </h1>
                     @if($shop->display_branch_tag)
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-3.5 py-1 text-xs sm:text-sm font-bold text-[var(--accent-foreground)] shadow-sm">
+                        <span class="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-3.5 py-1 text-xs sm:text-sm font-bold text-[var(--accent-foreground)] shadow-sm">
                             <i class="fa-solid fa-code-branch text-xs"></i>
                             <span>Branch: {{ $shop->display_branch_tag }}</span>
                         </span>
@@ -152,7 +152,7 @@
                             <span class="text-[var(--muted-foreground)] font-normal">({{ $totalReviewsCount }} {{ \Illuminate\Support\Str::plural('review', $totalReviewsCount) }})</span>
                         </span>
                     @else
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-xs font-bold text-[var(--accent-dark)]">
+                        <span class="inline-flex items-center gap-1.5 rounded bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-xs font-bold text-[var(--accent-dark)]">
                             <i class="fa-solid {{ $isOperational ? 'fa-sparkles' : 'fa-clock' }} text-[10px]"></i>
                             <span>{{ $isOperational ? ($isPureWholesaler ? 'New Parts Store · No reviews yet' : 'New Workshop · No reviews yet') : 'Pending Verification · 0 reviews' }}</span>
                         </span>
@@ -162,7 +162,7 @@
                         <i class="fa-solid fa-location-dot text-[var(--accent-dark)] mt-0.5 sm:mt-0 shrink-0"></i>
                         <span class="break-words">{{ $shop->public_address }}</span>
                     </span>
-                    <span class="distance-display {{ isset($shop->distance_km) ? '' : 'hidden' }} rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-xs font-bold text-[var(--accent-dark)]">
+                    <span class="distance-display {{ isset($shop->distance_km) ? '' : 'hidden' }} rounded bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-xs font-bold text-[var(--accent-dark)]">
                         {{ isset($shop->distance_km) ? \App\Services\GeolocationService::formatDistance((float) $shop->distance_km) : '' }}
                     </span>
                     @if($shop->phone)
@@ -180,52 +180,52 @@
                 <!-- Badges & Perks -->
                 <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
                     @if(!$isOperational)
-                        <span class="rounded-full bg-amber-100 border border-amber-300 px-3 py-1 font-bold text-amber-900">
+                        <span class="rounded-md bg-amber-100 border border-amber-300 px-3 py-1 font-bold text-amber-900">
                             <i class="fa-solid fa-hourglass-half mr-1"></i> {{ ucfirst($verificationStatus) }} Verification
                         </span>
                     @endif
                     @if($supportsCourier)
-                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-emerald-950">
+                        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-emerald-950">
                             <i class="fa-solid fa-truck-fast text-emerald-700 mr-1"></i> Courier Pickup &amp; Return
                         </span>
                     @endif
                     @if($supportsInShop)
-                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-teal-950">
+                        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-teal-950">
                             <i class="fa-solid fa-store text-teal-700 mr-1"></i> In-Shop Walk-In
                         </span>
                     @endif
                     @if($supportsSpareParts)
-                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-sky-950">
+                        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-sky-950">
                             <i class="fa-solid fa-microchip text-sky-700 mr-1"></i> {{ $isPureWholesaler ? 'Spare Parts Wholesaler' : 'Spare Parts Store' }}
                         </span>
                     @endif
                     @if($shop->has_voucher)
-                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-[var(--accent-dark)]">
+                        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-[var(--accent-dark)]">
                             <i class="fa-solid fa-ticket text-amber-600 mr-1"></i> Coupon Voucher
                         </span>
                     @endif
                     @if($supportsCourier && $shop->free_delivery)
-                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-emerald-800">
+                        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-emerald-800">
                             <i class="fa-solid fa-gift text-emerald-600 mr-1"></i> Free Courier Pickup
                         </span>
                     @endif
                     @if($shop->has_deals)
-                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-rose-800">
+                        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-rose-800">
                             <i class="fa-solid fa-fire text-rose-600 mr-1"></i> Active Deals
                         </span>
                     @endif
-                    <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-bold text-[var(--accent-dark)]">
+                    <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-bold text-[var(--accent-dark)]">
                         Tier {{ str_repeat('৳', $shop->price_level ?? 2) }}
                     </span>
                 </div>
             </div>
 
             <!-- Right: Quick Quote / Booking Card (full-width row below lg, sidebar column on lg+) -->
-            <div class="min-w-0 rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm space-y-4 sm:col-span-2 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] sm:items-center sm:gap-5 sm:space-y-0 lg:col-span-1 lg:block lg:space-y-4">
+            <div class="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm space-y-4 sm:col-span-2 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] sm:items-center sm:gap-5 sm:space-y-0 lg:col-span-1 lg:block lg:space-y-4">
                 <div class="min-w-0">
                     @if($isPureWholesaler)
                         <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Spare Parts Inventory</span>
-                        <div class="text-2xl font-black text-[var(--accent-dark)]">
+                        <div class="text-2xl font-bold text-[var(--accent-dark)]">
                             {{ number_format($shopSparePartsCount) }} SKUs Stocked
                         </div>
                         <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
@@ -233,7 +233,7 @@
                         </div>
                     @else
                         <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Starting Inspection</span>
-                        <div class="text-2xl font-black text-[var(--accent-dark)]">
+                        <div class="text-2xl font-bold text-[var(--accent-dark)]">
                             ৳{{ number_format($shop->inspection_fee ?? 200) }}
                         </div>
                         <div class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
@@ -244,48 +244,48 @@
 
                 <div class="space-y-2">
                     @if($isShopOwner)
-                        <a href="{{ $isOperational ? '/vendor/dashboard?shop_id=' . $shop->id : ($verificationStatus === 'approved' ? '/vendor/setup-shop?shop_id=' . $shop->id : '/vendor/onboarding') }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                        <a href="{{ $isOperational ? '/vendor/dashboard?shop_id=' . $shop->id : ($verificationStatus === 'approved' ? '/vendor/setup-shop?shop_id=' . $shop->id : '/vendor/onboarding') }}" class="inline-flex w-full items-center justify-center rounded-md bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
                             <i class="fa-solid fa-gauge-high mr-1.5"></i> {{ $isOperational ? 'Manage in Vendor Dashboard' : ($verificationStatus === 'approved' ? 'Complete Shop Setup' : 'View Application Status') }}
                         </a>
                         @if($verificationStatus === 'approved')
-                            <a href="/vendor/setup-shop?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <a href="/vendor/setup-shop?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                                 <i class="fa-solid fa-sliders mr-1.5"></i> Edit Pricing &amp; Services
                             </a>
                         @endif
                     @elseif($isAdminViewer)
-                        <a href="/admin" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                        <a href="/admin" class="inline-flex w-full items-center justify-center rounded-md bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
                             <i class="fa-solid fa-shield-halved mr-1.5"></i> Admin Console
                         </a>
-                        <a href="/admin/moderation" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                        <a href="/admin/moderation" class="inline-flex w-full items-center justify-center rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                             <i class="fa-solid fa-gavel mr-1.5"></i> Review Moderation Desk
                         </a>
                     @elseif($isNonCustomerViewer)
-                        <a href="{{ auth()->user()->role === 'vendor' ? '/vendor/dashboard' : '/delivery' }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                        <a href="{{ auth()->user()->role === 'vendor' ? '/vendor/dashboard' : '/delivery' }}" class="inline-flex w-full items-center justify-center rounded-md bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
                             <i class="fa-solid fa-gauge-high mr-1.5"></i> {{ auth()->user()->role === 'vendor' ? 'Vendor Dashboard' : 'Rider Dashboard' }}
                         </a>
                     @elseif($isBannedCustomerViewer)
-                        <span class="inline-flex w-full items-center justify-center rounded-full border border-rose-300 bg-rose-100 px-4 py-2.5 text-xs font-bold text-rose-900 cursor-not-allowed">
+                        <span class="inline-flex w-full items-center justify-center rounded-md border border-rose-300 bg-rose-100 px-4 py-2.5 text-xs font-bold text-rose-900 cursor-not-allowed">
                             <i class="fa-solid fa-ban mr-1.5 text-[10px]"></i> Ordering &amp; Requests Restricted
                         </span>
-                        <a href="/requests" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                        <a href="/requests" class="inline-flex w-full items-center justify-center rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                             <i class="fa-solid fa-list-check mr-1.5"></i> View Ongoing &amp; Past Orders
                         </a>
                     @else
                         @if($isPureWholesaler)
-                            <a href="{{ route('spare-parts.index', ['seller_shop_id' => $shop->id]) }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                            <a href="{{ route('spare-parts.index', ['seller_shop_id' => $shop->id]) }}" class="inline-flex w-full items-center justify-center rounded-md bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
                                 <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Browse Stocked Parts
                             </a>
                         @elseif($isOperational)
-                            <a href="/requests/create?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
+                            <a href="/requests/create?shop_id={{ $shop->id }}" class="inline-flex w-full items-center justify-center rounded-md bg-[var(--accent-dark)] px-5 py-3 text-xs sm:text-sm font-semibold text-white shadow hover:opacity-90 transition">
                                 Post Repair Request
                             </a>
                         @else
-                            <span class="inline-flex w-full items-center justify-center rounded-full border border-amber-400 bg-amber-100/80 px-4 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
+                            <span class="inline-flex w-full items-center justify-center rounded-md border border-amber-400 bg-amber-100/80 px-4 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
                                 <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Booking Locked Until Approved
                             </span>
                         @endif
                         @if(!$isPureWholesaler)
-                            <a href="/ai-consultant/chat" class="inline-flex w-full items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <a href="/ai-consultant/chat" class="inline-flex w-full items-center justify-center rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                                 <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-amber-600"></i> AI Diagnose Device
                             </a>
                         @endif
@@ -345,7 +345,7 @@
             @endphp
 
             <!-- 1. Available Catalog (Split into Services & Spare Parts Tabs) -->
-            <div x-data="{ catalogTab: @js(($isPureWholesaler || (empty($displayServices) && $shopSpareParts->isNotEmpty())) ? 'spare_parts' : 'services') }" id="shop-catalog" class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+            <div x-data="{ catalogTab: @js(($isPureWholesaler || (empty($displayServices) && $shopSpareParts->isNotEmpty())) ? 'spare_parts' : 'services') }" id="shop-catalog" class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
                 <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <div class="inline-flex items-center p-1 rounded-full bg-[var(--mint-100)] border border-[var(--border)] mb-2">
@@ -353,14 +353,14 @@
                                 <button type="button"
                                         @click="catalogTab = 'services'"
                                         :class="catalogTab === 'services' ? 'bg-[var(--accent-dark)] text-white shadow-xs' : 'text-[var(--foreground)] hover:bg-white/60'"
-                                        class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition">
+                                        class="px-4 py-1.5 rounded-md text-xs sm:text-sm font-bold transition">
                                     🛠️ Services ({{ count($displayServices) }})
                                 </button>
                             @endif
                             <button type="button"
                                     @click="catalogTab = 'spare_parts'"
                                     :class="catalogTab === 'spare_parts' ? 'bg-[var(--accent-dark)] text-white shadow-xs' : 'text-[var(--foreground)] hover:bg-white/60'"
-                                    class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition">
+                                    class="px-4 py-1.5 rounded-md text-xs sm:text-sm font-bold transition">
                                 🔩 Spare Parts ({{ number_format($shopSparePartsCount) }})
                             </button>
                         </div>
@@ -385,7 +385,7 @@
                         $shopCartCount = count(session('cart', []));
                     @endphp
                     @if($isOperational && $canCustomerBookOrReview)
-                        <a href="/cart" class="inline-flex items-center gap-2 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
+                        <a href="/cart" class="inline-flex items-center gap-2 rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
                             <i class="fa-solid fa-cart-shopping"></i>
                             <span>Open Cart</span>
                             <span data-cart-badge class="{{ $shopCartCount > 0 ? '' : 'hidden' }} inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--accent-dark)] px-1 text-[10px] font-bold text-[var(--accent-foreground)]">
@@ -393,17 +393,17 @@
                             </span>
                         </a>
                     @elseif($isAdminViewer)
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-dark)]">
+                        <span class="inline-flex items-center gap-1.5 rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-dark)]">
                             <i class="fa-solid fa-shield-halved text-[10px]"></i>
                             <span>Admin Catalog Audit</span>
                         </span>
                     @elseif($isBannedCustomerViewer)
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 border border-rose-300 px-3.5 py-1.5 text-xs font-bold text-rose-900">
+                        <span class="inline-flex items-center gap-1.5 rounded-md bg-rose-100 border border-rose-300 px-3.5 py-1.5 text-xs font-bold text-rose-900">
                             <i class="fa-solid fa-ban text-[10px]"></i>
                             <span>Restricted from Ordering</span>
                         </span>
                     @elseif(!$isOperational)
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 border border-amber-300 px-3.5 py-1.5 text-xs font-bold text-amber-900">
+                        <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-100 border border-amber-300 px-3.5 py-1.5 text-xs font-bold text-amber-900">
                             <i class="fa-solid fa-eye text-[10px]"></i>
                             <span>Catalog Preview</span>
                         </span>
@@ -414,12 +414,12 @@
                 @if(!$isPureWholesaler || !empty($displayServices))
                 <div x-show="catalogTab === 'services'">
                     @if(empty($displayServices))
-                        <div class="rounded-[1.5rem] border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center">
+                        <div class="rounded-lg border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center">
                             <i class="fa-solid fa-screwdriver-wrench text-2xl text-[var(--muted-foreground)]"></i>
                             <p class="mt-3 text-sm font-semibold text-[var(--foreground)]">This workshop hasn't published fixed-price services yet.</p>
                             <p class="mt-1 text-xs text-[var(--muted-foreground)]">Describe your device issue below to receive a customized repair quote from {{ $shop->name }}.</p>
                             @if($isOperational && $canCustomerBookOrReview)
-                                <a href="/requests/create?shop_id={{ $shop->id }}" class="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition">
+                                <a href="/requests/create?shop_id={{ $shop->id }}" class="mt-4 inline-flex h-10 items-center justify-center rounded-md bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition">
                                     Request a Custom Quote
                                 </a>
                             @endif
@@ -427,14 +427,14 @@
                     @else
                         <div class="space-y-4">
                             @foreach($displayServices as $svcItem)
-                                <article class="flex flex-col gap-4 rounded-[1.5rem] border border-[var(--border)] p-4 transition hover:shadow-sm md:flex-row md:items-start md:justify-between bg-[var(--mint-100)]/40">
+                                <article class="flex flex-col gap-4 rounded-lg border border-[var(--border)] p-4 transition hover:shadow-sm md:flex-row md:items-start md:justify-between bg-[var(--mint-100)]/40">
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-start justify-between gap-4">
                                             <div class="min-w-0">
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <h3 class="text-base md:text-lg font-bold text-[var(--foreground)]">{{ $svcItem['name'] }}</h3>
                                                     @if(($svcItem['pricing_type'] ?? '') === 'FIXED_PACKAGE')
-                                                        <span class="inline-flex items-center gap-1 rounded-full border border-[#b9d3b6] bg-white px-2.5 py-0.5 text-[10px] font-bold text-[#244229]">
+                                                        <span class="inline-flex items-center gap-1 rounded border border-[#b9d3b6] bg-white px-2.5 py-0.5 text-[10px] font-bold text-[#244229]">
                                                             <i class="fa-solid fa-box-open text-[9px]"></i>
                                                             Fixed Package &bull; {{ $svcItem['category'] ?? 'All Devices' }}
                                                         </span>
@@ -453,12 +453,12 @@
                                             <div class="shrink-0 text-right">
                                                 @if($svcItem['estimate'] !== null)
                                                     @if(($svcItem['pricing_type'] ?? '') === 'STARTING_FROM')
-                                                        <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
+                                                        <div class="text-base md:text-lg font-bold text-[var(--accent-dark)]">
                                                             From ৳{{ number_format($svcItem['estimate']) }}
                                                         </div>
                                                         <div class="text-[10px] text-[var(--muted-foreground)]">base estimate</div>
                                                     @else
-                                                        <div class="text-base md:text-lg font-black text-[var(--accent-dark)]">
+                                                        <div class="text-base md:text-lg font-bold text-[var(--accent-dark)]">
                                                             ৳{{ number_format($svcItem['estimate']) }}
                                                         </div>
                                                         <div class="text-[10px] text-[var(--muted-foreground)]">fixed price</div>
@@ -478,7 +478,7 @@
                                                     <button
                                                         type="button"
                                                         onclick="MeramotCart.addDirectPackage({{ $shop->id }}, {{ (int) $svcItem['package_id'] }}, this)"
-                                                        class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
+                                                        class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
                                                     >
                                                         <i class="fa-solid fa-cart-plus text-xs"></i>
                                                         <span>Add to Cart</span>
@@ -487,7 +487,7 @@
                                                     <button
                                                         type="button"
                                                         onclick="MeramotCart.addShopService({{ $shop->id }}, @js($svcItem['name']), @js($svcItem['summary']), {{ $svcItem['estimate'] }}, this)"
-                                                        class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
+                                                        class="inline-flex h-10 flex-1 md:flex-none items-center justify-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-5 text-xs md:text-sm font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap"
                                                     >
                                                         <i class="fa-solid fa-cart-plus text-xs"></i>
                                                         <span>Add to Cart</span>
@@ -497,16 +497,16 @@
 
                                             <a
                                                 href="/requests/create?shop_id={{ $shop->id }}&issue={{ urlencode($svcItem['name']) }}"
-                                                class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--card)] px-4 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap"
+                                                class="inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--card)] px-4 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap"
                                             >
                                                 Custom Quote
                                             </a>
                                         @elseif(!$isOperational)
-                                            <span class="inline-flex h-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed whitespace-nowrap">
+                                            <span class="inline-flex h-10 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-4 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed whitespace-nowrap">
                                                 <i class="fa-solid fa-lock mr-1.5 text-[10px]"></i> Available After Approval
                                             </span>
                                         @elseif($isBannedCustomerViewer)
-                                            <span class="inline-flex h-10 items-center justify-center rounded-full border border-rose-300 bg-rose-50 px-4 text-xs font-semibold text-rose-800 cursor-not-allowed whitespace-nowrap">
+                                            <span class="inline-flex h-10 items-center justify-center rounded-md border border-rose-300 bg-rose-50 px-4 text-xs font-semibold text-rose-800 cursor-not-allowed whitespace-nowrap">
                                                 <i class="fa-solid fa-ban mr-1.5 text-[10px]"></i> Ordering Restricted
                                             </span>
                                         @endif
@@ -529,10 +529,10 @@
                                     $spOffer = $spItem->isOfferActive();
                                 @endphp
                                 <a href="{{ route('spare-parts.show', ['slug' => $spItem->slug]) }}"
-                                   class="group rounded-2xl border border-[var(--border)] bg-white/95 dark:bg-[var(--mint-100)]/20 hover:border-emerald-700 hover:shadow-sm transition overflow-hidden flex flex-col">
+                                   class="group rounded-lg border border-[var(--border)] bg-white/95 dark:bg-[var(--mint-100)]/20 hover:border-emerald-700 hover:shadow-sm transition overflow-hidden flex flex-col">
                                     <div class="relative aspect-square bg-white p-2.5 border-b border-slate-100">
                                         @if($spOffer)
-                                            <span class="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-600 text-white text-[10px] font-extrabold flex items-center justify-center shadow-xs">
+                                            <span class="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-600 text-white text-[10px] font-semibold flex items-center justify-center shadow-xs">
                                                 Sale!
                                             </span>
                                         @endif
@@ -549,9 +549,9 @@
                                         <div class="flex items-baseline gap-1.5 flex-wrap">
                                             @if($spOffer && $spNorm > $spEff)
                                                 <span class="text-[11px] text-slate-400 line-through">৳{{ number_format($spNorm, 0) }}</span>
-                                                <span class="text-sm font-extrabold text-red-600">৳{{ number_format($spEff, 0) }}</span>
+                                                <span class="text-sm font-semibold text-red-600">৳{{ number_format($spEff, 0) }}</span>
                                             @else
-                                                <span class="text-sm font-extrabold text-[var(--foreground)]">৳{{ number_format($spEff, 0) }}</span>
+                                                <span class="text-sm font-semibold text-[var(--foreground)]">৳{{ number_format($spEff, 0) }}</span>
                                             @endif
                                         </div>
                                     </div>
@@ -561,7 +561,7 @@
                         @if($shopSparePartsCount > $shopSpareParts->count())
                             <div class="mt-4 text-center">
                                 <a href="{{ route('spare-parts.index', ['seller_shop_id' => $shop->id]) }}"
-                                   class="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-emerald-900 text-white text-xs font-bold hover:bg-emerald-800 transition">
+                                   class="inline-flex items-center gap-1 px-4 py-2 rounded-md bg-emerald-900 text-white text-xs font-bold hover:bg-emerald-800 transition">
                                     View all {{ number_format($shopSparePartsCount) }} spare parts from {{ $shop->name }} →
                                 </a>
                             </div>
@@ -588,13 +588,13 @@
             <div class="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] items-start">
 
                 <!-- Left Card: Rating Score & Star Breakdown Bars -->
-                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm self-start">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm self-start">
                     <p class="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--muted-foreground)]">Customer reviews</p>
                     <h2 class="mt-1 text-xl font-bold text-[var(--foreground)]">Rating summary</h2>
 
-                    <div class="mt-4 rounded-[1.5rem] bg-[var(--mint-50)] px-4 py-4 text-center">
+                    <div class="mt-4 rounded-lg bg-[var(--mint-50)] px-4 py-4 text-center">
                         @if($totalReviewsCount > 0)
-                            <div class="text-4xl font-black text-[var(--accent-dark)]">{{ number_format($avgRating, 1) }}</div>
+                            <div class="text-4xl font-bold text-[var(--accent-dark)]">{{ number_format($avgRating, 1) }}</div>
                             <div class="text-amber-500 text-sm mt-1">
                                 @for($i = 1; $i <= 5; $i++)
                                     <i class="fa-solid fa-star {{ $i <= round($avgRating) ? 'text-amber-500' : 'text-gray-300' }}"></i>
@@ -602,7 +602,7 @@
                             </div>
                             <p class="mt-1 text-xs text-[var(--muted-foreground)]">{{ $totalReviewsCount }} verified {{ \Illuminate\Support\Str::plural('review', $totalReviewsCount) }}</p>
                         @else
-                            <div class="text-2xl font-black text-[var(--accent-dark)]">{{ $isOperational ? 'New' : '—' }}</div>
+                            <div class="text-2xl font-bold text-[var(--accent-dark)]">{{ $isOperational ? 'New' : '—' }}</div>
                             <div class="text-gray-300 text-sm mt-1">
                                 @for($i = 1; $i <= 5; $i++)
                                     <i class="fa-solid fa-star"></i>
@@ -631,7 +631,7 @@
 
                 <!-- Right Card: Reviews List -->
                 <div
-                    class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm"
+                    class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm"
                     x-data="{
                         ownIds: @js($ownReviewIds),
                         selectedReviewIds: [],
@@ -670,40 +670,40 @@
                             @endif
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="rounded-full bg-[var(--mint-100)] px-3 py-0.5 text-xs font-semibold text-[var(--accent-dark)]">
+                            <span class="rounded bg-[var(--mint-100)] px-3 py-0.5 text-xs font-semibold text-[var(--accent-dark)]">
                                 {{ $shop->area ? $shop->area . ', ' . $shop->city : ($shop->city ?: 'Bangladesh') }}
                             </span>
                             @if($isShopOwner)
-                                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--accent-dark)]">
+                                <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--accent-dark)]">
                                     <i class="fa-solid fa-store mr-1 text-[10px]"></i> Your Workshop
                                 </span>
                             @elseif($isAdminViewer)
-                                <span class="rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-bold text-rose-900">
+                                <span class="rounded-md bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-bold text-rose-900">
                                     <i class="fa-solid fa-gavel mr-1 text-[10px]"></i> Admin Review Moderation
                                 </span>
                             @elseif($isNonCustomerViewer)
-                                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--muted-foreground)]">
+                                <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--muted-foreground)]">
                                     <i class="fa-solid fa-comments mr-1 text-[10px]"></i> Verified Client Feedback
                                 </span>
                             @elseif($isBannedCustomerViewer)
-                                <span class="rounded-full bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-bold text-rose-900">
+                                <span class="rounded-md bg-rose-100 border border-rose-300 px-3 py-1 text-xs font-bold text-rose-900">
                                     <i class="fa-solid fa-ban mr-1 text-[10px]"></i> Review Posting Restricted
                                 </span>
                             @elseif($isOperational)
                                 @auth
-                                    <a href="/requests?filter=COMPLETED" class="rounded-full border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition" title="Write a Verified Repair Review from your completed Past Orders">
+                                    <a href="/requests?filter=COMPLETED" class="rounded-md border border-emerald-600/40 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1 text-xs font-bold text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 transition" title="Write a Verified Repair Review from your completed Past Orders">
                                         <i class="fa-solid fa-certificate mr-1 text-[10px] text-emerald-600"></i> Review Past Order
                                     </a>
-                                    <a href="/reviews/create/{{ $shop->id }}" class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-xs font-semibold text-white hover:opacity-90 transition">
+                                    <a href="/reviews/create/{{ $shop->id }}" class="rounded-md bg-[var(--accent-dark)] px-3 py-1 text-xs font-semibold text-white hover:opacity-90 transition">
                                         <i class="fa-solid fa-pen-to-square mr-1 text-[10px]"></i> Write Review
                                     </a>
                                 @else
-                                    <a href="{{ route('reviews.create', $shop->id) }}" class="rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-xs font-bold text-white hover:opacity-90 transition">
+                                    <a href="{{ route('reviews.create', $shop->id) }}" class="rounded-md bg-[var(--accent-dark)] px-3.5 py-1.5 text-xs font-bold text-white hover:opacity-90 transition">
                                         <i class="fa-solid fa-right-to-bracket mr-1 text-[10px]"></i> Sign in to Review / Edit Your Reviews
                                     </a>
                                 @endauth
                             @else
-                                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed">
+                                <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--muted-foreground)] cursor-not-allowed">
                                     <i class="fa-solid fa-lock mr-1 text-[10px]"></i> Reviews Locked
                                 </span>
                             @endif
@@ -711,9 +711,9 @@
                     </div>
 
                     @if($serviceSkillBreakdown->isNotEmpty())
-                        <div class="mb-4 rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] p-3.5 space-y-2">
+                        <div class="mb-4 rounded-lg border border-[var(--border)] bg-[var(--mint-50)] p-3.5 space-y-2">
                             <div class="flex flex-wrap items-center justify-between gap-2">
-                                <span class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">
                                     <i class="fa-solid fa-screwdriver-wrench mr-1"></i>Workshop Skill Breakdown by Verified Repair Service
                                 </span>
                                 <span class="text-[10px] text-[var(--muted-foreground)]">Based on completed service orders</span>
@@ -724,9 +724,9 @@
                                         $isStrongSkill = $skillItem['avg_rating'] >= 4.0;
                                         $isWeakSkill = $skillItem['avg_rating'] < 3.0;
                                     @endphp
-                                    <div class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold {{ $isStrongSkill ? 'border-emerald-300 bg-emerald-100/80 text-emerald-900' : ($isWeakSkill ? 'border-rose-300 bg-rose-100/80 text-rose-900' : 'border-amber-300 bg-amber-100/80 text-amber-900') }}">
+                                    <div class="inline-flex items-center gap-1.5 rounded-md border px-3 py-1 text-[11px] font-bold {{ $isStrongSkill ? 'border-emerald-300 bg-emerald-100/80 text-emerald-900' : ($isWeakSkill ? 'border-rose-300 bg-rose-100/80 text-rose-900' : 'border-amber-300 bg-amber-100/80 text-amber-900') }}">
                                         <span>{{ $skillItem['service'] }}</span>
-                                        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded-full bg-white/80">
+                                        <span class="font-mono text-[10px] px-1.5 py-0.2 rounded bg-white/80">
                                             ★ {{ number_format($skillItem['avg_rating'], 1) }} ({{ $skillItem['count'] }})
                                         </span>
                                     </div>
@@ -736,7 +736,7 @@
                     @endif
 
                     @if($ownReviewIds->isNotEmpty())
-                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 px-3.5 py-2.5 text-xs">
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/60 px-3.5 py-2.5 text-xs">
                             <label class="inline-flex items-center gap-2 cursor-pointer font-bold text-[var(--foreground)]">
                                 <input
                                     type="checkbox"
@@ -753,7 +753,7 @@
                                     x-show="selectedReviewIds.length === 1"
                                     x-cloak
                                     @click="editSelectedOwn()"
-                                    class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-90 transition"
+                                    class="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-90 transition"
                                 >
                                     <i class="fa-solid fa-pen-to-square text-[11px]"></i>
                                     <span>Edit Selected</span>
@@ -778,7 +778,7 @@
                                     </template>
                                     <button
                                         type="submit"
-                                        class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                        class="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
                                     >
                                         <i class="fa-solid fa-trash-can text-[11px]"></i>
                                         <span>Delete Selected (<span x-text="selectedReviewIds.length"></span>)</span>
@@ -799,7 +799,7 @@
                             @endphp
                             <article
                                 id="review-{{ $rev->id }}"
-                                class="rounded-[1.5rem] border {{ $isOwnReview ? 'border-emerald-500/70 bg-emerald-50/50 dark:bg-emerald-950/20 ring-1 ring-emerald-500/20' : 'border-[var(--border)] bg-[var(--mint-100)]/50' }} p-4 shadow-sm text-xs transition"
+                                class="rounded-lg border {{ $isOwnReview ? 'border-emerald-500/70 bg-emerald-50/50 dark:bg-emerald-950/20 ring-1 ring-emerald-500/20' : 'border-[var(--border)] bg-[var(--mint-100)]/50' }} p-4 shadow-sm text-xs transition"
                             >
                                 <div class="flex items-start justify-between gap-2">
                                     <div class="flex items-start gap-2.5 min-w-0">
@@ -816,26 +816,26 @@
                                             <div class="flex flex-wrap items-center gap-1.5">
                                                 <p class="font-bold text-[var(--foreground)] text-sm">{{ $rev->customer->name ?? 'Meramot Customer' }}</p>
                                                 @if($isOwnReview)
-                                                    <span class="rounded-full bg-[var(--accent-dark)] px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-white">
+                                                    <span class="rounded bg-[var(--accent-dark)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white">
                                                         Your Review
                                                     </span>
                                                 @endif
                                                 @if($isVerifiedRepair)
-                                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
+                                                    <span class="rounded bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
                                                         <i class="fa-solid fa-certificate mr-0.5 text-[8px]"></i>Verified repair
                                                     </span>
                                                 @else
-                                                    <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-600 border border-slate-300">
+                                                    <span class="rounded bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-600 border border-slate-300">
                                                         Public review
                                                     </span>
                                                 @endif
                                                 @if($authorBanned)
-                                                    <span class="rounded-full bg-rose-600 px-2 py-0.5 text-[9px] font-extrabold uppercase text-white">
+                                                    <span class="rounded bg-rose-600 px-2 py-0.5 text-[9px] font-semibold uppercase text-white">
                                                         Banned User
                                                     </span>
                                                 @endif
                                                 @if($isAdminViewer && !empty($offensiveWords))
-                                                    <span class="rounded-full bg-amber-100 border border-amber-400 px-2 py-0.5 text-[9px] font-bold text-amber-900">
+                                                    <span class="rounded bg-amber-100 border border-amber-400 px-2 py-0.5 text-[9px] font-bold text-amber-900">
                                                         <i class="fa-solid fa-triangle-exclamation mr-0.5"></i>Offensive Words: {{ implode(', ', $offensiveWords) }}
                                                     </span>
                                                 @endif
@@ -843,7 +843,7 @@
 
                                             @if($serviceProvidedLabel !== '')
                                                 <div class="mt-1">
-                                                    <span class="inline-flex flex-wrap items-center gap-1 rounded-2xl bg-[var(--mint-200)]/90 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] border border-[var(--border)] break-words">
+                                                    <span class="inline-flex flex-wrap items-center gap-1 rounded-lg bg-[var(--mint-200)]/90 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] border border-[var(--border)] break-words">
                                                         <i class="fa-solid fa-screwdriver-wrench text-[9px] shrink-0"></i>
                                                         <span class="break-words">Service Provided: {{ $serviceProvidedLabel }}</span>
                                                     </span>
@@ -892,7 +892,7 @@
                                                     @csrf
                                                     <input type="hidden" name="action_type" value="delete_only">
                                                     <input type="hidden" name="reason" value="Removed by Admin for inappropriate or offensive review language">
-                                                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3.5 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-amber-700 transition">
+                                                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-md bg-amber-600 px-3.5 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-amber-700 transition">
                                                         <i class="fa-solid fa-trash-can text-[10px]"></i>
                                                         <span>Delete Review</span>
                                                     </button>
@@ -902,7 +902,7 @@
                                                     <button
                                                         type="button"
                                                         @click="banOpen = !banOpen"
-                                                        class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3.5 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                                        class="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3.5 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-rose-700 transition"
                                                     >
                                                         <i class="fa-solid fa-ban text-[10px]"></i>
                                                         <span>Delete &amp; Ban User</span>
@@ -917,11 +917,11 @@
                                                 x-cloak
                                                 method="POST"
                                                 action="{{ route('admin.reviews.moderate', $rev->id) }}"
-                                                class="rounded-2xl border border-rose-300 bg-rose-50 dark:bg-rose-950/30 p-3 space-y-2"
+                                                class="rounded-lg border border-rose-300 bg-rose-50 dark:bg-rose-950/30 p-3 space-y-2"
                                             >
                                                 @csrf
                                                 <input type="hidden" name="action_type" value="delete_and_ban">
-                                                <label class="block text-[10px] font-extrabold uppercase tracking-wider text-rose-900 dark:text-rose-200">
+                                                <label class="block text-[10px] font-semibold uppercase tracking-wider text-rose-900 dark:text-rose-200">
                                                     Suspension Reason (Sent via Email &amp; In-App Notification to {{ $rev->customer->email }})
                                                 </label>
                                                 <input
@@ -933,8 +933,8 @@
                                                     class="w-full rounded-xl border border-rose-300 bg-white dark:bg-[var(--card)] px-3 py-1.5 text-xs text-[var(--foreground)] outline-none"
                                                 >
                                                 <div class="flex items-center justify-end gap-2">
-                                                    <button type="button" @click="banOpen = false" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--foreground)]">Cancel</button>
-                                                    <button type="submit" class="rounded-full bg-rose-700 px-4 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-rose-800 transition">
+                                                    <button type="button" @click="banOpen = false" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--foreground)]">Cancel</button>
+                                                    <button type="submit" class="rounded-md bg-rose-700 px-4 py-1 text-[11px] font-bold text-white shadow-sm hover:bg-rose-800 transition">
                                                         Confirm Delete Review &amp; Ban User
                                                     </button>
                                                 </div>
@@ -955,7 +955,7 @@
                                             <button
                                                 type="button"
                                                 @click="editingReviewId = {{ (int) $rev->id }}"
-                                                class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-90 transition"
+                                                class="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:opacity-90 transition"
                                             >
                                                 <i class="fa-solid fa-pen-to-square text-[11px]"></i>
                                                 <span>Edit Review</span>
@@ -975,7 +975,7 @@
                                                 @method('DELETE')
                                                 <button
                                                     type="submit"
-                                                    class="inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                                    class="inline-flex items-center gap-1.5 rounded-md bg-rose-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
                                                 >
                                                     <i class="fa-solid fa-trash-can text-[11px]"></i>
                                                     <span>Delete Review</span>
@@ -1033,13 +1033,13 @@
                                             <button
                                                 type="button"
                                                 @click="editingReviewId = null"
-                                                class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--foreground)]"
+                                                class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--foreground)]"
                                             >
                                                 Cancel
                                             </button>
                                             <button
                                                 type="submit"
-                                                class="rounded-full bg-[var(--accent-dark)] px-4 py-1.5 text-[11px] font-bold text-white shadow-sm hover:opacity-90 transition"
+                                                class="rounded-md bg-[var(--accent-dark)] px-4 py-1.5 text-[11px] font-bold text-white shadow-sm hover:opacity-90 transition"
                                             >
                                                 Save Changes
                                             </button>
@@ -1048,7 +1048,7 @@
                                 @endif
                             </article>
                         @empty
-                            <div class="rounded-[1.5rem] border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center text-xs text-[var(--muted-foreground)] space-y-2">
+                            <div class="rounded-lg border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center text-xs text-[var(--muted-foreground)] space-y-2">
                                 <i class="fa-regular fa-comment-dots text-2xl text-[var(--accent-dark)] opacity-70 block"></i>
                                 <p class="font-bold text-sm text-[var(--foreground)]">No verified customer reviews yet</p>
                                 <p class="max-w-md mx-auto leading-relaxed">
@@ -1071,7 +1071,7 @@
         <div class="space-y-6">
 
             <!-- Shop Info Card -->
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
                 <h3 class="text-base font-bold text-[var(--foreground)] mb-4 flex items-center gap-2">
                     <i class="fa-solid fa-store text-[var(--accent-dark)]"></i>
                     Shop details &amp; hours
@@ -1101,15 +1101,15 @@
 
                 <div class="mt-5 pt-4 border-t border-[var(--border)]">
                     @if($isShopOwner)
-                        <a href="/vendor/dashboard" class="block w-full text-center rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
+                        <a href="/vendor/dashboard" class="block w-full text-center rounded-md bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
                             Open Vendor Dashboard &rarr;
                         </a>
                     @elseif($isOperational)
-                        <a href="/requests/create?shop_id={{ $shop->id }}" class="block w-full text-center rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
+                        <a href="/requests/create?shop_id={{ $shop->id }}" class="block w-full text-center rounded-md bg-[var(--accent-dark)] px-4 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
                             Select This Shop &rarr;
                         </a>
                     @else
-                        <span class="block w-full text-center rounded-full border border-amber-400 bg-amber-100/80 px-4 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
+                        <span class="block w-full text-center rounded-md border border-amber-400 bg-amber-100/80 px-4 py-2.5 text-xs font-bold text-amber-900 cursor-not-allowed">
                             Pending Onboarding Approval
                         </span>
                     @endif
@@ -1118,13 +1118,13 @@
 
             <!-- Other Branches of This Vendor Brand -->
             @if(isset($siblingBranches) && count($siblingBranches) > 0)
-                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
                     <div class="mb-3 flex items-center justify-between gap-2">
                         <h3 class="text-base font-bold text-[var(--foreground)] flex items-center gap-2">
                             <i class="fa-solid fa-code-branch text-[var(--accent-dark)]"></i>
                             <span>Other Branches ({{ count($siblingBranches) }})</span>
                         </h3>
-                        <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                        <span class="rounded bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
                             {{ $shop->name }}
                         </span>
                     </div>
@@ -1132,7 +1132,7 @@
                         @foreach($siblingBranches as $branch)
                             <a href="/shops/{{ $branch->slug }}" class="block rounded-[1.2rem] border border-[var(--border)] bg-[var(--mint-100)] p-3 text-xs hover:bg-[var(--mint-200)] transition group">
                                 <div class="flex items-center justify-between gap-2">
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-foreground)] truncate">
+                                    <span class="inline-flex items-center gap-1 rounded bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-foreground)] truncate">
                                         <i class="fa-solid fa-code-branch text-[8px]"></i>
                                         <span>{{ $branch->display_branch_tag ?: $branch->area }}</span>
                                     </span>
@@ -1153,7 +1153,7 @@
 
             <!-- Related Shops in Area -->
             @if(count($relatedShops) > 0)
-                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
                     <h3 class="text-base font-bold text-[var(--foreground)] mb-3 flex items-center gap-2">
                         <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
                         Other shops in {{ $shop->area }}

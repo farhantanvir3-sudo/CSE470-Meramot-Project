@@ -479,10 +479,6 @@ class ServicePackageController extends Controller
      */
     private function isStrictPackageCapabilityActive(): bool
     {
-        if (!Schema::hasTable('repair_shop_service_package')) {
-            return false;
-        }
-
         return DB::table('repair_shop_service_package')->exists()
             || VendorProfile::whereNotNull('provides_fixed_packages')->exists();
     }
@@ -544,6 +540,12 @@ class ServicePackageController extends Controller
             && $customerLocation['lng'] !== null;
 
         $query = RepairShop::query()
+            ->select([
+                'id', 'vendor_profile_id', 'name', 'slug', 'city', 'area', 'branch_name', 'is_branch',
+                'latitude', 'longitude', 'delivery_radius_km', 'rating', 'is_featured',
+                'categories', 'supports_pickup', 'supports_onsite_repair', 'free_delivery',
+                'review_count', 'inspection_fee', 'base_labor_fee', 'setup_complete', 'accepts_direct_orders',
+            ])
             ->where('is_active', true)
             ->where('is_public', true)
             ->where('setup_complete', true)
@@ -979,22 +981,28 @@ class ServicePackageController extends Controller
             ->toArray();
 
         $customerLocation = $this->resolveCustomerLocation($request);
+        $hasCoords = !empty($customerLocation['has_coordinates'])
+            && $customerLocation['lat'] !== null
+            && $customerLocation['lng'] !== null;
         $requiredPackageIds = $this->extractRequiredPackageIds();
         $activeShop = session('cart_shop_id') ? $this->resolveTargetShop(null, $request, $requiredPackageIds) : null;
-        $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
         $cartCount = count(session()->get('cart', []));
 
+        // Run local shop eligibility & distance sorting once per request instead of twice
+        $allSortedLocal = $this->sortLocalShops(
+            $this->collectLocalEligibleShops($customerLocation, 25.0)->all(),
+            $hasCoords
+        );
+        $verifiedShops = collect(array_slice($allSortedLocal, 0, 20));
+        if ($activeShop && !$verifiedShops->contains('id', $activeShop->id)) {
+            $verifiedShops->prepend($activeShop);
+        }
+
+        $strictMode = $this->isStrictPackageCapabilityActive();
         $packageShopsMap = [];
         $pkgIds = $packages->getCollection()->pluck('id')->map(fn ($id) => (int) $id)->all();
         if (!empty($pkgIds)) {
-            if ($this->isStrictPackageCapabilityActive()) {
-                $hasCoords = !empty($customerLocation['has_coordinates'])
-                    && $customerLocation['lat'] !== null
-                    && $customerLocation['lng'] !== null;
-                $allSortedLocal = $this->sortLocalShops(
-                    $this->collectLocalEligibleShops($customerLocation, 25.0)->all(),
-                    $hasCoords
-                );
+            if ($strictMode) {
                 $pivotRows = DB::table('repair_shop_service_package')
                     ->whereIn('service_package_id', $pkgIds)
                     ->get(['repair_shop_id', 'service_package_id']);
@@ -1010,7 +1018,7 @@ class ServicePackageController extends Controller
                         $allSortedLocal,
                         fn (RepairShop $s) => isset($allowedShopIds[(int) $s->id])
                     ));
-                    $col = collect(array_slice($matched, 0, 25));
+                    $col = collect(array_slice($matched, 0, 15));
                     if ($activeShop && isset($allowedShopIds[(int) $activeShop->id]) && !$col->contains('id', $activeShop->id)) {
                         $col->prepend($activeShop);
                     }
@@ -1023,7 +1031,29 @@ class ServicePackageController extends Controller
             }
         }
 
-        return view('packages.catalog', compact('packages', 'categories', 'verifiedShops', 'packageShopsMap', 'cartCount', 'customerLocation'));
+        // Precompute dropdown labels once per unique shop instead of repeating in Blade loops
+        $shopOptionLabels = [];
+        $formatLabel = static function (RepairShop $vShop): string {
+            $locTag = $vShop->display_branch_tag
+                ? ' [' . Str::limit($vShop->display_branch_tag, 18) . ']'
+                : ' (' . Str::limit($vShop->area ?: $vShop->city, 18) . ')';
+            $ratingTag = (float) $vShop->rating > 0 ? '★' . number_format($vShop->rating, 1) : 'Verified';
+            $distTag = isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '';
+            return Str::limit($vShop->name, 26) . $locTag . ' • ' . $ratingTag . $distTag;
+        };
+        foreach ($verifiedShops as $vShop) {
+            $shopOptionLabels[(int) $vShop->id] = $formatLabel($vShop);
+        }
+        foreach ($packageShopsMap as $pkgShopsCol) {
+            foreach ($pkgShopsCol as $vShop) {
+                $sid = (int) $vShop->id;
+                if (!isset($shopOptionLabels[$sid])) {
+                    $shopOptionLabels[$sid] = $formatLabel($vShop);
+                }
+            }
+        }
+
+        return view('packages.catalog', compact('packages', 'categories', 'verifiedShops', 'packageShopsMap', 'shopOptionLabels', 'cartCount', 'customerLocation'));
     }
 
     /**

@@ -18,7 +18,7 @@
         </div>
 
         <!-- ── Meramot Sign-Up Card ── -->
-        <div class="rounded-[2rem] border border-white/60 bg-white/90 px-8 py-6 shadow-2xl backdrop-blur">
+        <div class="rounded-lg border border-white/60 bg-white/90 px-8 py-6 shadow-2xl backdrop-blur">
             
             <div class="mb-4 text-center">
                 <h1 class="text-3xl font-bold leading-tight text-[#214c34]">
@@ -30,7 +30,7 @@
             </div>
 
             @if($errors->any())
-                <div class="mb-4 rounded-2xl bg-red-50/90 border border-red-200 px-4 py-3 text-xs font-medium text-red-800 space-y-1.5 shadow-sm">
+                <div class="mb-4 rounded-lg bg-red-50/90 border border-red-200 px-4 py-3 text-xs font-medium text-red-800 space-y-1.5 shadow-sm">
                     @foreach($errors->all() as $err)
                         <div class="flex items-start gap-2 leading-relaxed">
                             <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0 text-red-600"></i>
@@ -43,7 +43,7 @@
             <!-- ── Distinct "Sign up with Google" Button (Passwordless Customer Registration) ── -->
             <a
                 href="/auth/google?intent=signup"
-                class="group relative mb-4 flex w-full items-center justify-center gap-3 overflow-hidden rounded-full border border-[var(--border)] bg-white px-4 py-3 text-sm font-semibold text-[#203126] transition-all duration-300 hover:border-[#214c34]/40 hover:shadow-[0_0_20px_-5px_rgba(33,76,52,0.3)]"
+                class="group relative mb-4 flex w-full items-center justify-center gap-3 overflow-hidden rounded-md border border-[var(--border)] bg-white px-4 py-3 text-sm font-semibold text-[#203126] transition-all duration-300 hover:border-[#214c34]/40 hover:shadow-[0_0_20px_-5px_rgba(33,76,52,0.3)]"
             >
                 <span class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-[#214c34]/[0.07] to-transparent transition-transform duration-500 group-hover:translate-x-full"></span>
                 <svg class="relative h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -83,7 +83,7 @@
                         name="name"
                         value="{{ old('name') }}"
                         required
-                        class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="Your full name"
                     />
                 </div>
@@ -96,7 +96,7 @@
                         type="text"
                         name="username"
                         value="{{ old('username') }}"
-                        class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="Choose a username"
                     />
                 </div>
@@ -110,7 +110,7 @@
                         name="email"
                         value="{{ old('email') }}"
                         required
-                        class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="you@example.com"
                     />
                 </div>
@@ -126,7 +126,7 @@
                         inputmode="tel"
                         maxlength="14"
                         value="{{ old('phone') }}"
-                        class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="01XXXXXXXXX"
                     />
                 </div>
@@ -144,7 +144,7 @@
                         autocomplete="new-password"
                         minlength="8"
                         required
-                        class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="Enter your password"
                     />
                 </div>
@@ -159,7 +159,7 @@
                         x-model="confirm"
                         autocomplete="new-password"
                         required
-                        class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="Re-enter your password"
                     />
                     <p x-show="confirm.length > 0 && password !== confirm" class="mt-1 text-xs font-medium text-red-500 pl-1">
@@ -176,7 +176,7 @@
 
                 <button
                     type="submit"
-                    class="w-full rounded-full bg-[#163625] py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
+                    class="w-full rounded-full bg-[#163625] py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     Create Account
                 </button>
@@ -192,7 +192,7 @@
 
                 <a
                     href="/delivery-agent/register"
-                    class="group flex items-center justify-between gap-3 rounded-2xl border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] px-4 py-2.5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-md"
+                    class="group flex items-center justify-between gap-3 rounded-lg border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] px-4 py-2.5 text-left shadow-sm transition-all duration-200 hover:border-[#214c34] hover:shadow-md"
                 >
                     <span class="flex items-center gap-2.5 font-bold text-[#1b365d]">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eef5ea] text-[#163625] transition-colors group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
@@ -211,7 +211,7 @@
         <div>
             <a
                 href="/vendor/apply"
-                class="group flex w-full items-center justify-between gap-3 rounded-[1.25rem] bg-gradient-to-r from-[#D4AF37] via-[#dfb93f] to-[#c9a32c] px-5 py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:brightness-105 hover:shadow-[0_12px_26px_-6px_rgba(212,175,55,0.55)]"
+                class="group flex w-full items-center justify-between gap-3 rounded-lg bg-gradient-to-r from-[#D4AF37] via-[#dfb93f] to-[#c9a32c] px-5 py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:brightness-105 hover:shadow-[0_12px_26px_-6px_rgba(212,175,55,0.55)]"
             >
                 <span class="flex items-center gap-2.5">
                     <i class="fa-solid fa-store"></i>

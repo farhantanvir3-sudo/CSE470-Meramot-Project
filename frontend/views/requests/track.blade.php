@@ -22,7 +22,7 @@
 
     <!-- Feature Badge -->
     <div class="mb-4">
-        <span class="dev-only-badge text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block">
+        <span class="dev-only-badge text-[10px] font-semibold uppercase px-2.5 py-1 rounded bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block">
             Feature R7 • Shanid Sajjatuz Islam [23201465]
         </span>
     </div>
@@ -30,11 +30,11 @@
     <!-- Page Header -->
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">
+            <h1 class="text-xl md:text-2xl font-bold tracking-tight text-[var(--foreground)]">
                 Track Your Repair Request
             </h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                Monitor real-time status updates, incoming workshop estimates, and final diagnostic quotes.
+                Monitor live repair status and workshop quotes.
             </p>
         </div>
 
@@ -59,18 +59,18 @@
         <div class="flex flex-wrap items-center gap-2">
             @if($viewer && $canActAsCustomer)
                 @if($orderPaidTxn && $orderInvoice)
-                    <a href="{{ route('invoices.show', $orderInvoice->id) }}" class="rounded-full bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition shadow-sm">
+                    <a href="{{ route('invoices.show', $orderInvoice->id) }}" class="rounded-md bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition shadow-sm">
                         <i class="fa-solid fa-file-invoice mr-1"></i> Official Invoice (Paid)
                     </a>
                 @elseif(!in_array($currentStatus, ['CANCELLED', 'REJECTED'], true))
-                    <a href="{{ route('payment.checkout', $repairRequest->id) }}" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition shadow-sm">
+                    <a href="{{ route('payment.checkout', $repairRequest->id) }}" class="rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition shadow-sm">
                         <i class="fa-solid fa-shield-halved mr-1"></i> Pay Online Securely
                     </a>
                 @endif
-                <a href="{{ url('/tracking/' . $repairRequest->id) }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+                <a href="{{ url('/tracking/' . $repairRequest->id) }}" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
                     <i class="fa-solid fa-location-dot mr-1 text-[var(--accent-dark)]"></i> Live GPS Map
                 </a>
-                <a href="{{ url('/support?order_id=' . $repairRequest->id) }}" class="rounded-full border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100 transition">
+                <a href="{{ url('/support?order_id=' . $repairRequest->id) }}" class="rounded-md border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-950 hover:bg-amber-100 transition">
                     <i class="fa-solid fa-scale-balanced mr-1"></i> Dispute / Help
                 </a>
             @endif
@@ -78,21 +78,21 @@
             @if($canActAsCustomer && in_array($currentStatus, ['PENDING', 'BIDDING', 'ASSIGNED', 'PICKUP_SCHEDULED'], true))
                 <form method="POST" action="{{ route('requests.cancel', $repairRequest->id) }}">
                     @csrf
-                    <button type="submit" class="rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-800 hover:bg-rose-100 transition">
+                    <button type="submit" class="rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-800 hover:bg-rose-100 transition">
                         Cancel Request
                     </button>
                 </form>
             @elseif($viewer && $viewerRole === 'vendor')
                 @if($orderInvoice)
-                    <a href="{{ route('invoices.show', $orderInvoice->id) }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                    <a href="{{ route('invoices.show', $orderInvoice->id) }}" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                         <i class="fa-solid fa-file-pdf mr-1"></i> View Invoice
                     </a>
                 @endif
-                <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
+                <a href="/vendor/dashboard" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
                     <i class="fa-solid fa-store mr-1.5"></i>Back to Vendor Dashboard
                 </a>
             @elseif($viewer && in_array($viewerRole, ['delivery_agent', 'delivery'], true))
-                <a href="/delivery" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
+                <a href="/delivery" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition">
                     <i class="fa-solid fa-motorcycle mr-1.5"></i>Back to Rider Dashboard
                 </a>
             @endif
@@ -100,14 +100,14 @@
     </div>
 
     @if(session('success'))
-        <div class="mb-5 rounded-2xl border border-emerald-400 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
+        <div class="mb-5 rounded-lg border border-emerald-400 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
             <i class="fa-solid fa-circle-check text-emerald-700"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     @if($errors->any())
-        <div class="mb-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1 shadow-sm">
+        <div class="mb-5 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1 shadow-sm">
             @foreach($errors->all() as $err)
                 <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $err }}</div>
             @endforeach
@@ -122,16 +122,16 @@
 
             <!-- Direct-Order Workshop Banner (Path B: Cart Direct Order) -->
             @if(($repairRequest->source ?? '') === 'DIRECT_SERVICE' && $repairRequest->requestedShop)
-                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div class="flex items-center gap-3.5 min-w-0">
-                        <div class="h-12 w-12 rounded-2xl bg-[var(--accent-dark)] text-[var(--accent-foreground)] flex items-center justify-center font-black text-lg shrink-0">
+                        <div class="h-12 w-12 rounded-lg bg-[var(--accent-dark)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-lg shrink-0">
                             <i class="fa-solid fa-store"></i>
                         </div>
                         <div class="min-w-0">
-                            <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">
+                            <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)]">
                                 Workshop Booking
                             </span>
-                            <h3 class="text-base font-black text-[var(--foreground)] break-words">{{ $repairRequest->requestedShop->name }}</h3>
+                            <h3 class="text-base font-bold text-[var(--foreground)] break-words">{{ $repairRequest->requestedShop->name }}</h3>
                             <p class="text-xs text-[var(--muted-foreground)]">
                                 @if($currentStatus === 'PENDING')
                                     Sent to {{ $repairRequest->requestedShop->name }} — awaiting booking confirmation.
@@ -146,11 +146,11 @@
                         </div>
                     </div>
                     @if($ownsRequestedShop || $viewerRole === 'admin')
-                        <a href="/vendor/dashboard" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap shrink-0">
+                        <a href="/vendor/dashboard" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap shrink-0">
                             Vendor Dashboard &rarr;
                         </a>
                     @else
-                        <a href="{{ route('shops.show', $repairRequest->requestedShop->slug) }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap shrink-0">
+                        <a href="{{ route('shops.show', $repairRequest->requestedShop->slug) }}" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition whitespace-nowrap shrink-0">
                             View Workshop &rarr;
                         </a>
                     @endif
@@ -179,7 +179,7 @@
                         <h2 class="text-sm font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
                             Booked Service Packages
                         </h2>
-                        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-[11px] font-bold text-[var(--accent-dark)] whitespace-nowrap">
+                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-[11px] font-bold text-[var(--accent-dark)] whitespace-nowrap">
                             {{ count($bookedItems) }} {{ \Illuminate\Support\Str::plural('Service', count($bookedItems)) }}
                         </span>
                     </div>
@@ -190,12 +190,12 @@
                                 $bQty = (int) ($bItem['quantity'] ?? 1);
                                 $bUnit = (float) ($bItem['price'] ?? 0);
                             @endphp
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/55 px-4 py-3 text-xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/55 px-4 py-3 text-xs">
                                 <div class="min-w-0">
                                     <p class="font-bold text-[var(--foreground)] break-words">{{ $bItem['title'] ?? 'Repair Service' }}</p>
                                     <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-[var(--muted-foreground)]">
                                         @if(!empty($bItem['category']))
-                                            <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                                            <span class="rounded bg-[var(--card)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
                                                 {{ $bItem['category'] }}
                                             </span>
                                         @endif
@@ -208,14 +208,14 @@
                                     </div>
                                 </div>
                                 <div class="text-left sm:text-right shrink-0">
-                                    <p class="font-black text-sm text-[var(--accent-dark)]">৳{{ number_format($bUnit * $bQty, 2) }}</p>
+                                    <p class="font-bold text-sm text-[var(--accent-dark)]">৳{{ number_format($bUnit * $bQty, 2) }}</p>
                                     <p class="text-[11px] text-[var(--muted-foreground)]">৳{{ number_format($bUnit, 0) }} × {{ $bQty }}</p>
                                 </div>
                             </div>
                         @endforeach
                     </div>
 
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)]/80 px-4 py-3 text-xs space-y-1.5">
+                    <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-50)]/80 px-4 py-3 text-xs space-y-1.5">
                         <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
                             <span>Services &amp; Parts Subtotal</span>
                             <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedSubtotal, 2) }}</span>
@@ -243,17 +243,17 @@
                 @php
                     $activeJob = $repairRequest->repairJob;
                 @endphp
-                <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--mint-100)]/70 p-5 sm:p-6 shadow-sm space-y-3">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/70 p-5 sm:p-6 shadow-sm space-y-3">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
-                            <span class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">
                                 Verified Workshop Quote &amp; Warranty Terms
                             </span>
-                            <h3 class="text-base font-black text-[var(--foreground)]">
+                            <h3 class="text-base font-bold text-[var(--foreground)]">
                                 Itemized Repair Breakdown
                             </h3>
                         </div>
-                        <span class="text-lg font-black text-[var(--accent-dark)] shrink-0">
+                        <span class="text-lg font-bold text-[var(--accent-dark)] shrink-0">
                             ৳{{ number_format($activeJob->final_quoted_amount ?? $repairRequest->quoted_final_amount ?? 0, 2) }}
                         </span>
                     </div>
@@ -272,20 +272,20 @@
                 @php
                     $pendingQuoteJob = $repairRequest->repairJob;
                 @endphp
-                <div class="rounded-[2rem] border-2 border-amber-400 bg-amber-50/90 p-5 sm:p-6 shadow-sm space-y-4">
+                <div class="rounded-lg border-2 border-amber-400 bg-amber-50/90 p-5 sm:p-6 shadow-sm space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                         <div>
-                            <span class="rounded-full bg-amber-200 px-3 py-0.5 text-[10px] font-extrabold uppercase text-amber-900">
+                            <span class="rounded bg-amber-200 px-3 py-0.5 text-[10px] font-semibold uppercase text-amber-900">
                                 Final Estimate • Action Required
                             </span>
-                            <h3 class="mt-1 text-lg font-black text-[#203126]">Bench Inspection Complete — Approve Final Quote</h3>
+                            <h3 class="mt-1 text-lg font-bold text-[#203126]">Bench Inspection Complete — Approve Final Quote</h3>
                             <p class="mt-1 text-xs text-amber-950/80 leading-relaxed">
                                 {{ $pendingQuoteJob->diagnosis_notes ?? 'Physical bench inspection is complete. Review the itemized final parts and labor quote below before repair work begins.' }}
                             </p>
                         </div>
                         <div class="text-right shrink-0">
                             <span class="text-[10px] uppercase font-bold text-amber-900 block">Final Quote</span>
-                            <span class="text-2xl font-black text-[#244229]">
+                            <span class="text-2xl font-bold text-[#244229]">
                                 ৳{{ number_format($pendingQuoteJob->final_quoted_amount ?? $repairRequest->quoted_final_amount ?? 0, 2) }}
                             </span>
                         </div>
@@ -307,14 +307,14 @@
                             <form method="POST" action="{{ route('requests.respond-final-quote', $repairRequest->id) }}">
                                 @csrf
                                 <input type="hidden" name="decision" value="approve">
-                                <button type="submit" class="rounded-full bg-[#244229] px-5 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
+                                <button type="submit" class="rounded-md bg-[#244229] px-5 py-2.5 text-xs font-bold text-white shadow hover:opacity-90 transition">
                                     Approve Quote & Start Repair
                                 </button>
                             </form>
                             <form method="POST" action="{{ route('requests.respond-final-quote', $repairRequest->id) }}">
                                 @csrf
                                 <input type="hidden" name="decision" value="decline">
-                                <button type="submit" class="rounded-full border border-rose-300 bg-white px-5 py-2.5 text-xs font-bold text-rose-800 hover:bg-rose-50 transition">
+                                <button type="submit" class="rounded-md border border-rose-300 bg-white px-5 py-2.5 text-xs font-bold text-rose-800 hover:bg-rose-50 transition">
                                     Decline Quote & Schedule Device Return
                                 </button>
                             </form>
@@ -373,14 +373,14 @@
                 @endphp
 
                 <!-- Current Status Badge -->
-                <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)]">
+                <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-[var(--mint-100)] border border-[var(--border)]">
                     <div class="flex items-center gap-3 min-w-0">
                         <div class="h-12 w-12 rounded-xl bg-[var(--accent-dark)] flex items-center justify-center text-[var(--accent-foreground)] shrink-0">
                             <i class="fa-solid {{ $statusInfo['icon'] }} text-lg"></i>
                         </div>
                         <div class="min-w-0">
                             <p class="text-[10px] uppercase tracking-wider text-[var(--muted-foreground)] font-bold">Current Status</p>
-                            <h3 class="text-lg font-black text-[var(--foreground)]">{{ $statusInfo['label'] }}</h3>
+                            <h3 class="text-lg font-bold text-[var(--foreground)]">{{ $statusInfo['label'] }}</h3>
                             <p class="text-xs text-[var(--muted-foreground)]">
                                 Last updated: {{ $repairRequest->updated_at?->diffForHumans() ?? 'just now' }}
                             </p>
@@ -396,7 +396,7 @@
                             @if($repairRequest->review)
                                 <a
                                     href="{{ route('shops.show', $completedShop->slug) }}?edit_review={{ $repairRequest->review->id }}#review-{{ $repairRequest->review->id }}"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
                                 >
                                     <i class="fa-solid fa-pen-to-square text-emerald-700"></i>
                                     <span>Edit Review ({{ $repairRequest->review->rating }}★)</span>
@@ -416,7 +416,7 @@
                                     <input type="hidden" name="redirect_back" value="1">
                                     <button
                                         type="submit"
-                                        class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                        class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
                                     >
                                         <i class="fa-solid fa-trash-can text-[11px]"></i>
                                         <span>Delete Review</span>
@@ -425,7 +425,7 @@
                             @else
                                 <a
                                     href="{{ route('reviews.create', ['shopId' => $completedShop->id, 'order_id' => $repairRequest->id]) }}"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
                                 >
                                     <i class="fa-solid fa-certificate"></i>
                                     <span>Write Verified Repair Review</span>
@@ -463,7 +463,7 @@
                             </div>
 
                             @if($isCurrent)
-                                <span class="px-2.5 py-1 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-[10px] font-bold uppercase">
+                                <span class="px-2.5 py-1 rounded bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-[10px] font-bold uppercase">
                                     Active
                                 </span>
                             @endif
@@ -504,11 +504,11 @@
                                     ? (in_array($tripUpper, ['PENDING', 'SCHEDULED', 'DISPATCHED'], true) ? $trip->pickup_otp : null)
                                     : (in_array($tripUpper, ['PENDING', 'SCHEDULED', 'DISPATCHED', 'PICKED_UP', 'IN_TRANSIT'], true) ? $trip->dropoff_otp : null);
                             @endphp
-                            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/55 p-4 space-y-3">
+                            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/55 p-4 space-y-3">
                                 <div class="flex flex-wrap items-start justify-between gap-2">
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold uppercase text-[var(--accent-dark)]">
+                                            <span class="rounded bg-[var(--card)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold uppercase text-[var(--accent-dark)]">
                                                 {{ $isReturnTrip ? 'Return Delivery' : 'Pickup to Workshop' }}
                                             </span>
                                             @if($trip->tracking_code)
@@ -528,10 +528,10 @@
                                     </div>
 
                                     <div class="flex items-center gap-2 shrink-0">
-                                        <span class="rounded-full px-3 py-1 text-[11px] font-bold border {{ $tripUpper === 'DELIVERED' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-[var(--card)] text-[var(--accent-dark)] border-[var(--border)]' }}">
+                                        <span class="rounded-md px-3 py-1 text-[11px] font-bold border {{ $tripUpper === 'DELIVERED' ? 'bg-emerald-100 text-emerald-900 border-emerald-300' : 'bg-[var(--card)] text-[var(--accent-dark)] border-[var(--border)]' }}">
                                             {{ $tripLabel }}
                                         </span>
-                                        <a href="/tracking/{{ $trip->id }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                                        <a href="/tracking/{{ $trip->id }}" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                                             Live Map
                                         </a>
                                     </div>
@@ -550,7 +550,7 @@
                                         <span class="font-medium text-amber-950">
                                             {{ $isReturnTrip ? 'Share this delivery confirmation code when receiving your device:' : 'Share this pickup code with the courier at handover:' }}
                                         </span>
-                                        <span class="rounded-lg bg-white border border-amber-300 px-3 py-1 font-mono text-sm font-black tracking-widest text-[#163625]">
+                                        <span class="rounded-lg bg-white border border-amber-300 px-3 py-1 font-mono text-sm font-bold tracking-widest text-[#163625]">
                                             {{ $customerHandoverCode }}
                                         </span>
                                     </div>
@@ -568,7 +568,7 @@
                         <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-950">
                             <i class="fa-solid fa-store mr-1.5 text-emerald-700"></i>In-Shop Walk-In Service
                         </h2>
-                        <span class="rounded-full bg-emerald-100 border border-emerald-300 px-3 py-0.5 text-[11px] font-bold text-emerald-900">
+                        <span class="rounded bg-emerald-100 border border-emerald-300 px-3 py-0.5 text-[11px] font-bold text-emerald-900">
                             No Courier Needed &bull; ৳0 Delivery
                         </span>
                     </div>
@@ -637,7 +637,7 @@
                                 class="group relative block overflow-hidden rounded-xl border border-[var(--border)] focus:outline-none"
                             >
                                 <img src="{{ $photoUrl }}" alt="Device photo" class="w-full h-24 object-cover transition group-hover:scale-105 group-hover:opacity-90">
-                                <span class="absolute bottom-1.5 right-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white">
+                                <span class="absolute bottom-1.5 right-1.5 rounded bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white">
                                     <i class="fa-solid fa-magnifying-glass-plus mr-0.5"></i>Zoom
                                 </span>
                             </button>
@@ -652,7 +652,7 @@
                         <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i>
                         <p class="text-xs text-[var(--muted-foreground)] uppercase tracking-wider font-bold">AI Diagnostic Summary</p>
                     </div>
-                    <p class="text-xs sm:text-sm text-[var(--foreground)] bg-[var(--mint-100)] border border-[var(--border)] p-3.5 rounded-2xl">
+                    <p class="text-xs sm:text-sm text-[var(--foreground)] bg-[var(--mint-100)] border border-[var(--border)] p-3.5 rounded-lg">
                         {{ $repairRequest->ai_diagnostic_summary }}
                     </p>
                 </div>
@@ -687,7 +687,7 @@
                                 <button
                                     type="button"
                                     @click="sortBidCards('{{ $bKey }}')"
-                                    class="rounded-full border px-2.5 py-1 text-[10px] font-bold transition"
+                                    class="rounded border px-2.5 py-1 text-[10px] font-bold transition"
                                     :class="bidSort === '{{ $bKey }}' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] border-[var(--accent-dark)]' : 'bg-[var(--mint-100)] text-[var(--foreground)] border-[var(--border)]'"
                                 >
                                     {{ $bLabel }}
@@ -695,7 +695,7 @@
                             @endforeach
                         @endif
                         @if($currentStatus === 'BIDDING')
-                            <span class="px-3 py-1 rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] text-xs font-bold">
+                            <span class="px-3 py-1 rounded-md bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)] text-xs font-bold">
                                 Bidding Open
                             </span>
                         @endif
@@ -720,7 +720,7 @@
                                 data-days="{{ (int) ($bid->estimated_days ?? 99) }}"
                                 data-warranty="{{ (int) $bidWarrantyDays }}"
                                 data-rating="{{ (float) ($bid->shop?->rating ?? 0) }}"
-                                class="p-4 rounded-2xl border border-[var(--border)] {{ $bid->id === $repairRequest->selected_bid_id ? 'bg-[var(--mint-100)] border-emerald-600' : 'bg-[var(--mint-100)]/40' }}"
+                                class="p-4 rounded-lg border border-[var(--border)] {{ $bid->id === $repairRequest->selected_bid_id ? 'bg-[var(--mint-100)] border-emerald-600' : 'bg-[var(--mint-100)]/40' }}"
                             >
                                 <div class="flex items-start justify-between gap-3 mb-3">
                                     <div class="flex-1 min-w-0">
@@ -732,7 +732,7 @@
                                         </p>
                                     </div>
                                     <div class="text-right shrink-0">
-                                        <p class="text-lg font-black text-[var(--accent-dark)]">
+                                        <p class="text-lg font-bold text-[var(--accent-dark)]">
                                             ৳{{ number_format($bid->proposed_cost, 2) }}<span class="sr-only">{{ (int) $bid->proposed_cost }}</span>
                                         </p>
                                         <p class="text-xs text-[var(--muted-foreground)]">
@@ -760,10 +760,10 @@
 
                                 <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
+                                        <span class="px-2.5 py-1 rounded-md bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
                                             Parts: ৳{{ number_format($bid->parts_cost ?? 0, 2) }}
                                         </span>
-                                        <span class="px-2.5 py-1 rounded-full bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
+                                        <span class="px-2.5 py-1 rounded-md bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)]">
                                             Labor: ৳{{ number_format($bid->labor_cost ?? 0, 2) }}
                                         </span>
                                         @php
@@ -777,7 +777,7 @@
                                                 ? ($allPartsSameDays ? "✓ Warranty: {$bidWarrantyDays} days" : "✓ Warranty: up to {$bidWarrantyDays} days")
                                                 : 'No parts warranty';
                                         @endphp
-                                        <span class="px-2.5 py-1 rounded-full {{ $bidHasWarranty ? 'bg-emerald-100 border border-emerald-300 text-emerald-900 font-semibold' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)]' }}">
+                                        <span class="px-2.5 py-1 rounded-md {{ $bidHasWarranty ? 'bg-emerald-100 border border-emerald-300 text-emerald-900 font-semibold' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--muted-foreground)]' }}">
                                             {{ $bidWarrantyPillText }}
                                         </span>
                                     </div>
@@ -919,7 +919,7 @@
                     <div class="pt-3 border-t border-[var(--border)]">
                         <div class="flex items-center justify-between">
                             <span class="text-[var(--muted-foreground)]">Total Amount</span>
-                            <span class="text-lg font-black text-[var(--accent-dark)]">
+                            <span class="text-lg font-bold text-[var(--accent-dark)]">
                                 ৳{{ number_format($repairRequest->quoted_final_amount, 2) }}
                             </span>
                         </div>
@@ -929,7 +929,7 @@
             </div>
 
             <!-- Mint Support Card -->
-            <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm">
                 <h3 class="text-sm font-bold text-[var(--foreground)] mb-2">
                     <i class="fa-solid fa-headset mr-2 text-[var(--accent-dark)]"></i>Need Payment or Courier Help?
                 </h3>
@@ -953,17 +953,17 @@
         class="fixed inset-0 z-[150] flex items-center justify-center p-4"
     >
         <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" @click="lightboxPhoto = null"></div>
-        <div class="relative z-[151] w-full max-w-3xl rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 shadow-2xl space-y-3">
+        <div class="relative z-[151] w-full max-w-3xl rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 shadow-2xl space-y-3">
             <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
-                <span class="text-xs font-black uppercase tracking-wider text-[var(--accent-dark)]">Attached Device Photo Preview</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-[var(--accent-dark)]">Attached Device Photo Preview</span>
                 <div class="flex items-center gap-2">
-                    <a :href="lightboxPhoto" target="_blank" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-bold text-[var(--foreground)]">
+                    <a :href="lightboxPhoto" target="_blank" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-bold text-[var(--foreground)]">
                         Open Original &nearr;
                     </a>
                     <button type="button" @click="lightboxPhoto = null" class="h-8 w-8 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold">✕</button>
                 </div>
             </div>
-            <div class="flex max-h-[75vh] items-center justify-center overflow-auto rounded-2xl bg-black/90 p-2">
+            <div class="flex max-h-[75vh] items-center justify-center overflow-auto rounded-lg bg-black/90 p-2">
                 <img :src="lightboxPhoto" alt="Zoomed device photo" class="max-h-[70vh] max-w-full rounded-xl object-contain">
             </div>
         </div>

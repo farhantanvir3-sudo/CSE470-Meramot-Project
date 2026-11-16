@@ -130,19 +130,19 @@ Models Touched: User, VendorProfile, RepairShop
     @meramot-location-changed.window="applyMapLocation($event.detail)"
 >
     @if(session('success'))
-        <div class="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 shadow-sm">
+        <div class="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 shadow-sm">
             <i class="fa-solid fa-circle-check mr-1.5"></i>{{ session('success') }}
         </div>
     @endif
 
     @if(session('warning'))
-        <div class="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-900 shadow-sm">
+        <div class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-900 shadow-sm">
             <i class="fa-solid fa-triangle-exclamation mr-1.5"></i>{{ session('warning') }}
         </div>
     @endif
 
     @if($errors->any())
-        <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1 shadow-sm">
+        <div class="rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1 shadow-sm">
             @foreach($errors->all() as $error)
                 <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $error }}</div>
             @endforeach
@@ -154,33 +154,33 @@ Models Touched: User, VendorProfile, RepairShop
     {{-- ===================================================================== --}}
     @if($profile)
         <div class="space-y-2">
-            <h1 class="text-2xl font-black text-[var(--foreground)]">Vendor onboarding</h1>
+            <h1 class="text-2xl font-bold text-[var(--foreground)]">Vendor onboarding</h1>
             <p class="text-xs text-[var(--muted-foreground)]">
                 We verify every shop before listing it publicly on Meramot.
             </p>
         </div>
 
         {{-- Card 1: Application & Storefront Status --}}
-        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+        <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
             <div class="flex items-center justify-between border-b border-[var(--border)] pb-3">
                 <div>
-                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Status</span>
-                    <h2 class="text-base font-black text-[var(--foreground)]">{{ $profile->shop_name }}</h2>
+                    <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)]">Status</span>
+                    <h2 class="text-base font-bold text-[var(--foreground)]">{{ $profile->shop_name }}</h2>
                 </div>
                 @if($vStatus === 'approved')
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-700 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                    <span class="inline-flex items-center gap-1.5 rounded bg-emerald-700 px-3 py-1 text-[10px] font-semibold uppercase text-white">
                         <i class="fa-solid fa-circle-check"></i> APPROVED
                     </span>
                 @elseif($vStatus === 'rejected')
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                    <span class="inline-flex items-center gap-1.5 rounded bg-rose-700 px-3 py-1 text-[10px] font-semibold uppercase text-white">
                         <i class="fa-solid fa-triangle-exclamation"></i> REJECTED
                     </span>
                 @elseif($vStatus === 'under_review')
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-sky-600 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                    <span class="inline-flex items-center gap-1.5 rounded bg-sky-600 px-3 py-1 text-[10px] font-semibold uppercase text-white">
                         <i class="fa-solid fa-magnifying-glass"></i> UNDER REVIEW
                     </span>
                 @else
-                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3 py-1 text-[10px] font-extrabold uppercase text-white">
+                    <span class="inline-flex items-center gap-1.5 rounded bg-amber-600 px-3 py-1 text-[10px] font-semibold uppercase text-white">
                         <i class="fa-solid fa-clock"></i> PENDING
                     </span>
                 @endif
@@ -206,8 +206,8 @@ Models Touched: User, VendorProfile, RepairShop
             </div>
 
             @if($vStatus === 'rejected')
-                <div class="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-900 space-y-1">
-                    <div class="font-extrabold">Action Required — Application Rejected</div>
+                <div class="rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-900 space-y-1">
+                    <div class="font-semibold">Action Required — Application Rejected</div>
                     @if($profile->rejection_reason)
                         <div><strong>Admin Audit Note:</strong> {{ $profile->rejection_reason }}</div>
                     @endif
@@ -216,7 +216,7 @@ Models Touched: User, VendorProfile, RepairShop
                     </div>
                 </div>
             @elseif(in_array($vStatus, ['pending', 'under_review'], true))
-                <div class="rounded-2xl border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs text-amber-950">
+                <div class="rounded-lg border border-amber-300 bg-amber-50/80 px-4 py-3 text-xs text-amber-950">
                     Your application is {{ $vStatus === 'under_review' ? 'currently being audited by an administrator' : 'under administrative review' }}. Shop visibility stays hidden until an administrator verifies your Trade License
                     @if($profile->business_license_no)
                         (<span class="font-mono font-bold">{{ $profile->business_license_no }}</span>)
@@ -224,11 +224,11 @@ Models Touched: User, VendorProfile, RepairShop
                     and business details.
                 </div>
             @elseif($vStatus === 'approved' && !$setupComplete)
-                <div class="rounded-2xl border border-emerald-300 bg-emerald-50/80 px-4 py-3 text-xs text-emerald-950">
+                <div class="rounded-lg border border-emerald-300 bg-emerald-50/80 px-4 py-3 text-xs text-emerald-950">
                     <strong>Congratulations!</strong> Your vendor application is approved. Complete your shop pricing and service setup below to list <strong>{{ $profile->shop_name }}</strong> publicly.
                 </div>
             @elseif($vStatus === 'approved' && $setupComplete)
-                <div class="rounded-2xl border border-emerald-300 bg-emerald-50/80 px-4 py-3 text-xs text-emerald-950">
+                <div class="rounded-lg border border-emerald-300 bg-emerald-50/80 px-4 py-3 text-xs text-emerald-950">
                     <strong>{{ $profile->shop_name }}</strong> is verified and publicly listed on Meramot. Manage bids, branches, and direct orders from your Vendor Dashboard.
                 </div>
             @endif
@@ -236,10 +236,10 @@ Models Touched: User, VendorProfile, RepairShop
 
         {{-- Card 2: Account Verification (Email + Phone OTP) --}}
         @if($authUser)
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
                 <div>
-                    <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Security</span>
-                    <h2 class="text-base font-black text-[var(--foreground)]">Account Verification</h2>
+                    <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)]">Security</span>
+                    <h2 class="text-base font-bold text-[var(--foreground)]">Account Verification</h2>
                     <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
                         Verify your business email and mobile number to secure payout and order notifications.
                     </p>
@@ -247,7 +247,7 @@ Models Touched: User, VendorProfile, RepairShop
 
                 <div class="space-y-3 text-xs">
                     {{-- Email Verification Row --}}
-                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 px-4 py-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/50 px-4 py-3">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--card)] text-[var(--accent-dark)] border border-[var(--border)]">
                                 <i class="fa-solid fa-envelope"></i>
@@ -259,17 +259,17 @@ Models Touched: User, VendorProfile, RepairShop
                         </div>
                         <div class="flex items-center gap-2">
                             @if($emailVerified)
-                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
+                                <span class="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
                                     <i class="fa-solid fa-circle-check"></i> Verified
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-800">
+                                <span class="inline-flex items-center gap-1 rounded-md bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-800">
                                     <i class="fa-solid fa-circle-exclamation"></i> Not Verified
                                 </span>
                                 <button
                                     type="button"
                                     @click="openOtpModal('email')"
-                                    class="rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
+                                    class="rounded-md bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
                                 >
                                     Verify
                                 </button>
@@ -278,7 +278,7 @@ Models Touched: User, VendorProfile, RepairShop
                     </div>
 
                     {{-- Phone Verification Row --}}
-                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 px-4 py-3">
+                    <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/50 px-4 py-3">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--card)] text-[var(--accent-dark)] border border-[var(--border)]">
                                 <i class="fa-solid fa-phone"></i>
@@ -290,18 +290,18 @@ Models Touched: User, VendorProfile, RepairShop
                         </div>
                         <div class="flex items-center gap-2">
                             @if($phoneVerified)
-                                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
+                                <span class="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-800">
                                     <i class="fa-solid fa-circle-check"></i> Verified
                                 </span>
                             @else
-                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-800">
+                                <span class="inline-flex items-center gap-1 rounded-md bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-800">
                                     <i class="fa-solid fa-circle-exclamation"></i> Not Verified
                                 </span>
                                 @if($displayPhone)
                                     <button
                                         type="button"
                                         @click="openOtpModal('phone')"
-                                        class="rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
+                                        class="rounded-md bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
                                     >
                                         Verify
                                     </button>
@@ -314,9 +314,9 @@ Models Touched: User, VendorProfile, RepairShop
         @endif
 
         {{-- Card 3: Next Step Actions --}}
-        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+        <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
             <div>
-                <h2 class="text-base font-black text-[var(--foreground)]">Next step</h2>
+                <h2 class="text-base font-bold text-[var(--foreground)]">Next step</h2>
                 <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
                     @if($vStatus === 'approved' && !$setupComplete)
                         Set your inspection &amp; labor fees, service options, and repair catalog to publish your shop.
@@ -329,31 +329,31 @@ Models Touched: User, VendorProfile, RepairShop
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5">
-                <a href="/vendor/status" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                <a href="/vendor/status" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
                     View application status
                 </a>
 
                 @if($vStatus === 'approved' && !$setupComplete)
-                    <a href="/vendor/setup-shop" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                    <a href="/vendor/setup-shop" class="rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                         Complete shop setup &rarr;
                     </a>
                 @elseif($vStatus === 'approved' && $setupComplete)
-                    <a href="/vendor/dashboard" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                    <a href="/vendor/dashboard" class="rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                         Open vendor dashboard &rarr;
                     </a>
-                    <a href="/vendor/setup-shop" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+                    <a href="/vendor/setup-shop" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
                         Edit shop setup
                     </a>
                     @if($primaryShop)
-                        <a href="{{ route('shops.show', $primaryShop->slug) }}" class="rounded-full border border-emerald-700 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition">
+                        <a href="{{ route('shops.show', $primaryShop->slug) }}" class="rounded-md border border-emerald-700 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-emerald-900 hover:bg-emerald-100 transition">
                             View Shop Profile
                         </a>
                     @endif
                 @else
-                    <a href="/vendor/apply" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                    <a href="/vendor/apply" class="rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                         Edit application
                     </a>
-                    <a href="/" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+                    <a href="/" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
                         Go to home
                     </a>
                 @endif
@@ -364,13 +364,13 @@ Models Touched: User, VendorProfile, RepairShop
     {{-- ===================================================================== --}}
     {{-- DIRECT DUAL-LOCATION ONBOARDING FORM (Open for Guests, Collapsible)   --}}
     {{-- ===================================================================== --}}
-    <details {{ !$profile ? 'open' : '' }} class="group rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
+    <details {{ !$profile ? 'open' : '' }} class="group rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
         <summary class="cursor-pointer list-none flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-                <span class="dev-only-badge text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-2">
+                <span class="dev-only-badge text-[10px] font-semibold uppercase px-2.5 py-1 rounded bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-2">
                     Feature R11 • Farhan Tanvir [22299179]
                 </span>
-                <h2 class="text-xl font-black text-[var(--foreground)]">
+                <h2 class="text-xl font-bold text-[var(--foreground)]">
                     {{ $profile ? 'Quick Update Trade Credentials & Dual Shop Locations' : 'Vendor Onboarding & Dual-Location Setup' }}
                 </h2>
                 <p class="text-xs text-[var(--muted-foreground)] mt-1">
@@ -379,11 +379,11 @@ Models Touched: User, VendorProfile, RepairShop
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 @if(!$profile)
-                    <a href="/vendor/apply" class="rounded-full bg-[#D4AF37] px-4 py-2 text-xs font-bold text-[#1f2c21] shadow-sm hover:opacity-90 transition">
+                    <a href="/vendor/apply" class="rounded-md bg-[#D4AF37] px-4 py-2 text-xs font-bold text-[#1f2c21] shadow-sm hover:opacity-90 transition">
                         Full Vendor Application &rarr;
                     </a>
                 @else
-                    <span class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-dark)]">
+                    <span class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-dark)]">
                         <span class="group-open:hidden">Expand Form &darr;</span>
                         <span class="hidden group-open:inline">Hide Form &uarr;</span>
                     </span>
@@ -395,9 +395,9 @@ Models Touched: User, VendorProfile, RepairShop
             @csrf
 
             @guest
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4 space-y-3">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/60 p-4 space-y-3">
                     <div class="flex items-center justify-between">
-                        <span class="text-[11px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Owner Account Credentials</span>
+                        <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--accent-dark)]">Owner Account Credentials</span>
                         <a href="/login" class="text-[11px] font-bold text-[var(--accent-dark)] hover:underline">Already have an account? Sign in</a>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -473,7 +473,7 @@ Models Touched: User, VendorProfile, RepairShop
                     name="shop_name"
                     value="{{ old('shop_name', $profile->shop_name ?? '') }}"
                     placeholder="e.g. Dhaka Circuit Care"
-                    class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] p-3 text-xs outline-none"
+                    class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] p-3 text-xs outline-none"
                     required
                 >
             </div>
@@ -486,7 +486,7 @@ Models Touched: User, VendorProfile, RepairShop
                         name="business_license_no"
                         value="{{ old('business_license_no', $profile->business_license_no ?? '') }}"
                         placeholder="TRAD/DNCC/129482"
-                        class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] p-3 text-xs outline-none"
+                        class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] p-3 text-xs outline-none"
                         required
                     >
                 </div>
@@ -501,7 +501,7 @@ Models Touched: User, VendorProfile, RepairShop
                         data-digits-only
                         value="{{ old('nid_number', $profile->nid_number ?? '') }}"
                         placeholder="199219293120"
-                        class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] p-3 text-xs outline-none"
+                        class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] p-3 text-xs outline-none"
                         required
                     >
                 </div>
@@ -552,14 +552,14 @@ Models Touched: User, VendorProfile, RepairShop
                             this.previewUrl = null;
                         }
                     }"
-                    class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-3.5 flex flex-col justify-between"
+                    class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/50 p-3.5 flex flex-col justify-between"
                 >
                     <div class="mb-2 flex items-center justify-between gap-2">
                         <label class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                             <i class="fa-solid fa-store text-[var(--accent-dark)]"></i>
                             <span>Shop Logo / Storefront Photo</span>
                         </label>
-                        <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">JPG / PNG</span>
+                        <span class="rounded bg-[var(--card)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">JPG / PNG</span>
                     </div>
 
                     <input x-ref="fileInput" type="file" name="logo" accept="image/*" class="hidden" @change="handleFile($event.target.files[0])">
@@ -647,14 +647,14 @@ Models Touched: User, VendorProfile, RepairShop
                             this.previewUrl = null;
                         }
                     }"
-                    class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-3.5 flex flex-col justify-between"
+                    class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/50 p-3.5 flex flex-col justify-between"
                 >
                     <div class="mb-2 flex items-center justify-between gap-2">
                         <label class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                             <i class="fa-solid fa-file-shield text-[var(--accent-dark)]"></i>
                             <span>Trade License / NID Scan</span>
                         </label>
-                        <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">IMG / PDF</span>
+                        <span class="rounded bg-[var(--card)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">IMG / PDF</span>
                     </div>
 
                     <input x-ref="fileInput" type="file" name="verification_document" accept="image/*,.pdf" class="hidden" @change="handleFile($event.target.files[0])">
@@ -716,16 +716,16 @@ Models Touched: User, VendorProfile, RepairShop
             </div>
 
             <!-- Storefront & Coordinate Addressing Card -->
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/70 p-4 md:p-5 space-y-4">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/70 p-4 md:p-5 space-y-4">
                 <div class="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--border)] pb-3">
                     <div>
-                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">Workshop Addressing</span>
-                        <h3 class="text-sm font-black text-[var(--foreground)]">1. Service Map Coordinates &amp; 2. Public Storefront Address</h3>
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)]">Workshop Addressing</span>
+                        <h3 class="text-sm font-bold text-[var(--foreground)]">1. Service Map Coordinates &amp; 2. Public Storefront Address</h3>
                     </div>
                     <button
                         type="button"
                         @click="$dispatch('meramot-open-location-modal')"
-                        class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
+                        class="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
                     >
                         <i class="fa-solid fa-map-location-dot"></i>
                         <span>Pin Location on Map</span>
@@ -743,7 +743,7 @@ Models Touched: User, VendorProfile, RepairShop
                         x-model="gpsAddress"
                         @input="syncSameAsGps()"
                         placeholder="Click 'Pin Location on Map' or enter approximate street and area..."
-                        class="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 text-xs outline-none"
+                        class="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 text-xs outline-none"
                     >
                     <input type="hidden" name="shop_latitude" :value="shopLat">
                     <input type="hidden" name="shop_longitude" :value="shopLng">
@@ -779,7 +779,7 @@ Models Touched: User, VendorProfile, RepairShop
                         :readonly="sameAsGps"
                         :class="sameAsGps ? 'opacity-75 cursor-not-allowed bg-[var(--card)]' : 'bg-[var(--mint-300)] focus:bg-[var(--mint-100)]'"
                         placeholder="e.g. Level 4, Shop 412, Multiplan Center, Elephant Road, Dhaka"
-                        class="w-full rounded-2xl border-2 border-[var(--border)] p-3 text-xs outline-none"
+                        class="w-full rounded-lg border-2 border-[var(--border)] p-3 text-xs outline-none"
                         required
                     >
 
@@ -799,7 +799,7 @@ Models Touched: User, VendorProfile, RepairShop
             </div>
 
             <!-- ── Optional Multi-Branch Mode at Onboarding ── -->
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-3">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-3">
                 <label class="flex items-start gap-2.5 cursor-pointer">
                     <input
                         type="checkbox"
@@ -821,7 +821,7 @@ Models Touched: User, VendorProfile, RepairShop
                         name="branch_name"
                         x-model="branchName"
                         placeholder="e.g. Banani DOHS Flagship or Agrabad Branch"
-                        class="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] p-2.5 text-xs outline-none"
+                        class="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] p-2.5 text-xs outline-none"
                     >
                 </div>
             </div>
@@ -834,7 +834,7 @@ Models Touched: User, VendorProfile, RepairShop
                         $selectedCats = ['Laptop', 'Phone'];
                     }
                 @endphp
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-3.5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-2 rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/50 p-3.5">
                     <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="Laptop" {{ in_array('Laptop', $selectedCats) ? 'checked' : '' }} class="accent-[#244229]"> Laptop &amp; PC Motherboards</label>
                     <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="Phone" {{ in_array('Phone', $selectedCats) ? 'checked' : '' }} class="accent-[#244229]"> Smartphone Hardware</label>
                     <label class="flex items-center gap-2 font-medium text-[var(--foreground)]"><input type="checkbox" name="categories[]" value="Display" {{ in_array('Display', $selectedCats) ? 'checked' : '' }} class="accent-[#244229]"> Display Panel Replacement</label>
@@ -850,21 +850,21 @@ Models Touched: User, VendorProfile, RepairShop
                     </p>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    <label class="flex items-start gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 cursor-pointer">
+                    <label class="flex items-start gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 cursor-pointer">
                         <input type="checkbox" name="courier_pickup" value="1" {{ old('courier_pickup', $profile->courier_pickup ?? false) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
                         <div>
                             <span class="block font-bold text-[var(--foreground)]">Courier Pickup</span>
                             <span class="block text-[11px] text-[var(--muted-foreground)] leading-snug mt-0.5">Platform rider collects the device from the customer, brings it to your shop, and returns it after repair.</span>
                         </div>
                     </label>
-                    <label class="flex items-start gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 cursor-pointer">
+                    <label class="flex items-start gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 cursor-pointer">
                         <input type="checkbox" name="in_shop_repair" value="1" {{ old('in_shop_repair', $profile->in_shop_repair ?? true) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
                         <div>
                             <span class="block font-bold text-[var(--foreground)]">In-Shop Repair</span>
                             <span class="block text-[11px] text-[var(--muted-foreground)] leading-snug mt-0.5">Customer walks into your shop for on-site repair and pays through Meramot — no courier delivery needed.</span>
                         </div>
                     </label>
-                    <label class="flex items-start gap-2.5 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 cursor-pointer">
+                    <label class="flex items-start gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 cursor-pointer">
                         <input type="checkbox" name="spare_parts" value="1" {{ old('spare_parts', $profile->spare_parts ?? false) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
                         <div>
                             <span class="block font-bold text-[var(--foreground)]">Spare Parts Store</span>
@@ -899,10 +899,10 @@ Models Touched: User, VendorProfile, RepairShop
     >
         <div
             @click.away="otpModalOpen = false"
-            class="w-full max-w-md rounded-3xl border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl space-y-4"
+            class="w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl space-y-4"
         >
             <div class="flex items-center justify-between">
-                <h3 class="text-base font-black text-[var(--foreground)]" x-text="otpChannel === 'phone' ? 'Verify Phone Number' : 'Verify Business Email'"></h3>
+                <h3 class="text-base font-bold text-[var(--foreground)]" x-text="otpChannel === 'phone' ? 'Verify Phone Number' : 'Verify Business Email'"></h3>
                 <button type="button" @click="otpModalOpen = false" class="text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
                     <i class="fa-solid fa-xmark text-base"></i>
                 </button>
@@ -944,7 +944,7 @@ Models Touched: User, VendorProfile, RepairShop
                         maxlength="6"
                         x-model="otpCode"
                         placeholder="000000"
-                        class="w-full rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-center font-mono text-base tracking-[0.35em] font-black outline-none"
+                        class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-center font-mono text-base tracking-[0.35em] font-bold outline-none"
                     >
                 </div>
                 <div class="flex items-center gap-2">
@@ -961,7 +961,7 @@ Models Touched: User, VendorProfile, RepairShop
                         type="button"
                         @click="sendOtpNow()"
                         :disabled="otpSending"
-                        class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition"
+                        class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition"
                     >
                         Resend
                     </button>
