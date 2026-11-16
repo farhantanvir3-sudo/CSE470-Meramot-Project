@@ -282,6 +282,12 @@
                         Total sold - {{ number_format((int) $listing->sold_count) }}
                     </span>
 
+                    @if($isOwnVendorListing && (int) ($listing->returned_count ?? 0) > 0)
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-300">
+                            Returned - {{ number_format((int) $listing->returned_count) }}
+                        </span>
+                    @endif
+
                     @if($listing->stock_quantity > 0)
                         <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-900 text-xs font-bold">
                             ● In Stock (<span id="spStockCountLabel">{{ number_format((int) $listing->stock_quantity) }}</span> available)
@@ -389,10 +395,12 @@
                                     class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-emerald-900/25 text-sm font-bold text-emerald-950 focus:outline-none focus:ring-2 focus:ring-emerald-800">
                                 <option value="">Choose an option</option>
                                 @foreach($specOptions as $opt)
+                                    @php $optStock = max(0, (int) ($opt['stock'] ?? 0)); @endphp
                                     <option value="{{ $opt['code'] }}"
+                                            {{ $optStock <= 0 ? 'disabled' : '' }}
                                             {{ ($selectedSpec && $selectedSpec['code'] === $opt['code']) ? 'selected' : '' }}>
                                         {{ $opt['name'] }}{{ !empty($opt['subtitle']) ? (' — ' . $opt['subtitle']) : '' }}
-                                        (৳{{ number_format((float) $opt['price'], 0) }})
+                                        (৳{{ number_format((float) $opt['price'], 0) }}){{ $optStock <= 0 ? ' — Out of stock' : '' }}
                                     </option>
                                 @endforeach
                             </select>
@@ -581,13 +589,15 @@
 
                         <div class="grid grid-cols-2 gap-2 sm:gap-3">
                             <button type="submit"
+                                    id="spAddToCartBtn"
                                     onclick="return window.spPrepareSubmit(false)"
-                                    class="w-full py-2.5 sm:py-3 px-3 sm:px-5 rounded-md bg-white border-2 border-emerald-900 text-emerald-950 hover:bg-emerald-50 text-xs sm:text-sm font-semibold transition shadow-xs">
+                                    class="w-full py-2.5 sm:py-3 px-3 sm:px-5 rounded-md bg-white border-2 border-emerald-900 text-emerald-950 hover:bg-emerald-50 text-xs sm:text-sm font-semibold transition shadow-xs disabled:opacity-50 disabled:cursor-not-allowed">
                                 🛒 Add to Cart
                             </button>
                             <button type="submit"
+                                    id="spOrderNowBtn"
                                     onclick="return window.spPrepareSubmit(true)"
-                                    class="w-full py-2.5 sm:py-3 px-3 sm:px-5 rounded-md bg-emerald-900 hover:bg-emerald-800 text-white text-xs sm:text-sm font-semibold transition shadow-sm">
+                                    class="w-full py-2.5 sm:py-3 px-3 sm:px-5 rounded-md bg-emerald-900 hover:bg-emerald-800 text-white text-xs sm:text-sm font-semibold transition shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                                 ⚡ Order Now
                             </button>
                         </div>
@@ -806,6 +816,7 @@
 <script>
 (function () {
     const cfg = @json($jsPricingConfig);
+    const baseListingMaxStock = Math.max(0, Number(cfg.maxStock || 0));
 
     function formatBdt(amount, decimals = 2) {
         const num = Number(amount || 0);
@@ -849,9 +860,25 @@
 
         const spec = findSpec(code);
         const stockLabel = document.getElementById('spStockCountLabel');
-        if (spec && stockLabel && typeof spec.stock === 'number') {
-            stockLabel.textContent = spec.stock.toLocaleString('en-BD');
+        const resolvedMaxStock = spec
+            ? Math.min(baseListingMaxStock, Math.max(0, Number(spec.stock ?? baseListingMaxStock)))
+            : baseListingMaxStock;
+        cfg.maxStock = resolvedMaxStock;
+        if (stockLabel) {
+            stockLabel.textContent = resolvedMaxStock.toLocaleString('en-BD');
         }
+        const qtyInput = document.getElementById('spQuantityInput');
+        if (qtyInput) {
+            qtyInput.max = String(Math.max(1, resolvedMaxStock));
+            if (resolvedMaxStock > 0 && Number(qtyInput.value || 1) > resolvedMaxStock) {
+                qtyInput.value = String(resolvedMaxStock);
+            }
+        }
+        const addBtn = document.getElementById('spAddToCartBtn');
+        const orderBtn = document.getElementById('spOrderNowBtn');
+        const isSpecOut = Boolean(spec && resolvedMaxStock <= 0);
+        if (addBtn) addBtn.disabled = isSpecOut;
+        if (orderBtn) orderBtn.disabled = isSpecOut;
 
         // Update top price header
         const priceRow = document.getElementById('spPriceDisplayRow');

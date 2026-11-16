@@ -154,6 +154,7 @@ Route::get('/requests/{id}/available-transitions', [StatusTransitionController::
 Route::post('/requests/{id}/accept-bid', [StatusTransitionController::class, 'acceptBid'])->name('requests.accept-bid'); // R7
 Route::post('/requests/{id}/respond-final-quote', [StatusTransitionController::class, 'respondToFinalQuote'])->name('requests.respond-final-quote'); // R7 Quote 2
 Route::post('/requests/{id}/cancel', [StatusTransitionController::class, 'cancel'])->name('requests.cancel'); // R7
+Route::post('/requests/{id}/return-parts', [StatusTransitionController::class, 'returnSparePartOrder'])->name('requests.return-parts');
 
 Route::post('/location/sync', [ServicePackageController::class, 'syncCustomerLocation'])->name('location.sync');
 Route::get('/packages/catalog', [ServicePackageController::class, 'index'])->name('packages.catalog'); // R8

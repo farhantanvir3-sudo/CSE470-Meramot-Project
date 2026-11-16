@@ -1710,7 +1710,7 @@ class VendorBranchController extends Controller
             ? collect()
             : SparePartListing::whereIn('shop_id', $scopedShopIds)
                 ->where('is_active', true)
-                ->get(['id', 'shop_id', 'slug', 'title', 'part_category', 'brand', 'base_price', 'normal_price', 'offer_enabled', 'offer_price', 'offer_discount_pct', 'offer_starts_at', 'offer_ends_at', 'sold_count', 'stock_quantity']);
+                ->get(['id', 'shop_id', 'slug', 'title', 'part_category', 'brand', 'base_price', 'normal_price', 'offer_enabled', 'offer_price', 'offer_discount_pct', 'offer_starts_at', 'offer_ends_at', 'sold_count', 'returned_count', 'stock_quantity']);
 
         $partMetrics = $spareParts->map(function (SparePartListing $part) use ($paidLineItems, $reviews, $matchesItem) {
             $unitPrice = $part->effectiveBasePrice();
@@ -1741,6 +1741,7 @@ class VendorBranchController extends Controller
                 'price' => $unitPrice,
                 'stock_quantity' => (int) $part->stock_quantity,
                 'sales_count' => $salesCount,
+                'returned_count' => (int) ($part->returned_count ?? 0),
                 'revenue' => round($salesCount * $unitPrice, 2),
                 'avg_rating' => $avgRating,
                 'review_count' => $reviewCount,

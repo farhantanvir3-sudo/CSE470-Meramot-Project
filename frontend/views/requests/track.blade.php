@@ -851,6 +851,20 @@
                         </a>
                     @endif
 
+                    @php
+                        $hasReturnableSpareParts = collect($repairRequest->repairJob?->final_quote_items ?? [])
+                            ->contains(fn ($i) => strtoupper((string) ($i['source'] ?? '')) === 'SPARE_PART' && !empty($i['spare_part_id']));
+                    @endphp
+                    @if($canActAsCustomer && $currentStatus === 'COMPLETED' && $hasReturnableSpareParts)
+                        <form method="POST" action="{{ route('requests.return-parts', $repairRequest->id) }}"
+                              onsubmit="return confirm('Return spare parts from this order and restore workshop stock?');">
+                            @csrf
+                            <button type="submit" class="block w-full py-2.5 rounded-md bg-rose-700 text-center text-xs font-bold text-white hover:bg-rose-800 transition">
+                                <i class="fa-solid fa-rotate-left mr-2"></i>Return Spare Parts
+                            </button>
+                        </form>
+                    @endif
+
                     <a href="/requests" class="block w-full py-2.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-center text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
                         <i class="fa-solid fa-list-check mr-2 text-[var(--accent-dark)]"></i>All My Repair Requests
                     </a>

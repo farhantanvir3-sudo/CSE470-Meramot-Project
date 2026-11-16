@@ -60,6 +60,7 @@ class SparePartListing extends Model
         'warranty_days',
         'stock_quantity',
         'sold_count',
+        'returned_count',
         'wholesale_enabled',
         'wholesale_min_qty',
         'wholesale_base_discount_pct',
@@ -89,6 +90,7 @@ class SparePartListing extends Model
         'warranty_days' => 'integer',
         'stock_quantity' => 'integer',
         'sold_count' => 'integer',
+        'returned_count' => 'integer',
         'wholesale_enabled' => 'boolean',
         'wholesale_min_qty' => 'integer',
         'wholesale_base_discount_pct' => 'decimal:2',
@@ -107,6 +109,34 @@ class SparePartListing extends Model
     public function vendorProfile()
     {
         return $this->belongsTo(VendorProfile::class, 'vendor_profile_id');
+    }
+
+    public function stockMovements()
+    {
+        return $this->hasMany(SparePartStockMovement::class, 'spare_part_listing_id');
+    }
+
+    /**
+     * Authoritative sellable quantity for this listing (or a specific variant option).
+     */
+    public function availableStock(?string $specCode = null): int
+    {
+        $overall = max(0, (int) $this->stock_quantity);
+
+        if ($this->has_specs && $specCode !== null && trim($specCode) !== '') {
+            $opt = $this->resolveSpecOption($specCode);
+            if (!$opt) {
+                return 0;
+            }
+            return min($overall, max(0, (int) ($opt['stock'] ?? $overall)));
+        }
+
+        return $overall;
+    }
+
+    public function isInStock(?string $specCode = null, int $requiredQty = 1): bool
+    {
+        return (bool) $this->is_active && $this->availableStock($specCode) >= max(1, $requiredQty);
     }
 
     /**

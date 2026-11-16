@@ -629,9 +629,10 @@
                                     </span>
                                 </div>
 
-                                <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--muted-foreground)]">
+                                <div class="flex flex-wrap items-center gap-1.5 text-[10px] text-[var(--muted-foreground)] tabular-nums">
                                     <span>Stock: <strong>{{ number_format((int) $vItem->stock_quantity) }}</strong></span>
                                     <span>• Sold: <strong>{{ number_format((int) $vItem->sold_count) }}</strong></span>
+                                    <span>• Returned: <strong>{{ number_format((int) ($vItem->returned_count ?? 0)) }}</strong></span>
                                     @if($vItem->has_specs)
                                         <span class="text-emerald-800 font-bold">• {{ count($vItem->spec_options ?? []) }} Specs</span>
                                     @endif

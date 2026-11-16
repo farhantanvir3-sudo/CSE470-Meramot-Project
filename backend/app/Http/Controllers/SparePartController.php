@@ -1360,9 +1360,16 @@ class SparePartController extends Controller
 
         $ownedShopIds = $vendorProfile->shops()->pluck('id')->all();
         $listing = SparePartListing::whereIn('shop_id', $ownedShopIds)->where('id', $id)->firstOrFail();
+        $prevStock = (int) $listing->stock_quantity;
 
         $payload = $this->validateVendorListingPayload($request, $vendorProfile, $listing);
         $listing->update($payload);
+        app(\App\Services\SparePartInventoryService::class)->recordVendorAdjustment(
+            $listing->fresh(),
+            $prevStock,
+            (int) $payload['stock_quantity'],
+            $request->user()?->id
+        );
         self::flushCatalogCache();
 
         if ($request->expectsJson()) {

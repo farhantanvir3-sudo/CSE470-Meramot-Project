@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\DeliveryJob;
 use App\Models\RepairJob;
 use App\Models\RepairRequest;
+use App\Models\SparePartStockMovement;
 use App\Models\UserNotification;
 use App\Models\VendorProfile;
+use App\Services\SparePartInventoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -25,6 +27,18 @@ use Illuminate\Support\Facades\Schema;
  */
 class StatusTransitionController extends Controller
 {
+    private const POST_DISPATCH_STATUSES = [
+        'PICKED_UP',
+        'AT_SHOP',
+        'DIAGNOSING',
+        'WAITING_APPROVAL',
+        'REPAIRING',
+        'RETURN_SCHEDULED',
+        'RETURNING',
+        'RETURNED_TO_CUSTOMER',
+        'COMPLETED',
+    ];
+
     /**
      * Update repair request status with state-machine validation.
      * Route: POST /requests/{id}/update-status
@@ -75,6 +89,16 @@ class StatusTransitionController extends Controller
                 DeliveryJob::where('repair_request_id', $repairRequest->id)
                     ->whereNotIn('status', ['DELIVERED', 'CANCELLED'])
                     ->update(['status' => 'CANCELLED', 'cancellation_reason' => $validated['notes'] ?? 'Cancelled by customer']);
+
+                $restoreType = in_array(strtoupper((string) $previousStatus), self::POST_DISPATCH_STATUSES, true)
+                    ? SparePartStockMovement::TYPE_RETURN_RESTORE
+                    : SparePartStockMovement::TYPE_ORDER_CANCEL_RESTORE;
+                app(SparePartInventoryService::class)->restoreForOrder(
+                    $repairRequest,
+                    $restoreType,
+                    $validated['notes'] ?? 'Order cancelled',
+                    $request->user()?->id
+                );
             }
 
             Log::info('Repair request status updated', [
@@ -296,6 +320,13 @@ class StatusTransitionController extends Controller
             ->whereNotIn('status', ['DELIVERED', 'CANCELLED'])
             ->update(['status' => 'CANCELLED', 'cancellation_reason' => 'Declined by workshop']);
 
+        app(SparePartInventoryService::class)->restoreForOrder(
+            $repairRequest,
+            SparePartStockMovement::TYPE_ORDER_CANCEL_RESTORE,
+            $validated['reason'] ?? 'Declined by workshop',
+            $request->user()?->id
+        );
+
         if ($repairRequest->customer_id && Schema::hasTable('user_notifications')) {
             $reasonSuffix = !empty($validated['reason'])
                 ? ' Reason: ' . trim((string) $validated['reason']) . '.'
@@ -375,6 +406,12 @@ class StatusTransitionController extends Controller
                         $this->ensureCourierDeliveryJob($repairRequest->fresh(), $repairRequest->repairJob, 'TO_CUSTOMER');
                     }
                 }
+                app(SparePartInventoryService::class)->restoreForOrder(
+                    $repairRequest,
+                    SparePartStockMovement::TYPE_RETURN_RESTORE,
+                    'Final quote declined — returned',
+                    $request->user()?->id
+                );
                 return redirect()
                     ->route('requests.track', $repairRequest->id)
                     ->with(
@@ -411,6 +448,8 @@ class StatusTransitionController extends Controller
             abort(403, 'You are not authorized to cancel another customer\'s repair request.');
         }
 
+        $previousStatus = $repairRequest->status;
+
         if ($repairRequest->transitionTo(RepairRequest::STATUS_CANCELLED)) {
             $repairRequest->update([
                 'rejected_at' => now(),
@@ -435,6 +474,16 @@ class StatusTransitionController extends Controller
                     'cancellation_reason' => $validated['reason'] ?? 'Cancelled by customer',
                 ]);
 
+            $restoreType = in_array(strtoupper((string) $previousStatus), self::POST_DISPATCH_STATUSES, true)
+                ? SparePartStockMovement::TYPE_RETURN_RESTORE
+                : SparePartStockMovement::TYPE_ORDER_CANCEL_RESTORE;
+            app(SparePartInventoryService::class)->restoreForOrder(
+                $repairRequest,
+                $restoreType,
+                $validated['reason'] ?? 'Cancelled by customer',
+                $request->user()?->id
+            );
+
             return redirect()
                 ->route('requests.track', $repairRequest->id)
                 ->with('success', 'Request cancelled successfully.');
@@ -443,6 +492,91 @@ class StatusTransitionController extends Controller
         return redirect()
             ->route('requests.track', $repairRequest->id)
             ->with('error', 'Cannot cancel request at this stage.');
+    }
+
+    /**
+     * Process a completed spare-part order return and restore workshop stock idempotently.
+     * Route: POST /requests/{id}/return-parts
+     */
+    public function returnSparePartOrder(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $repairRequest = RepairRequest::with(['repairJob', 'payments', 'requestedShop.vendorProfile'])->findOrFail($id);
+        $user = $request->user();
+
+        $isCustomerOwner = $user && (int) $repairRequest->customer_id === (int) $user->id;
+        $isVendorOwner = $user && $user->role === 'vendor'
+            && $repairRequest->requestedShop
+            && (int) $repairRequest->requestedShop->vendor_profile_id === (int) VendorProfile::where('user_id', $user->id)->value('id');
+        $isAdmin = $user && $user->role === 'admin';
+
+        if (!$user) {
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => 'Authentication required.'], 401)
+                : redirect('/login');
+        }
+        if (!$isCustomerOwner && !$isVendorOwner && !$isAdmin) {
+            abort(403, 'You are not authorized to return items for this order.');
+        }
+
+        $quoteItems = $repairRequest->repairJob?->final_quote_items ?? [];
+        $hasSpareParts = is_array($quoteItems) && collect($quoteItems)->contains(function ($item) {
+            return is_array($item)
+                && strtoupper((string) ($item['source'] ?? '')) === 'SPARE_PART'
+                && !empty($item['spare_part_id']);
+        });
+
+        if (!$hasSpareParts) {
+            $msg = 'No returnable spare parts were found on this order.';
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $msg], 422)
+                : back()->with('error', $msg);
+        }
+
+        if (in_array(strtoupper((string) $repairRequest->status), ['CANCELLED', 'REJECTED'], true)) {
+            $msg = 'Cancelled or declined orders cannot be returned again.';
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $msg], 422)
+                : back()->with('error', $msg);
+        }
+
+        $restoredUnits = DB::transaction(function () use ($repairRequest, $validated, $user) {
+            $restored = app(SparePartInventoryService::class)->restoreForOrder(
+                $repairRequest,
+                SparePartStockMovement::TYPE_RETURN_RESTORE,
+                $validated['reason'] ?? 'Customer spare part return',
+                $user->id
+            );
+
+            if ($restored > 0) {
+                $repairRequest->update(['status' => RepairRequest::STATUS_RETURNED_TO_CUSTOMER]);
+                if ($repairRequest->repairJob) {
+                    $repairRequest->repairJob->update(['status' => 'RETURNED']);
+                }
+                $repairRequest->payments()
+                    ->whereIn('status', ['PENDING', 'AUTHORIZED', 'PAID'])
+                    ->update(['status' => 'REFUNDED']);
+            }
+
+            return $restored;
+        });
+
+        if ($restoredUnits === 0) {
+            $msg = 'Spare parts for this order have already been returned.';
+            return $request->expectsJson()
+                ? response()->json(['success' => true, 'already_returned' => true, 'restored_units' => 0, 'message' => $msg])
+                : redirect()->route('requests.track', $repairRequest->id)->with('info', $msg);
+        }
+
+        $msg = "Returned {$restoredUnits} spare part unit(s) to workshop stock and marked payment refunded.";
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'restored_units' => $restoredUnits, 'message' => $msg]);
+        }
+
+        return redirect()->route('requests.track', $repairRequest->id)->with('success', $msg);
     }
 
     /**

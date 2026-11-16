@@ -616,6 +616,18 @@ class AdminModerationController extends Controller
                         ]
                     );
                 }
+
+                if ($isFull && $dispute->repair_request_id) {
+                    $disputedOrder = \App\Models\RepairRequest::with('repairJob')->find($dispute->repair_request_id);
+                    if ($disputedOrder) {
+                        app(\App\Services\SparePartInventoryService::class)->restoreForOrder(
+                            $disputedOrder,
+                            \App\Models\SparePartStockMovement::TYPE_RETURN_RESTORE,
+                            "Dispute #{$dispute->id} full refund",
+                            auth()->id()
+                        );
+                    }
+                }
             }
 
             $dispute->update([

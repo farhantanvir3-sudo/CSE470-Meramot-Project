@@ -572,6 +572,18 @@ class AdminLedgerController extends Controller
                 ]);
             }
 
+            if ($isFullRefund && $payment->repair_request_id) {
+                $refundedOrder = \App\Models\RepairRequest::with('repairJob')->find($payment->repair_request_id);
+                if ($refundedOrder) {
+                    app(\App\Services\SparePartInventoryService::class)->restoreForOrder(
+                        $refundedOrder,
+                        \App\Models\SparePartStockMovement::TYPE_RETURN_RESTORE,
+                        'Admin full refund',
+                        auth()->id()
+                    );
+                }
+            }
+
             $split = self::computeRefundSplit($payment, $refundAmount, $shopId ? (int) $shopId : null);
 
             DB::table('escrow_ledgers')->insert([

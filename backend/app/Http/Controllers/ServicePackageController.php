@@ -1441,8 +1441,14 @@ class ServicePackageController extends Controller
             }
         }
 
-        $maxStock = max(1, (int) ($selectedSpec['stock'] ?? $listing->stock_quantity ?: 1000));
+        $availStock = $listing->availableStock($selectedSpec['code'] ?? null);
         $requestedQty = max(1, (int) ($validated['quantity'] ?? 1));
+        if ($availStock <= 0) {
+            $msg = "'{$listing->title}' is currently out of stock.";
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $msg, 'errors' => ['stock' => [$msg]]], 422)
+                : back()->with('error', $msg)->withErrors(['stock' => $msg]);
+        }
 
         $cart = session()->get('cart', []);
 
@@ -1458,11 +1464,18 @@ class ServicePackageController extends Controller
         session()->put('cart_shop_locked', true);
         session()->put('cart_shop_manual', true);
 
+        $maxStock = $availStock;
         $itemKey = 'sp_' . $listing->id . ($selectedSpec ? ('_' . $selectedSpec['code']) : '');
         $existingQty = isset($cart[$itemKey]) && !$request->boolean('buy_now')
             ? (int) $cart[$itemKey]['quantity']
             : 0;
-        $finalQty = min($maxStock, $existingQty + $requestedQty);
+        $finalQty = $existingQty + $requestedQty;
+        if ($finalQty > $availStock) {
+            $msg = "Only {$availStock} unit(s) of '{$listing->title}' currently remain in stock.";
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $msg, 'errors' => ['quantity' => [$msg]]], 422)
+                : back()->with('error', $msg)->withErrors(['quantity' => $msg])->withInput();
+        }
 
         $wantInstallation = $request->boolean('include_installation');
         $supportsInstall = $listing->supportsWorkshopInstallation();
@@ -1727,7 +1740,23 @@ class ServicePackageController extends Controller
         }
 
         $isSpareItem = isset($cart[$packageId]) && (($cart[$packageId]['source'] ?? '') === 'SPARE_PART');
-        $maxAllowed = $isSpareItem ? max(1, (int) ($cart[$packageId]['max_stock'] ?? 10000)) : 10;
+        $spListing = null;
+        $maxAllowed = 10;
+        if ($isSpareItem) {
+            $spListing = !empty($cart[$packageId]['spare_part_id'])
+                ? SparePartListing::with('shop')->find((int) $cart[$packageId]['spare_part_id'])
+                : null;
+            $maxAllowed = $spListing
+                ? $spListing->availableStock($cart[$packageId]['spec_code'] ?? null)
+                : 0;
+            if ($maxAllowed <= 0) {
+                $msg = 'This spare part is currently out of stock.';
+                return $request->expectsJson()
+                    ? response()->json(['success' => false, 'message' => $msg, 'errors' => ['quantity' => [$msg]]], 422)
+                    : redirect()->route('cart.view')->with('error', $msg)->withErrors(['quantity' => $msg]);
+            }
+            $cart[$packageId]['max_stock'] = $maxAllowed;
+        }
 
         $validated = $request->validate([
             'quantity' => "required|integer|min:1|max:{$maxAllowed}",
@@ -1738,27 +1767,24 @@ class ServicePackageController extends Controller
             $cart[$packageId]['quantity'] = $newQty;
 
             // Recalculate AliExpress progressive wholesale & active offer price for Spare Parts
-            if ($isSpareItem && !empty($cart[$packageId]['spare_part_id'])) {
-                $spListing = SparePartListing::with('shop')->find((int) $cart[$packageId]['spare_part_id']);
-                if ($spListing) {
-                    $breakdown = $spListing->calculatePricingBreakdown($newQty, $cart[$packageId]['spec_code'] ?? null);
-                    $hadInstall = !empty($cart[$packageId]['include_installation']) && $spListing->supportsWorkshopInstallation();
-                    $keepInstall = $hadInstall && $newQty <= $spListing->maxInstallationQuantity();
-                    $installFeePerUnit = $keepInstall ? round((float) $spListing->assembly_fee, 2) : 0.0;
+            if ($isSpareItem && $spListing) {
+                $breakdown = $spListing->calculatePricingBreakdown($newQty, $cart[$packageId]['spec_code'] ?? null);
+                $hadInstall = !empty($cart[$packageId]['include_installation']) && $spListing->supportsWorkshopInstallation();
+                $keepInstall = $hadInstall && $newQty <= $spListing->maxInstallationQuantity();
+                $installFeePerUnit = $keepInstall ? round((float) $spListing->assembly_fee, 2) : 0.0;
 
-                    $cart[$packageId]['part_unit_price'] = (float) $breakdown['effective_unit_price'];
-                    $cart[$packageId]['include_installation'] = $keepInstall;
-                    $cart[$packageId]['installation_fee_per_unit'] = $installFeePerUnit;
-                    $cart[$packageId]['price'] = round((float) $breakdown['effective_unit_price'] + $installFeePerUnit, 2);
-                    $cart[$packageId]['normal_unit_price'] = (float) $breakdown['normal_unit_price'];
-                    $cart[$packageId]['raw_unit_price'] = (float) $breakdown['raw_unit_price'];
-                    $cart[$packageId]['has_active_offer'] = (bool) $breakdown['has_active_offer'];
-                    $cart[$packageId]['wholesale_discount_pct'] = (float) $breakdown['wholesale_discount_pct'];
-                    $cart[$packageId]['wholesale_savings'] = (float) $breakdown['wholesale_savings'];
+                $cart[$packageId]['part_unit_price'] = (float) $breakdown['effective_unit_price'];
+                $cart[$packageId]['include_installation'] = $keepInstall;
+                $cart[$packageId]['installation_fee_per_unit'] = $installFeePerUnit;
+                $cart[$packageId]['price'] = round((float) $breakdown['effective_unit_price'] + $installFeePerUnit, 2);
+                $cart[$packageId]['normal_unit_price'] = (float) $breakdown['normal_unit_price'];
+                $cart[$packageId]['raw_unit_price'] = (float) $breakdown['raw_unit_price'];
+                $cart[$packageId]['has_active_offer'] = (bool) $breakdown['has_active_offer'];
+                $cart[$packageId]['wholesale_discount_pct'] = (float) $breakdown['wholesale_discount_pct'];
+                $cart[$packageId]['wholesale_savings'] = (float) $breakdown['wholesale_savings'];
 
-                    if ($hadInstall && !$keepInstall) {
-                        $cart[$packageId]['title'] = str_replace(' + Workshop Installation', '', (string) $cart[$packageId]['title']);
-                    }
+                if ($hadInstall && !$keepInstall) {
+                    $cart[$packageId]['title'] = str_replace(' + Workshop Installation', '', (string) $cart[$packageId]['title']);
                 }
             }
 
@@ -2066,7 +2092,8 @@ class ServicePackageController extends Controller
         $repairRequest = DB::transaction(function () use (
             $user, $shop, $cart, $firstItem, $validated, $cleanPhone, $title, $serviceLines, $scheduleLabel,
             $subtotal, $commissionRatePct, $serviceCharge, $deliveryFee, $deliveryType, $isCourierPickup,
-            $totalAmount, $fullAddress, $customerCity, $appliedVoucherCode, $discountAmount, $scheduledPickupAt
+            $totalAmount, $fullAddress, $customerCity, $appliedVoucherCode, $discountAmount, $scheduledPickupAt,
+            $isSparePartCart
         ) {
             $requestedServiceId = is_numeric($firstItem['id'] ?? null) ? (int) $firstItem['id'] : null;
             $discountLine = $discountAmount > 0 ? " | Discount ({$appliedVoucherCode}): -৳" . number_format($discountAmount, 2) : '';
@@ -2135,13 +2162,11 @@ class ServicePackageController extends Controller
             foreach ($cart as $key => $item) {
                 if (is_numeric($key)) {
                     ServicePackage::where('id', (int) $key)->increment('order_count', (int) $item['quantity']);
-                } elseif (($item['source'] ?? '') === 'SPARE_PART' && !empty($item['spare_part_id'])) {
-                    $qtyBought = max(1, (int) $item['quantity']);
-                    SparePartListing::where('id', (int) $item['spare_part_id'])->update([
-                        'stock_quantity' => DB::raw("GREATEST(0, stock_quantity - {$qtyBought})"),
-                        'sold_count' => DB::raw("sold_count + {$qtyBought}"),
-                    ]);
                 }
+            }
+
+            if ($isSparePartCart) {
+                app(\App\Services\SparePartInventoryService::class)->reserveForOrder($req, $cart, $user->id);
             }
 
             if ($shop->vendorProfile?->user_id && Schema::hasTable('user_notifications')) {

@@ -102,14 +102,23 @@ if [ "${AUTO_MIGRATE:-true}" = "true" ]; then
         echo "Syncing model-independent Fixed Service Packages..."
         DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --class=Database\\Seeders\\ServicePackageSeeder --force
 
-        if [ "${SPARE_PARTS_COUNT:-0}" -lt 1000 ] || [ "${TOOLS_CAT_COUNT:-0}" = "0" ]; then
+        UNSHUFFLED_GROUPS=$(php -r '
+            require "vendor/autoload.php";
+            $app = require_once "bootstrap/app.php";
+            $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+            $row = \Illuminate\Support\Facades\DB::selectOne("SELECT COUNT(*) AS cnt FROM (SELECT product_group_key FROM spare_part_listings GROUP BY product_group_key HAVING COUNT(*) > 1 AND COUNT(DISTINCT LOWER(TRIM(title))) = 1) g");
+            echo (int) ($row->cnt ?? 0);
+        ' 2>/dev/null || echo "0")
+
+        if [ "${SPARE_PARTS_COUNT:-0}" -lt 1000 ] || [ "${TOOLS_CAT_COUNT:-0}" = "0" ] || [ "${UNSHUFFLED_GROUPS:-0}" -gt 50 ]; then
             echo "Seeding cloned multi-vendor Mobile & PC Spare Parts catalog into Neon PostgreSQL..."
             DATABASE_URL="${DATABASE_URL_UNPOOLED:-$DATABASE_URL}" php artisan db:seed --class=Database\\Seeders\\SparePartSeeder --force
         fi
     fi
 fi
 
-# Cache configuration & Blade views, then fix ownership for Apache (www-data)
+# Refresh caches and compile Blade views, then fix ownership for Apache (www-data)
+php artisan cache:clear || true
 php artisan config:cache
 php artisan view:cache
 
