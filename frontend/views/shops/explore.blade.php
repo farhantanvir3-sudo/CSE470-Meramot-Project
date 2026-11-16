@@ -11,7 +11,7 @@
             <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[var(--muted-foreground)] mb-1 truncate">
                 <a href="/" class="hover:underline">Home</a>
                 <span>/</span>
-                <span class="text-[var(--foreground)] font-semibold">Repair Shops</span>
+                <span class="text-[var(--foreground)] font-semibold" data-i18n="nav_repair_shops">Repair Shops</span>
                 @if(request('city') && request('city') !== 'All')
                     <span>/</span>
                     <span class="text-[var(--accent-dark)] font-bold">{{ request('city') }}</span>
@@ -40,7 +40,7 @@
         <div class="flex items-center gap-3 shrink-0">
             <a href="/requests/create" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-full bg-[var(--accent-dark)] px-3.5 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-xs font-bold text-white shadow hover:opacity-90 transition whitespace-nowrap">
                 <i class="fa-solid fa-plus"></i>
-                <span>Post Device Repair Request</span>
+                <span data-i18n="post_repair_request">Post Device Repair Request</span>
             </a>
         </div>
     </div>
@@ -141,7 +141,7 @@
                         class="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-dark)] px-3 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
                     >
                         <i class="fa-solid fa-map-location-dot"></i>
-                        <span>Pin Location on Map</span>
+                        <span data-i18n="pin_location_map">Pin Location on Map</span>
                     </button>
                     @php
                         $isDesktopNearMeActive = request()->filled('maxDistanceKm') || ($currSort === 'distance' && request()->filled('lat') && request()->filled('lng'));
@@ -271,7 +271,7 @@
                 <div class="border-t border-[var(--border)]/60 pt-2 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 xl:gap-3 text-xs min-w-0">
                     <!-- Quick Sort Slider -->
                     <div class="flex items-center gap-1.5 min-w-0">
-                        <span class="font-bold text-[var(--foreground)] text-[10px] sm:text-[11px] uppercase tracking-wider shrink-0">Sort:</span>
+                        <span class="font-bold text-[var(--foreground)] text-[10px] sm:text-[11px] uppercase tracking-wider shrink-0" data-i18n="sort_label">Sort:</span>
                         @php
                             $sortTabs = [
                                 ['label' => 'Top Rated', 'value' => 'topRated', 'icon' => 'fa-star'],
@@ -322,7 +322,7 @@
                                 class="lg:hidden shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--accent-dark)]/40 bg-[var(--mint-50)] text-[var(--accent-dark)] font-bold transition flex items-center gap-1.5 text-[11px] hover:bg-[var(--mint-200)]"
                             >
                                 <i class="fa-solid fa-map-location-dot text-[10px]"></i>
-                                <span>Pin on Map</span>
+                                <span data-i18n="pin_on_map">Pin on Map</span>
                             </button>
 
                             <button
@@ -333,31 +333,31 @@
                                 class="lg:hidden shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border transition flex items-center gap-1.5 text-[11px] font-bold {{ $isNearMeActive ? 'bg-[var(--accent-dark)] text-white shadow-sm border-[var(--accent-dark)]' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border-[var(--border)] hover:bg-[var(--mint-200)]' }}"
                             >
                                 <i class="fa-solid fa-location-crosshairs text-[10px]"></i>
-                                <span>Near Me</span>
+                                <span data-i18n="near_me">Near Me</span>
                             </button>
 
                             <a href="/shops?{{ http_build_query(array_filter($branchedParams)) }}"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasBranched ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-code-branch text-[10px] {{ $hasBranched ? 'text-emerald-200' : 'text-[var(--accent-dark)]' }}"></i>
-                                <span>Multi-Branch</span>
+                                <span data-i18n="multi_branch">Multi-Branch</span>
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($voucherParams)) }}"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasVoucher ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-ticket text-[10px] text-amber-600"></i>
-                                <span>Vouchers</span>
+                                <span data-i18n="vouchers">Vouchers</span>
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($delParams)) }}"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasFreeDel ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-truck-fast text-[10px] text-emerald-700"></i>
-                                <span>Free Delivery</span>
+                                <span data-i18n="free_delivery_filter">Free Delivery</span>
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($dealsParams)) }}"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-xl border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasDeals ? 'bg-[var(--accent-dark)] text-white font-bold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-fire text-[10px] text-rose-600"></i>
-                                <span>Deals</span>
+                                <span data-i18n="deals_filter">Deals</span>
                             </a>
 
                             @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm', 'lat']))
@@ -395,7 +395,7 @@
                         <span>Search: <strong class="text-[var(--foreground)]">"{{ request('q') }}"</strong></span>
                     @endif
                     @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm', 'lat']))
-                        <a href="/shops" class="select-none font-bold text-rose-700 hover:underline">Clear all filters</a>
+                        <a href="/shops" class="select-none font-bold text-rose-700 hover:underline" data-i18n="clear_all_filters">Clear all filters</a>
                     @endif
                 </div>
             </div>
@@ -440,7 +440,7 @@
                                                 <span class="opacity-60">·</span>
                                                 <span>{{ $shop->review_count }} {{ \Illuminate\Support\Str::plural('review', $shop->review_count) }}</span>
                                             @else
-                                                <span class="font-semibold text-[var(--accent-dark)]">New · No reviews yet</span>
+                                                <span class="font-semibold text-[var(--accent-dark)]" data-i18n="new_no_reviews">New · No reviews yet</span>
                                             @endif
                                             <span class="opacity-60">·</span>
                                             <span><i class="fa-solid fa-location-dot text-[10px] text-[var(--accent-dark)]"></i> {{ $shop->area }}{{ ($shop->city && !str_contains(strtolower((string)$shop->area), strtolower($shop->city))) ? ', ' . $shop->city : '' }}</span>
@@ -465,11 +465,11 @@
                         <!-- Price + Labor + ETA compact row -->
                         <div class="mt-2.5 grid grid-cols-3 items-center rounded-xl bg-[var(--mint-50)] px-2.5 py-1.5 md:mt-3 text-center min-w-0">
                             <div>
-                                <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Inspection</span>
+                                <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]" data-i18n="inspection_label">Inspection</span>
                                 <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->inspection_fee ?? 200) }}</div>
                             </div>
                             <div class="border-x border-[var(--border)]/50 px-1">
-                                <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Labor</span>
+                                <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]" data-i18n="labor_label">Labor</span>
                                 <div class="text-xs font-black text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->base_labor_fee ?? 400) }}</div>
                             </div>
                             <div>
@@ -488,13 +488,13 @@
                         <!-- Badges -->
                         <div class="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-medium text-[var(--accent-dark)] md:text-[11px]">
                             @if($shop->has_voucher)
-                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5">Voucher</span>
+                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5" data-i18n="voucher">Voucher</span>
                             @endif
                             @if($shop->free_delivery)
-                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-emerald-900 font-semibold">Free delivery</span>
+                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-emerald-900 font-semibold" data-i18n="free_delivery">Free delivery</span>
                             @endif
                             @if($shop->has_deals)
-                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-rose-900 font-semibold">Deal</span>
+                                <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-rose-900 font-semibold" data-i18n="deal">Deal</span>
                             @endif
                             <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 font-bold">
                                 {{ str_repeat('৳', $shop->price_level ?? 2) }}
@@ -504,7 +504,7 @@
                 @empty
                     <div class="col-span-2 py-16 text-center rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-8">
                         <div class="text-4xl mb-3">🔍</div>
-                        <h3 class="text-base font-bold text-[var(--foreground)]">No matching workshops found</h3>
+                        <h3 class="text-base font-bold text-[var(--foreground)]" data-i18n="no_workshops_found">No matching workshops found</h3>
                         <p class="text-xs text-[var(--muted-foreground)] mt-1">No repair centers matched your current filters. Adjust your criteria or reset all filters to view available shops.</p>
                         <a href="/shops" class="inline-block mt-4 rounded-full bg-[var(--accent-dark)] px-5 py-2 text-xs font-bold text-white">
                             Reset All Filters

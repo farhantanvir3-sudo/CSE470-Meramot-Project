@@ -2105,7 +2105,7 @@
                     </p>
                 </div>
                 <div class="col-span-1 lg:col-span-2">
-                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Popular Services</h5>
+                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]" data-i18n="popular_services">Popular Services</h5>
                     <ul class="space-y-1.5">
                         <li><a href="/shops?q=screen" class="hover:text-[var(--foreground)] hover:underline transition">Screen Replacement</a></li>
                         <li><a href="/shops?q=battery" class="hover:text-[var(--foreground)] hover:underline transition">Battery Replacement</a></li>
@@ -2114,7 +2114,7 @@
                     </ul>
                 </div>
                 <div class="col-span-1 lg:col-span-3">
-                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Service Hubs</h5>
+                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]" data-i18n="service_hubs">Service Hubs</h5>
                     <ul class="space-y-1.5">
                         <li><a href="/shops?area=Banani" class="hover:text-[var(--foreground)] hover:underline transition">Banani DOHS &amp; Road 11</a></li>
                         <li><a href="/shops?area=Gulshan" class="hover:text-[var(--foreground)] hover:underline transition">Gulshan 1 &amp; 2 Circle</a></li>
@@ -2129,13 +2129,13 @@
                         <p>Faculty: <strong>Nazmul Islam [NZU]</strong></p>
                         <p class="mt-2 text-[10px] text-emerald-800 font-bold">Strict MVC Architecture • Laravel 10 • FastAPI Microservice • PostgreSQL</p>
                     @else
-                        <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Customer &amp; Partner Hub</h5>
+                        <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]" data-i18n="customer_partner_hub">Customer &amp; Partner Hub</h5>
                         <ul class="grid grid-cols-2 sm:grid-cols-1 gap-x-4 gap-y-1.5">
                             @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
-                                <li><a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition">Post Repair Request</a></li>
+                                <li><a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="post_repair_request">Post Repair Request</a></li>
                             @endif
-                            <li><a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition">AI Fault Diagnostics</a></li>
-                            <li><a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition">Fixed-Price Packages</a></li>
+                            <li><a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="ai_fault_diagnostics">AI Fault Diagnostics</a></li>
+                            <li><a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="fixed_price_packages">Fixed-Price Packages</a></li>
                             @if($isVendorAuth)
                                 <li><a href="{{ $vendorWorkspaceUrl }}" class="font-semibold text-[var(--accent-dark)] hover:underline">{{ $vendorWorkspaceLabel }}</a></li>
                             @elseif($isRiderAuth)
@@ -2153,14 +2153,14 @@
             <div class="border-t border-[var(--border)] pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-center sm:text-left">
                 <p>&copy; 2026 Meramot (মেরামত) Digital Marketplace. All rights reserved.</p>
                 <div class="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2">
-                    <a href="/shops" class="hover:text-[var(--foreground)] hover:underline transition">Explore All Shops</a>
-                    <a href="/spare-parts" class="hover:text-[var(--foreground)] hover:underline transition">Spare Parts Marketplace</a>
-                    <a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition">Service Packages</a>
+                    <a href="/shops" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="explore_all_shops">Explore All Shops</a>
+                    <a href="/spare-parts" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="spare_parts_market">Spare Parts Marketplace</a>
+                    <a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="service_packages">Service Packages</a>
                     @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
                         <a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition">Request Repair</a>
                     @endif
-                    <a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition">AI Diagnostics</a>
-                    <a href="/support" class="hover:text-[var(--foreground)] hover:underline transition">Support &amp; Disputes</a>
+                    <a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="ai_diagnostics">AI Diagnostics</a>
+                    <a href="/support" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="support_disputes">Support &amp; Disputes</a>
                     <a href="{{ request()->fullUrlWithQuery(['dev' => $isDevMode ? '0' : '1']) }}" class="text-[10px] text-[var(--muted-foreground)] opacity-40 hover:opacity-100 transition" title="Toggle developer presentation mode (Ctrl+Shift+D)">
                         <i class="fa-solid fa-code"></i> {{ $isDevMode ? 'Dev Mode (ON)' : 'Dev' }}
                     </a>
@@ -2184,11 +2184,11 @@
                             <i class="fa-solid fa-bag-shopping text-sm"></i>
                         </span>
                         <div>
-                            <h3 class="text-sm font-black text-[var(--foreground)]">Direct-Order Cart</h3>
+                            <h3 class="text-sm font-black text-[var(--foreground)]" data-i18n="direct_order_cart">Direct-Order Cart</h3>
                             <p class="text-[11px] text-[var(--muted-foreground)]">{{ count($miniCartItems) }} {{ count($miniCartItems) === 1 ? 'item' : 'items' }} in cart</p>
                         </div>
                     </div>
-                    <button type="button" @click="miniCartOpen = false" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)]">
+                    <button type="button" @click="miniCartOpen = false" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)]" data-i18n="close_btn">
                         Close
                     </button>
                 </div>
@@ -2211,14 +2211,14 @@
                         </div>
                     @empty
                         <div class="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--card)] p-8 text-center">
-                            <p class="text-xs font-semibold text-[var(--muted-foreground)]">Your cart is currently empty.</p>
+                            <p class="text-xs font-semibold text-[var(--muted-foreground)]" data-i18n="cart_currently_empty">Your cart is currently empty.</p>
                         </div>
                     @endforelse
                 </div>
 
                 <div class="border-t border-[var(--border)] bg-[var(--card)] p-4 space-y-3">
                     <div class="flex items-center justify-between text-xs">
-                        <span class="font-semibold text-[var(--muted-foreground)]">Order Subtotal</span>
+                        <span class="font-semibold text-[var(--muted-foreground)]" data-i18n="order_subtotal">Order Subtotal</span>
                         <span class="text-base font-black text-[var(--accent-dark)]">৳{{ number_format($miniCartSubtotal) }}</span>
                     </div>
                     <p class="text-[11px] text-[var(--muted-foreground)]">Promo codes and delivery preferences can be applied in your cart before checkout.</p>
@@ -3224,5 +3224,135 @@
             };
         })();
     </script>
+<<<<<<< Updated upstream
+=======
+<script>
+window.MeramotI18n = (function () {
+  var bn = {
+    'offer_available': 'অফার উপলব্ধ',
+    'featured_shops': 'সেরা শপসমূহ',
+    'starting_from': 'শুরু',
+    'voucher': 'ভাউচার',
+    'free_delivery': 'ফ্রি ডেলিভারি',
+    'deal': 'ডিল',
+    'free_short': 'ফ্রি',
+    'explore_more_featured': 'আরও সেরা শপ দেখুন',
+    'popular_categories': 'জনপ্রিয় সার্ভিস ক্যাটাগরি',
+    'most_requested_repairs': 'সর্বাধিক চাওয়া ডিভাইস মেরামত',
+    'recently_viewed': 'সম্প্রতি দেখা',
+    'resume_searches': 'আপনার সাম্প্রতিক মেরামত সার্চ পুনরায় শুরু করুন',
+    // explore
+    'nav_repair_shops': 'মেরামত শপ',
+    'post_repair_request': 'মেরামত অর্ডার দিন',
+    'pin_location_map': 'ম্যাপে লোকেশন পিন করুন',
+    'sort_label': 'সাজান:',
+    'pin_on_map': 'ম্যাপে পিন',
+    'near_me': 'কাছে',
+    'multi_branch': 'বহু-শাখা',
+    'vouchers': 'ভাউচার',
+    'free_delivery_filter': 'ফ্রি ডেলিভারি',
+    'deals_filter': 'ডিল',
+    'new_no_reviews': 'নতুন · কোনো রিভিউ নেই',
+    'inspection_label': 'ইনসপেকশন',
+    'labor_label': 'শ্রম',
+    'voucher': 'ভাউচার',
+    'free_delivery': 'ফ্রি ডেলিভারি',
+    'deal': 'ডিল',
+    'no_workshops_found': 'কোনো উপযুক্ত ওয়ার্কশপ পাওয়া যায়নি',
+    'clear_all_filters': 'সব ফিল্টার মুছুন',
+    // requests
+    'unsure_device': 'আপনার ডিভাইসের সমস্যা সম্পর্কে নিশ্চিত নন?',
+    'device_category': 'ডিভাইস ক্যাটাগরি *',
+    'brand_name': 'ব্র্যান্ড নাম *',
+    'model_name': 'মডেল নাম / নম্বর *',
+    'release_year': 'মুক্তির / কেনার বছর',
+    'screen_chipset': 'স্ক্রিন সাইজ / চিপসেট',
+    'problem_category': 'প্রধান সমস্যা ক্যাটাগরি *',
+    'issue_headline': 'সমস্যার শিরোনাম *',
+    'detailed_symptoms': 'বিস্তারিত লক্ষণ ও ডিভাইসের ইতিহাস *',
+    'rider_pickup': 'রাইডার কোথায় ডিভাইস নিতে আসবে?',
+    'pin_interactive_map': 'ইন্টার্যাক্টিভ ম্যাপে পিন',
+    'logistics_mode': 'পছন্দের লজিস্টিক্স পদ্ধতি *',
+    'opt_pickup_dropoff': 'রাইডার ডোরস্টেপ পিকআপ ও ফিরত (OTP যাচাই)',
+    'opt_walk_in': 'গ্রাহক সরাসরি টেকনিশিয়ান শপে যাবেন',
+    'opt_home_visit': 'টেকনিশিয়ান বাড়িতে আসবেন',
+    'area_pickup': 'এলাকা / পিকআপ পাড়া *',
+    'contact_phone': 'যোগাযোগ নম্বর *',
+    'pickup_address': 'পূর্ণ পিকআপ / ডেলিভারি ঠিকানা',
+    // catalog
+    'service_packages': 'সার্ভিস প্যাকেজ',
+    'direct_cart': 'সরাসরি কার্ট',
+    'all_categories': 'সব ক্যাটাগরি',
+    'any_budget': 'যেকোনো বাজেট',
+    'most_popular': 'সর্বাধিক জনপ্রিয়',
+    'price_low_high': 'দাম: কম থেকে বেশি',
+    'price_high_low': 'দাম: বেশি থেকে কম',
+    'fixed_price': 'নির্ধারিত দাম',
+    'included_in_package': 'প্যাকেজে অন্তর্ভুক্ত:',
+    'add_to_cart': 'কার্টে যোগ করুন',
+    'no_packages_found': 'আপনার ফিল্টারে কোনো প্যাকেজ মেলেনি',
+    // cart
+    'cart_label': 'কার্ট',
+    'cart_empty': 'আপনার কার্ট খালি',
+    'selected_workshop': 'নির্বাচিত ওয়ার্কশপ',
+    'smart_matched': 'স্মার্ট-ম্যাচ ওয়ার্কশপ',
+    'verified_partner': 'যাচাইকৃত পার্টনার',
+    'featured_badge': 'ফিচার্ড',
+    'pickup_now': 'এখনই পিকআপ',
+    'dispatch_on_confirm': 'ওয়ার্কশপ নিশ্চিত হলে কুরিয়ার পাঠানো হবে',
+    'schedule_later': 'পরে সেচেদুল করুন',
+    'select_datetime': 'পছন্দের তারিখ ও সময় বেছুন',
+    'regular_courier': 'সাধারণ কুরিয়ার',
+    'express_courier': 'এক্সপ্রেস কুরিয়ার',
+    'priority_dispatch': 'প্রাধান্যমূলক তাৎক্ষণিক ডিসপ্যাচ',
+    'pickup_area': 'পিকআপ এলাকা',
+    'map_pin': 'ম্যাপ পিন',
+    'manual_entry': 'সরাসরি লিখুন',
+    'saved_profile': 'সেভড প্রোফাইল',
+    'order_summary': 'অর্ডার সারসংক্ষেপ',
+    'checkout_escrow': 'চেকআউট ও এসক্রো',
+    'promo_code': 'প্রোমো / ভাউচার কোড',
+    'buyer_protection_fee': 'সার্ভিস ও ক্রেতা সুরক্ষা ফি',
+    'total_payable': 'মোট প্রদেয়',
+    'payment_method': 'পেমেন্ট পদ্ধতি',
+    'cash_on_return': 'ফেরতের সময় নগদ (COD)',
+    'ssl_escrow': 'SSLCommerz অনলাইন এসক্রো',
+    // ai
+    'ai_consultant': 'এআই ডায়াগনস্টিক পরামর্শদাতা',
+    'ai_hw_consultant': 'এআই হার্ডওয়ার ডায়াগনস্টিক',
+    'ai_active': 'এআই ডায়াগনস্টিকস সক্রিয়',
+    'device_category_label': 'ডিভাইস ক্যাটাগরি:',
+    'analyzing_symptoms': 'রিপোর্ট করা সমস্যা বিশ্লেষণ হচ্ছে...',
+    'quick_prompts': 'দ্রুত সমস্যা প্রম্পট',
+    'diagnostic_tips': 'ডায়াগনস্টিক টিপস',
+    // footer
+    'popular_services': 'জনপ্রিয় সার্ভিস',
+    'service_hubs': 'সার্ভিস হাব',
+    'customer_partner_hub': 'গ্রাহক ও পার্টনার হাব',
+    'ai_fault_diagnostics': 'এআই ফল্ট ডায়াগনস্টিকস',
+    'fixed_price_packages': 'নির্ধারিত মূল্যের প্যাকেজ',
+    'explore_all_shops': 'সব শপ দেখুন',
+    'spare_parts_market': 'স্পেয়ার পার্টস মার্কেটপ্লেস',
+    'ai_diagnostics': 'এআই ডায়াগনস্টিকস',
+    'support_disputes': 'সাপোর্ট ও বিবাদ',
+    'direct_order_cart': 'সরাসরি-অর্ডার কার্ট',
+    'close_btn': 'বন্ধ করুন',
+    'cart_currently_empty': 'আপনার কার্ট এখন খালি।',
+    'order_subtotal': 'মোট পরিমাণ'
+  };
+  function apply(lang) {
+    lang = lang || (localStorage.getItem('meramot_lang') || 'en');
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      if (!el.dataset.i18nOriginal) el.dataset.i18nOriginal = el.textContent;
+      var key = el.getAttribute('data-i18n');
+      el.textContent = (lang === 'bn' && bn[key]) ? bn[key] : el.dataset.i18nOriginal;
+    });
+    document.documentElement.lang = (lang === 'bn') ? 'bn' : 'en';
+  }
+  return { apply: apply };
+})();
+document.addEventListener('DOMContentLoaded', function () { window.MeramotI18n.apply(); });
+</script>
+>>>>>>> Stashed changes
 </body>
 </html>

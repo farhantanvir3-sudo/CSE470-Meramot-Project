@@ -93,7 +93,7 @@
                 <span>›</span>
                 <a href="{{ route('packages.catalog') }}" class="hover:underline">Service Packages</a>
                 <span>›</span>
-                <span class="text-[var(--foreground)] font-semibold">Cart</span>
+                <span class="text-[var(--foreground)] font-semibold" data-i18n="cart_label">Cart</span>
             </div>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">
                 Direct-Order Cart
@@ -153,7 +153,7 @@
             <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)]">
                 <i class="fa-solid fa-cart-shopping text-2xl"></i>
             </div>
-            <h2 class="text-xl font-black text-[var(--foreground)]">Your cart is empty</h2>
+            <h2 class="text-xl font-black text-[var(--foreground)]" data-i18n="cart_empty">Your cart is empty</h2>
             <p class="mt-2 text-xs text-[var(--muted-foreground)] max-w-md mx-auto leading-relaxed">
                 Browse genuine spare parts, flat-rate service packages, or verified workshops to get started.
             </p>
@@ -186,10 +186,10 @@
                                     <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">
                                         @if(!empty($shopLocked) || !empty($shopManuallySelected))
                                             <i class="fa-solid fa-circle-check text-[9px]"></i>
-                                            <span>Selected Workshop</span>
+                                            <span data-i18n="selected_workshop">Selected Workshop</span>
                                         @else
                                             <i class="fa-solid fa-location-crosshairs text-[9px]"></i>
-                                            <span>Smart-Matched Workshop</span>
+                                            <span data-i18n="smart_matched">Smart-Matched Workshop</span>
                                         @endif
                                     </span>
 
@@ -200,7 +200,7 @@
                                                 <span class="font-medium text-amber-700/80">({{ $activeShop->review_count }})</span>
                                             @endif
                                         @else
-                                            <span>Verified Partner</span>
+                                            <span data-i18n="verified_partner">Verified Partner</span>
                                         @endif
                                     </span>
 
@@ -214,7 +214,7 @@
                                     @if($activeShop->is_featured)
                                         <span class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
                                             <i class="fa-solid fa-award text-[9px]"></i>
-                                            <span>Featured</span>
+                                            <span data-i18n="featured_badge">Featured</span>
                                         </span>
                                     @endif
                                 </div>
@@ -423,15 +423,15 @@
                             <label class="cursor-pointer rounded-2xl border-2 p-3.5 transition flex items-start gap-3" :class="scheduleType === 'NOW' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'">
                                 <input type="radio" name="schedule_type" value="NOW" x-model="scheduleType" class="mt-0.5 accent-[#244229]">
                                 <div class="min-w-0">
-                                    <span class="font-bold text-[var(--foreground)] block">Pickup Now</span>
-                                    <span class="text-[11px] text-[var(--muted-foreground)]">Dispatch courier once workshop confirms</span>
+                                    <span class="font-bold text-[var(--foreground)] block" data-i18n="pickup_now">Pickup Now</span>
+                                    <span class="text-[11px] text-[var(--muted-foreground)]" data-i18n="dispatch_on_confirm">Dispatch courier once workshop confirms</span>
                                 </div>
                             </label>
                             <label class="cursor-pointer rounded-2xl border-2 p-3.5 transition flex items-start gap-3" :class="scheduleType === 'LATER' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'">
                                 <input type="radio" name="schedule_type" value="LATER" x-model="scheduleType" class="mt-0.5 accent-[#244229]">
                                 <div class="min-w-0">
-                                    <span class="font-bold text-[var(--foreground)] block">Schedule for Later</span>
-                                    <span class="text-[11px] text-[var(--muted-foreground)]">Select a preferred date and time</span>
+                                    <span class="font-bold text-[var(--foreground)] block" data-i18n="schedule_later">Schedule for Later</span>
+                                    <span class="text-[11px] text-[var(--muted-foreground)]" data-i18n="select_datetime">Select a preferred date and time</span>
                                 </div>
                             </label>
                         </div>
@@ -463,7 +463,7 @@
                                 <div class="flex items-start gap-2.5 min-w-0">
                                     <input type="radio" name="delivery_type" value="REGULAR" x-model="deliveryType" class="mt-0.5 accent-[#244229]">
                                     <div class="min-w-0">
-                                        <span class="font-bold text-[var(--foreground)] block">Regular Courier</span>
+                                        <span class="font-bold text-[var(--foreground)] block" data-i18n="regular_courier">Regular Courier</span>
                                         <span class="text-[11px] text-[var(--muted-foreground)]">{{ !empty($isSparePartCart) ? ($deliveryQuote['eta_label'] ?? 'Standard insured dispatch') : 'Standard insured pickup & return' }}</span>
                                     </div>
                                 </div>
@@ -474,8 +474,8 @@
                                 <div class="flex items-start gap-2.5 min-w-0">
                                     <input type="radio" name="delivery_type" value="EXPRESS" x-model="deliveryType" class="mt-0.5 accent-[#244229]">
                                     <div class="min-w-0">
-                                        <span class="font-bold text-[var(--foreground)] block">Express Courier</span>
-                                        <span class="text-[11px] text-[var(--muted-foreground)]">Priority direct dispatch</span>
+                                        <span class="font-bold text-[var(--foreground)] block" data-i18n="express_courier">Express Courier</span>
+                                        <span class="text-[11px] text-[var(--muted-foreground)]" data-i18n="priority_dispatch">Priority direct dispatch</span>
                                     </div>
                                 </div>
                                 <span class="font-black text-sm text-[var(--accent-dark)] shrink-0">৳{{ number_format($expCourierFee, 0) }}</span>
@@ -500,7 +500,7 @@
                             >
                         </div>
                         <div>
-                            <label for="cart-pickup-area" class="block font-bold text-[var(--foreground)] mb-1">Pickup Area</label>
+                            <label for="cart-pickup-area" class="block font-bold text-[var(--foreground)] mb-1" data-i18n="pickup_area">Pickup Area</label>
                             <input
                                 id="cart-pickup-area"
                                 type="text"
@@ -548,7 +548,7 @@
                                 class="min-w-0 rounded-xl border p-2.5 text-left transition"
                                 :class="addressMode === 'MAP' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/40 hover:border-[var(--accent-dark)]/50'"
                             >
-                                <div class="font-bold text-xs text-[var(--foreground)]">Map Pin</div>
+                                <div class="font-bold text-xs text-[var(--foreground)]" data-i18n="map_pin">Map Pin</div>
                                 <div class="text-[10px] text-[var(--muted-foreground)]">Use pinned location</div>
                             </button>
                             <button
@@ -557,7 +557,7 @@
                                 class="min-w-0 rounded-xl border p-2.5 text-left transition"
                                 :class="addressMode === 'MANUAL' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/40 hover:border-[var(--accent-dark)]/50'"
                             >
-                                <div class="font-bold text-xs text-[var(--foreground)]">Manual Entry</div>
+                                <div class="font-bold text-xs text-[var(--foreground)]" data-i18n="manual_entry">Manual Entry</div>
                                 <div class="text-[10px] text-[var(--muted-foreground)]">Type street address</div>
                             </button>
                             <button
@@ -566,7 +566,7 @@
                                 class="min-w-0 rounded-xl border p-2.5 text-left transition"
                                 :class="addressMode === 'PROFILE' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/40 hover:border-[var(--accent-dark)]/50'"
                             >
-                                <div class="font-bold text-xs text-[var(--foreground)]">Saved Profile</div>
+                                <div class="font-bold text-xs text-[var(--foreground)]" data-i18n="saved_profile">Saved Profile</div>
                                 <div class="text-[10px] text-[var(--muted-foreground)]">Use account address</div>
                             </button>
                         </div>
@@ -609,8 +609,8 @@
             <!-- ── Right Column: Sticky Direct-Order & Escrow Summary ── -->
             <div class="min-w-0 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm lg:sticky lg:top-6 space-y-5">
                 <div>
-                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Order Summary</p>
-                    <h2 class="text-xl font-black text-[var(--foreground)] mt-0.5">Checkout &amp; Escrow</h2>
+                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]" data-i18n="order_summary">Order Summary</p>
+                    <h2 class="text-xl font-black text-[var(--foreground)] mt-0.5" data-i18n="checkout_escrow">Checkout &amp; Escrow</h2>
                 </div>
 
                 <!-- Promo & Voucher Engine (Daraz / Foodpanda Style) -->
@@ -618,7 +618,7 @@
                     <div class="flex items-center justify-between gap-2">
                         <span class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                             <i class="fa-solid fa-ticket text-[var(--accent-dark)]"></i>
-                            <span>Promo / Voucher Code</span>
+                            <span data-i18n="promo_code">Promo / Voucher Code</span>
                         </span>
                         @if(!empty($appliedVoucher))
                             <form method="POST" action="{{ route('cart.voucher.remove') }}" class="inline">
@@ -690,7 +690,7 @@
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($total, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">Service &amp; Buyer Protection Fee</span>
+                        <span class="text-[var(--muted-foreground)]" data-i18n="buyer_protection_fee">Service &amp; Buyer Protection Fee</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($serviceCharge ?? 0, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
@@ -704,25 +704,25 @@
                         </div>
                     </template>
                     <div class="pt-2 border-t border-[var(--border)] flex items-center justify-between gap-2 text-base">
-                        <span class="font-black text-[var(--foreground)]">Total Payable</span>
+                        <span class="font-black text-[var(--foreground)]" data-i18n="total_payable">Total Payable</span>
                         <span class="text-2xl font-black text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 0) + $regCourierFee - ($discountAmount ?? 0))) }}</span></span>
                     </div>
                 </div>
 
                 <!-- Payment Method Selector -->
                 <div class="space-y-2 text-xs">
-                    <label class="block font-bold text-[var(--foreground)]">Payment Method</label>
+                    <label class="block font-bold text-[var(--foreground)]" data-i18n="payment_method">Payment Method</label>
                     <label class="cursor-pointer rounded-2xl border p-3 flex items-center justify-between gap-2 transition" :class="paymentMethod === 'CASH' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)] font-bold' : 'border-[var(--border)] bg-[var(--card)]'">
                         <span class="flex items-center gap-2 text-[var(--foreground)]">
                             <input type="radio" value="CASH" x-model="paymentMethod" class="accent-[#244229]">
-                            <span>Cash on Return (COD)</span>
+                            <span data-i18n="cash_on_return">Cash on Return (COD)</span>
                         </span>
                         <i class="fa-solid fa-money-bill-wave text-emerald-700 shrink-0"></i>
                     </label>
                     <label class="cursor-pointer rounded-2xl border p-3 flex items-center justify-between gap-2 transition" :class="paymentMethod === 'SSLCOMMERZ' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)] font-bold' : 'border-[var(--border)] bg-[var(--card)]'">
                         <span class="flex items-center gap-2 text-[var(--foreground)]">
                             <input type="radio" value="SSLCOMMERZ" x-model="paymentMethod" class="accent-[#244229]">
-                            <span>SSLCommerz Online Escrow (All Channels)</span>
+                            <span data-i18n="ssl_escrow">SSLCommerz Online Escrow (All Channels)</span>
                         </span>
                         <i class="fa-solid fa-lock text-[var(--accent-dark)] shrink-0"></i>
                     </label>

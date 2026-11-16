@@ -18,7 +18,7 @@
             <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
                 <a href="/" class="hover:underline">Home</a>
                 <span>›</span>
-                <span class="text-[var(--foreground)] font-semibold">Service Packages</span>
+                <span class="text-[var(--foreground)] font-semibold" data-i18n="service_packages">Service Packages</span>
             </div>
             <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">
                 Fixed-Price Repair Packages
@@ -43,7 +43,7 @@
             @if(!$isBannedCatalogUser && !$isNonCustomerCatalogUser)
                 <a href="{{ route('cart.view') }}" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition whitespace-nowrap">
                     <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Direct Cart</span>
+                    <span data-i18n="direct_cart">Direct Cart</span>
                     <span data-cart-badge class="{{ ($cartCount ?? 0) > 0 ? '' : 'hidden' }} inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--mint-100)] px-1.5 text-[11px] font-black text-[#203126]">
                         {{ $cartCount ?? 0 }}
                     </span>
@@ -81,14 +81,14 @@
             </div>
 
             <select name="category" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
-                <option value="">All Categories</option>
+                <option value="" data-i18n="all_categories">All Categories</option>
                 @foreach($categories ?? [] as $cat)
                     <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                 @endforeach
             </select>
 
             <select name="max_price" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
-                <option value="">Any Budget</option>
+                <option value="" data-i18n="any_budget">Any Budget</option>
                 <option value="2000" {{ request('max_price') == '2000' ? 'selected' : '' }}>Under ৳2,000</option>
                 <option value="3500" {{ request('max_price') == '3500' ? 'selected' : '' }}>Under ৳3,500</option>
                 <option value="5000" {{ request('max_price') == '5000' ? 'selected' : '' }}>Under ৳5,000</option>
@@ -96,9 +96,9 @@
             </select>
 
             <select name="sort" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none">
-                <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>Most Popular</option>
-                <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>Price: Low to High</option>
-                <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Price: High to Low</option>
+                <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }} data-i18n="most_popular">Most Popular</option>
+                <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }} data-i18n="price_low_high">Price: Low to High</option>
+                <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }} data-i18n="price_high_low">Price: High to Low</option>
             </select>
 
             <div class="sm:col-span-2 lg:col-span-1 flex items-center gap-2">
@@ -146,7 +146,7 @@
                         <span class="text-3xl font-black text-[var(--accent-dark)]">
                             ৳{{ number_format($pkg->fixed_price) }}
                         </span>
-                        <span class="text-xs text-[var(--muted-foreground)] whitespace-nowrap">Fixed price</span>
+                        <span class="text-xs text-[var(--muted-foreground)] whitespace-nowrap" data-i18n="fixed_price">Fixed price</span>
                     </div>
 
                     <!-- Turnaround & Warranty Specs -->
@@ -165,7 +165,7 @@
                     <!-- Package Inclusions -->
                     @if(!empty($pkg->inclusions))
                         <div class="mt-4">
-                            <h5 class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider mb-2">Included in Package:</h5>
+                            <h5 class="text-[10px] font-bold text-[var(--muted-foreground)] uppercase tracking-wider mb-2" data-i18n="included_in_package">Included in Package:</h5>
                             <ul class="space-y-1.5 text-xs text-[var(--foreground)]">
                                 @foreach($pkg->inclusions as $inc)
                                     <li class="flex items-start gap-2">
@@ -214,7 +214,7 @@
                             class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] py-2.5 px-4 text-xs font-bold shadow-sm transition flex items-center justify-center gap-2 whitespace-nowrap"
                         >
                             <i class="fa-solid fa-cart-plus"></i>
-                            <span>Add to Cart</span>
+                            <span data-i18n="add_to_cart">Add to Cart</span>
                         </button>
                     @endif
                 </div>
@@ -222,7 +222,7 @@
         @empty
             <div class="col-span-full text-center py-14 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-8">
                 <i class="fa-solid fa-box-open text-3xl text-[var(--muted-foreground)] mb-3"></i>
-                <p class="text-sm font-bold text-[var(--foreground)]">No service packages match your filters.</p>
+                <p class="text-sm font-bold text-[var(--foreground)]" data-i18n="no_packages_found">No service packages match your filters.</p>
                 <a href="{{ route('packages.catalog') }}" class="mt-4 inline-flex rounded-full bg-[var(--accent-dark)] px-5 py-2 text-xs font-bold text-[var(--accent-foreground)]">
                     View All Packages
                 </a>
