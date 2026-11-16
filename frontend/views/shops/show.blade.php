@@ -385,14 +385,14 @@
                                 <button type="button"
                                         @click="catalogTab = 'services'"
                                         :class="catalogTab === 'services' ? 'bg-[var(--accent-dark)] text-white shadow-xs' : 'text-[var(--foreground)] hover:bg-white/60'"
-                                        class="px-4 py-1.5 rounded-md text-xs sm:text-sm font-bold transition">
+                                        class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition cursor-pointer">
                                     🛠️ Services ({{ count($displayServices) }})
                                 </button>
                             @endif
                             <button type="button"
                                     @click="catalogTab = 'spare_parts'"
                                     :class="catalogTab === 'spare_parts' ? 'bg-[var(--accent-dark)] text-white shadow-xs' : 'text-[var(--foreground)] hover:bg-white/60'"
-                                    class="px-4 py-1.5 rounded-md text-xs sm:text-sm font-bold transition">
+                                    class="px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition cursor-pointer">
                                 🔩 Spare Parts ({{ number_format($shopSparePartsCount) }})
                             </button>
                         </div>
