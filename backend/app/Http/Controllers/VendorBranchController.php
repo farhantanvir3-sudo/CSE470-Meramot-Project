@@ -165,7 +165,7 @@ class VendorBranchController extends Controller
         sort($bangladeshDistricts);
 
         // Scoped Spare Parts Inventory for Vendor Dashboard (`tab=spare_parts`)
-        $spQuery = \App\Models\SparePartListing::with('shop')
+        $spQuery = \App\Models\SparePartListing::with(['shop', 'warrantyCoverage'])
             ->whereIn('shop_id', $scopedShopIds);
 
         $vendorSparePartStats = [
@@ -173,6 +173,9 @@ class VendorBranchController extends Controller
             'active_count' => (clone $spQuery)->where('is_active', true)->count(),
             'wholesale_count' => (clone $spQuery)->where('wholesale_enabled', true)->count(),
             'offer_count' => (clone $spQuery)->where('offer_enabled', true)->count(),
+            'warranty_count' => \Illuminate\Support\Facades\Schema::hasTable('spare_part_warranties')
+                ? (clone $spQuery)->whereHas('warrantyCoverage')->count()
+                : (clone $spQuery)->where('warranty_days', '>', 0)->count(),
         ];
 
         $spSearch = trim((string) $request->query('sp_q', ''));
@@ -1159,6 +1162,8 @@ class VendorBranchController extends Controller
                 'updated_at' => $now,
             ]
         );
+
+        app(\App\Services\WarrantyLifecycleService::class)->issueOrderWarrantiesForCompletedJob($job);
 
         $payment = PaymentTransaction::where('repair_request_id', $job->repairRequest->id)
             ->orderByRaw("CASE WHEN status = 'PAID' THEN 0 ELSE 1 END")

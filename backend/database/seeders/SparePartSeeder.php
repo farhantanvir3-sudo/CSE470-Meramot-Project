@@ -502,6 +502,24 @@ class SparePartSeeder extends Seeder
             });
 
         $normalizedBrandsCount = \App\Models\SparePartListing::normalizeGenericBrandsInDatabase();
+        if (\Illuminate\Support\Facades\Schema::hasTable('spare_part_warranties')) {
+            if (DB::getDriverName() === 'pgsql') {
+                DB::statement("
+                    INSERT INTO spare_part_warranties (
+                        spare_part_listing_id, shop_id, vendor_profile_id, duration_days,
+                        coverage_type, covers_refund, covers_replacement, covers_free_repair,
+                        terms, created_at, updated_at
+                    )
+                    SELECT
+                        id, shop_id, vendor_profile_id, warranty_days,
+                        'FULL_PROTECTION', TRUE, TRUE, TRUE,
+                        ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    FROM spare_part_listings
+                    WHERE warranty_days > 0
+                    ON CONFLICT (spare_part_listing_id) DO NOTHING
+                ", [\App\Services\WarrantyLifecycleService::DEFAULT_SPARE_PART_TERMS]);
+            }
+        }
         $this->command?->info("Seeded {$totalSeeded} multi-vendor Mobile & PC spare part listings (from " . count($catalog) . " cloned catalog items; removed {$removedInvalidCount} invalid items; normalized {$normalizedBrandsCount} specific brand names).");
     }
 

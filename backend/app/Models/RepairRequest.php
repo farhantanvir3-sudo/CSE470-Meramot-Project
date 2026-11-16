@@ -248,6 +248,16 @@ class RepairRequest extends Model
         return $this->hasOne(ShopReview::class, 'repair_request_id');
     }
 
+    public function issuedWarranties()
+    {
+        return $this->hasMany(IssuedWarranty::class, 'repair_request_id');
+    }
+
+    public function warrantyClaims()
+    {
+        return $this->hasMany(WarrantyClaim::class, 'repair_request_id')->orderByDesc('id');
+    }
+
     /**
      * Whether this order is fulfilled on-site via customer walk-in (no platform rider or delivery fee).
      */

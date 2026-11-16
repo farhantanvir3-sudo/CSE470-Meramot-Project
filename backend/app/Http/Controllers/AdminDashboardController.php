@@ -40,6 +40,9 @@ class AdminDashboardController extends Controller
             'pending_vendors' => VendorProfile::whereIn('verification_status', ['pending', 'under_review'])->count(),
             'pending_riders' => DeliveryAgent::where('registration_status', 'PENDING')->count(),
             'approved_riders' => DeliveryAgent::where('registration_status', 'APPROVED')->count(),
+            'pending_warranty_claims' => \Illuminate\Support\Facades\Schema::hasTable('warranty_claims')
+                ? \App\Models\WarrantyClaim::where('status', \App\Models\WarrantyClaim::STATUS_PENDING)->count()
+                : 0,
             'open_requests' => RepairRequest::whereIn('status', ['PENDING', 'BIDDING', 'ASSIGNED', 'WAITING_APPROVAL', 'REPAIRING'])->count(),
             'platform_volume' => (float) FinancialLedger::where('entry_type', 'CUSTOMER_PAYMENT')->sum('amount'),
             'platform_commission' => max(0.0, round($netCommission, 2)),

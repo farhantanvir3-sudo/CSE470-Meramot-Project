@@ -948,13 +948,13 @@ class SparePartController extends Controller
     {
         $customerLocation = $this->resolveAndSyncCustomerLocation($request);
 
-        $listing = SparePartListing::with(['shop.vendorProfile', 'vendorProfile'])
+        $listing = SparePartListing::with(['shop.vendorProfile', 'vendorProfile', 'warrantyCoverage'])
             ->where('slug', $slug)
             ->where('is_active', true)
             ->first();
 
         if (!$listing) {
-            $candidates = SparePartListing::with(['shop.vendorProfile', 'vendorProfile'])
+            $candidates = SparePartListing::with(['shop.vendorProfile', 'vendorProfile', 'warrantyCoverage'])
                 ->where('product_group_key', $slug)
                 ->where('is_active', true)
                 ->whereHas('shop', fn ($sq) => $sq->where('is_active', true))
@@ -1343,6 +1343,16 @@ class SparePartController extends Controller
             'slug' => $slug,
             'is_active' => true,
         ]));
+        $hasWarranty = $request->has('has_warranty')
+            ? $request->boolean('has_warranty')
+            : ((int) $listing->warranty_days > 0);
+        app(\App\Services\WarrantyLifecycleService::class)->syncListingWarranty(
+            $listing,
+            $hasWarranty,
+            $hasWarranty ? max(1, (int) ($listing->warranty_days ?: 90)) : 0,
+            (string) $request->input('warranty_coverage_type', \App\Models\SparePartWarranty::COVERAGE_FULL_PROTECTION),
+            $request->input('warranty_terms')
+        );
         self::flushCatalogCache();
 
         if ($request->expectsJson()) {
@@ -1376,6 +1386,16 @@ class SparePartController extends Controller
 
         $payload = $this->validateVendorListingPayload($request, $vendorProfile, $listing);
         $listing->update($payload);
+        $hasWarranty = $request->has('has_warranty')
+            ? $request->boolean('has_warranty')
+            : ((int) $listing->warranty_days > 0);
+        app(\App\Services\WarrantyLifecycleService::class)->syncListingWarranty(
+            $listing->fresh(),
+            $hasWarranty,
+            $hasWarranty ? max(1, (int) ($listing->warranty_days ?: 90)) : 0,
+            (string) $request->input('warranty_coverage_type', \App\Models\SparePartWarranty::COVERAGE_FULL_PROTECTION),
+            $request->input('warranty_terms')
+        );
         app(\App\Services\SparePartInventoryService::class)->recordVendorAdjustment(
             $listing->fresh(),
             $prevStock,
@@ -1552,7 +1572,10 @@ class SparePartController extends Controller
             'base_price' => 'nullable|numeric|min:1|max:500000',
             'regular_price' => 'nullable|numeric|min:1|max:600000',
             'assembly_fee' => 'nullable|numeric|min:0|max:50000',
+            'has_warranty' => 'nullable|boolean',
             'warranty_days' => 'nullable|integer|min:0|max:1095',
+            'warranty_coverage_type' => 'nullable|string|in:FULL_PROTECTION,REPLACEMENT_OR_REPAIR,REPLACEMENT_ONLY,REFUND_OR_REPLACEMENT,REPAIR_ONLY',
+            'warranty_terms' => 'nullable|string|max:1000',
             'stock_quantity' => 'required|integer|min:0|max:100000',
             'handling_hours' => 'nullable|integer|min:1|max:72',
             'has_specs' => 'nullable|boolean',
@@ -1822,9 +1845,11 @@ class SparePartController extends Controller
             'assembly_fee' => isset($validated['assembly_fee']) && $validated['assembly_fee'] !== '' && $validated['assembly_fee'] !== null
                 ? round((float) $validated['assembly_fee'], 2)
                 : null,
-            'warranty_days' => isset($validated['warranty_days']) && $validated['warranty_days'] !== '' && $validated['warranty_days'] !== null
-                ? (int) $validated['warranty_days']
-                : 30,
+            'warranty_days' => $request->has('has_warranty')
+                ? ($request->boolean('has_warranty') ? max(1, (int) ($validated['warranty_days'] ?? 90)) : 0)
+                : (isset($validated['warranty_days']) && $validated['warranty_days'] !== '' && $validated['warranty_days'] !== null
+                    ? max(0, (int) $validated['warranty_days'])
+                    : 30),
             'stock_quantity' => (int) $validated['stock_quantity'],
             'wholesale_enabled' => $wholesaleEnabled,
             'wholesale_min_qty' => $wholesaleMinQty,

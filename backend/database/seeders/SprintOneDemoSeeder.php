@@ -1518,5 +1518,85 @@ class SprintOneDemoSeeder extends Seeder
                 ]);
             }
         }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('issued_warranties') && \Illuminate\Support\Facades\Schema::hasTable('spare_part_warranties')) {
+            $warrantySvc = app(\App\Services\WarrantyLifecycleService::class);
+            $warrantySvc->ensureCompletedOrderWarrantiesForCustomer((int) $customer->id);
+
+            $hasDemoSpWarranty = \App\Models\IssuedWarranty::where('customer_id', $customer->id)
+                ->where('item_type', 'SPARE_PART')
+                ->where('status', \App\Models\IssuedWarranty::STATUS_ACTIVE)
+                ->exists();
+
+            if (!$hasDemoSpWarranty) {
+                $likeOp = DB::getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
+                $demoSpListing = \App\Models\SparePartListing::with('shop')
+                    ->where('is_active', true)
+                    ->whereHas('warrantyCoverage')
+                    ->orderByRaw("CASE WHEN title {$likeOp} '%AC14B18J%' THEN 0 WHEN title {$likeOp} '%ThinkPad%' THEN 1 ELSE 2 END")
+                    ->first();
+
+                if ($demoSpListing && $demoSpListing->shop) {
+                    $spUnit = (float) $demoSpListing->effectiveBasePrice();
+                    $spCompletedAt = $now->copy()->subDays(12);
+                    $spReq = RepairRequest::updateOrCreate(
+                        [
+                            'customer_id' => $customer->id,
+                            'title' => '[Demo Spare Part] ' . \Illuminate\Support\Str::limit($demoSpListing->title, 120, ''),
+                        ],
+                        [
+                            'source' => 'DIRECT_SERVICE',
+                            'requested_shop_id' => $demoSpListing->shop_id,
+                            'description' => "Verified Direct Spare Part Order — {$demoSpListing->title} from {$demoSpListing->shop->name}.",
+                            'problem' => "Direct spare part purchase: {$demoSpListing->title}",
+                            'device_type' => 'Spare Part Order',
+                            'brand' => $demoSpListing->brand ?: $demoSpListing->shop->name,
+                            'model_name' => $demoSpListing->compatible_model ?: $demoSpListing->title,
+                            'issue_category' => 'Direct Order',
+                            'mode' => 'DIRECT_REPAIR',
+                            'status' => RepairRequest::STATUS_COMPLETED,
+                            'preferred_pickup' => false,
+                            'preferred_service_type' => 'walk_in',
+                            'contact_phone' => $customer->phone ?: '01711000000',
+                            'dropoff_address' => $demoSpListing->shop->public_address ?: $demoSpListing->shop->address,
+                            'quoted_final_amount' => $spUnit,
+                            'approved_at' => $spCompletedAt,
+                        ]
+                    );
+
+                    $spJob = RepairJob::updateOrCreate(
+                        ['repair_request_id' => $spReq->id],
+                        [
+                            'shop_id' => $demoSpListing->shop_id,
+                            'status' => 'COMPLETED',
+                            'parts_cost' => $spUnit,
+                            'labor_cost' => 0,
+                            'has_warranty' => true,
+                            'warranty_days' => max(30, (int) ($demoSpListing->warranty_days ?: 180)),
+                            'final_quoted_amount' => $spUnit,
+                            'final_quote_items' => [[
+                                'id' => 'sp_' . $demoSpListing->id,
+                                'spare_part_id' => $demoSpListing->id,
+                                'slug' => $demoSpListing->slug,
+                                'title' => $demoSpListing->title,
+                                'price' => $spUnit,
+                                'part_unit_price' => $spUnit,
+                                'quantity' => 1,
+                                'source' => 'SPARE_PART',
+                                'has_warranty' => true,
+                                'warranty_days' => max(30, (int) ($demoSpListing->warranty_days ?: 180)),
+                            ]],
+                            'customer_approved' => true,
+                            'started_at' => $spCompletedAt->copy()->subHours(2),
+                            'completed_at' => $spCompletedAt,
+                        ]
+                    );
+
+                    \App\Http\Controllers\VendorBranchController::settleCompletedJobFinancials(
+                        $spJob->fresh(['repairRequest', 'shop.vendorProfile'])
+                    );
+                }
+            }
+        }
     }
 }

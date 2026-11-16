@@ -12,7 +12,12 @@ Controller: RepairRequestController@index
 @section('title', 'My Repair Requests & Orders | Meramot')
 
 @section('content')
-<div class="mx-auto max-w-6xl px-4 py-6 md:px-6 space-y-6">
+@php
+    $allCustWarranties = $customerWarranties ?? collect();
+    $activeCustWarranties = $allCustWarranties->filter(fn ($w) => $w->isCurrentlyActive())->values();
+    $expiredCustWarranties = $allCustWarranties->reject(fn ($w) => $w->isCurrentlyActive())->values();
+@endphp
+<div class="mx-auto max-w-6xl px-4 py-6 md:px-6 space-y-6" x-data="{ lightboxPhoto: null }">
 
     <!-- Breadcrumb -->
     <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
@@ -60,6 +65,7 @@ Controller: RepairRequestController@index
             'DIRECT' => 'Direct Orders',
             'ACTIVE' => 'In Progress / Bench',
             'COMPLETED' => 'Past Orders (Completed)',
+            'WARRANTY' => 'Active Warranties (' . $activeCustWarranties->count() . ')',
         ] as $filterKey => $filterLabel)
             <a
                 href="/requests?filter={{ $filterKey }}"
@@ -69,6 +75,72 @@ Controller: RepairRequestController@index
             </a>
         @endforeach
     </div>
+
+    @if(session('success'))
+        <div class="rounded-lg border border-emerald-400 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
+            <i class="fa-solid fa-circle-check text-emerald-700"></i>
+            <span>{{ session('success') }}</span>
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-800 space-y-1 shadow-sm">
+            @foreach($errors->all() as $err)
+                <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $err }}</div>
+            @endforeach
+        </div>
+    @endif
+
+    @if(in_array($statusFilter, ['COMPLETED', 'WARRANTY'], true))
+        <section id="warranty-period-section" class="rounded-lg border border-emerald-700/30 bg-[var(--mint-50)]/65 p-4 sm:p-5 space-y-4 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">
+                        <i class="fa-solid fa-shield-halved mr-1"></i>Active Warranty Period
+                    </span>
+                    <h2 class="text-base sm:text-lg font-bold text-[var(--foreground)]">
+                        Warrantied Items from Your Completed Orders
+                    </h2>
+                    <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                        Claim warranty directly during an item's bounded coverage window. You can submit repeat claims with fault details &amp; photos; Meramot Admin assesses Refund, Replacement, or Free Repair.
+                    </p>
+                </div>
+                <span class="rounded bg-emerald-100 border border-emerald-300 px-3 py-1 text-[11px] font-bold text-emerald-900 shrink-0">
+                    {{ $activeCustWarranties->count() }} Active Coverage
+                </span>
+            </div>
+
+            @if($activeCustWarranties->isNotEmpty())
+                <div class="space-y-3.5">
+                    @foreach($activeCustWarranties as $aw)
+                        @include('requests.partials.warranty-card', [
+                            'w' => $aw,
+                            'canActAsCustomer' => true,
+                            'showOrderLink' => true,
+                        ])
+                    @endforeach
+                </div>
+            @else
+                <div class="rounded-md border border-dashed border-[var(--border)] bg-white/80 p-5 text-center text-xs text-[var(--muted-foreground)]">
+                    No active warranty periods on your completed orders right now. Completed orders carrying warranty coverage will appear here automatically.
+                </div>
+            @endif
+
+            @if($statusFilter === 'WARRANTY' && $expiredCustWarranties->isNotEmpty())
+                <div class="pt-3 border-t border-[var(--border)] space-y-3">
+                    <div class="text-[11px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
+                        Past / Closed Warranties ({{ $expiredCustWarranties->count() }})
+                    </div>
+                    @foreach($expiredCustWarranties as $ew)
+                        @include('requests.partials.warranty-card', [
+                            'w' => $ew,
+                            'canActAsCustomer' => false,
+                            'showOrderLink' => true,
+                        ])
+                    @endforeach
+                </div>
+            @endif
+        </section>
+    @endif
 
     <!-- Requests List -->
     <div class="space-y-4">
@@ -179,6 +251,19 @@ Controller: RepairRequestController@index
                                 @endif
                             @endif
 
+                            @if(in_array($st, ['COMPLETED', 'RETURNED_TO_CUSTOMER'], true) && $req->issuedWarranties->isNotEmpty())
+                                @php
+                                    $orderHasActiveW = $req->issuedWarranties->contains(fn ($iw) => $iw->isCurrentlyActive());
+                                @endphp
+                                <a
+                                    href="{{ route('requests.track', $req->id) }}#warranty-section"
+                                    class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md border {{ $orderHasActiveW ? 'border-emerald-700/35 bg-[var(--mint-100)] text-[var(--accent-dark)] hover:bg-[var(--mint-200)]' : 'border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]' }} px-4 py-2 text-xs font-bold shadow-2xs transition"
+                                >
+                                    <i class="fa-solid fa-shield-halved text-[11px]"></i>
+                                    <span>{{ $orderHasActiveW ? 'Claim Warranty' : 'Warranty History' }}</span>
+                                </a>
+                            @endif
+
                             <a
                                 href="{{ route('requests.track', $req->id) }}"
                                 class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
@@ -211,6 +296,20 @@ Controller: RepairRequestController@index
             {{ $requests->links() }}
         </div>
     @endif
+
+    {{-- Evidence Photo Zoom Lightbox --}}
+    <div x-show="lightboxPhoto" x-cloak @keydown.escape.window="lightboxPhoto = null" class="fixed inset-0 z-[150] flex items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" @click="lightboxPhoto = null"></div>
+        <div class="relative z-[151] w-full max-w-3xl rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 shadow-2xl space-y-3">
+            <div class="flex items-center justify-between border-b border-[var(--border)] pb-2">
+                <span class="text-xs font-bold uppercase text-[var(--accent-dark)]">Warranty Evidence Photo</span>
+                <button type="button" @click="lightboxPhoto = null" class="h-8 w-8 rounded-full bg-[var(--accent-dark)] text-white font-bold">✕</button>
+            </div>
+            <div class="flex max-h-[75vh] items-center justify-center overflow-auto rounded bg-black/90 p-2">
+                <img :src="lightboxPhoto" alt="Zoomed warranty photo" class="max-h-[70vh] max-w-full object-contain">
+            </div>
+        </div>
+    </div>
 
 </div>
 @endsection

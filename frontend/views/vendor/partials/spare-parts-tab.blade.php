@@ -178,8 +178,8 @@
                 </div>
             </div>
 
-            {{-- Row 3: Stock, Handling Hours, Warranty, Optional Fitting Fee, SKU --}}
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {{-- Row 3: Stock, Handling Hours, Optional Fitting Fee, SKU & Separate Warranty Registry Config --}}
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <div>
                     <label for="vspStock" class="block font-semibold text-[var(--foreground)] mb-1">
                         Total Stock Qty <span class="text-red-600">*</span>
@@ -197,14 +197,6 @@
                            class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
                 </div>
                 <div>
-                    <label for="vspWarranty" class="block font-semibold text-[var(--foreground)] mb-1">
-                        Warranty (Days)
-                    </label>
-                    <input type="number" name="warranty_days" id="vspWarranty" min="0" max="1095"
-                           value="{{ old('warranty_days', 90) }}"
-                           class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
-                </div>
-                <div>
                     <label for="vspAssemblyFee" class="block font-semibold text-[var(--foreground)] mb-1">
                         Fitting Fee (Optional ৳)
                     </label>
@@ -212,7 +204,7 @@
                            value="{{ old('assembly_fee', 0) }}"
                            class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
                 </div>
-                <div class="col-span-2 md:col-span-1">
+                <div>
                     <label for="vspSku" class="block font-semibold text-[var(--foreground)] mb-1">
                         SKU (Optional)
                     </label>
@@ -220,6 +212,60 @@
                            value="{{ old('sku') }}"
                            placeholder="Auto if blank"
                            class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 font-mono text-[var(--foreground)]">
+                </div>
+            </div>
+
+            {{-- Separate Warranty Coverage Registry Configuration --}}
+            <div class="rounded-lg border border-emerald-700/25 bg-[var(--mint-50)]/60 p-3.5 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <label class="inline-flex items-center gap-2 cursor-pointer font-bold text-xs sm:text-sm text-[var(--foreground)]">
+                        <input type="hidden" name="has_warranty" value="0">
+                        <input type="checkbox"
+                               name="has_warranty"
+                               id="vspHasWarranty"
+                               value="1"
+                               {{ old('has_warranty', true) ? 'checked' : '' }}
+                               onchange="window.vspSyncWarrantyBox()"
+                               class="w-4 h-4 rounded text-emerald-900 focus:ring-emerald-800">
+                        <span>🛡️ Include Warranty Coverage (Stored in Separate Warranty Registry)</span>
+                    </label>
+                    <span class="text-[11px] font-semibold text-[var(--muted-foreground)]">
+                        Only warrantied listings are registered for customer claims &amp; admin arbitration
+                    </span>
+                </div>
+
+                <div id="vspWarrantyConfigBox" class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <div class="md:col-span-3">
+                        <label for="vspWarranty" class="block font-semibold text-[var(--foreground)] mb-1">
+                            Warranty Period (Days) <span class="text-red-600">*</span>
+                        </label>
+                        <input type="number" name="warranty_days" id="vspWarranty" min="1" max="1095"
+                               value="{{ old('warranty_days', 90) }}"
+                               class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 font-bold text-[var(--foreground)]">
+                    </div>
+                    <div class="md:col-span-4">
+                        <label for="vspWarrantyType" class="block font-semibold text-[var(--foreground)] mb-1">
+                            Authorized Coverage Remedies
+                        </label>
+                        <select name="warranty_coverage_type" id="vspWarrantyType"
+                                class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 font-semibold text-[var(--foreground)]">
+                            <option value="FULL_PROTECTION">Full Protection (Replacement, Free Repair or Refund)</option>
+                            <option value="REPLACEMENT_OR_REPAIR">Replacement or Free Repair</option>
+                            <option value="REPLACEMENT_ONLY">Replacement Only</option>
+                            <option value="REFUND_OR_REPLACEMENT">Replacement or Refund</option>
+                            <option value="REPAIR_ONLY">Free Repair Only</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-5">
+                        <label for="vspWarrantyTerms" class="block font-semibold text-[var(--foreground)] mb-1">
+                            Warranty Terms &amp; Exclusions
+                        </label>
+                        <input type="text" name="warranty_terms" id="vspWarrantyTerms"
+                               value="{{ old('warranty_terms', \App\Services\WarrantyLifecycleService::DEFAULT_SPARE_PART_TERMS) }}"
+                               maxlength="1000"
+                               placeholder="e.g. Covers factory & functional faults within warranty window"
+                               class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
+                    </div>
                 </div>
             </div>
 
@@ -550,6 +596,9 @@
                         $vEffMax = $vItem->effectiveMaxPrice();
                         $vNormBase = $vItem->resolvedNormalBasePrice();
                         $vShop = $vItem->shop;
+                        $vWarrantyCov = $vItem->warrantyCoverage;
+                        $vHasWarranty = $vWarrantyCov !== null || (int) $vItem->warranty_days > 0;
+                        $vWarrantyDaysVal = (int) ($vWarrantyCov?->duration_days ?? $vItem->warranty_days ?? 0);
                         $editPayload = [
                             'id' => $vItem->id,
                             'update_url' => route('vendor.spare-parts.update', ['id' => $vItem->id]),
@@ -563,7 +612,10 @@
                             'product_group_key' => $vItem->product_group_key,
                             'stock_quantity' => (int) $vItem->stock_quantity,
                             'handling_hours' => (int) $vItem->handling_hours,
-                            'warranty_days' => (int) $vItem->warranty_days,
+                            'has_warranty' => $vHasWarranty,
+                            'warranty_days' => $vWarrantyDaysVal ?: 90,
+                            'warranty_coverage_type' => $vWarrantyCov?->coverage_type ?? 'FULL_PROTECTION',
+                            'warranty_terms' => $vWarrantyCov?->terms ?? \App\Services\WarrantyLifecycleService::DEFAULT_SPARE_PART_TERMS,
                             'assembly_fee' => (float) $vItem->assembly_fee,
                             'base_price' => (float) $vNormBase,
                             'has_specs' => (bool) $vItem->has_specs,
@@ -633,6 +685,11 @@
                                     <span>Stock: <strong>{{ number_format((int) $vItem->stock_quantity) }}</strong></span>
                                     <span>• Sold: <strong>{{ number_format((int) $vItem->sold_count) }}</strong></span>
                                     <span>• Returned: <strong>{{ number_format((int) ($vItem->returned_count ?? 0)) }}</strong></span>
+                                    @if($vHasWarranty && $vWarrantyDaysVal > 0)
+                                        <span class="text-emerald-800 font-bold">• 🛡️ {{ $vWarrantyDaysVal }}d Warranty</span>
+                                    @else
+                                        <span class="text-slate-500">• No Warranty</span>
+                                    @endif
                                     @if($vItem->has_specs)
                                         <span class="text-emerald-800 font-bold">• {{ count($vItem->spec_options ?? []) }} Specs</span>
                                     @endif
@@ -796,6 +853,26 @@
         }
     };
 
+    window.vspSyncWarrantyBox = function () {
+        const enabled = document.getElementById('vspHasWarranty')?.checked;
+        const box = document.getElementById('vspWarrantyConfigBox');
+        const daysInput = document.getElementById('vspWarranty');
+        if (enabled) {
+            box?.classList.remove('hidden');
+            if (daysInput) {
+                daysInput.disabled = false;
+                if (!daysInput.value || Number(daysInput.value) <= 0) {
+                    daysInput.value = 90;
+                }
+            }
+        } else {
+            box?.classList.add('hidden');
+            if (daysInput) {
+                daysInput.disabled = true;
+            }
+        }
+    };
+
     window.vspUpdatePromoPreview = function () {
         const hasSpecs = document.getElementById('vspHasSpecs')?.checked;
         let normalPrice = Number(document.getElementById('vspBasePrice')?.value || 3000);
@@ -869,9 +946,12 @@
         form.reset();
         document.getElementById('vspSpecRowsContainer').innerHTML = '';
         document.getElementById('vspWholesaleEnabled').checked = true;
+        const hwEl = document.getElementById('vspHasWarranty');
+        if (hwEl) hwEl.checked = true;
         window.vspSyncPricingMode();
         window.vspSyncOfferBox();
         window.vspSyncWholesaleBox();
+        window.vspSyncWarrantyBox();
 
         wrap.classList.remove('hidden');
         wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -897,7 +977,14 @@
         document.getElementById('vspGroupKey').value = data.product_group_key || '';
         document.getElementById('vspStock').value = data.stock_quantity ?? 100;
         document.getElementById('vspHandling').value = data.handling_hours ?? 2;
+        const hwEdit = document.getElementById('vspHasWarranty');
+        if (hwEdit) hwEdit.checked = data.has_warranty !== undefined ? !!data.has_warranty : ((data.warranty_days ?? 0) > 0);
         document.getElementById('vspWarranty').value = data.warranty_days ?? 90;
+        const wtEl = document.getElementById('vspWarrantyType');
+        if (wtEl) wtEl.value = data.warranty_coverage_type || 'FULL_PROTECTION';
+        const wTermsEl = document.getElementById('vspWarrantyTerms');
+        if (wTermsEl) wTermsEl.value = data.warranty_terms || '';
+        window.vspSyncWarrantyBox();
         document.getElementById('vspAssemblyFee').value = data.assembly_fee ?? 0;
         document.getElementById('vspBasePrice').value = data.base_price ?? 1000;
         document.getElementById('vspImageUrl').value = data.image_url || '';
@@ -942,5 +1029,6 @@
     window.vspSyncPricingMode();
     window.vspSyncOfferBox();
     window.vspSyncWholesaleBox();
+    window.vspSyncWarrantyBox();
 })();
 </script>

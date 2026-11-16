@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\IssuedWarranty;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\User;
 use App\Services\MediaUploadService;
+use App\Services\WarrantyLifecycleService;
 use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -57,7 +59,17 @@ class RepairRequestController extends Controller
             return $this->redirectForNonCustomer($user);
         }
 
-        $query = RepairRequest::with(['bids.shop', 'requestedShop', 'repairJob.shop', 'customer', 'review'])
+        app(WarrantyLifecycleService::class)->ensureCompletedOrderWarrantiesForCustomer((int) $user->id);
+
+        $query = RepairRequest::with([
+                'bids.shop',
+                'requestedShop',
+                'repairJob.shop',
+                'customer',
+                'review',
+                'issuedWarranties.claims.reviewer',
+                'issuedWarranties.sparePartListing',
+            ])
             ->where('customer_id', $user->id)
             ->orderByDesc('created_at');
 
@@ -73,11 +85,21 @@ class RepairRequestController extends Controller
             ]);
         } elseif ($statusFilter === 'COMPLETED') {
             $query->whereIn('status', ['COMPLETED', 'RETURNED_TO_CUSTOMER']);
+        } elseif ($statusFilter === 'WARRANTY') {
+            $query->whereHas('issuedWarranties');
         }
 
         $requests = $query->paginate(12)->withQueryString();
 
-        return view('requests.index', compact('requests', 'statusFilter'));
+        $customerWarranties = \Illuminate\Support\Facades\Schema::hasTable('issued_warranties')
+            ? IssuedWarranty::with(['claims.reviewer', 'shop', 'sparePartListing', 'repairRequest'])
+                ->where('customer_id', $user->id)
+                ->orderByRaw("CASE WHEN status = 'ACTIVE' AND expires_at >= CURRENT_TIMESTAMP THEN 0 ELSE 1 END")
+                ->orderByDesc('expires_at')
+                ->get()
+            : collect();
+
+        return view('requests.index', compact('requests', 'statusFilter', 'customerWarranties'));
     }
 
     /**
@@ -317,7 +339,14 @@ class RepairRequestController extends Controller
             'deliveryJobs.deliveryAgent.user',
             'payments',
             'review',
+            'issuedWarranties.claims.reviewer',
+            'issuedWarranties.sparePartListing',
         ])->findOrFail($id);
+
+        if (strtoupper((string) $repairRequest->status) === RepairRequest::STATUS_COMPLETED && $repairRequest->repairJob) {
+            app(WarrantyLifecycleService::class)->issueOrderWarrantiesForCompletedJob($repairRequest->repairJob);
+            $repairRequest->load(['issuedWarranties.claims.reviewer', 'issuedWarranties.sparePartListing']);
+        }
 
         return view('requests.track', compact('repairRequest'));
     }

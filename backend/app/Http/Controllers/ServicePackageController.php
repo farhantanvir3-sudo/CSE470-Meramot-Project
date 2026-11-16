@@ -1405,7 +1405,7 @@ class ServicePackageController extends Controller
         ]);
 
         /** @var SparePartListing $listing */
-        $listing = SparePartListing::with(['shop.vendorProfile', 'vendorProfile'])
+        $listing = SparePartListing::with(['shop.vendorProfile', 'vendorProfile', 'warrantyCoverage'])
             ->where('is_active', true)
             ->findOrFail((int) $validated['spare_part_id']);
 
@@ -1544,7 +1544,11 @@ class ServicePackageController extends Controller
             'part_category' => $listing->part_category,
             'category' => 'Spare Parts • ' . $listing->part_category,
             'duration' => max(1, (int) ($listing->handling_hours ?: 1)),
-            'warranty_months' => max(0, (int) round(($listing->warranty_days ?: 30) / 30)),
+            'has_warranty' => (bool) ($listing->warrantyCoverage !== null || (int) $listing->warranty_days > 0),
+            'warranty_days' => (int) ($listing->warrantyCoverage?->duration_days ?? $listing->warranty_days ?? 0),
+            'warranty_coverage_type' => $listing->warrantyCoverage?->coverage_type ?? \App\Models\SparePartWarranty::COVERAGE_FULL_PROTECTION,
+            'warranty_terms' => $listing->warrantyCoverage?->terms,
+            'warranty_months' => max(0, (int) round((($listing->warrantyCoverage?->duration_days ?? $listing->warranty_days ?? 0)) / 30)),
             'max_stock' => $maxStock,
             'quantity' => $finalQty,
             'source' => 'SPARE_PART',
@@ -2142,10 +2146,22 @@ class ServicePackageController extends Controller
                 'scheduled_pickup_at' => $scheduledPickupAt,
             ]);
 
+            $orderWarrantyDays = collect($cart)->map(function ($it) {
+                if (array_key_exists('has_warranty', $it) && !$it['has_warranty']) {
+                    return 0;
+                }
+                if (isset($it['warranty_days']) && is_numeric($it['warranty_days'])) {
+                    return max(0, (int) $it['warranty_days']);
+                }
+                return max(0, ((int) ($it['warranty_months'] ?? 0)) * 30);
+            })->max() ?: 0;
+
             RepairJob::create([
                 'repair_request_id' => $req->id,
                 'shop_id' => $shop->id,
                 'status' => 'CREATED',
+                'has_warranty' => $orderWarrantyDays > 0,
+                'warranty_days' => $orderWarrantyDays,
                 'final_quoted_amount' => $totalAmount,
                 'final_quote_items' => array_values($cart),
             ]);

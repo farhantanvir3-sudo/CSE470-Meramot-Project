@@ -17,6 +17,8 @@ class SparePartStockMovement extends Model
     public const TYPE_ORDER_CANCEL_RESTORE = 'ORDER_CANCEL_RESTORE';
     public const TYPE_RETURN_RESTORE = 'RETURN_RESTORE';
     public const TYPE_VENDOR_ADJUST = 'VENDOR_ADJUST';
+    public const TYPE_WARRANTY_REPLACEMENT = 'WARRANTY_REPLACEMENT';
+    public const TYPE_WARRANTY_DEFECT_RETURN = 'WARRANTY_DEFECT_RETURN';
 
     protected $fillable = [
         'spare_part_listing_id',

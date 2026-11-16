@@ -19,6 +19,7 @@ use App\Http\Controllers\RepairRequestController;      // R7 - Shanid
 use App\Http\Controllers\StatusTransitionController;   // R7 - Dual-Quote Lifecycle
 use App\Http\Controllers\ServicePackageController;     // R8 - Shanid + Direct Order Cart
 use App\Http\Controllers\ReviewController;             // R9 - Shanid
+use App\Http\Controllers\WarrantyClaimController;      // Separate Warranty Registry, Claims & Admin Arbitration
 use App\Http\Controllers\AIChatController;             // R10 - Shanid
 
 use App\Http\Controllers\VendorOnboardingController;   // R11 - Farhan
@@ -160,6 +161,7 @@ Route::post('/requests/{id}/accept-bid', [StatusTransitionController::class, 'ac
 Route::post('/requests/{id}/respond-final-quote', [StatusTransitionController::class, 'respondToFinalQuote'])->name('requests.respond-final-quote'); // R7 Quote 2
 Route::post('/requests/{id}/cancel', [StatusTransitionController::class, 'cancel'])->name('requests.cancel'); // R7
 Route::post('/requests/{id}/return-parts', [StatusTransitionController::class, 'returnSparePartOrder'])->name('requests.return-parts');
+Route::post('/warranties/{warranty}/claims', [WarrantyClaimController::class, 'store'])->name('warranties.claims.store');
 
 Route::post('/location/sync', [ServicePackageController::class, 'syncCustomerLocation'])->name('location.sync');
 Route::get('/packages/catalog', [ServicePackageController::class, 'index'])->name('packages.catalog'); // R8
@@ -259,6 +261,10 @@ Route::prefix('admin')->middleware('admin.access')->group(function () {
     Route::post('/reviews/{reviewId}/moderate', [AdminModerationController::class, 'moderateReview'])->name('admin.reviews.moderate'); // R19
     Route::post('/users/{userId}/ban', [AdminModerationController::class, 'banUser'])->name('admin.users.ban');          // R19
     Route::post('/users/{userId}/unban', [AdminModerationController::class, 'unbanUser'])->name('admin.users.unban');    // R19
+
+    // Separate Warranty Registry & Multi-Claim Arbitration
+    Route::get('/warranties', [WarrantyClaimController::class, 'adminIndex'])->name('admin.warranties');
+    Route::post('/warranties/{claim}/assess', [WarrantyClaimController::class, 'assess'])->name('admin.warranties.assess');
 
     // Feature R20: Security Audit Trail (Sprint 4)
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');                            // R20

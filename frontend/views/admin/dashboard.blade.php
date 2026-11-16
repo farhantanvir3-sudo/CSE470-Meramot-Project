@@ -23,6 +23,10 @@
                 <span class="sm:hidden">Directory ({{ number_format($kpis['public_shops']) }})</span>
                 <span class="hidden sm:inline">View Live Directory ({{ number_format($kpis['public_shops']) }} Shops)</span>
             </a>
+            <a href="/admin/warranties" class="whitespace-nowrap inline-flex items-center justify-center gap-1.5 rounded-md border border-[#c8dac2] bg-[var(--card)] px-3 py-2 sm:px-4 text-[11px] sm:text-xs font-bold text-[var(--foreground)] shadow-sm transition-all duration-200 hover:border-[var(--accent-dark)] hover:bg-[var(--mint-100)] hover:shadow-md text-center">
+                <i class="fa-solid fa-shield-halved text-[11px] text-[var(--accent-dark)]"></i>
+                <span>Warranties ({{ (int) ($kpis['pending_warranty_claims'] ?? 0) }})</span>
+            </a>
             <a href="/admin/financial-overview" class="whitespace-nowrap inline-flex items-center justify-center rounded-md bg-[var(--accent-dark)] px-3 py-2 sm:px-4 text-[11px] sm:text-xs font-bold text-[var(--accent-foreground)] shadow-sm transition-all duration-200 hover:opacity-90 hover:shadow-md text-center">
                 <span class="sm:hidden">Ledger &rarr;</span>
                 <span class="hidden sm:inline">Open Financial Ledger &rarr;</span>

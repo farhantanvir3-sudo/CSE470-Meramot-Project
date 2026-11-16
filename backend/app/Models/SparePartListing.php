@@ -116,6 +116,19 @@ class SparePartListing extends Model
         return $this->hasMany(SparePartStockMovement::class, 'spare_part_listing_id');
     }
 
+    public function warrantyCoverage()
+    {
+        return $this->hasOne(SparePartWarranty::class, 'spare_part_listing_id');
+    }
+
+    public function hasSeparateWarranty(): bool
+    {
+        if ($this->relationLoaded('warrantyCoverage')) {
+            return $this->warrantyCoverage !== null;
+        }
+        return $this->warrantyCoverage()->exists();
+    }
+
     /**
      * Authoritative sellable quantity for this listing (or a specific variant option).
      */

@@ -2,6 +2,9 @@
     $adminPendingVendorsCount = \App\Models\VendorProfile::where('verification_status', 'pending')->count();
     $adminPendingRidersCount = \App\Models\DeliveryAgent::where('registration_status', 'PENDING')->count();
     $adminPendingPayoutsCount = \App\Models\VendorPayout::where('status', 'PENDING')->count();
+    $adminPendingWarrantiesCount = \Illuminate\Support\Facades\Schema::hasTable('warranty_claims')
+        ? \App\Models\WarrantyClaim::where('status', \App\Models\WarrantyClaim::STATUS_PENDING)->count()
+        : 0;
     $currentAdminPath = '/' . ltrim(request()->path(), '/');
 @endphp
 
@@ -65,6 +68,15 @@
                 class="col-span-3 inline-flex items-center justify-center md:justify-start whitespace-nowrap gap-1 sm:gap-1.5 rounded px-1.5 py-2 sm:px-3.5 text-[10px] sm:text-xs font-bold transition {{ str_starts_with($currentAdminPath, '/admin/moderation') ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--accent-dark)]' }}"
             >
                 <span>Moderation</span>
+            </a>
+            <a
+                href="/admin/warranties"
+                class="col-span-3 inline-flex items-center justify-center md:justify-start whitespace-nowrap gap-1 sm:gap-1.5 rounded px-1.5 py-2 sm:px-3.5 text-[10px] sm:text-xs font-bold transition {{ str_starts_with($currentAdminPath, '/admin/warranties') ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--accent-dark)]' }}"
+            >
+                <span>Warranties</span>
+                @if($adminPendingWarrantiesCount > 0)
+                    <span class="rounded bg-amber-500 px-1.5 py-0.5 text-[9px] sm:px-2 sm:text-[10px] font-bold leading-none text-white">{{ $adminPendingWarrantiesCount }}</span>
+                @endif
             </a>
             <a
                 href="/admin/audit-logs"

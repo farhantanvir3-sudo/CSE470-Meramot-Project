@@ -370,6 +370,46 @@
                     </ul>
                 </div>
 
+                {{-- Separate Meramot Warranty Protection Registry Card --}}
+                @php
+                    $spWarranty = $listing->warrantyCoverage;
+                    $effWarrantyDays = (int) ($spWarranty?->duration_days ?? $listing->warranty_days ?? 0);
+                @endphp
+                @if($spWarranty || $effWarrantyDays > 0)
+                    @php
+                        $spRemedies = $spWarranty
+                            ? $spWarranty->remedyBadges()
+                            : ['Replacement', 'Free Repair', 'Refund'];
+                        $spCovLabel = $spWarranty?->coverageLabel() ?? 'Full Protection (Replacement, Free Repair or Refund)';
+                        $spTermsText = $spWarranty?->terms ?: 'Covers manufacturing defects and hardware failure within the warranty window; assessed by Meramot Platform Admin.';
+                    @endphp
+                    <div class="rounded-lg bg-emerald-50/75 border border-emerald-700/25 p-3.5 sm:p-4 space-y-2" data-listing-warranty-card>
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-950">
+                                <i class="fa-solid fa-shield-halved text-emerald-700"></i>
+                                <span>Meramot Verified {{ $effWarrantyDays }}-Day Warranty</span>
+                            </div>
+                            <span class="rounded bg-emerald-900 px-2 py-0.5 text-[10px] font-bold text-white uppercase">
+                                {{ $spCovLabel }}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
+                            <span class="text-emerald-900/75 font-semibold">Covered remedies:</span>
+                            @foreach($spRemedies as $remLabel)
+                                <span class="rounded bg-white border border-emerald-700/25 px-2 py-0.5 font-bold text-emerald-900">✓ {{ $remLabel }}</span>
+                            @endforeach
+                        </div>
+                        <p class="text-[11px] text-emerald-950/80 leading-relaxed">
+                            {{ $spTermsText }} Claimable multiple times within {{ $effWarrantyDays }} days from <strong>Past Completed Orders</strong> with photos and admin review.
+                        </p>
+                    </div>
+                @else
+                    <div class="rounded-lg bg-slate-50 border border-slate-200 px-3.5 py-2.5 text-[11px] font-semibold text-slate-600 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-slate-400"></i>
+                        <span>Standard Consumable / Tool — No Extended Warranty Period Included</span>
+                    </div>
+                @endif
+
                 {{-- Order / Add-to-Cart Form --}}
                 <form id="spOrderForm" action="{{ route('cart.add') }}" method="POST" class="space-y-4">
                     @csrf

@@ -659,6 +659,44 @@
                 @endif
             </div>
 
+            @if($repairRequest->issuedWarranties->isNotEmpty() || in_array($currentStatus, ['COMPLETED', 'RETURNED_TO_CUSTOMER'], true))
+                <section id="warranty-section" class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 sm:p-6 shadow-sm space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">
+                                <i class="fa-solid fa-shield-halved mr-1"></i>Meramot Warranty Protection
+                            </span>
+                            <h2 class="text-base sm:text-lg font-bold text-[var(--foreground)]">
+                                Active Warranty Coverage &amp; Claim History
+                            </h2>
+                            <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                                File repeatable claims during your active warranty period with issue explanation and photos. Meramot Admin reviews each claim and issues Refund, Replacement, or Free Repair.
+                            </p>
+                        </div>
+                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
+                            {{ $repairRequest->issuedWarranties->filter(fn ($w) => $w->isCurrentlyActive())->count() }} Active
+                        </span>
+                    </div>
+
+                    @if($repairRequest->issuedWarranties->isNotEmpty())
+                        <div class="space-y-4">
+                            @foreach($repairRequest->issuedWarranties as $orderWarranty)
+                                @include('requests.partials.warranty-card', [
+                                    'w' => $orderWarranty,
+                                    'canActAsCustomer' => $canActAsCustomer,
+                                    'showOrderLink' => false,
+                                    'openByDefault' => $repairRequest->issuedWarranties->count() === 1 && $orderWarranty->isCurrentlyActive() && $orderWarranty->claims->isEmpty(),
+                                ])
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="rounded-md border border-dashed border-[var(--border)] bg-[var(--mint-50)]/45 p-4 text-xs text-[var(--muted-foreground)]">
+                            No active extended item warranty certificates were issued on this completed order.
+                        </div>
+                    @endif
+                </section>
+            @endif
+
             <!-- Vendor Bids Section (Path A: Marketplace Quote 1) -->
             @if(($repairRequest->source ?? 'MARKETPLACE') !== 'DIRECT_SERVICE' && ($currentStatus === 'BIDDING' || $repairRequest->bids->count() > 0))
             <div class="meramot-card p-6 shadow-sm" x-data="{

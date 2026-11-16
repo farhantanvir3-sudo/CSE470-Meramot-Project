@@ -257,6 +257,138 @@ class SparePartInventoryService
     }
 
     /**
+     * Atomically deduct sellable stock for a warranty replacement dispatch and increment `returned_count`
+     * without changing `sold_count`.
+     *
+     * @throws ValidationException when listing is missing or available stock is insufficient
+     */
+    public function dispatchWarrantyReplacement(
+        int $listingId,
+        ?string $specCode,
+        int $qty,
+        int $repairRequestId,
+        int $claimId,
+        ?int $actorUserId = null
+    ): SparePartStockMovement {
+        $qty = max(1, $qty);
+        $rawSpec = trim((string) $specCode);
+        $specNorm = $rawSpec !== '' ? strtolower($rawSpec) : '__default';
+        $idempKey = "warranty_claim:{$claimId}:sp:{$listingId}:spec:{$specNorm}:REPLACEMENT";
+
+        return $this->runInTransaction(function () use ($listingId, $rawSpec, $qty, $repairRequestId, $claimId, $actorUserId, $idempKey) {
+            if ($existing = SparePartStockMovement::where('idempotency_key', $idempKey)->first()) {
+                return $existing;
+            }
+
+            /** @var SparePartListing|null $listing */
+            $listing = SparePartListing::where('id', $listingId)->lockForUpdate()->first();
+            if (!$listing) {
+                throw ValidationException::withMessages([
+                    'decision' => 'Referenced spare part listing no longer exists for replacement dispatch.',
+                ]);
+            }
+
+            $avail = $listing->availableStock($rawSpec !== '' ? $rawSpec : null);
+            if ($avail < $qty) {
+                throw ValidationException::withMessages([
+                    'decision' => "Insufficient stock on '{$listing->title}' to dispatch a replacement (requested {$qty}, available {$avail}). Restock inventory first or issue a Warranty Refund / Free Repair.",
+                ]);
+            }
+
+            $stockBefore = max(0, (int) $listing->stock_quantity);
+            $stockAfter = max(0, $stockBefore - $qty);
+            $soldAfter = max(0, (int) $listing->sold_count);
+            $returnedAfter = max(0, (int) ($listing->returned_count ?? 0)) + $qty;
+
+            $listing->stock_quantity = $stockAfter;
+            $listing->returned_count = $returnedAfter;
+
+            if ($listing->has_specs && is_array($listing->spec_options)) {
+                $specOptions = $listing->spec_options;
+                $matchedOptIdx = $this->findSpecOptionIndex($specOptions, $rawSpec);
+                if ($matchedOptIdx !== null) {
+                    $prevOptStock = isset($specOptions[$matchedOptIdx]['stock'])
+                        ? max(0, (int) $specOptions[$matchedOptIdx]['stock'])
+                        : $stockBefore;
+                    $specOptions[$matchedOptIdx]['stock'] = max(0, $prevOptStock - $qty);
+                    $listing->spec_options = $specOptions;
+                }
+            }
+            $listing->save();
+
+            $movement = SparePartStockMovement::create([
+                'spare_part_listing_id' => $listing->id,
+                'repair_request_id' => $repairRequestId,
+                'actor_user_id' => $actorUserId,
+                'spec_code' => $rawSpec !== '' ? $rawSpec : null,
+                'movement_type' => SparePartStockMovement::TYPE_WARRANTY_REPLACEMENT,
+                'quantity' => $qty,
+                'stock_before' => $stockBefore,
+                'stock_after' => $stockAfter,
+                'sold_after' => $soldAfter,
+                'returned_after' => $returnedAfter,
+                'idempotency_key' => $idempKey,
+                'reason' => "Warranty replacement issued (Claim #{$claimId})",
+            ]);
+
+            SparePartController::flushCatalogCache();
+
+            return $movement;
+        });
+    }
+
+    /**
+     * Record a defective item returned under an approved warranty refund without restoring sellable stock.
+     */
+    public function recordWarrantyDefectReturn(
+        int $listingId,
+        ?string $specCode,
+        int $qty,
+        int $repairRequestId,
+        int $claimId,
+        ?int $actorUserId = null
+    ): ?SparePartStockMovement {
+        $qty = max(1, $qty);
+        $rawSpec = trim((string) $specCode);
+        $specNorm = $rawSpec !== '' ? strtolower($rawSpec) : '__default';
+        $idempKey = "warranty_claim:{$claimId}:sp:{$listingId}:spec:{$specNorm}:DEFECT_RETURN";
+
+        return $this->runInTransaction(function () use ($listingId, $rawSpec, $qty, $repairRequestId, $claimId, $actorUserId, $idempKey) {
+            if ($existing = SparePartStockMovement::where('idempotency_key', $idempKey)->first()) {
+                return $existing;
+            }
+
+            /** @var SparePartListing|null $listing */
+            $listing = SparePartListing::where('id', $listingId)->lockForUpdate()->first();
+            if (!$listing) {
+                return null;
+            }
+
+            $stockBefore = max(0, (int) $listing->stock_quantity);
+            $soldAfter = max(0, (int) $listing->sold_count);
+            $returnedAfter = max(0, (int) ($listing->returned_count ?? 0)) + $qty;
+
+            $listing->returned_count = $returnedAfter;
+            $listing->save();
+
+            return SparePartStockMovement::create([
+                'spare_part_listing_id' => $listing->id,
+                'repair_request_id' => $repairRequestId,
+                'actor_user_id' => $actorUserId,
+                'spec_code' => $rawSpec !== '' ? $rawSpec : null,
+                'movement_type' => SparePartStockMovement::TYPE_WARRANTY_DEFECT_RETURN,
+                'quantity' => $qty,
+                'stock_before' => $stockBefore,
+                'stock_after' => $stockBefore,
+                'sold_after' => $soldAfter,
+                'returned_after' => $returnedAfter,
+                'idempotency_key' => $idempKey,
+                'reason' => "Defective warranty refund return (Claim #{$claimId})",
+            ]);
+        });
+    }
+
+    /**
      * Audit manual vendor dashboard inventory edits.
      */
     public function recordVendorAdjustment(SparePartListing $listing, int $stockBefore, int $stockAfter, ?int $actorUserId = null): void
