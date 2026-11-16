@@ -164,7 +164,66 @@
     @endif
 
     <!-- 2. Create New Featured Voucher (Manual Code Required) -->
-    <section class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 shadow-sm space-y-4" x-data="{ createOpen: false, discType: 'PERCENTAGE', vType: 'LIMITED_TIME' }">
+    <section
+        class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 shadow-sm space-y-4"
+        x-data="{
+            createOpen: {{ ($errors->any() || old('code') !== null) ? 'true' : 'false' }},
+            discType: @js(old('discount_type', 'PERCENTAGE')),
+            vType: @js(old('voucher_type', 'LIMITED_TIME')),
+            submitting: false,
+            submitErrors: {},
+            generalError: '',
+            async submitCreateForm(event) {
+                this.submitting = true;
+                this.submitErrors = {};
+                this.generalError = '';
+
+                const form = event.target;
+                const formData = new FormData(form);
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': formData.get('_token') || '{{ csrf_token() }}'
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        if (response.status === 422 && data.errors) {
+                            this.submitErrors = data.errors;
+                            this.generalError = data.message || 'Please fix the highlighted errors below.';
+                            this.$nextTick(() => {
+                                const firstErrorEl = form.querySelector('[data-error-field]');
+                                if (firstErrorEl) {
+                                    firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                            });
+                            return;
+                        }
+                        this.generalError = data.message || ('Server error: ' + response.statusText);
+                        return;
+                    }
+
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    } else {
+                        window.location.reload();
+                    }
+                } catch (err) {
+                    console.error('AJAX voucher store failed, falling back to standard submit:', err);
+                    form.submit();
+                } finally {
+                    this.submitting = false;
+                }
+            }
+        }"
+    >
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h2 class="text-base font-bold text-[var(--foreground)]">Create Featured Voucher</h2>
@@ -185,70 +244,180 @@
             x-cloak
             method="POST"
             action="{{ route('admin.vouchers.store') }}"
+            @submit.prevent="submitCreateForm($event)"
             data-admin-create-voucher-form
             class="space-y-4 border-t border-[var(--border)] pt-4"
         >
             @csrf
+
+            <!-- Form-level validation error banner -->
+            <div x-show="generalError" x-cloak class="rounded-lg border border-rose-300 bg-rose-50 p-3.5 text-xs text-rose-950 flex items-start gap-2.5 shadow-2xs">
+                <i class="fa-solid fa-circle-exclamation text-rose-600 mt-0.5 shrink-0 text-sm"></i>
+                <div class="flex-1">
+                    <p class="font-bold text-rose-900" x-text="generalError"></p>
+                    <ul class="mt-1 list-disc list-inside space-y-0.5 text-[11px] text-rose-800" x-show="Object.keys(submitErrors).length > 0">
+                        <template x-for="(errList, field) in submitErrors" :key="field">
+                            <template x-for="errMsg in errList" :key="errMsg">
+                                <li x-text="errMsg"></li>
+                            </template>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
                     <label class="block font-bold mb-1">Voucher Code (Manual) *</label>
-                    <input type="text" name="code" required maxlength="32" placeholder="e.g. WINTER15, FREESHIP" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2 font-mono font-bold uppercase">
+                    <input
+                        type="text"
+                        name="code"
+                        value="{{ old('code') }}"
+                        required
+                        maxlength="32"
+                        placeholder="e.g. WINTER15, FREESHIP"
+                        :class="submitErrors.code ? 'border-rose-500 bg-rose-50/50 ring-1 ring-rose-500' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 font-mono font-bold uppercase transition"
+                    >
+                    <p x-show="submitErrors.code" x-text="submitErrors.code ? submitErrors.code[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600" data-error-field></p>
+                    @error('code')
+                        <p class="mt-1 text-[11px] font-bold text-rose-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="sm:col-span-2">
                     <label class="block font-bold mb-1">Title / Campaign Name *</label>
-                    <input type="text" name="title" required maxlength="140" placeholder="e.g. Winter Sale — 15% Off" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2 font-semibold">
+                    <input
+                        type="text"
+                        name="title"
+                        value="{{ old('title') }}"
+                        required
+                        maxlength="140"
+                        placeholder="e.g. Winter Sale — 15% Off"
+                        :class="submitErrors.title ? 'border-rose-500 bg-rose-50/50 ring-1 ring-rose-500' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 font-semibold transition"
+                    >
+                    <p x-show="submitErrors.title" x-text="submitErrors.title ? submitErrors.title[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600" data-error-field></p>
+                    @error('title')
+                        <p class="mt-1 text-[11px] font-bold text-rose-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Voucher Type *</label>
-                    <select name="voucher_type" x-model="vType" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2 font-semibold">
-                        <option value="LIMITED_TIME">Limited Time (Repeatable in Window)</option>
-                        <option value="USE_ONCE">Use Once (1 Time per Customer)</option>
+                    <select
+                        name="voucher_type"
+                        x-model="vType"
+                        :class="submitErrors.voucher_type ? 'border-rose-500 bg-rose-50/50 ring-1 ring-rose-500' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 font-semibold transition cursor-pointer"
+                    >
+                        <option value="LIMITED_TIME" {{ old('voucher_type', 'LIMITED_TIME') === 'LIMITED_TIME' ? 'selected' : '' }}>Limited Time (Repeatable in Window)</option>
+                        <option value="USE_ONCE" {{ old('voucher_type') === 'USE_ONCE' ? 'selected' : '' }}>Use Once (1 Time per Customer)</option>
                     </select>
+                    <p x-show="submitErrors.voucher_type" x-text="submitErrors.voucher_type ? submitErrors.voucher_type[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600"></p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                     <label class="block font-bold mb-1">Homepage Banner Subtitle (Shown when #1 in Stack)</label>
-                    <input type="text" name="banner_subtitle" maxlength="240" placeholder="e.g. Save up to 15% at participating workshops." class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2">
+                    <input
+                        type="text"
+                        name="banner_subtitle"
+                        value="{{ old('banner_subtitle') }}"
+                        maxlength="240"
+                        placeholder="e.g. Save up to 15% at participating workshops."
+                        :class="submitErrors.banner_subtitle ? 'border-rose-500 bg-rose-50/50' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 transition"
+                    >
+                    <p x-show="submitErrors.banner_subtitle" x-text="submitErrors.banner_subtitle ? submitErrors.banner_subtitle[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600"></p>
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Banner Explore Link (Optional)</label>
-                    <input type="text" name="cta_href" maxlength="240" placeholder="/shops?voucher=true" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2">
+                    <input
+                        type="text"
+                        name="cta_href"
+                        value="{{ old('cta_href', '/shops?voucher=true') }}"
+                        maxlength="240"
+                        placeholder="/shops?voucher=true"
+                        :class="submitErrors.cta_href ? 'border-rose-500 bg-rose-50/50' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 transition"
+                    >
+                    <p x-show="submitErrors.cta_href" x-text="submitErrors.cta_href ? submitErrors.cta_href[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600"></p>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 <div>
                     <label class="block font-bold mb-1">Benefit Type *</label>
-                    <select name="discount_type" x-model="discType" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2 font-semibold">
-                        <option value="PERCENTAGE">Percentage Off (%)</option>
-                        <option value="FIXED">Flat Amount Off (৳)</option>
-                        <option value="FREE_COURIER">Free Courier (Pickup &amp; Delivery)</option>
+                    <select
+                        name="discount_type"
+                        x-model="discType"
+                        :class="submitErrors.discount_type ? 'border-rose-500 bg-rose-50/50 ring-1 ring-rose-500' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 font-semibold transition cursor-pointer"
+                    >
+                        <option value="PERCENTAGE" {{ old('discount_type', 'PERCENTAGE') === 'PERCENTAGE' ? 'selected' : '' }}>Percentage Off (%)</option>
+                        <option value="FIXED" {{ old('discount_type') === 'FIXED' ? 'selected' : '' }}>Flat Amount Off (৳)</option>
+                        <option value="FREE_COURIER" {{ old('discount_type') === 'FREE_COURIER' ? 'selected' : '' }}>Free Courier (Pickup &amp; Delivery)</option>
                     </select>
+                    <p x-show="submitErrors.discount_type" x-text="submitErrors.discount_type ? submitErrors.discount_type[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600"></p>
                 </div>
                 <div x-show="discType !== 'FREE_COURIER'">
                     <label class="block font-bold mb-1" x-text="discType === 'PERCENTAGE' ? 'Discount (%) *' : 'Discount Amount (৳) *'">Discount *</label>
-                    <input type="number" step="0.01" min="0" name="discount_value" placeholder="15" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2 font-semibold">
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="discount_value"
+                        value="{{ old('discount_value', 15) }}"
+                        placeholder="15"
+                        :class="submitErrors.discount_value ? 'border-rose-500 bg-rose-50/50 ring-1 ring-rose-500' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 font-semibold transition"
+                    >
+                    <p x-show="submitErrors.discount_value" x-text="submitErrors.discount_value ? submitErrors.discount_value[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600" data-error-field></p>
+                    @error('discount_value')
+                        <p class="mt-1 text-[11px] font-bold text-rose-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Min. Order Subtotal (৳)</label>
-                    <input type="number" step="1" min="0" name="min_order_amount" value="0" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2">
+                    <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        name="min_order_amount"
+                        value="{{ old('min_order_amount', 0) }}"
+                        :class="submitErrors.min_order_amount ? 'border-rose-500 bg-rose-50/50' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 transition"
+                    >
+                    <p x-show="submitErrors.min_order_amount" x-text="submitErrors.min_order_amount ? submitErrors.min_order_amount[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600"></p>
                 </div>
                 <div x-show="discType !== 'FIXED'">
                     <label class="block font-bold mb-1">Max Discount Cap (৳)</label>
-                    <input type="number" step="1" min="0" name="max_discount_amount" placeholder="Optional" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2">
+                    <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        name="max_discount_amount"
+                        value="{{ old('max_discount_amount') }}"
+                        placeholder="Optional"
+                        :class="submitErrors.max_discount_amount ? 'border-rose-500 bg-rose-50/50' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 transition"
+                    >
+                    <p x-show="submitErrors.max_discount_amount" x-text="submitErrors.max_discount_amount ? submitErrors.max_discount_amount[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600"></p>
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Payment Method Rule</label>
-                    <select name="required_payment_method" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2">
-                        <option value="">Any Payment Method</option>
-                        <option value="BKASH">bKash Only</option>
-                        <option value="NAGAD">Nagad Only</option>
-                        <option value="CARD">Card Only</option>
-                        <option value="SSLCOMMERZ">SSLCommerz Only</option>
-                        <option value="CASH">Cash Only</option>
+                    <select
+                        name="required_payment_method"
+                        :class="submitErrors.required_payment_method ? 'border-rose-500 bg-rose-50/50' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 transition cursor-pointer"
+                    >
+                        <option value="" {{ old('required_payment_method') === '' ? 'selected' : '' }}>Any Payment Method</option>
+                        <option value="BKASH" {{ old('required_payment_method') === 'BKASH' ? 'selected' : '' }}>bKash Only</option>
+                        <option value="NAGAD" {{ old('required_payment_method') === 'NAGAD' ? 'selected' : '' }}>Nagad Only</option>
+                        <option value="CARD" {{ old('required_payment_method') === 'CARD' ? 'selected' : '' }}>Card Only</option>
+                        <option value="SSLCOMMERZ" {{ old('required_payment_method') === 'SSLCOMMERZ' ? 'selected' : '' }}>SSLCommerz Only</option>
+                        <option value="CASH" {{ old('required_payment_method') === 'CASH' ? 'selected' : '' }}>Cash Only</option>
                     </select>
+                    <p x-show="submitErrors.required_payment_method" x-text="submitErrors.required_payment_method ? submitErrors.required_payment_method[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600"></p>
                 </div>
             </div>
 
@@ -256,23 +425,50 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 rounded-lg border border-[var(--border)] bg-[var(--mint-50)] p-3.5">
                 <div>
                     <label class="block font-bold mb-1">Starts At (Time Period)</label>
-                    <input type="datetime-local" name="starts_at" value="{{ now()->format('Y-m-d\TH:i') }}" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2">
+                    <input
+                        type="datetime-local"
+                        name="starts_at"
+                        value="{{ old('starts_at', now()->format('Y-m-d\TH:i')) }}"
+                        :class="submitErrors.starts_at ? 'border-rose-500 bg-rose-50/50' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 transition"
+                    >
+                    <p x-show="submitErrors.starts_at" x-text="submitErrors.starts_at ? submitErrors.starts_at[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600"></p>
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Ends At (Time Period)</label>
-                    <input type="datetime-local" name="expires_at" value="{{ now()->addDays(14)->format('Y-m-d\TH:i') }}" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2">
+                    <input
+                        type="datetime-local"
+                        name="expires_at"
+                        value="{{ old('expires_at', now()->addDays(14)->format('Y-m-d\TH:i')) }}"
+                        :class="submitErrors.expires_at ? 'border-rose-500 bg-rose-50/50 ring-1 ring-rose-500' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 transition"
+                    >
+                    <p x-show="submitErrors.expires_at" x-text="submitErrors.expires_at ? submitErrors.expires_at[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600" data-error-field></p>
+                    @error('expires_at')
+                        <p class="mt-1 text-[11px] font-bold text-rose-600">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div>
                     <label class="block font-bold mb-1">Stack Priority Order</label>
-                    <input type="number" min="1" max="9999" name="featured_order" value="5" class="w-full rounded-md border border-[var(--border)] bg-white px-3 py-2">
+                    <input
+                        type="number"
+                        min="1"
+                        max="9999"
+                        name="featured_order"
+                        value="{{ old('featured_order', 5) }}"
+                        :class="submitErrors.featured_order ? 'border-rose-500 bg-rose-50/50' : 'border-[var(--border)] bg-white'"
+                        class="w-full rounded-md border px-3 py-2 transition"
+                    >
+                    <p x-show="submitErrors.featured_order" x-text="submitErrors.featured_order ? submitErrors.featured_order[0] : ''" class="mt-1 text-[11px] font-bold text-rose-600"></p>
                 </div>
                 <div class="flex flex-col justify-center gap-2 pt-2">
                     <label class="inline-flex items-center gap-2 font-bold cursor-pointer">
-                        <input type="checkbox" name="is_featured" value="1" checked class="accent-[#244229]">
+                        <input type="hidden" name="is_featured" value="0">
+                        <input type="checkbox" name="is_featured" value="1" {{ old('is_featured', '1') == '1' ? 'checked' : '' }} class="accent-[#244229]">
                         <span>Include in Homepage Stack</span>
                     </label>
                     <label x-show="vType === 'USE_ONCE'" class="inline-flex items-center gap-2 font-semibold cursor-pointer">
-                        <input type="checkbox" name="is_first_order_only" value="1" class="accent-[#244229]">
+                        <input type="checkbox" name="is_first_order_only" value="1" {{ old('is_first_order_only') ? 'checked' : '' }} class="accent-[#244229]">
                         <span>Customer's 1st Meramot order only</span>
                     </label>
                 </div>
@@ -280,9 +476,10 @@
                 <div class="sm:col-span-2 lg:col-span-4">
                     <label class="block font-bold mb-1">Scheduled Days of Week (Leave all unchecked for Every Day, or select e.g. Fri / Sun)</label>
                     <div class="flex flex-wrap gap-2">
+                        @php $oldDays = array_map('intval', old('valid_days_of_week', [])); @endphp
                         @foreach($dayLabels as $dayIdx => $dayShort)
-                            <label class="inline-flex items-center gap-1.5 rounded border border-[var(--border)] bg-white px-2.5 py-1 cursor-pointer">
-                                <input type="checkbox" name="valid_days_of_week[]" value="{{ $dayIdx }}" class="accent-[#244229]">
+                            <label class="inline-flex items-center gap-1.5 rounded border border-[var(--border)] bg-white px-2.5 py-1 cursor-pointer hover:bg-[var(--mint-100)] transition">
+                                <input type="checkbox" name="valid_days_of_week[]" value="{{ $dayIdx }}" {{ in_array($dayIdx, $oldDays, true) ? 'checked' : '' }} class="accent-[#244229]">
                                 <span class="font-semibold">{{ $dayShort }}</span>
                             </label>
                         @endforeach
@@ -296,20 +493,29 @@
                     <label class="font-bold">Exclude Specific Vendor Shop Branches (Optional)</label>
                     <input type="text" x-model="shopFilter" placeholder="Filter shops or branches..." class="rounded-md border border-[var(--border)] bg-white px-2.5 py-1 text-[11px]">
                 </div>
-                <div class="max-h-40 overflow-y-auto rounded-md border border-[var(--border)] bg-white p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                <div class="max-h-48 overflow-y-auto rounded-md border border-[var(--border)] bg-white p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                    @php $oldExcluded = array_map('intval', old('excluded_shop_ids', [])); @endphp
                     @foreach($selectableShops as $sh)
                         @php $searchHay = strtolower($sh->name . ' ' . ($sh->branch_name ?? '') . ' ' . $sh->area . ' ' . $sh->city); @endphp
-                        <label x-show="!shopFilter || @js($searchHay).includes(shopFilter.toLowerCase())" class="flex items-center gap-1.5 text-[11px] truncate cursor-pointer">
-                            <input type="checkbox" name="excluded_shop_ids[]" value="{{ $sh->id }}" class="accent-[#244229]">
+                        <label x-show="!shopFilter || @js($searchHay).includes(shopFilter.toLowerCase())" class="flex items-center gap-1.5 text-[11px] truncate cursor-pointer hover:bg-slate-50 p-0.5 rounded">
+                            <input type="checkbox" name="excluded_shop_ids[]" value="{{ $sh->id }}" {{ in_array($sh->id, $oldExcluded, true) ? 'checked' : '' }} class="accent-[#244229]">
                             <span class="truncate">{{ $sh->name }}{{ $sh->display_branch_tag ? ' [' . $sh->display_branch_tag . ']' : '' }} ({{ $sh->area }}, {{ $sh->city }})</span>
                         </label>
                     @endforeach
                 </div>
             </div>
 
-            <div class="flex justify-end">
-                <button type="submit" class="rounded-md bg-[var(--accent-dark)] px-5 py-2.5 font-bold text-[var(--accent-foreground)] hover:opacity-90 cursor-pointer">
-                    Publish Featured Voucher
+            <div class="flex justify-end gap-3 items-center pt-2">
+                <button
+                    type="submit"
+                    :disabled="submitting"
+                    class="rounded-md bg-[var(--accent-dark)] px-5 py-2.5 font-bold text-[var(--accent-foreground)] hover:opacity-90 disabled:opacity-50 transition cursor-pointer flex items-center gap-2 shadow-xs"
+                >
+                    <span x-show="!submitting">Publish Featured Voucher</span>
+                    <span x-show="submitting" class="inline-flex items-center gap-1.5" x-cloak>
+                        <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                        <span>Publishing...</span>
+                    </span>
                 </button>
             </div>
         </form>

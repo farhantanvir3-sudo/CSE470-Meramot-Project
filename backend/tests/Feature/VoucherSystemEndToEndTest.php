@@ -356,4 +356,75 @@ class VoucherSystemEndToEndTest extends TestCase
             ->assertSee('Apply a voucher')
             ->assertSee('ALLPRO99');
     }
+
+    /** @test */
+    public function admin_featured_voucher_creation_handles_validation_errors_without_progress_loss()
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $admin = User::where('role', 'admin')->first() ?? User::factory()->create(['role' => 'admin', 'email' => 'admin@meramot.test']);
+
+        // 1. AJAX validation error returns 422 JSON with specific error keys
+        $errResp = $this->actingAs($admin)->postJson('/admin/vouchers', [
+            'code' => '', // missing code
+            'title' => '', // missing title
+            'voucher_type' => 'LIMITED_TIME',
+            'discount_type' => 'PERCENTAGE',
+        ]);
+        $errResp->assertStatus(422)
+            ->assertJsonValidationErrors(['code', 'title']);
+
+        $errResp2 = $this->actingAs($admin)->postJson('/admin/vouchers', [
+            'code' => 'VALCHECK1',
+            'title' => 'Validation Check',
+            'voucher_type' => 'LIMITED_TIME',
+            'discount_type' => 'PERCENTAGE',
+            'discount_value' => 150, // invalid: percentage > 95%
+        ]);
+        $errResp2->assertStatus(422)
+            ->assertJsonValidationErrors(['discount_value']);
+
+        // 2. Successful AJAX store returns 200 JSON with redirect and ok
+        $succResp = $this->actingAs($admin)->postJson('/admin/vouchers', [
+            'code' => 'AJAXPROMO15',
+            'title' => 'Ajax Featured Promo',
+            'banner_subtitle' => 'Save 15% instantly without form reloads',
+            'cta_href' => '/shops?voucher=true',
+            'voucher_type' => 'LIMITED_TIME',
+            'discount_type' => 'PERCENTAGE',
+            'discount_value' => 15,
+            'min_order_amount' => 500,
+            'max_discount_amount' => 200,
+            'is_featured' => 1,
+            'featured_order' => 3,
+            'starts_at' => now()->format('Y-m-d\TH:i'),
+            'expires_at' => now()->addDays(7)->format('Y-m-d\TH:i'),
+        ]);
+        $succResp->assertStatus(200)
+            ->assertJson([
+                'ok' => true,
+                'redirect' => route('admin.vouchers.index'),
+            ]);
+
+        // 3. Admin view renders old input preservation and keep-open directive
+        $viewResp = $this->actingAs($admin)
+            ->withSession([
+                '_old_input' => [
+                    'code' => 'PRESERVED15',
+                    'title' => 'My Preserved Title',
+                    'discount_value' => '25',
+                    'min_order_amount' => '350',
+                    'valid_days_of_week' => [5], // Friday
+                ],
+                'errors' => new \Illuminate\Support\ViewErrorBag(),
+            ])
+            ->get('/admin/vouchers');
+
+        $viewResp->assertStatus(200)
+            ->assertSee('value="PRESERVED15"', false)
+            ->assertSee('value="My Preserved Title"', false)
+            ->assertSee('value="25"', false)
+            ->assertSee('value="350"', false)
+            ->assertSee('submitCreateForm');
+    }
 }

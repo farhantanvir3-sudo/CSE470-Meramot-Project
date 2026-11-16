@@ -126,6 +126,19 @@ class VoucherManagementController extends Controller
 
         $this->voucherService->syncShopVoucherFlags();
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => "Featured Voucher {$voucher->code} ({$voucher->advertisedBadgeText()}) created.",
+                'redirect' => route('admin.vouchers.index'),
+                'voucher' => [
+                    'id' => $voucher->id,
+                    'code' => $voucher->code,
+                    'title' => $voucher->title,
+                ],
+            ]);
+        }
+
         return redirect()
             ->route('admin.vouchers.index')
             ->with('success', "Featured Voucher {$voucher->code} ({$voucher->advertisedBadgeText()}) created.");
@@ -158,6 +171,14 @@ class VoucherManagementController extends Controller
             });
 
             $this->voucherService->syncShopVoucherFlags();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'ok' => true,
+                    'message' => "Default First-Order Free Courier voucher ({$voucher->code}) updated.",
+                    'redirect' => route('admin.vouchers.index'),
+                ]);
+            }
 
             return redirect()
                 ->route('admin.vouchers.index')
@@ -194,6 +215,14 @@ class VoucherManagementController extends Controller
         });
 
         $this->voucherService->syncShopVoucherFlags();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'message' => "Featured Voucher {$voucher->code} updated.",
+                'redirect' => route('admin.vouchers.index'),
+            ]);
+        }
 
         return redirect()
             ->route('admin.vouchers.index')
