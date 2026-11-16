@@ -14,6 +14,7 @@ use App\Http\Controllers\RiderChatController;          // R5 - Nafiul
 
 use App\Http\Controllers\ShopDiscoveryController;      // R6 - Shanid
 use App\Http\Controllers\SparePartController;          // Dedicated Spare Parts Marketplace (Mobile + PC/Laptop)
+use App\Http\Controllers\RecentSearchController;       // Persistent & session/cookie Recent Searches
 use App\Http\Controllers\RepairRequestController;      // R7 - Shanid
 use App\Http\Controllers\StatusTransitionController;   // R7 - Dual-Quote Lifecycle
 use App\Http\Controllers\ServicePackageController;     // R8 - Shanid + Direct Order Cart
@@ -139,6 +140,10 @@ Route::get('/shops/{slug}', [ShopDiscoveryController::class, 'show'])->name('sho
 // Dedicated Spare Parts Marketplace (Items w/ Seller Shop, Specs, Wholesale & Sale Offers)
 Route::get('/search', [SparePartController::class, 'smartSearch'])->name('search.smart');
 Route::get('/api/search/suggest', [SparePartController::class, 'suggest'])->middleware('throttle:60,1')->name('api.search.suggest');
+Route::get('/api/search/recent', [RecentSearchController::class, 'index'])->name('api.search.recent');
+Route::post('/recent-searches', [RecentSearchController::class, 'store'])->name('recent-searches.store');
+Route::delete('/recent-searches/item', [RecentSearchController::class, 'destroyItem'])->name('recent-searches.destroy-item');
+Route::delete('/recent-searches', [RecentSearchController::class, 'clear'])->name('recent-searches.clear');
 Route::get('/spare-parts', [SparePartController::class, 'index'])->name('spare-parts.index');
 Route::get('/spare-parts/{slug}', [SparePartController::class, 'show'])->name('spare-parts.show');
 

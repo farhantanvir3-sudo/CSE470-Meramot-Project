@@ -1271,9 +1271,12 @@
                             class="w-full rounded-lg border border-[var(--border)] bg-white/85 dark:bg-[var(--mint-100)] py-2 pl-3.5 pr-16 text-[0.875rem] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)]"
                         />
                         <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                            @if(request('q'))
-                                <a href="{{ url()->current() }}" class="flex h-7 w-7 items-center justify-center rounded-md text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]" title="Clear search">✕</a>
-                            @endif
+                            <button type="button"
+                                    x-show="query.trim().length > 0"
+                                    x-cloak
+                                    @click="clearQuery($event)"
+                                    class="flex h-7 w-7 items-center justify-center rounded-md text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-pointer"
+                                    title="Clear search">✕</button>
                             <button type="submit" aria-label="Search" class="flex h-7 px-2.5 items-center justify-center rounded-md bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                                 <i class="fa-solid fa-magnifying-glass"></i>
                             </button>
@@ -1347,9 +1350,12 @@
                         class="w-full rounded-lg border border-[var(--border)] bg-white/85 dark:bg-[var(--mint-100)] py-2.5 pl-4 pr-20 text-[13.5px] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)] transition"
                     />
                     <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                        @if(request('q'))
-                            <a href="{{ url()->current() }}" class="flex h-7 w-7 items-center justify-center rounded-md text-xs font-semibold text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition" title="Clear search">✕</a>
-                        @endif
+                        <button type="button"
+                                x-show="query.trim().length > 0"
+                                x-cloak
+                                @click="clearQuery($event)"
+                                class="flex h-7 w-7 items-center justify-center rounded-md text-xs font-semibold text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition cursor-pointer"
+                                title="Clear search">✕</button>
                         <button type="submit" aria-label="Search" class="flex h-7 px-3 items-center justify-center rounded-md bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </button>
@@ -2132,7 +2138,9 @@
     @endif
 
     <!-- Main Dynamic Content Slot -->
-    <main id="meramot-main-content" class="flex-grow w-full min-w-0">
+    <main id="meramot-main-content"
+          data-recent-searches='@json($recentlyViewed ?? \App\Services\RecentSearchService::getRecent(request()))'
+          class="flex-grow w-full min-w-0">
         @yield('content')
     </main>
 
@@ -2786,6 +2794,7 @@
             function prefetchUrl(rawHref) {
                 const targetUrl = canSoftHandleUrl(rawHref);
                 if (!targetUrl) return;
+                if (targetUrl.pathname === '/search') return;
                 const urlKey = targetUrl.toString();
                 const cached = prefetchCache.get(urlKey);
                 if (cached && (Date.now() - cached.ts) < PREFETCH_TTL_MS) return;
@@ -2831,7 +2840,8 @@
                     });
 
                     const parsed = new URL(resolvedUrl, window.location.href);
-                    document.querySelectorAll('header form[action="/shops"], header form[action="/spare-parts"]').forEach((form) => {
+                    const nextQuery = parsed.searchParams.get('q') || '';
+                    document.querySelectorAll('header form[action="/search"], header form[action="/shops"], header form[action="/spare-parts"]').forEach((form) => {
                         ['category', 'sort', 'lat', 'lng'].forEach((param) => {
                             const val = parsed.searchParams.get(param);
                             let input = form.querySelector(`input[name="${param}"]`);
@@ -2848,10 +2858,22 @@
                             }
                         });
                         const qInput = form.querySelector('input[name="q"]');
-                        if (qInput && document.activeElement !== qInput) {
-                            qInput.value = parsed.searchParams.get('q') || '';
+                        if (qInput) {
+                            qInput.value = nextQuery;
                         }
                     });
+                    window.dispatchEvent(new CustomEvent('meramot-set-search-query', { detail: { query: nextQuery } }));
+
+                    const nextMain = doc.querySelector('#meramot-main-content');
+                    const rawRecent = nextMain ? nextMain.getAttribute('data-recent-searches') : null;
+                    if (rawRecent) {
+                        try {
+                            const parsedRecent = JSON.parse(rawRecent);
+                            if (Array.isArray(parsedRecent)) {
+                                window.dispatchEvent(new CustomEvent('meramot-recent-searches-updated', { detail: { items: parsedRecent } }));
+                            }
+                        } catch (e) {}
+                    }
                 } catch (e) {}
             }
 
@@ -3104,6 +3126,18 @@
                     return;
                 }
 
+                const recentChip = anchor.closest('[data-recent-search-query]');
+                if (recentChip) {
+                    const clickedQuery = recentChip.getAttribute('data-recent-search-query') || '';
+                    if (clickedQuery !== '') {
+                        document.querySelectorAll('header form input[name="q"]').forEach((inp) => {
+                            inp.value = clickedQuery;
+                        });
+                        window.dispatchEvent(new CustomEvent('meramot-set-search-query', { detail: { query: clickedQuery } }));
+                    }
+                    prefetchCache.clear();
+                }
+
                 const targetUrl = canSoftHandleUrl(anchor.href);
                 if (!targetUrl) return;
 
@@ -3115,7 +3149,7 @@
             // Hover / touch prefetching so Explore Shops and catalog filters load instantly on click
             document.addEventListener('mouseover', function (e) {
                 const anchor = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-                if (!anchor || anchor.hasAttribute('download') || anchor.hasAttribute('data-no-softnav') || anchor.hasAttribute('data-no-soft-nav') || anchor.hasAttribute('data-hard-reload')) return;
+                if (!anchor || anchor.hasAttribute('download') || anchor.hasAttribute('data-no-prefetch') || anchor.hasAttribute('data-no-softnav') || anchor.hasAttribute('data-no-soft-nav') || anchor.hasAttribute('data-hard-reload')) return;
                 if (anchor.target && anchor.target !== '_self') return;
                 clearTimeout(prefetchDebounceTimer);
                 prefetchDebounceTimer = setTimeout(() => prefetchUrl(anchor.href), 60);
@@ -3123,7 +3157,7 @@
 
             document.addEventListener('touchstart', function (e) {
                 const anchor = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-                if (!anchor || anchor.hasAttribute('download') || anchor.hasAttribute('data-no-softnav') || anchor.hasAttribute('data-no-soft-nav') || anchor.hasAttribute('data-hard-reload')) return;
+                if (!anchor || anchor.hasAttribute('download') || anchor.hasAttribute('data-no-prefetch') || anchor.hasAttribute('data-no-softnav') || anchor.hasAttribute('data-no-soft-nav') || anchor.hasAttribute('data-hard-reload')) return;
                 if (anchor.target && anchor.target !== '_self') return;
                 prefetchUrl(anchor.href);
             }, { passive: true });
@@ -3137,6 +3171,11 @@
                 const method = (form.getAttribute('method') || 'GET').toUpperCase();
                 if (method === 'GET') {
                     const targetUrl = buildGetFormUrl(form, e.submitter || null);
+                    const submittedQ = (targetUrl.searchParams.get('q') || '').trim();
+                    if (submittedQ !== '') {
+                        prefetchCache.clear();
+                        window.dispatchEvent(new CustomEvent('meramot-set-search-query', { detail: { query: submittedQ } }));
+                    }
                     const softTarget = canSoftHandleUrl(targetUrl.toString());
                     if (softTarget) {
                         const capturedScrollY = window.scrollY;
@@ -3191,7 +3230,10 @@
             });
 
             window.MeramotSoftNav = {
-                visit
+                visit,
+                clearPrefetch: function () {
+                    prefetchCache.clear();
+                }
             };
 
             window.openMeramotLocationModal = function () {
@@ -3225,6 +3267,91 @@
         (function () {
             const suggestCache = new Map();
 
+            function readInitialRecentSearches() {
+                try {
+                    const raw = document.getElementById('meramot-main-content')?.getAttribute('data-recent-searches');
+                    if (!raw) return [];
+                    const parsed = JSON.parse(raw);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (e) {
+                    return [];
+                }
+            }
+
+            window.MeramotRecentSearchesApi = {
+                csrfToken() {
+                    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                },
+                async remove(query) {
+                    const res = await fetch('/recent-searches/item', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify({ q: query }),
+                    });
+                    if (!res.ok) return null;
+                    const data = await res.json();
+                    const items = Array.isArray(data.recent_searches) ? data.recent_searches : [];
+                    window.dispatchEvent(new CustomEvent('meramot-recent-searches-updated', { detail: { items } }));
+                    if (window.MeramotSoftNav && typeof window.MeramotSoftNav.clearPrefetch === 'function') {
+                        window.MeramotSoftNav.clearPrefetch();
+                    }
+                    return items;
+                },
+                async clear() {
+                    const res = await fetch('/recent-searches', {
+                        method: 'DELETE',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': this.csrfToken(),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    });
+                    if (!res.ok) return false;
+                    window.dispatchEvent(new CustomEvent('meramot-recent-searches-updated', { detail: { items: [] } }));
+                    if (window.MeramotSoftNav && typeof window.MeramotSoftNav.clearPrefetch === 'function') {
+                        window.MeramotSoftNav.clearPrefetch();
+                    }
+                    return true;
+                },
+            };
+
+            window.meramotHomeRecentSearches = function (initialItems) {
+                return {
+                    items: Array.isArray(initialItems) ? initialItems : [],
+                    _onUpdated: null,
+                    init() {
+                        this._onUpdated = (e) => {
+                            if (e.detail && Array.isArray(e.detail.items)) {
+                                this.items = e.detail.items;
+                            }
+                        };
+                        window.addEventListener('meramot-recent-searches-updated', this._onUpdated);
+                    },
+                    destroy() {
+                        if (this._onUpdated) {
+                            window.removeEventListener('meramot-recent-searches-updated', this._onUpdated);
+                        }
+                    },
+                    async removeItem(query) {
+                        const updated = await window.MeramotRecentSearchesApi.remove(query);
+                        if (Array.isArray(updated)) {
+                            this.items = updated;
+                        }
+                    },
+                    async clearAll() {
+                        const ok = await window.MeramotRecentSearchesApi.clear();
+                        if (ok) {
+                            this.items = [];
+                        }
+                    },
+                };
+            };
+
             window.meramotTypeahead = function (initialQuery, scope) {
                 return {
                     query: typeof initialQuery === 'string' ? initialQuery : '',
@@ -3237,8 +3364,34 @@
                     categories: [],
                     parts: [],
                     shops: [],
+                    recentSearches: readInitialRecentSearches(),
                     activeIndex: -1,
                     abortController: null,
+                    _onSetQuery: null,
+                    _onRecentUpdated: null,
+
+                    init() {
+                        this._onSetQuery = (e) => {
+                            if (e.detail && typeof e.detail.query === 'string') {
+                                this.query = e.detail.query;
+                            }
+                        };
+                        this._onRecentUpdated = (e) => {
+                            if (e.detail && Array.isArray(e.detail.items)) {
+                                this.recentSearches = e.detail.items;
+                                if (this.recentSearches.length === 0 && (this.query || '').trim().length < 2) {
+                                    this.open = false;
+                                }
+                            }
+                        };
+                        window.addEventListener('meramot-set-search-query', this._onSetQuery);
+                        window.addEventListener('meramot-recent-searches-updated', this._onRecentUpdated);
+                    },
+
+                    destroy() {
+                        if (this._onSetQuery) window.removeEventListener('meramot-set-search-query', this._onSetQuery);
+                        if (this._onRecentUpdated) window.removeEventListener('meramot-recent-searches-updated', this._onRecentUpdated);
+                    },
 
                     get hasResults() {
                         return this.packages.length > 0 || this.categories.length > 0 || this.parts.length > 0 || this.shops.length > 0;
@@ -3246,6 +3399,15 @@
 
                     get flatItems() {
                         const list = [];
+                        if ((this.query || '').trim().length < 2) {
+                            this.recentSearches.forEach((item, idx) => list.push({
+                                type: 'recent',
+                                idx,
+                                url: item.href,
+                                label: item.label,
+                            }));
+                            return list;
+                        }
                         if (this.primarySection === 'packages') {
                             this.packages.forEach((item, idx) => list.push({ type: 'pkg', idx, url: item.url }));
                             this.categories.forEach((item, idx) => list.push({ type: 'cat', idx, url: item.url }));
@@ -3278,6 +3440,62 @@
                             } else {
                                 this.fetchSuggestions();
                             }
+                            return;
+                        }
+                        if (this.recentSearches.length > 0) {
+                            this.open = true;
+                        }
+                    },
+
+                    clearQuery(event) {
+                        if (event) event.preventDefault();
+                        this.query = '';
+                        this.loading = false;
+                        this.fetchedOnce = false;
+                        this.packages = [];
+                        this.categories = [];
+                        this.parts = [];
+                        this.shops = [];
+                        this.activeIndex = -1;
+                        this.open = this.recentSearches.length > 0;
+                        window.dispatchEvent(new CustomEvent('meramot-set-search-query', { detail: { query: '' } }));
+                        const input = this.$el.closest('form')?.querySelector('input[name="q"]');
+                        if (input) {
+                            input.value = '';
+                            input.focus();
+                        }
+                    },
+
+                    selectRecentItem(item) {
+                        if (!item || !item.label) {
+                            this.close();
+                            return;
+                        }
+                        this.query = item.label;
+                        this.close();
+                        window.dispatchEvent(new CustomEvent('meramot-set-search-query', { detail: { query: item.label } }));
+                        if (window.MeramotSoftNav && typeof window.MeramotSoftNav.clearPrefetch === 'function') {
+                            window.MeramotSoftNav.clearPrefetch();
+                        }
+                    },
+
+                    async removeRecent(query) {
+                        const updated = await window.MeramotRecentSearchesApi.remove(query);
+                        if (Array.isArray(updated)) {
+                            this.recentSearches = updated;
+                            if (updated.length === 0 && (this.query || '').trim().length < 2) {
+                                this.open = false;
+                            }
+                        }
+                    },
+
+                    async clearAllRecent() {
+                        const ok = await window.MeramotRecentSearchesApi.clear();
+                        if (ok) {
+                            this.recentSearches = [];
+                            if ((this.query || '').trim().length < 2) {
+                                this.open = false;
+                            }
                         }
                     },
 
@@ -3307,7 +3525,18 @@
                         if (this.open && active && active.url) {
                             event.preventDefault();
                             this.close();
-                            window.location.assign(active.url);
+                            if (active.label) {
+                                this.query = active.label;
+                                window.dispatchEvent(new CustomEvent('meramot-set-search-query', { detail: { query: active.label } }));
+                            }
+                            if (window.MeramotSoftNav && typeof window.MeramotSoftNav.clearPrefetch === 'function') {
+                                window.MeramotSoftNav.clearPrefetch();
+                            }
+                            if (window.MeramotSoftNav && typeof window.MeramotSoftNav.visit === 'function') {
+                                window.MeramotSoftNav.visit(active.url, { scrollY: 0 });
+                            } else {
+                                window.location.assign(active.url);
+                            }
                             return;
                         }
                         this.close();
@@ -3328,7 +3557,9 @@
                     async fetchSuggestions() {
                         const trimmed = (this.query || '').trim();
                         if (trimmed.length < 2) {
-                            this.open = false;
+                            const input = this.$el ? this.$el.querySelector('input[name="q"]') : null;
+                            const isFocused = Boolean(input && document.activeElement === input);
+                            this.open = isFocused && this.recentSearches.length > 0;
                             this.loading = false;
                             this.fetchedOnce = false;
                             this.primarySection = 'spare-parts';
@@ -3464,6 +3695,7 @@
                 'explore_more_featured': 'আরও সেরা শপ দেখুন',
                 'popular_categories': 'জনপ্রিয় ক্যাটাগরি',
                 'recently_viewed': 'সাম্প্রতিক সার্চ',
+                'clear_recent_searches': 'সব মুছুন',
                 // explore
                 'nav_repair_shops': 'মেরামত শপ',
                 'explore_verified_shops': 'যাচাইকৃত মেরামত শপ খুঁজুন',
@@ -3627,7 +3859,15 @@
                 document.documentElement.lang = (lang === 'bn') ? 'bn' : 'en';
             }
 
-            return { apply: apply };
+            function t(key, fallback) {
+                var lang = 'en';
+                try {
+                    lang = localStorage.getItem('meramot_lang') || 'en';
+                } catch (e) {}
+                return (lang === 'bn' && bn[key]) ? bn[key] : (fallback || key);
+            }
+
+            return { apply: apply, t: t };
         })();
 
         window.MeramotI18n.apply();

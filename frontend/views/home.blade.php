@@ -227,20 +227,51 @@
             </div>
         </section>
 
+        @if(!empty($recentlyViewed))
         <!-- ── 4. Recent Searches ── -->
-        <section class="space-y-3">
-            <h2 class="text-lg font-bold text-[var(--foreground)] md:text-xl" data-i18n="recently_viewed">
-                Recent Searches
-            </h2>
+        <section x-data="meramotHomeRecentSearches(@js($recentlyViewed))"
+                 x-show="items.length > 0"
+                 x-cloak
+                 class="space-y-3"
+                 data-recent-searches-section>
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="text-lg font-bold text-[var(--foreground)] md:text-xl" data-i18n="recently_viewed">
+                    Recent Searches
+                </h2>
+
+                <button type="button"
+                        @click="clearAll()"
+                        data-recent-clear-all
+                        class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition cursor-pointer"
+                        data-i18n="clear_recent_searches">
+                    Clear all
+                </button>
+            </div>
 
             <div class="flex flex-wrap gap-2">
-                @foreach($recentlyViewed as $item)
-                    <a href="{{ $item['href'] }}" class="inline-flex items-center justify-center rounded-md border border-[var(--border)] bg-[var(--card)] px-3.5 py-2 text-xs sm:text-sm font-medium leading-none text-[var(--foreground)] shadow-sm transition hover:border-[var(--accent-dark)]/50 hover:bg-[var(--mint-50)]">
-                        {{ $item['label'] }}
-                    </a>
-                @endforeach
+                <template x-for="item in items" :key="item.normalized || item.label">
+                    <div class="group inline-flex items-center rounded-md border border-[var(--border)] bg-[var(--card)] shadow-sm transition hover:border-[var(--accent-dark)]/50 hover:bg-[var(--mint-50)]">
+                        <a :href="item.href"
+                           :data-recent-search-query="item.label"
+                           data-no-prefetch="true"
+                           class="inline-flex items-center gap-2 pl-3 pr-2 py-2 text-xs sm:text-sm font-medium leading-none text-[var(--foreground)]">
+                            <svg class="h-3.5 w-3.5 shrink-0 text-[var(--muted-foreground)] group-hover:text-[var(--accent-dark)] transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="9"/>
+                                <polyline points="12 7 12 12 15.5 14"/>
+                            </svg>
+                            <span x-text="item.label"></span>
+                        </a>
+                        <button type="button"
+                                @click.prevent.stop="removeItem(item.label)"
+                                :aria-label="'Remove recent search ' + item.label"
+                                class="inline-flex h-6 w-6 mr-1 items-center justify-center rounded text-[11px] text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition cursor-pointer">
+                            ✕
+                        </button>
+                    </div>
+                </template>
             </div>
         </section>
+        @endif
 
     </div>
 </div>

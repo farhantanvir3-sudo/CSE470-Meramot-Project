@@ -26,6 +26,7 @@ use App\Models\ShopReview;
 use App\Models\User;
 use App\Models\VendorPayout;
 use App\Models\VendorProfile;
+use App\Services\RecentSearchService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -335,6 +336,8 @@ class SprintOneDemoSeeder extends Seeder
         if (!$customer) {
             return;
         }
+
+        RecentSearchService::seedDemoCustomerDefaults((int) $customer->id, true);
 
         $nusratCustomer = User::where('email', 'nusrat.jahan@meramot.demo')->first() ?? $customer;
 

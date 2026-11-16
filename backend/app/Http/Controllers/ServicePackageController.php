@@ -17,6 +17,7 @@ use App\Models\VendorProfile;
 use App\Services\GeolocationService;
 use App\Services\MarketplacePricingService;
 use App\Services\MarketplaceSearchEngine;
+use App\Services\RecentSearchService;
 use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -954,6 +955,10 @@ class ServicePackageController extends Controller
             ['title', 'device_category'],
             ['description', 'CAST(inclusions AS TEXT)']
         );
+
+        if ($request->filled('q') && $request->query('src') !== 'smart') {
+            RecentSearchService::record($request, (string) $request->input('q'), 'packages');
+        }
 
         $sort = $request->input('sort', 'popular');
         if ($searchRelevanceOrder !== null && ($sort === 'popular' || !($searchRelevanceOrder['all_matched'] ?? true))) {

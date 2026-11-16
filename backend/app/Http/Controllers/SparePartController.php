@@ -10,6 +10,7 @@ use App\Services\BangladeshLocationResolver;
 use App\Services\GeolocationService;
 use App\Services\MarketplacePricingService;
 use App\Services\MarketplaceSearchEngine;
+use App\Services\RecentSearchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -441,6 +442,9 @@ class SparePartController extends Controller
 
         // 2. Fuzzy, Tokenized & Typo-Tolerant Search query (`q`)
         $search = trim((string) $request->input('q', ''));
+        if ($search !== '' && $request->query('src') !== 'smart') {
+            RecentSearchService::record($request, $search, 'spare-parts');
+        }
         $searchRelevanceOrder = MarketplaceSearchEngine::applySparePartSearch($query, $search);
 
         // 3. Part Category & Sub-Category filters (`part_category`, `sub_category`)
@@ -1287,6 +1291,14 @@ class SparePartController extends Controller
         } else {
             unset($destParams['q']);
         }
+        $destParams['src'] = 'smart';
+
+        $targetSection = match ($destination['route']) {
+            'packages.catalog' => 'packages',
+            'shops.index' => 'shops',
+            default => 'spare-parts',
+        };
+        RecentSearchService::record($request, $raw, $targetSection);
 
         if ($destination['route'] === 'packages.catalog') {
             return redirect()->route('packages.catalog', $destParams);

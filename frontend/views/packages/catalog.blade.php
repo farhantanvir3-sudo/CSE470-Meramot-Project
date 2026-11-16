@@ -69,6 +69,7 @@
     <!-- Search & Multi-Parameter Filter Bar -->
     <div class="mb-5 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3.5 md:p-4 shadow-sm">
         <form method="GET" action="{{ route('packages.catalog') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_auto] gap-2.5 items-center text-xs">
+            <input type="hidden" name="src" value="search">
             <div class="relative sm:col-span-2 lg:col-span-1">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]"></i>
                 <input

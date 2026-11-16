@@ -118,6 +118,7 @@
         <div class="flex flex-col lg:flex-row lg:items-center gap-2">
             {{-- Compact Search Form (Shown md+; mobile header already provides full-width spare-parts search) --}}
             <form action="{{ url('/spare-parts') }}" method="GET" class="hidden md:flex flex-1 items-center gap-1.5 min-w-0">
+                <input type="hidden" name="src" value="search">
                 @if($deviceType !== 'all')
                     <input type="hidden" name="device_type" value="{{ $deviceType }}">
                 @endif

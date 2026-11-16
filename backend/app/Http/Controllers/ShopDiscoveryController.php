@@ -7,6 +7,7 @@ use App\Models\ServicePackage;
 use App\Models\SparePartListing;
 use App\Services\GeolocationService;
 use App\Services\MarketplaceSearchEngine;
+use App\Services\RecentSearchService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -39,7 +40,7 @@ class ShopDiscoveryController extends Controller
      * Public Homepage (Matches Meramot home).
      * Route: GET /
      */
-    public function home()
+    public function home(Request $request)
     {
         $featuredShops = RepairShop::where('is_active', true)
             ->where('is_public', true)
@@ -75,13 +76,7 @@ class ShopDiscoveryController extends Controller
             ['label' => 'Printer', 'sprite' => 'fa-print', 'trend' => 'Feed & printheads', 'href' => '/shops?q=printer'],
         ];
 
-        $recentlyViewed = [
-            ['label' => 'MacBook Air M2 battery replacement', 'href' => '/spare-parts?q=MacBook%20Air%20M2%20Battery'],
-            ['label' => 'iPhone 13 display set', 'href' => '/spare-parts?q=iPhone%2013%20Display'],
-            ['label' => 'ThinkPad keyboard repair', 'href' => '/shops?q=ThinkPad%20keyboard%20repair'],
-            ['label' => 'Sony PlayStation 5 HDMI port', 'href' => '/shops?q=PlayStation%205%20HDMI'],
-            ['label' => 'iPad Pro 11-inch digitizer', 'href' => '/shops?q=iPad%20Pro%20digitizer'],
-        ];
+        $recentlyViewed = RecentSearchService::getRecent($request);
 
         $popularPackages = ServicePackage::where('is_active', true)->where('is_popular', true)->take(4)->get();
 
@@ -119,6 +114,10 @@ class ShopDiscoveryController extends Controller
 
         // 1. Fuzzy, Tokenized & Cross-Catalog Search (q) across Workshop Info, Offered Services & Stocked Parts
         $searchRelevanceOrder = MarketplaceSearchEngine::applyShopSearch($query, $request->input('q'));
+
+        if ($request->filled('q') && $request->query('src') !== 'smart') {
+            RecentSearchService::record($request, (string) $request->input('q'), 'shops');
+        }
 
         // 2. Category Tab Filter (COURIER_PICKUP, IN_SHOP_REPAIR, SPARE_PARTS)
         // Exclude pure spare-parts-only wholesalers from default repair workshop listings unless searching explicitly.

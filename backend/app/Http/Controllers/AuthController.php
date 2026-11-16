@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\VendorProfile;
 use App\Services\GmailApiService;
+use App\Services\RecentSearchService;
 use App\Services\SmsService;
 use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
@@ -737,6 +738,9 @@ class AuthController extends Controller
             self::clearTransientAuthSession($request);
             Auth::login($user);
             $request->session()->regenerate();
+            if ($user->email === RecentSearchService::DEMO_CUSTOMER_EMAIL) {
+                RecentSearchService::seedDemoCustomerDefaults((int) $user->id, true);
+            }
             return redirect($this->redirectPathForUser($user, $role))
                 ->with('success', 'Signed in to demo portal as ' . $user->name . '!');
         }
