@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Tests\TestCase;
 use App\Models\RepairShop;
+use App\Models\SparePartListing;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -225,5 +226,49 @@ class ShopDiscoveryTest extends TestCase
         foreach ($shops as $shop) {
             $this->assertGreaterThanOrEqual(4.5, $shop['rating']);
         }
+    }
+
+    /** @test */
+    public function it_filters_shops_by_spare_parts_sale_price()
+    {
+        $proTech = RepairShop::where('name', 'ProTech Solutions')->first();
+        $budget = RepairShop::where('name', 'Budget Fix Center')->first();
+
+        // Create an active spare part listing on sale price for ProTech Solutions
+        SparePartListing::create([
+            'shop_id' => $proTech->id,
+            'title' => 'ThinkPad T480 Battery',
+            'product_group_key' => 'pgk-lenovo-t480-battery-test',
+            'slug' => 'thinkpad-t480-battery-test-sale',
+            'brand' => 'Lenovo',
+            'part_category' => 'Battery',
+            'base_price' => 2000,
+            'normal_price' => 2500,
+            'regular_price' => 2500,
+            'offer_price' => 2000,
+            'offer_enabled' => true,
+            'is_active' => true,
+            'stock_quantity' => 10,
+        ]);
+
+        // 1. Web Explore View with sale=true
+        $response = $this->get('/shops/explore?sale=true');
+        $response->assertStatus(200);
+        $response->assertSee('ProTech Solutions');
+        $response->assertDontSee('Budget Fix Center');
+        $response->assertSee('Sale');
+
+        // 2. Also with has_sale=true
+        $altResponse = $this->get('/shops/explore?has_sale=true');
+        $altResponse->assertStatus(200);
+        $altResponse->assertSee('ProTech Solutions');
+        $altResponse->assertDontSee('Budget Fix Center');
+
+        // 3. API Search filters by sale=true
+        $apiResponse = $this->getJson('/api/shops/search?sale=true');
+        $apiResponse->assertStatus(200);
+        $apiShops = collect($apiResponse->json('data.data'));
+        $this->assertTrue($apiShops->contains('name', 'ProTech Solutions'));
+        $this->assertFalse($apiShops->contains('name', 'Budget Fix Center'));
     }
 }

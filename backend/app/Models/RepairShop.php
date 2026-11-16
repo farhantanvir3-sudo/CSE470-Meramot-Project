@@ -308,4 +308,85 @@ class RepairShop extends Model
     {
         return $this->supportsSpareParts() && !$this->supportsRepairBookings();
     }
+
+    /**
+     * Reusable condition for spare part listings that are active and on a sale price.
+     */
+    public static function applySparePartsOnSaleCondition(\Illuminate\Database\Eloquent\Builder $spQ, ?\Illuminate\Support\Carbon $at = null): void
+    {
+        $now = $at ?: now();
+        $spQ->where('is_active', true)
+            ->where('offer_enabled', true)
+            ->where(function ($dateQ) use ($now) {
+                $dateQ->whereNull('offer_starts_at')->orWhere('offer_starts_at', '<=', $now);
+            })
+            ->where(function ($dateQ) use ($now) {
+                $dateQ->whereNull('offer_ends_at')->orWhere('offer_ends_at', '>=', $now);
+            })
+            ->where(function ($priceQ) {
+                $priceQ->where(function ($pq) {
+                    $pq->whereNotNull('offer_price')
+                        ->where('offer_price', '>', 0)
+                        ->where(function ($inner) {
+                            $inner->where(function ($withNorm) {
+                                $withNorm->whereNotNull('normal_price')
+                                    ->whereColumn('offer_price', '<', 'normal_price');
+                            })->orWhere(function ($withoutNorm) {
+                                $withoutNorm->whereNull('normal_price')
+                                    ->whereColumn('offer_price', '<', 'base_price');
+                            });
+                        });
+                })
+                ->orWhere(function ($pq) {
+                    $pq->whereNotNull('offer_discount_pct')
+                        ->where('offer_discount_pct', '>', 0);
+                })
+                ->orWhere(function ($pq) {
+                    $pq->whereNotNull('normal_price')
+                        ->whereColumn('normal_price', '>', 'base_price');
+                })
+                ->orWhere(function ($pq) {
+                    $pq->whereNotNull('regular_price')
+                        ->whereColumn('regular_price', '>', 'base_price');
+                });
+            });
+    }
+
+    /**
+     * Whether this workshop/store has active spare part listings currently on a sale price.
+     */
+    public function hasSparePartsOnSale(?\Illuminate\Support\Carbon $at = null): bool
+    {
+        if (isset($this->attributes['has_sale_parts'])) {
+            return (bool) $this->attributes['has_sale_parts'];
+        }
+
+        if (!$this->supportsSpareParts()) {
+            return false;
+        }
+
+        if ($this->relationLoaded('sparePartListings')) {
+            return $this->sparePartListings->contains(function ($listing) use ($at) {
+                return (bool) $listing->is_active
+                    && (bool) $listing->isOfferActive($at)
+                    && (float) $listing->resolvedNormalBasePrice() > (float) $listing->effectiveBasePrice($at);
+            });
+        }
+
+        return $this->sparePartListings()
+            ->where(function ($spQ) use ($at) {
+                static::applySparePartsOnSaleCondition($spQ, $at);
+            })
+            ->exists();
+    }
+
+    /**
+     * Scope query to only shops that have active spare parts on sale price.
+     */
+    public function scopeHasSparePartsOnSale(\Illuminate\Database\Eloquent\Builder $query, ?\Illuminate\Support\Carbon $at = null): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereHas('sparePartListings', function ($spQ) use ($at) {
+            static::applySparePartsOnSaleCondition($spQ, $at);
+        });
+    }
 }

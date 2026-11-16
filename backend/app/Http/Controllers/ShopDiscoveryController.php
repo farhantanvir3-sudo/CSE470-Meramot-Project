@@ -148,6 +148,14 @@ class ShopDiscoveryController extends Controller
         if ($request->boolean('deals') || $request->boolean('has_deals')) {
             $query->where('has_deals', true);
         }
+        if ($request->boolean('sale') || $request->boolean('has_sale')) {
+            $query->hasSparePartsOnSale();
+        }
+
+        $now = now();
+        $query->withExists(['sparePartListings as has_sale_parts' => function ($spQ) use ($now) {
+            RepairShop::applySparePartsOnSaleCondition($spQ, $now);
+        }]);
 
         // 7. Minimum Rating
         if ($request->filled('min_rating')) {
@@ -532,6 +540,14 @@ class ShopDiscoveryController extends Controller
         if ($request->boolean('free_delivery') || $request->boolean('freeDelivery')) {
             $query->where('free_delivery', true);
         }
+        if ($request->boolean('sale') || $request->boolean('has_sale')) {
+            $query->hasSparePartsOnSale();
+        }
+
+        $now = now();
+        $query->withExists(['sparePartListings as has_sale_parts' => function ($spQ) use ($now) {
+            RepairShop::applySparePartsOnSaleCondition($spQ, $now);
+        }]);
 
         $rawSort = $request->input('sort', 'rating');
         $sortMap = [
@@ -612,6 +628,7 @@ class ShopDiscoveryController extends Controller
                 $shop->eta_minutes = GeolocationService::estimateTravelTime((float) $shop->distance_km);
                 $shop->eta_formatted = GeolocationService::formatEta((int) $shop->eta_minutes);
             }
+            $shop->has_sale_parts = (bool) ($shop->has_sale_parts ?? false);
             return $shop;
         });
 
@@ -620,6 +637,7 @@ class ShopDiscoveryController extends Controller
             'filters_applied' => $request->only([
                 'q', 'category', 'city', 'area', 'branched', 'min_rating', 'max_price_level',
                 'has_deals', 'deals', 'has_voucher', 'voucher', 'free_delivery', 'freeDelivery',
+                'sale', 'has_sale',
                 'max_distance_km', 'maxDistanceKm', 'lat', 'lng', 'sort',
             ]),
             'data' => $shops,
