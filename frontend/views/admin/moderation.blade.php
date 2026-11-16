@@ -5,58 +5,58 @@
     @include('admin.partials.nav')
 
     {{-- Header --}}
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3.5 sm:gap-4 rounded-lg sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm">
         <div>
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-[10px] font-extrabold uppercase tracking-wider text-rose-800">
+            <span class="inline-flex items-center gap-1.5 rounded bg-rose-100 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-rose-800">
                 <i class="fa-solid fa-shield-halved"></i> Trust &amp; Safety Governance
             </span>
-            <h1 class="mt-2 text-xl sm:text-2xl md:text-3xl font-black leading-tight text-[var(--foreground)]">Content Moderation &amp; User Sanctions</h1>
+            <h1 class="mt-2 text-xl sm:text-2xl md:text-3xl font-bold leading-tight text-[var(--foreground)]">Content Moderation &amp; User Sanctions</h1>
             <p class="mt-1 text-[11px] sm:text-xs md:text-sm text-[var(--muted-foreground)] leading-relaxed">
                 Audit workshop reviews for policy violations, remove abusive feedback, restrict or restore user ordering privileges, and dispatch email and in-app alerts to affected accounts.
             </p>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 w-full md:w-auto md:flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div class="rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/70 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
-                <div class="text-base sm:text-lg font-black text-[var(--foreground)]">{{ $reviews->count() }}</div>
+            <div class="rounded-xl sm:rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/70 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
+                <div class="text-base sm:text-lg font-bold text-[var(--foreground)]">{{ $reviews->count() }}</div>
                 <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Active Reviews</div>
             </div>
-            <div class="rounded-xl sm:rounded-2xl border border-amber-300 bg-amber-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
-                <div class="text-base sm:text-lg font-black text-amber-800">{{ isset($disputes) ? $disputes->whereIn('status', ['OPEN', 'INVESTIGATING', 'WAITING_EVIDENCE', 'WAITING_RESPONSE'])->count() : 0 }}</div>
+            <div class="rounded-xl sm:rounded-lg border border-amber-300 bg-amber-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
+                <div class="text-base sm:text-lg font-bold text-amber-800">{{ isset($disputes) ? $disputes->whereIn('status', ['OPEN', 'INVESTIGATING', 'WAITING_EVIDENCE', 'WAITING_RESPONSE'])->count() : 0 }}</div>
                 <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-amber-900">Open Disputes</div>
             </div>
-            <div class="rounded-xl sm:rounded-2xl border border-sky-300 bg-sky-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
-                <div class="text-base sm:text-lg font-black text-sky-800">{{ isset($supportTickets) ? $supportTickets->whereIn('status', ['OPEN', 'IN_PROGRESS', 'ESCALATED'])->count() : 0 }}</div>
+            <div class="rounded-xl sm:rounded-lg border border-sky-300 bg-sky-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
+                <div class="text-base sm:text-lg font-bold text-sky-800">{{ isset($supportTickets) ? $supportTickets->whereIn('status', ['OPEN', 'IN_PROGRESS', 'ESCALATED'])->count() : 0 }}</div>
                 <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-sky-900">Open Tickets</div>
             </div>
-            <div class="rounded-xl sm:rounded-2xl border border-rose-300 bg-rose-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
-                <div class="text-base sm:text-lg font-black text-rose-700">{{ $bannedUsers->count() }}</div>
+            <div class="rounded-xl sm:rounded-lg border border-rose-300 bg-rose-50 px-3.5 py-2 sm:px-4 sm:py-2.5 text-center">
+                <div class="text-base sm:text-lg font-bold text-rose-700">{{ $bannedUsers->count() }}</div>
                 <div class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-rose-800">Banned Users</div>
             </div>
         </div>
     </div>
 
     @if(session('success'))
-        <div class="rounded-2xl border border-emerald-400 bg-emerald-50 p-4 text-xs font-bold text-emerald-950 flex items-center gap-2.5">
+        <div class="rounded-lg border border-emerald-400 bg-emerald-50 p-4 text-xs font-bold text-emerald-950 flex items-center gap-2.5">
             <i class="fa-solid fa-circle-check text-emerald-700"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
     @if(session('error') || $errors->any())
-        <div class="rounded-2xl border border-rose-300 bg-rose-50 p-4 text-xs font-bold text-rose-900">
+        <div class="rounded-lg border border-rose-300 bg-rose-50 p-4 text-xs font-bold text-rose-900">
             {{ session('error') ?? $errors->first() }}
         </div>
     @endif
 
     {{-- Section 0: Order Disputes & Governance Sanction Desk (Feature R19) --}}
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <section class="lg:col-span-7 rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 text-xs">
+        <section class="lg:col-span-7 rounded-lg sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 text-xs">
             <div class="flex items-center justify-between gap-2">
                 <div>
-                    <h2 class="text-lg font-black text-[var(--foreground)]">Escrow Order Disputes Arbitration</h2>
+                    <h2 class="text-lg font-bold text-[var(--foreground)]">Escrow Order Disputes Arbitration</h2>
                     <p class="text-xs text-[var(--muted-foreground)]">Resolve customer-workshop disputes with optional full or partial escrow refunds.</p>
                 </div>
-                <span class="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900">
+                <span class="rounded-md bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900">
                     {{ isset($disputes) ? $disputes->count() : 0 }} Cases
                 </span>
             </div>
@@ -66,12 +66,12 @@
                     @php
                         $isOpenCase = in_array($dc->status, ['OPEN', 'INVESTIGATING', 'WAITING_EVIDENCE', 'WAITING_RESPONSE'], true);
                     @endphp
-                    <div class="rounded-2xl border p-4 space-y-2.5 {{ $isOpenCase ? 'border-amber-300 bg-amber-50/60' : 'border-[var(--border)] bg-[var(--mint-100)]/45' }}">
+                    <div class="rounded-lg border p-4 space-y-2.5 {{ $isOpenCase ? 'border-amber-300 bg-amber-50/60' : 'border-[var(--border)] bg-[var(--mint-100)]/45' }}">
                         <div class="flex flex-wrap items-center justify-between gap-2">
-                            <span class="font-black text-sm text-[var(--foreground)]">
+                            <span class="font-bold text-sm text-[var(--foreground)]">
                                 Dispute #{{ $dc->id }} • Order #{{ $dc->repair_request_id }} ({{ $dc->repairRequest?->title ?? 'Repair Order' }})
                             </span>
-                            <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $isOpenCase ? 'bg-amber-200 text-amber-950' : 'bg-emerald-100 text-emerald-900' }}">
+                            <span class="rounded px-2.5 py-0.5 text-[10px] font-semibold uppercase {{ $isOpenCase ? 'bg-amber-200 text-amber-950' : 'bg-emerald-100 text-emerald-900' }}">
                                 {{ $dc->status }}
                             </span>
                         </div>
@@ -100,7 +100,7 @@
                                 </select>
                                 <input type="text" name="resolution" required placeholder="Arbitration ruling & settlement note..."
                                        class="sm:col-span-5 rounded-xl border border-[var(--border)] bg-white px-3 py-2 text-[var(--foreground)]">
-                                <button type="submit" class="sm:col-span-3 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-3 py-2 hover:opacity-90 transition">
+                                <button type="submit" class="sm:col-span-3 rounded-md bg-[var(--accent-dark)] text-[var(--accent-foreground)] font-bold px-3 py-2 hover:opacity-90 transition">
                                     Rule Case
                                 </button>
                             </form>
@@ -109,7 +109,7 @@
                         @endif
                     </div>
                 @empty
-                    <div class="rounded-2xl border border-dashed border-[var(--border)] p-6 text-center text-[var(--muted-foreground)]">
+                    <div class="rounded-lg border border-dashed border-[var(--border)] p-6 text-center text-[var(--muted-foreground)]">
                         No order disputes filed.
                     </div>
                 @endforelse
@@ -117,10 +117,10 @@
         </section>
 
         <!-- Governance Sanction Desk -->
-        <section class="lg:col-span-5 rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 text-xs"
+        <section class="lg:col-span-5 rounded-lg sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 text-xs"
                  x-data="{ targetType: 'user' }">
             <div>
-                <h2 class="text-lg font-black text-[var(--foreground)]">Direct Governance Sanction Desk</h2>
+                <h2 class="text-lg font-bold text-[var(--foreground)]">Direct Governance Sanction Desk</h2>
                 <p class="text-xs text-[var(--muted-foreground)]">Issue official warnings, account suspensions, or workshop delistings.</p>
             </div>
 
@@ -177,7 +177,7 @@
                               class="w-full rounded-xl border border-[var(--border)] bg-white px-3 py-2"></textarea>
                 </div>
 
-                <button type="submit" class="w-full rounded-full bg-rose-700 hover:bg-rose-800 py-2.5 px-5 font-black text-white transition shadow">
+                <button type="submit" class="w-full rounded-md bg-rose-700 hover:bg-rose-800 py-2.5 px-5 font-bold text-white transition shadow">
                     <i class="fa-solid fa-gavel mr-1"></i> Execute Governance Action
                 </button>
             </form>
@@ -186,20 +186,20 @@
 
     {{-- Support Escalations Queue --}}
     @if(isset($supportTickets) && $supportTickets->count() > 0)
-        <section class="rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 text-xs">
+        <section class="rounded-lg sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 text-xs">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-lg font-black text-[var(--foreground)]">Customer &amp; Partner Support Escalations</h2>
+                    <h2 class="text-lg font-bold text-[var(--foreground)]">Customer &amp; Partner Support Escalations</h2>
                     <p class="text-xs text-[var(--muted-foreground)]">Respond directly to open support tickets submitted via the Help &amp; Dispute Desk.</p>
                 </div>
-                <span class="rounded-full bg-sky-100 px-3 py-1 text-[11px] font-bold text-sky-900">{{ $supportTickets->count() }} Tickets</span>
+                <span class="rounded-md bg-sky-100 px-3 py-1 text-[11px] font-bold text-sky-900">{{ $supportTickets->count() }} Tickets</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                 @foreach($supportTickets->take(6) as $st)
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-2">
+                    <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-2">
                         <div class="flex items-center justify-between gap-2">
-                            <span class="font-black text-[var(--foreground)]">#{{ $st->id }} — {{ $st->subject }}</span>
-                            <span class="rounded-full bg-white border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold">{{ $st->status }}</span>
+                            <span class="font-bold text-[var(--foreground)]">#{{ $st->id }} — {{ $st->subject }}</span>
+                            <span class="rounded bg-white border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold">{{ $st->status }}</span>
                         </div>
                         <p class="text-[11px] text-[var(--muted-foreground)]">{{ $st->user?->name ?? 'User' }} • Priority: <strong class="uppercase">{{ $st->priority }}</strong></p>
                         <p class="rounded-xl bg-white p-2.5 border border-[var(--border)] text-[11px]">{{ $st->message }}</p>
@@ -208,7 +208,7 @@
                                 @csrf
                                 <input type="text" name="admin_notes" required placeholder="Official support resolution..."
                                        class="flex-1 rounded-xl border border-[var(--border)] bg-white px-3 py-1.5">
-                                <button type="submit" class="rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-4 py-1.5 font-bold">
+                                <button type="submit" class="rounded-md bg-[var(--accent-dark)] text-[var(--accent-foreground)] px-4 py-1.5 font-bold">
                                     Resolve
                                 </button>
                             </form>
@@ -222,13 +222,13 @@
     @endif
 
     {{-- Section 1: Workshop Reviews Moderation Queue --}}
-    <section class="rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
+    <section class="rounded-lg sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-                <h2 class="text-lg font-black text-[var(--foreground)]">Workshop Reviews Moderation Queue</h2>
+                <h2 class="text-lg font-bold text-[var(--foreground)]">Workshop Reviews Moderation Queue</h2>
                 <p class="text-xs text-[var(--muted-foreground)]">Flagged reviews containing potentially offensive words appear first so admins can delete them or ban repeat offenders.</p>
             </div>
-            <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
+            <span class="rounded-md bg-[var(--mint-100)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
                 {{ $reviews->where(fn ($r) => \App\Models\ShopReview::containsOffensiveLanguage($r->review_comment))->count() }} Flagged
             </span>
         </div>
@@ -240,29 +240,29 @@
                     $hasOffensive = count($detectedWords) > 0;
                     $authorIsBanned = $rev->customer && $rev->customer->isBanned();
                 @endphp
-                <div x-data="{ banFormOpen: false }" class="rounded-2xl border p-4 sm:p-5 {{ $hasOffensive ? 'border-rose-300 bg-rose-50/60 dark:bg-rose-950/20' : 'border-[var(--border)] bg-[var(--mint-100)]/40' }}">
+                <div x-data="{ banFormOpen: false }" class="rounded-lg border p-4 sm:p-5 {{ $hasOffensive ? 'border-rose-300 bg-rose-50/60 dark:bg-rose-950/20' : 'border-[var(--border)] bg-[var(--mint-100)]/40' }}">
                     <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                         <div class="space-y-2 min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="font-extrabold text-sm text-[var(--foreground)]">
+                                <span class="font-semibold text-sm text-[var(--foreground)]">
                                     {{ $rev->customer->name ?? 'Meramot Customer' }}
                                 </span>
                                 <span class="text-xs text-[var(--muted-foreground)] break-all">({{ $rev->customer->email ?? 'N/A' }})</span>
 
                                 @if($authorIsBanned)
-                                    <span class="rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                                    <span class="rounded bg-rose-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
                                         Banned User
                                     </span>
                                 @endif
 
                                 @if($hasOffensive)
-                                    <span class="rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white">
+                                    <span class="rounded bg-amber-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
                                         Offensive Words: {{ implode(', ', $detectedWords) }}
                                     </span>
                                 @endif
 
                                 @if($rev->is_verified_purchase)
-                                    <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                                    <span class="rounded bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
                                         Verified Repair
                                     </span>
                                 @endif
@@ -303,7 +303,7 @@
                                 @csrf
                                 <input type="hidden" name="action_type" value="delete_only">
                                 <input type="hidden" name="reason" value="Removed by Admin for inappropriate or offensive language in review #{{ $rev->id }}.">
-                                <button type="submit" class="w-full inline-flex items-center justify-center gap-1.5 rounded-full bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-amber-700 transition">
+                                <button type="submit" class="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-amber-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-amber-700 transition">
                                     <i class="fa-solid fa-trash-can"></i>
                                     <span>Delete Review</span>
                                 </button>
@@ -313,7 +313,7 @@
                                 <button
                                     type="button"
                                     @click="banFormOpen = !banFormOpen"
-                                    class="inline-flex items-center justify-center gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                    class="inline-flex items-center justify-center gap-1.5 rounded-md bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
                                 >
                                     <i class="fa-solid fa-ban"></i>
                                     <span>Delete &amp; Ban User</span>
@@ -328,12 +328,12 @@
                             x-cloak
                             method="POST"
                             action="{{ route('admin.reviews.moderate', $rev->id) }}"
-                            class="mt-4 rounded-2xl border border-rose-300 bg-[var(--card)] p-4 space-y-3"
+                            class="mt-4 rounded-lg border border-rose-300 bg-[var(--card)] p-4 space-y-3"
                         >
                             @csrf
                             <input type="hidden" name="action_type" value="delete_and_ban">
                             <div>
-                                <label class="block text-[11px] font-extrabold uppercase tracking-wider text-rose-800 mb-1">
+                                <label class="block text-[11px] font-semibold uppercase tracking-wider text-rose-800 mb-1">
                                     Restriction Reason (Delivered via Email &amp; In-App Notification to {{ $rev->customer->email }})
                                 </label>
                                 <input
@@ -346,10 +346,10 @@
                                 >
                             </div>
                             <div class="flex flex-wrap items-center justify-end gap-2">
-                                <button type="button" @click="banFormOpen = false" class="rounded-full border border-[var(--border)] px-4 py-1.5 text-xs font-bold text-[var(--foreground)]">
+                                <button type="button" @click="banFormOpen = false" class="rounded-md border border-[var(--border)] px-4 py-1.5 text-xs font-bold text-[var(--foreground)]">
                                     Cancel
                                 </button>
-                                <button type="submit" class="rounded-full bg-rose-700 px-5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-800 transition">
+                                <button type="submit" class="rounded-md bg-rose-700 px-5 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-rose-800 transition">
                                     Confirm Delete Review &amp; Ban User
                                 </button>
                             </div>
@@ -357,7 +357,7 @@
                     @endif
                 </div>
             @empty
-                <div class="rounded-2xl border border-dashed border-[var(--border)] p-8 text-center text-xs text-[var(--muted-foreground)]">
+                <div class="rounded-lg border border-dashed border-[var(--border)] p-8 text-center text-xs text-[var(--muted-foreground)]">
                     No active workshop reviews in the queue right now.
                 </div>
             @endforelse
@@ -365,13 +365,13 @@
     </section>
 
     {{-- Section 2: Banned / Restricted Users Desk --}}
-    <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+    <section class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-                <h2 class="text-lg font-black text-[var(--foreground)]">Banned &amp; Restricted Accounts</h2>
+                <h2 class="text-lg font-bold text-[var(--foreground)]">Banned &amp; Restricted Accounts</h2>
                 <p class="text-xs text-[var(--muted-foreground)]">Banned users can still log in to view ongoing &amp; past orders, but cannot place orders, post repair requests, or submit reviews.</p>
             </div>
-            <span class="rounded-full bg-rose-100 px-3 py-1 text-[11px] font-bold text-rose-800">
+            <span class="rounded-md bg-rose-100 px-3 py-1 text-[11px] font-bold text-rose-800">
                 {{ $bannedUsers->count() }} Restricted
             </span>
         </div>
@@ -379,7 +379,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                    <tr class="border-b border-[var(--border)] text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">
+                    <tr class="border-b border-[var(--border)] text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                         <th class="py-2.5 pr-4">User</th>
                         <th class="py-2.5 pr-4">Role</th>
                         <th class="py-2.5 pr-4">Ban Reason</th>
@@ -395,7 +395,7 @@
                                 <div class="text-[11px] text-[var(--muted-foreground)] break-all">{{ $u->email }}</div>
                             </td>
                             <td class="py-3 pr-4 whitespace-nowrap">
-                                <span class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold uppercase text-[var(--accent-dark)]">
+                                <span class="rounded bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold uppercase text-[var(--accent-dark)]">
                                     {{ $u->role }}
                                 </span>
                             </td>
@@ -408,7 +408,7 @@
                             <td class="py-3 text-right whitespace-nowrap">
                                 <form method="POST" action="{{ route('admin.users.unban', $u->id) }}" class="inline">
                                     @csrf
-                                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-emerald-700 transition">
+                                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-4 py-1.5 text-[11px] font-bold text-white shadow-sm hover:bg-emerald-700 transition">
                                         <i class="fa-solid fa-unlock"></i>
                                         <span>Unban &amp; Restore Access</span>
                                     </button>
@@ -428,10 +428,10 @@
     </section>
 
     {{-- Section 3: Moderation Audit Trail --}}
-    <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+    <section class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-                <h2 class="text-lg font-black text-[var(--foreground)]">Moderation Audit Log</h2>
+                <h2 class="text-lg font-bold text-[var(--foreground)]">Moderation Audit Log</h2>
                 <p class="text-xs text-[var(--muted-foreground)]">Immutable record of review deletions, user bans, and account restorations.</p>
             </div>
         </div>
@@ -439,7 +439,7 @@
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
                 <thead>
-                    <tr class="border-b border-[var(--border)] text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">
+                    <tr class="border-b border-[var(--border)] text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                         <th class="py-2.5 pr-4">Target</th>
                         <th class="py-2.5 pr-4">Violation</th>
                         <th class="py-2.5 pr-4">Action Taken</th>
@@ -456,7 +456,7 @@
                             </td>
                             <td class="py-3 pr-4 text-[var(--muted-foreground)] whitespace-nowrap">{{ $log->violation_type }}</td>
                             <td class="py-3 pr-4 whitespace-nowrap">
-                                <span class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase {{ $log->action_taken === 'unban' ? 'bg-emerald-100 text-emerald-800' : (str_contains($log->action_taken, 'ban') ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">
+                                <span class="rounded px-2.5 py-0.5 text-[10px] font-semibold uppercase {{ $log->action_taken === 'unban' ? 'bg-emerald-100 text-emerald-800' : (str_contains($log->action_taken, 'ban') ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">
                                     {{ str_replace('_', ' ', $log->action_taken) }}
                                 </span>
                             </td>

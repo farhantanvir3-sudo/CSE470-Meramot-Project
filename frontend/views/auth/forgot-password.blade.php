@@ -25,18 +25,18 @@
             </a>
         </div>
 
-        <div class="relative rounded-[2rem] border border-white/60 bg-white/95 px-6 sm:px-8 py-7 shadow-2xl backdrop-blur">
+        <div class="relative rounded-lg border border-white/60 bg-white/95 px-6 sm:px-8 py-7 shadow-2xl backdrop-blur">
             <a
                 href="/login"
                 title="Back to Sign In"
                 aria-label="Back to Sign In"
-                class="group absolute left-5 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5]"
+                class="group absolute left-5 top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5]"
             >
                 <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
             </a>
 
             <div class="mb-5 text-center px-8">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-900 mb-2">
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 border border-emerald-200 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-emerald-900 mb-2">
                     <i class="fa-solid fa-shield-halved"></i> Identity Verified
                 </span>
                 <h1 class="text-2xl sm:text-3xl font-bold leading-tight text-[#214c34]">
@@ -46,7 +46,7 @@
                     Create a strong new password for your account.
                 </p>
                 @if(!empty($maskedEmail))
-                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#cbe0c2] bg-[#f8fbf6] px-3 py-1 font-mono text-xs font-bold text-[#163625]">
+                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[#cbe0c2] bg-[#f8fbf6] px-3 py-1 font-mono text-xs font-bold text-[#163625]">
                         <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
                         <span>{{ $maskedEmail }}</span>
                     </p>
@@ -54,7 +54,7 @@
             </div>
 
             @if($errors->any())
-                <div class="mb-4 rounded-2xl bg-red-50/90 border border-red-200 px-4 py-3 text-xs font-medium text-red-800 space-y-1">
+                <div class="mb-4 rounded-lg bg-red-50/90 border border-red-200 px-4 py-3 text-xs font-medium text-red-800 space-y-1">
                     @foreach($errors->all() as $err)
                         <div class="flex items-start gap-2">
                             <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0 text-red-600"></i>
@@ -84,7 +84,7 @@
                             required
                             autofocus
                             placeholder="Minimum 8 characters"
-                            class="w-full rounded-2xl border border-[#c8dac2] bg-white pl-4 pr-16 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                            class="w-full rounded-lg border border-[#c8dac2] bg-white pl-4 pr-16 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         />
                         <button
                             type="button"
@@ -116,7 +116,7 @@
                             minlength="8"
                             required
                             placeholder="Re-enter new password"
-                            class="w-full rounded-2xl border border-[#c8dac2] bg-white pl-4 pr-16 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                            class="w-full rounded-lg border border-[#c8dac2] bg-white pl-4 pr-16 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         />
                         <button
                             type="button"
@@ -130,7 +130,7 @@
 
                 <button
                     type="submit"
-                    class="w-full rounded-full bg-[#163625] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
+                    class="w-full rounded-full bg-[#163625] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     Save New Password
                 </button>

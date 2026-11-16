@@ -24,17 +24,17 @@
         <div>
             <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--muted-foreground)]">Analytics & Accounting</p>
             <div class="dev-only-badge flex flex-wrap items-center gap-2 mt-1">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
                     <i class="fa-solid fa-code-commit mr-1 text-[10px]"></i> Feature R16
                 </span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-900 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-blue-100 text-blue-900 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
                     Sprint 1 Target
                 </span>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[11px] font-bold bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]">
                     Double-Entry GAAP Accounting
                 </span>
             </div>
-            <h1 class="text-xl sm:text-2xl lg:text-3xl font-black text-[var(--foreground)] mt-1 sm:mt-2 tracking-tight flex items-start sm:items-center gap-2 leading-tight">
+            <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-[var(--foreground)] mt-1 sm:mt-2 tracking-tight flex items-start sm:items-center gap-2 leading-tight">
                 <i class="fa-solid fa-scale-balanced text-emerald-600 dark:text-emerald-400 mt-1 sm:mt-0 shrink-0"></i>
                 <span>Financial Business Intelligence & Double-Entry Ledger</span>
             </h1>
@@ -48,7 +48,7 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <span class="inline-flex items-center text-[11px] sm:text-xs font-semibold text-[var(--foreground)] bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-full shadow-sm">
+            <span class="inline-flex items-center text-[11px] sm:text-xs font-semibold text-[var(--foreground)] bg-[var(--card)] border border-[var(--border)] px-3 py-1.5 rounded-md shadow-sm">
                 <i class="fa-solid fa-shield-halved text-emerald-600 dark:text-emerald-400 mr-2"></i> Immutable Ledger Active
             </span>
         </div>
@@ -56,19 +56,19 @@
 
     <!-- Flash Feedback Banner -->
     @if(session('success'))
-        <div class="rounded-2xl border border-emerald-600/40 bg-[var(--mint-100)] px-5 py-3.5 text-xs font-bold text-[var(--accent-dark)] flex items-center gap-2 shadow-sm">
+        <div class="rounded-lg border border-emerald-600/40 bg-[var(--mint-100)] px-5 py-3.5 text-xs font-bold text-[var(--accent-dark)] flex items-center gap-2 shadow-sm">
             <i class="fa-solid fa-circle-check text-emerald-700"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
     @if(session('warning'))
-        <div class="rounded-2xl border border-amber-500/40 bg-amber-50 px-5 py-3.5 text-xs font-bold text-amber-900 flex items-center gap-2 shadow-sm">
+        <div class="rounded-lg border border-amber-500/40 bg-amber-50 px-5 py-3.5 text-xs font-bold text-amber-900 flex items-center gap-2 shadow-sm">
             <i class="fa-solid fa-triangle-exclamation text-amber-600"></i>
             <span>{{ session('warning') }}</span>
         </div>
     @endif
     @if($errors->any())
-        <div class="rounded-2xl border border-rose-500/40 bg-rose-50 px-5 py-3.5 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
+        <div class="rounded-lg border border-rose-500/40 bg-rose-50 px-5 py-3.5 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
             <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
             <span>{{ $errors->first() }}</span>
         </div>
@@ -80,7 +80,7 @@
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 sm:gap-y-5">
 
         <!-- Cumulative Credits -->
-        <div class="meramot-card rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
+        <div class="meramot-card rounded-lg sm:rounded-lg p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
             <div class="flex items-start justify-between gap-1.5">
                 <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
                     <span class="sm:hidden">Inflow (Credits)</span>
@@ -91,7 +91,7 @@
                 </div>
             </div>
             <div>
-                <p class="text-sm sm:text-2xl xl:text-3xl font-black text-emerald-700 dark:text-emerald-400 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
+                <p class="text-sm sm:text-2xl xl:text-3xl font-bold text-emerald-700 dark:text-emerald-400 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
                     ৳{{ number_format($totalCredits, 2) }}
                 </p>
                 <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center leading-snug">
@@ -103,7 +103,7 @@
         </div>
 
         <!-- Cumulative Debits -->
-        <div class="meramot-card rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
+        <div class="meramot-card rounded-lg sm:rounded-lg p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
             <div class="flex items-start justify-between gap-1.5">
                 <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
                     <span class="sm:hidden">Outflow (Debits)</span>
@@ -114,7 +114,7 @@
                 </div>
             </div>
             <div>
-                <p class="text-sm sm:text-2xl xl:text-3xl font-black text-rose-700 dark:text-rose-400 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
+                <p class="text-sm sm:text-2xl xl:text-3xl font-bold text-rose-700 dark:text-rose-400 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
                     ৳{{ number_format($totalDebits, 2) }}
                 </p>
                 <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center leading-snug">
@@ -134,7 +134,7 @@
         @endphp
 
         <!-- Dynamic Platform Commission Revenue (5%–10% Excl. Delivery) -->
-        <div class="meramot-card rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
+        <div class="meramot-card rounded-lg sm:rounded-lg p-3.5 sm:p-5 shadow-sm transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
             <div class="flex items-start justify-between gap-1.5">
                 <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
                     <span class="sm:hidden">Platform Fee</span>
@@ -145,7 +145,7 @@
                 </div>
             </div>
             <div>
-                <p class="text-sm sm:text-2xl xl:text-3xl font-black text-teal-700 dark:text-teal-400 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
+                <p class="text-sm sm:text-2xl xl:text-3xl font-bold text-teal-700 dark:text-teal-400 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
                     ৳{{ number_format($totalCommissionRevenue, 2) }}
                 </p>
                 <p class="text-[10px] sm:text-[11px] text-[var(--muted-foreground)] mt-1 flex items-center leading-snug">
@@ -157,7 +157,7 @@
         </div>
 
         <!-- Net Platform Reserve -->
-        <div class="rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm border border-[var(--border)] bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 dark:from-[#0d1611] dark:via-[#14231b] dark:to-[#1b3125] text-white transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
+        <div class="rounded-lg sm:rounded-lg p-3.5 sm:p-5 shadow-sm border border-[var(--border)] bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 dark:from-[#0d1611] dark:via-[#14231b] dark:to-[#1b3125] text-white transition hover:scale-[1.01] flex flex-col justify-between min-w-0">
             <div class="flex items-start justify-between gap-1.5">
                 <span class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider leading-tight text-emerald-300">
                     <span class="sm:hidden">Net Reserve</span>
@@ -168,7 +168,7 @@
                 </div>
             </div>
             <div>
-                <p class="text-sm sm:text-2xl xl:text-3xl font-black text-emerald-300 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
+                <p class="text-sm sm:text-2xl xl:text-3xl font-bold text-emerald-300 mt-2 sm:mt-3 font-mono tracking-tight break-all sm:break-normal">
                     ৳{{ number_format($netPlatformBalance, 2) }}
                 </p>
                 <p class="text-[10px] sm:text-[11px] text-slate-300 mt-1 flex items-center leading-snug">
@@ -183,14 +183,14 @@
     {{-- ======================================================================
          RELOCATED BLOCK 2: Dynamic 5%–10% Platform Commission Accounting Breakdown
          ====================================================================== --}}
-    <div class="meramot-card rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 shadow-sm bg-[var(--mint-100)] border border-[var(--border)] space-y-4 sm:space-y-5">
+    <div class="meramot-card rounded-lg sm:rounded-lg p-4 sm:p-6 shadow-sm bg-[var(--mint-100)] border border-[var(--border)] space-y-4 sm:space-y-5">
         <div class="space-y-3 sm:space-y-4">
             <div class="max-w-3xl">
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="px-2.5 py-0.5 text-[10px] font-black uppercase rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] tracking-wide">
+                    <span class="px-2.5 py-0.5 text-[10px] font-bold uppercase rounded bg-[var(--accent-dark)] text-[var(--accent-foreground)] tracking-wide">
                         Dynamic Fee Engine
                     </span>
-                    <h3 class="text-xs sm:text-sm font-black text-[var(--foreground)]">Transparent Exclusive Pricing &amp; Platform Logistics Accounting</h3>
+                    <h3 class="text-xs sm:text-sm font-bold text-[var(--foreground)]">Transparent Exclusive Pricing &amp; Platform Logistics Accounting</h3>
                 </div>
                 <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1.5 sm:mt-2 leading-relaxed">
                     Listed service and spare part prices are settled in full to verified workshops. Meramot applies dynamic marketplace service fees averaging <strong>{{ $avgFeeDisplay }}%</strong> while managing doorstep courier logistics separately.
@@ -200,27 +200,27 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 text-center">
                 <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
                     <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Total Volume</span>
-                    <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalCustomerInflow, 2) }}</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-bold text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalCustomerInflow, 2) }}</span>
                 </div>
                 <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
                     <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Platform Fee (5–10%)</span>
-                    <span class="mt-1 block text-xs sm:text-sm font-black text-teal-700 dark:text-teal-400 font-mono whitespace-nowrap">৳{{ number_format($totalCommissionRevenue, 2) }}</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-bold text-teal-700 dark:text-teal-400 font-mono whitespace-nowrap">৳{{ number_format($totalCommissionRevenue, 2) }}</span>
                 </div>
                 <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
                     <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Vendor Payouts</span>
-                    <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalVendorDisbursed ?? 0, 2) }}</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-bold text-[var(--foreground)] font-mono whitespace-nowrap">৳{{ number_format($totalVendorDisbursed ?? 0, 2) }}</span>
                 </div>
                 <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
                     <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Refunds Issued</span>
-                    <span class="mt-1 block text-xs sm:text-sm font-black text-rose-700 dark:text-rose-400 font-mono whitespace-nowrap">৳{{ number_format($totalRefunds ?? 0, 2) }}</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-bold text-rose-700 dark:text-rose-400 font-mono whitespace-nowrap">৳{{ number_format($totalRefunds ?? 0, 2) }}</span>
                 </div>
                 <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
                     <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Escrow Balance</span>
-                    <span class="mt-1 block text-xs sm:text-sm font-black text-amber-700 dark:text-amber-400 font-mono whitespace-nowrap">৳{{ number_format($pendingEscrowReserve, 2) }}</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-bold text-amber-700 dark:text-amber-400 font-mono whitespace-nowrap">৳{{ number_format($pendingEscrowReserve, 2) }}</span>
                 </div>
                 <div class="meramot-card px-2.5 py-2.5 sm:px-4 sm:py-3 shadow-none border border-[var(--border)] bg-[var(--card)] min-w-0">
                     <span class="text-[9px] sm:text-[10px] font-bold text-[var(--muted-foreground)] uppercase block tracking-wide">Open Settlements</span>
-                    <span class="mt-1 block text-xs sm:text-sm font-black text-[var(--accent-dark)] font-mono whitespace-nowrap">{{ $pendingSettlementCount ?? 0 }}</span>
+                    <span class="mt-1 block text-xs sm:text-sm font-bold text-[var(--accent-dark)] font-mono whitespace-nowrap">{{ $pendingSettlementCount ?? 0 }}</span>
                 </div>
             </div>
         </div>
@@ -231,21 +231,21 @@
          ====================================================================== --}}
     <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
         <!-- Platform Income Rate Trend Graph -->
-        <div class="xl:col-span-5 meramot-card rounded-2xl sm:rounded-[2rem] p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
+        <div class="xl:col-span-5 meramot-card rounded-lg sm:rounded-lg p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
             <div class="flex flex-wrap items-start justify-between gap-2">
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--muted-foreground)]">{{ $trendData['granularity'] ?? 'Weekly' }} Income Trajectory</p>
-                    <h3 class="text-sm sm:text-base font-black text-[var(--foreground)] mt-0.5">Platform Income Rate Graph</h3>
+                    <h3 class="text-sm sm:text-base font-bold text-[var(--foreground)] mt-0.5">Platform Income Rate Graph</h3>
                     <p class="text-[11px] text-[var(--muted-foreground)]">Platform fee revenue &amp; pickup/delivery logistics over time</p>
                 </div>
-                <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-black border
+                <span class="inline-flex items-center gap-1 rounded-md px-3 py-1 text-[11px] font-bold border
                     {{ $trendDirection === 'UP' ? 'bg-emerald-100 text-emerald-900 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800' : ($trendDirection === 'DOWN' ? 'bg-rose-100 text-rose-900 border-rose-300 dark:bg-rose-950/70 dark:text-rose-300 dark:border-rose-800' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border-[var(--border)]') }}">
                     {{ $trendData['trend_label'] ?? 'Steady ●' }}
                     <span class="font-mono">({{ $trendDeltaLabel }})</span>
                 </span>
             </div>
 
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/35 p-3">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/35 p-3">
                 <svg viewBox="0 0 {{ $trendData['svg_width'] ?? 640 }} {{ $trendData['svg_height'] ?? 190 }}" class="w-full h-44 sm:h-48 overflow-visible" role="img" aria-label="Platform Income Rate Graph">
                     <defs>
                         <linearGradient id="meramotIncomeGrad" x1="0" y1="0" x2="0" y2="1">
@@ -288,28 +288,28 @@
             <div class="grid grid-cols-3 gap-2 text-center text-xs">
                 <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/45 p-2.5">
                     <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Prior Avg</span>
-                    <span class="font-mono font-black text-[var(--foreground)]">৳{{ number_format($trendData['previous_period_avg'] ?? 0, 0) }}</span>
+                    <span class="font-mono font-bold text-[var(--foreground)]">৳{{ number_format($trendData['previous_period_avg'] ?? 0, 0) }}</span>
                 </div>
                 <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/45 p-2.5">
                     <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Recent Avg</span>
-                    <span class="font-mono font-black text-emerald-700 dark:text-emerald-400">৳{{ number_format($trendData['recent_period_avg'] ?? 0, 0) }}</span>
+                    <span class="font-mono font-bold text-emerald-700 dark:text-emerald-400">৳{{ number_format($trendData['recent_period_avg'] ?? 0, 0) }}</span>
                 </div>
                 <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/45 p-2.5">
                     <span class="block text-[9px] font-bold uppercase text-[var(--muted-foreground)]">Platform Delivery</span>
-                    <span class="font-mono font-black text-sky-700 dark:text-sky-400">৳{{ number_format($trendData['total_delivery'] ?? 0, 0) }}</span>
+                    <span class="font-mono font-bold text-sky-700 dark:text-sky-400">৳{{ number_format($trendData['total_delivery'] ?? 0, 0) }}</span>
                 </div>
             </div>
         </div>
 
         <!-- Best Performing Workshops & Admin Commission Rate Control (5%–10%) -->
-        <div class="xl:col-span-7 meramot-card rounded-2xl sm:rounded-[2rem] p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
+        <div class="xl:col-span-7 meramot-card rounded-lg sm:rounded-lg p-5 sm:p-6 shadow-sm flex flex-col justify-between space-y-4">
             <div class="flex flex-wrap items-start justify-between gap-2 border-b border-[var(--border)] pb-3">
                 <div>
                     <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--accent-dark)]">Vendor Performance Tiers</p>
-                    <h3 class="text-sm sm:text-base font-black text-[var(--foreground)] mt-0.5">Best Performing Shops &amp; Commission Control</h3>
+                    <h3 class="text-sm sm:text-base font-bold text-[var(--foreground)] mt-0.5">Best Performing Shops &amp; Commission Control</h3>
                     <p class="text-[11px] text-[var(--muted-foreground)]">Configure workshop base rates between <strong>5% and 10%</strong> based on quality and volume — courier logistics remain separate.</p>
                 </div>
-                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-extrabold text-[var(--accent-dark)]">
+                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-semibold text-[var(--accent-dark)]">
                     Avg Fee: {{ $avgFeeDisplay }}%
                 </span>
             </div>
@@ -317,7 +317,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
                     <thead>
-                        <tr class="border-b border-[var(--border)] text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">
+                        <tr class="border-b border-[var(--border)] text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
                             <th class="py-2 pr-3">Rank &amp; Workshop</th>
                             <th class="py-2 pr-3">Performance</th>
                             <th class="py-2 pr-3">100% Vendor / Fee</th>
@@ -329,7 +329,7 @@
                             <tr class="hover:bg-[var(--mint-100)]/40 transition">
                                 <td class="py-2.5 pr-3">
                                     <div class="flex items-center gap-2">
-                                        <span class="h-6 w-6 shrink-0 rounded-full bg-[var(--mint-100)] border border-[var(--border)] flex items-center justify-center text-[10px] font-black text-[var(--accent-dark)]">#{{ $idx + 1 }}</span>
+                                        <span class="h-6 w-6 shrink-0 rounded-full bg-[var(--mint-100)] border border-[var(--border)] flex items-center justify-center text-[10px] font-bold text-[var(--accent-dark)]">#{{ $idx + 1 }}</span>
                                         <div class="min-w-0">
                                             <div class="font-bold text-[var(--foreground)] truncate max-w-[175px]">{{ $perfShop['name'] }}</div>
                                             <div class="text-[10px] text-[var(--muted-foreground)]">{{ $perfShop['tier_badge'] }} &bull; {{ $perfShop['city'] }}</div>
@@ -352,7 +352,7 @@
                                                aria-label="Commission percentage for {{ $perfShop['name'] }}"
                                                class="w-16 rounded-lg border border-[var(--border)] bg-[var(--mint-100)] px-2 py-1 text-right font-mono text-xs font-bold text-[var(--foreground)] outline-none">
                                         <span class="text-[10px] font-bold text-[var(--muted-foreground)]">%</span>
-                                        <button type="submit" class="rounded-full bg-[var(--accent-dark)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                                        <button type="submit" class="rounded bg-[var(--accent-dark)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                                             Save
                                         </button>
                                     </form>
@@ -376,7 +376,7 @@
         <!-- Fund Distribution Breakdown -->
         <div class="meramot-card p-6 shadow-sm space-y-4">
             <div>
-                <h3 class="text-sm font-black text-[var(--foreground)]">Fund Distribution by Flow</h3>
+                <h3 class="text-sm font-bold text-[var(--foreground)]">Fund Distribution by Flow</h3>
                 <p class="text-[11px] text-[var(--muted-foreground)]">Transaction volume & count across ledger categories</p>
             </div>
             <div class="space-y-3 text-xs">
@@ -401,7 +401,7 @@
             @csrf
             <div class="space-y-3">
                 <div>
-                    <h3 class="text-sm font-black text-[var(--foreground)]">Manual Order Settlement</h3>
+                    <h3 class="text-sm font-bold text-[var(--foreground)]">Manual Order Settlement</h3>
                     <p class="text-[11px] text-[var(--muted-foreground)]">
                         Credit the full workshop subtotal to shop escrow and record the applicable marketplace service fee.
                     </p>
@@ -440,7 +440,7 @@
             @csrf
             <div class="space-y-3">
                 <div>
-                    <h3 class="text-sm font-black text-[var(--foreground)]">Batch Escrow Operations</h3>
+                    <h3 class="text-sm font-bold text-[var(--foreground)]">Batch Escrow Operations</h3>
                     <p class="text-[11px] text-[var(--muted-foreground)]">
                         Execute automated batch disbursement across eligible vendor escrow earning allocations.
                     </p>
@@ -468,7 +468,7 @@
     <div class="meramot-card p-6 shadow-sm space-y-5 border border-[var(--border)]">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
             <div>
-                <h3 class="text-sm font-black text-[var(--foreground)] flex items-center gap-2">
+                <h3 class="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
                     <i class="fa-solid fa-rotate-left text-rose-600"></i>
                     <span>Refunds &amp; Post-Settlement Dispute Resolution</span>
                 </h3>
@@ -476,7 +476,7 @@
                     Orders flagged with post-settlement issues. Issuing a refund credits the customer, resolves the dispute, and records a refund debit entry in the double-entry ledger.
                 </p>
             </div>
-            <span class="inline-flex items-center rounded-full bg-rose-100 px-3 py-1 text-[11px] font-bold text-rose-800">
+            <span class="inline-flex items-center rounded-md bg-rose-100 px-3 py-1 text-[11px] font-bold text-rose-800">
                 {{ ($pendingRefundDisputes ?? collect())->count() }} Pending Dispute(s)
             </span>
         </div>
@@ -484,7 +484,7 @@
         @if(($pendingRefundDisputes ?? collect())->isNotEmpty())
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 @foreach($pendingRefundDisputes as $dispute)
-                    <form method="POST" action="{{ route('admin.financial-overview.issue-refund') }}" class="rounded-2xl border border-rose-200 bg-rose-50/40 dark:bg-rose-950/20 p-4 space-y-3 text-xs">
+                    <form method="POST" action="{{ route('admin.financial-overview.issue-refund') }}" class="rounded-lg border border-rose-200 bg-rose-50/40 dark:bg-rose-950/20 p-4 space-y-3 text-xs">
                         @csrf
                         <input type="hidden" name="payment_id" value="{{ $dispute->payment_id }}">
                         <input type="hidden" name="dispute_case_id" value="{{ $dispute->dispute_id }}">
@@ -492,11 +492,11 @@
                         <div class="flex items-start justify-between gap-2">
                             <div>
                                 <div class="flex flex-wrap items-center gap-1.5">
-                                    <span class="rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-bold text-white">{{ $dispute->dispute_status }}</span>
+                                    <span class="rounded bg-rose-600 px-2.5 py-0.5 text-[10px] font-bold text-white">{{ $dispute->dispute_status }}</span>
                                     <span class="font-mono text-[11px] font-bold text-[var(--muted-foreground)]">{{ $dispute->transaction_reference }}</span>
-                                    <span class="rounded-full bg-[var(--mint-100)] px-2 py-0.5 text-[10px] font-bold text-[var(--foreground)]">{{ $dispute->payment_method }}</span>
+                                    <span class="rounded bg-[var(--mint-100)] px-2 py-0.5 text-[10px] font-bold text-[var(--foreground)]">{{ $dispute->payment_method }}</span>
                                 </div>
-                                <h4 class="mt-1.5 text-sm font-extrabold text-[var(--foreground)]">{{ $dispute->order_title }}</h4>
+                                <h4 class="mt-1.5 text-sm font-semibold text-[var(--foreground)]">{{ $dispute->order_title }}</h4>
                                 <p class="text-[11px] text-[var(--muted-foreground)]">
                                     Customer: <strong class="text-[var(--foreground)]">{{ $dispute->customer_name }}</strong>
                                     · Workshop: <strong class="text-[var(--foreground)]">{{ $dispute->shop_name ?? 'Verified Workshop' }}</strong>
@@ -504,7 +504,7 @@
                             </div>
                             <div class="text-right shrink-0">
                                 <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] block">Settled Paid</span>
-                                <span class="text-sm font-black font-mono text-rose-700">৳{{ number_format($dispute->paid_amount, 2) }}</span>
+                                <span class="text-sm font-bold font-mono text-rose-700">৳{{ number_format($dispute->paid_amount, 2) }}</span>
                             </div>
                         </div>
 
@@ -526,7 +526,7 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
+                        <button type="submit" class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
                             <i class="fa-solid fa-rotate-left"></i>
                             <span>Issue Refund &amp; Post to Ledger</span>
                         </button>
@@ -538,7 +538,7 @@
         @endif
 
         @if(($settledPayments ?? collect())->isNotEmpty())
-            <form method="POST" action="{{ route('admin.financial-overview.issue-refund') }}" class="rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end text-xs">
+            <form method="POST" action="{{ route('admin.financial-overview.issue-refund') }}" class="rounded-lg border border-[var(--border)] bg-[var(--mint-50)] p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end text-xs">
                 @csrf
                 <div class="lg:col-span-2">
                     <label class="block font-bold text-[var(--foreground)] mb-1">Manual Refund on Any Settled Payment</label>
@@ -560,7 +560,7 @@
                     <input type="text" name="reason" placeholder="Vendor issue / customer claim" required
                            class="w-full rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs text-[var(--foreground)] outline-none">
                 </div>
-                <button type="submit" class="rounded-full bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
+                <button type="submit" class="rounded-md bg-rose-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition">
                     Issue Refund
                 </button>
             </form>
@@ -679,7 +679,7 @@
     >
         <div class="px-6 py-4 border-b border-[var(--border)] bg-[var(--mint-100)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-                <h2 class="text-sm font-black text-[var(--foreground)] uppercase tracking-wider flex items-center gap-2">
+                <h2 class="text-sm font-bold text-[var(--foreground)] uppercase tracking-wider flex items-center gap-2">
                     <i class="fa-solid fa-book-bookmark text-emerald-600 dark:text-emerald-400"></i>
                     Immutable Double-Entry Ledger Journal
                 </h2>
@@ -687,12 +687,12 @@
             </div>
             <div class="flex flex-wrap items-center gap-3">
                 <template x-if="selectedIds.length > 0">
-                    <div class="inline-flex items-center gap-2 rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-800 shadow-sm">
+                    <div class="inline-flex items-center gap-2 rounded-md border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-800 shadow-sm">
                         <span x-text="selectedIds.length + ' selected'"></span>
                         <button
                             type="button"
                             @click="openBulkDeleteModal()"
-                            class="inline-flex items-center gap-1 rounded-full bg-rose-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-rose-700 transition"
+                            class="inline-flex items-center gap-1 rounded-md bg-rose-600 px-3 py-1 text-[11px] font-bold text-white hover:bg-rose-700 transition"
                         >
                             <i class="fa-solid fa-trash-can text-[10px]"></i>
                             <span>Delete Selected</span>
@@ -773,7 +773,7 @@
 
                             <!-- Category Badge -->
                             <td class="px-5 py-3.5 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold
                                     @if($entry->entry_type === 'PLATFORM_COMMISSION') bg-teal-100 text-teal-900 dark:bg-teal-950/80 dark:text-teal-300 border border-teal-300 dark:border-teal-800
                                     @elseif($entry->entry_type === 'CUSTOMER_PAYMENT') bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800
                                     @elseif($entry->entry_type === 'VENDOR_EARNING') bg-blue-100 text-blue-900 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-300 dark:border-blue-800
@@ -797,22 +797,22 @@
                             <!-- Direction Badge -->
                             <td class="px-5 py-3.5 text-center whitespace-nowrap">
                                 @if(!empty($entry->is_allocation))
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700 uppercase tracking-wider" title="Internal sub-ledger allocation (does not double-count cash)">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-300/60 dark:border-slate-700 uppercase tracking-wider" title="Internal sub-ledger allocation (does not double-count cash)">
                                         <i class="fa-solid fa-layer-group mr-1 text-[9px]"></i> ALLOC
                                     </span>
                                 @elseif($entry->direction === 'CREDIT')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/50 dark:border-emerald-800 uppercase tracking-wider">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-300/50 dark:border-emerald-800 uppercase tracking-wider">
                                         <i class="fa-solid fa-plus mr-1 text-[9px]"></i> CREDIT
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-900 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300/50 dark:border-rose-800 uppercase tracking-wider">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-900 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300/50 dark:border-rose-800 uppercase tracking-wider">
                                         <i class="fa-solid fa-minus mr-1 text-[9px]"></i> DEBIT
                                     </span>
                                 @endif
                             </td>
 
                             <!-- Amount -->
-                            <td class="px-5 py-3.5 text-right font-mono font-black whitespace-nowrap text-xs {{ !empty($entry->is_allocation) ? 'text-slate-700 dark:text-slate-300' : ($entry->direction === 'CREDIT' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400') }}">
+                            <td class="px-5 py-3.5 text-right font-mono font-bold whitespace-nowrap text-xs {{ !empty($entry->is_allocation) ? 'text-slate-700 dark:text-slate-300' : ($entry->direction === 'CREDIT' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400') }}">
                                 @if(!empty($entry->is_allocation))
                                     ৳{{ number_format($entry->amount, 2) }}
                                 @else
@@ -821,7 +821,7 @@
                             </td>
 
                             <!-- Running Balance -->
-                            <td class="px-5 py-3.5 text-right font-mono font-black text-[var(--foreground)] whitespace-nowrap text-xs">
+                            <td class="px-5 py-3.5 text-right font-mono font-bold text-[var(--foreground)] whitespace-nowrap text-xs">
                                 ৳{{ number_format($entry->running_balance ?? 0, 2) }}
                             </td>
 
@@ -901,7 +901,7 @@
                 x-transition:leave="transition ease-in duration-150"
                 x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                 x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-                class="relative z-[111] w-full max-w-lg overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
+                class="relative z-[111] w-full max-w-lg overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
             >
                 <div class="h-1.5 w-full bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500"></div>
 
@@ -913,13 +913,13 @@
                     <input type="hidden" name="delete_mode" :value="deleteMode">
 
                     <div class="text-center">
-                        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600 shadow-inner">
+                        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 shadow-inner">
                             <i class="fa-solid fa-trash-can text-xl"></i>
                         </div>
-                        <h3 id="audit-delete-modal-title" class="text-xl font-extrabold text-[var(--foreground)]">
+                        <h3 id="audit-delete-modal-title" class="text-xl font-semibold text-[var(--foreground)]">
                             Delete Selected Audit Records?
                         </h3>
-                        <div class="mt-2 inline-flex items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1 text-xs font-bold text-[var(--foreground)]">
+                        <div class="mt-2 inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3.5 py-1 text-xs font-bold text-[var(--foreground)]">
                             <span class="h-2 w-2 rounded-full bg-rose-500"></span>
                             <span x-text="selectedIds.length + (selectedIds.length === 1 ? ' audit entry selected' : ' audit entries selected')"></span>
                         </div>
@@ -933,13 +933,13 @@
                             type="button"
                             @click="deleteMode = 'records_only'"
                             :class="deleteMode === 'records_only' ? 'border-[#214c34] bg-[var(--mint-100)] ring-2 ring-[#214c34]/20' : 'border-[var(--border)] bg-[var(--background)] hover:bg-[var(--mint-50)]'"
-                            class="w-full rounded-2xl border p-4 text-left transition flex items-start gap-3"
+                            class="w-full rounded-lg border p-4 text-left transition flex items-start gap-3"
                         >
                             <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2" :class="deleteMode === 'records_only' ? 'border-[#214c34] bg-[#214c34] text-white' : 'border-slate-300'">
                                 <i x-show="deleteMode === 'records_only'" class="fa-solid fa-check text-[10px]"></i>
                             </span>
                             <div>
-                                <div class="text-xs font-extrabold text-[var(--foreground)]">Delete Records Only</div>
+                                <div class="text-xs font-semibold text-[var(--foreground)]">Delete Records Only</div>
                                 <p class="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
                                     Hides the selected audit entries from the journal table while preserving their cumulative amounts in Total Volume, Platform Commission, Escrow Balance, and Fund Distribution.
                                 </p>
@@ -950,13 +950,13 @@
                             type="button"
                             @click="deleteMode = 'undo_effects'"
                             :class="deleteMode === 'undo_effects' ? 'border-rose-600 bg-rose-50/70 ring-2 ring-rose-500/20' : 'border-[var(--border)] bg-[var(--background)] hover:bg-rose-50/30'"
-                            class="w-full rounded-2xl border p-4 text-left transition flex items-start gap-3"
+                            class="w-full rounded-lg border p-4 text-left transition flex items-start gap-3"
                         >
                             <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2" :class="deleteMode === 'undo_effects' ? 'border-rose-600 bg-rose-600 text-white' : 'border-slate-300'">
                                 <i x-show="deleteMode === 'undo_effects'" class="fa-solid fa-check text-[10px]"></i>
                             </span>
                             <div>
-                                <div class="text-xs font-extrabold text-rose-700">Delete &amp; Undo Ledger Effects</div>
+                                <div class="text-xs font-semibold text-rose-700">Delete &amp; Undo Ledger Effects</div>
                                 <p class="mt-0.5 text-[11px] leading-relaxed text-[var(--muted-foreground)]">
                                     Permanently removes the selected entries and reverses their impact on Total Volume, Platform Commission, Vendor Escrow Balance, and Running Balances.
                                 </p>
@@ -969,7 +969,7 @@
                             type="button"
                             @click="deleteModalOpen = false"
                             :disabled="submittingDelete"
-                            class="rounded-full border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
+                            class="rounded-md border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
                         >
                             Cancel
                         </button>
@@ -977,7 +977,7 @@
                             type="submit"
                             :disabled="submittingDelete"
                             :class="deleteMode === 'undo_effects' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-[#163625] hover:bg-[#1d4630]'"
-                            class="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-xs font-bold text-white shadow-md transition disabled:opacity-60"
+                            class="inline-flex items-center justify-center gap-2 rounded-md px-5 py-2.5 text-xs font-bold text-white shadow-md transition disabled:opacity-60"
                         >
                             <i class="fa-solid" :class="submittingDelete ? 'fa-spinner fa-spin' : 'fa-trash-can'"></i>
                             <span x-text="submittingDelete ? 'Processing...' : (deleteMode === 'undo_effects' ? 'Delete & Undo Effects' : 'Delete Records Only')"></span>

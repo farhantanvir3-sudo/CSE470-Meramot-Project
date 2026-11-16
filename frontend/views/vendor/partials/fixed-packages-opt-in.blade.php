@@ -27,7 +27,7 @@
 
 @if($pkgList->isNotEmpty())
 <div
-    class="rounded-3xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-5 sm:p-6 space-y-4"
+    class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/60 p-5 sm:p-6 space-y-4"
     x-data="{
         provides: @js($initialProvides),
         selectedIds: @js(array_values(array_map('intval', $initialPackageIds))),
@@ -54,7 +54,7 @@
 >
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div class="space-y-1 max-w-2xl">
-            <div class="inline-flex items-center gap-1.5 rounded-full border border-[#b9d3b6] bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#244229]">
+            <div class="inline-flex items-center gap-1.5 rounded border border-[#b9d3b6] bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#244229]">
                 <i class="fa-solid fa-box-open text-[10px]"></i>
                 <span>Platform Fixed-Price Repair Packages</span>
             </div>
@@ -66,7 +66,7 @@
             </p>
         </div>
         <span
-            class="shrink-0 rounded-full border border-[var(--border)] bg-white px-3 py-1 text-xs font-bold text-[#244229]"
+            class="shrink-0 rounded-md border border-[var(--border)] bg-white px-3 py-1 text-xs font-bold text-[#244229]"
             x-text="provides === '1' ? (selectedIds.length + ' selected') : 'Not offered'"
         ></span>
     </div>
@@ -74,7 +74,7 @@
     <div class="grid gap-3 sm:grid-cols-2">
         <label
             :class="provides === '1' ? 'border-[#244229] bg-white ring-2 ring-[#244229]/20' : 'border-[var(--border)] bg-white/80 hover:bg-white'"
-            class="flex items-start gap-3 rounded-2xl border p-3.5 cursor-pointer transition"
+            class="flex items-start gap-3 rounded-lg border p-3.5 cursor-pointer transition"
         >
             <input
                 type="radio"
@@ -91,7 +91,7 @@
 
         <label
             :class="provides === '0' ? 'border-[#244229] bg-white ring-2 ring-[#244229]/20' : 'border-[var(--border)] bg-white/80 hover:bg-white'"
-            class="flex items-start gap-3 rounded-2xl border p-3.5 cursor-pointer transition"
+            class="flex items-start gap-3 rounded-lg border p-3.5 cursor-pointer transition"
         >
             <input
                 type="radio"
@@ -108,7 +108,7 @@
     </div>
 
     @error('service_package_ids')
-        <div class="rounded-2xl border border-rose-300 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-800">
+        <div class="rounded-lg border border-rose-300 bg-rose-50 px-3.5 py-2 text-xs font-semibold text-rose-800">
             {{ $message }}
         </div>
     @enderror
@@ -122,14 +122,14 @@
                 <button
                     type="button"
                     @click="selectAll()"
-                    class="rounded-full border border-[#244229]/30 bg-white px-3 py-1 text-[11px] font-bold text-[#244229] hover:bg-[#edf6ea] transition"
+                    class="rounded-md border border-[#244229]/30 bg-white px-3 py-1 text-[11px] font-bold text-[#244229] hover:bg-[#edf6ea] transition"
                 >
                     Select All ({{ $pkgList->count() }})
                 </button>
                 <button
                     type="button"
                     @click="clearAll()"
-                    class="rounded-full border border-[var(--border)] bg-white px-3 py-1 text-[11px] font-semibold text-[#58725f] hover:text-[#203126] transition"
+                    class="rounded-md border border-[var(--border)] bg-white px-3 py-1 text-[11px] font-semibold text-[#58725f] hover:text-[#203126] transition"
                 >
                     Clear
                 </button>
@@ -150,7 +150,7 @@
                         @foreach($catPackages as $pkg)
                             <label
                                 :class="isSelected({{ $pkg->id }}) ? 'border-[#244229] bg-white shadow-sm' : 'border-[var(--border)] bg-white/75 hover:bg-white'"
-                                class="flex items-start gap-2.5 rounded-2xl border p-3 cursor-pointer transition"
+                                class="flex items-start gap-2.5 rounded-lg border p-3 cursor-pointer transition"
                             >
                                 <input
                                     type="checkbox"
@@ -164,7 +164,7 @@
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-baseline justify-between gap-2">
                                         <span class="text-xs font-bold text-[#203126] leading-snug">{{ $pkg->title }}</span>
-                                        <span class="shrink-0 text-xs font-extrabold text-[#163a24]">৳{{ number_format((float) $pkg->fixed_price, 0) }}</span>
+                                        <span class="shrink-0 text-xs font-semibold text-[#163a24]">৳{{ number_format((float) $pkg->fixed_price, 0) }}</span>
                                     </div>
                                     <p class="mt-0.5 text-[11px] text-[#58725f]">
                                         ~{{ (int) $pkg->estimated_turnaround_hours }}h turnaround &bull; {{ (int) $pkg->warranty_months }}-mo warranty

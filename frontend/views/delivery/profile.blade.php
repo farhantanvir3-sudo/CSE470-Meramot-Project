@@ -9,7 +9,7 @@
     $companyEmail = $agent->company_email ?: $user->email;
 @endphp
 <div class="mx-auto flex w-full max-w-3xl flex-col py-2">
-    <div class="rounded-3xl border border-[#d9e5d5] bg-white p-6 shadow-sm sm:p-8">
+    <div class="rounded-lg border border-[#d9e5d5] bg-white p-6 shadow-sm sm:p-8">
         <div class="mb-6 flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
             <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-[#d9e5d5] bg-[#eef4ea]">
                 @if($avatarUrl)
@@ -19,18 +19,18 @@
                         class="h-full w-full object-cover"
                     />
                 @else
-                    <span class="text-3xl font-extrabold text-[#163625]">
+                    <span class="text-3xl font-semibold text-[#163625]">
                         {{ strtoupper(substr($deliveryName, 0, 1)) }}
                     </span>
                 @endif
             </div>
             <div class="min-w-0">
-                <h1 class="break-words text-2xl font-extrabold text-[#163625]">{{ $deliveryName }}</h1>
+                <h1 class="break-words text-2xl font-semibold text-[#163625]">{{ $deliveryName }}</h1>
                 <p class="mt-1 text-sm font-medium text-[#163625]/65">Courier Profile &bull; Official Meramot Fleet</p>
             </div>
         </div>
 
-        <div class="space-y-3 rounded-2xl border border-[#d9e5d5] bg-[#f3faf0] p-5 text-sm text-[#163625]">
+        <div class="space-y-3 rounded-lg border border-[#d9e5d5] bg-[#f3faf0] p-5 text-sm text-[#163625]">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-[#d9e5d5]/70 pb-2.5">
                 <span class="font-semibold text-[#163625]/75">Company Login Email:</span>
                 <span class="font-mono font-bold break-all">{{ $companyEmail }}</span>
@@ -60,13 +60,13 @@
 
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <span class="font-semibold text-[#163625]/75">Verification Status:</span>
-                <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-300">
+                <span class="inline-flex items-center rounded bg-emerald-100 px-3 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-300">
                     {{ $agent->registration_status ?? 'APPROVED' }}
                 </span>
             </div>
         </div>
 
-        <div class="mt-4 rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] px-4 py-3 text-xs text-[#163625]/75 flex items-start gap-2.5">
+        <div class="mt-4 rounded-lg border border-[#d9e5d5] bg-[#f8fbf6] px-4 py-3 text-xs text-[#163625]/75 flex items-start gap-2.5">
             <i class="fa-solid fa-lock mt-0.5 text-[#163625]"></i>
             <span>
                 Your <code class="font-mono font-semibold">@meramotbd.com</code> company email and system-generated password are fixed by Meramot Security Operations and cannot be edited manually.

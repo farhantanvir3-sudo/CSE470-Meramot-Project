@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="grid min-h-[75vh] place-items-center px-4 py-10">
-    <div class="w-full max-w-xl rounded-[2rem] border border-white/60 bg-white/90 p-8 text-center shadow-2xl backdrop-blur">
+    <div class="w-full max-w-xl rounded-lg border border-white/60 bg-white/90 p-8 text-center shadow-2xl backdrop-blur">
         <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--mint-100)] text-2xl text-[#244229] shadow-sm">
             <i class="fa-solid fa-circle-check"></i>
         </div>
@@ -31,14 +31,14 @@
             @auth
                 <a
                     href="{{ auth()->user()->role === 'vendor' ? '/vendor/onboarding' : '/' }}"
-                    class="rounded-2xl bg-[#244229] px-6 py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
+                    class="rounded-lg bg-[#244229] px-6 py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
                 >
                     {{ auth()->user()->role === 'vendor' ? 'Check Application Status' : 'Go to Workspace' }}
                 </a>
             @else
                 <a
                     href="/login"
-                    class="rounded-2xl bg-[#244229] px-6 py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
+                    class="rounded-lg bg-[#244229] px-6 py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
                 >
                     Go to Login
                 </a>
@@ -46,7 +46,7 @@
 
             <a
                 href="/"
-                class="rounded-2xl border border-[var(--border)] bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-[var(--mint-100)]"
+                class="rounded-lg border border-[var(--border)] bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-[var(--mint-100)]"
             >
                 Back to Home
             </a>

@@ -34,6 +34,7 @@ Route::prefix('shops')->group(function () {
     Route::get('/nearby', [ShopDiscoveryController::class, 'getNearbyShops']);
     Route::get('/search', [ShopDiscoveryController::class, 'apiSearch']);
 });
+Route::get('/geolocation/device-fix', [ShopDiscoveryController::class, 'detectLocalDeviceLocation']);
 
 // Feature R10: AI-Powered Repair Diagnostic Chat
 Route::prefix('ai-consultant')->group(function () {

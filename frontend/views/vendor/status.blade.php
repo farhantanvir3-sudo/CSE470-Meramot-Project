@@ -11,7 +11,7 @@
 @endphp
 
 <div class="grid min-h-[75vh] place-items-center px-4 py-10">
-    <div class="w-full max-w-3xl rounded-[1.5rem] md:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-2xl backdrop-blur">
+    <div class="w-full max-w-3xl rounded-lg md:rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-2xl backdrop-blur">
         <div class="flex items-center justify-between gap-3">
             <h1 class="text-2xl md:text-3xl font-bold text-[var(--foreground)]">
                 Vendor application status
@@ -20,19 +20,19 @@
                 href="{{ route('vendor.onboarding') }}"
                 title="Back to Onboarding Hub"
                 aria-label="Back to Onboarding Hub"
-                class="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] text-[var(--foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-dark)] hover:bg-[var(--accent-dark)] hover:text-[var(--accent-foreground)] hover:shadow-md"
+                class="group inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] text-[var(--foreground)] shadow-sm transition-all duration-200 hover:border-[var(--accent-dark)] hover:bg-[var(--accent-dark)] hover:text-[var(--accent-foreground)] hover:shadow-md"
             >
                 <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
             </a>
         </div>
 
         @if(session('success'))
-            <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800">
+            <div class="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800">
                 {{ session('success') }}
             </div>
         @endif
 
-        <div class="mt-6 grid gap-3 sm:grid-cols-2 rounded-3xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-5 text-sm text-[var(--muted-foreground)]">
+        <div class="mt-6 grid gap-3 sm:grid-cols-2 rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/60 p-5 text-sm text-[var(--muted-foreground)]">
             <p><span class="font-semibold text-[var(--foreground)]">Application ID:</span> #{{ $profile->id }}</p>
             <p><span class="font-semibold text-[var(--foreground)]">Owner:</span> {{ $profile->owner_name ?: $user->name }}</p>
             <p><span class="font-semibold text-[var(--foreground)]">Business email:</span> {{ $profile->business_email ?: $user->email }}</p>
@@ -46,7 +46,7 @@
         </div>
 
         @if(in_array($statusUpper, ['PENDING', 'UNDER_REVIEW'], true))
-            <div class="mt-6 rounded-2xl bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-900">
+            <div class="mt-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-900">
                 <p class="font-semibold">
                     {{ $statusUpper === 'UNDER_REVIEW' ? 'Your application is actively being audited by our verification desk.' : 'Your application is under review.' }}
                 </p>
@@ -55,7 +55,7 @@
                 </p>
             </div>
         @elseif($statusUpper === 'REJECTED')
-            <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900">
+            <div class="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900">
                 <p class="font-semibold text-base">Your application was rejected.</p>
                 <div class="mt-3 rounded-xl bg-white/80 px-4 py-3">
                     <p class="text-xs font-semibold uppercase tracking-[0.18em] text-red-700">Rejection reason</p>
@@ -68,7 +68,7 @@
                 @endif
             </div>
         @elseif($statusUpper === 'APPROVED')
-            <div class="mt-6 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-4 text-sm text-emerald-900">
+            <div class="mt-6 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-4 text-sm text-emerald-900">
                 <p class="font-semibold">Your application has been approved.</p>
                 <p class="mt-1 text-xs md:text-sm">
                     {{ $setupComplete
@@ -82,7 +82,7 @@
             @if(in_array($statusUpper, ['PENDING', 'UNDER_REVIEW', 'REJECTED'], true))
                 <a
                     href="{{ route('vendor.apply') }}"
-                    class="rounded-2xl border border-[var(--border)] bg-[var(--card)] px-5 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent-dark)] hover:bg-[var(--mint-100)] hover:shadow-md"
+                    class="rounded-lg border border-[var(--border)] bg-[var(--card)] px-5 py-3 text-center text-sm font-semibold text-[var(--foreground)] shadow-sm transition-all duration-200 hover:border-[var(--accent-dark)] hover:bg-[var(--mint-100)] hover:shadow-md"
                 >
                     Edit submitted information
                 </a>
@@ -91,7 +91,7 @@
             @if($statusUpper === 'APPROVED' && !$setupComplete)
                 <a
                     href="{{ route('vendor.setup-shop') }}"
-                    class="rounded-2xl bg-[#244229] px-5 py-3 text-center text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
+                    class="rounded-lg bg-[#244229] px-5 py-3 text-center text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     Complete shop setup
                 </a>
@@ -100,7 +100,7 @@
             @if($statusUpper === 'APPROVED' && $setupComplete)
                 <a
                     href="{{ route('vendor.dashboard') }}"
-                    class="rounded-2xl bg-[#244229] px-5 py-3 text-center text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
+                    class="rounded-lg bg-[#244229] px-5 py-3 text-center text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     Open vendor dashboard
                 </a>
@@ -108,7 +108,7 @@
 
             <a
                 href="{{ route('vendor.onboarding') }}"
-                class="rounded-2xl border border-[#c8dac2] bg-[var(--mint-100)] px-5 py-3 text-center text-sm font-semibold text-[#244229] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#244229] hover:bg-[var(--mint-200)] hover:shadow-md"
+                class="rounded-lg border border-[#c8dac2] bg-[var(--mint-100)] px-5 py-3 text-center text-sm font-semibold text-[#244229] shadow-sm transition-all duration-200 hover:border-[#244229] hover:bg-[var(--mint-200)] hover:shadow-md"
             >
                 Back to onboarding
             </a>

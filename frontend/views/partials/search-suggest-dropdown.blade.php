@@ -5,7 +5,7 @@
     x-transition.opacity.duration.120ms
     role="listbox"
     aria-label="Search suggestions"
-    class="absolute left-0 right-0 top-full mt-1.5 z-[95] rounded-2xl bg-white text-slate-900 border border-emerald-900/20 shadow-2xl overflow-hidden max-h-[70vh] overflow-y-auto"
+    class="absolute left-0 right-0 top-full mt-1.5 z-[95] rounded-lg bg-white text-slate-900 border border-emerald-900/20 shadow-2xl overflow-hidden max-h-[70vh] overflow-y-auto"
 >
     <template x-if="loading && !hasResults">
         <div class="px-4 py-3 text-xs text-slate-500 flex items-center gap-2">
@@ -28,7 +28,7 @@
                 :class="primarySection === 'packages' ? 'order-1' : 'order-4 border-t border-emerald-900/10'"
                 class="py-1.5 bg-emerald-50/30"
             >
-                <div class="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-900/70">
+                <div class="px-3.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-900/70">
                     Fixed Service Packages
                 </div>
                 <template x-for="(pkg, idx) in packages" :key="'pkg-' + pkg.id + '-' + idx">
@@ -44,7 +44,7 @@
                                 <span x-text="pkg.device_category"></span> · Flat-rate service
                             </div>
                         </div>
-                        <span class="text-xs font-extrabold text-emerald-900 shrink-0 tabular-nums">
+                        <span class="text-xs font-semibold text-emerald-900 shrink-0 tabular-nums">
                             ৳<span x-text="Number(pkg.fixed_price || 0).toLocaleString()"></span>
                         </span>
                     </a>
@@ -58,7 +58,7 @@
                 :class="primarySection === 'shops' || primarySection === 'packages' ? 'order-2' : 'order-1'"
                 class="px-3 pt-2.5 pb-2 border-b border-emerald-900/10 bg-emerald-50/40"
             >
-                <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900/70 mb-1.5">
+                <div class="text-[10px] font-semibold uppercase tracking-wider text-emerald-900/70 mb-1.5">
                     Categories
                 </div>
                 <div class="flex flex-wrap gap-1.5">
@@ -67,7 +67,7 @@
                             :href="cat.url"
                             @click="close()"
                             :class="isItemActive('cat', idx) ? 'bg-emerald-900 text-white border-emerald-900' : 'bg-white text-emerald-900 border-emerald-900/20 hover:bg-emerald-100'"
-                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-[11px] font-semibold transition"
+                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border text-[11px] font-semibold transition"
                         >
                             <span x-text="cat.label"></span>
                         </a>
@@ -82,7 +82,7 @@
                 :class="primarySection === 'shops' || primarySection === 'packages' ? 'order-3' : 'order-2'"
                 class="py-1.5"
             >
-                <div class="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-900/70">
+                <div class="px-3.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-900/70">
                     Spare Parts
                 </div>
                 <template x-for="(part, idx) in parts" :key="'part-' + part.slug + '-' + idx">
@@ -109,7 +109,7 @@
                                 <span x-text="part.part_category"></span>
                             </div>
                         </div>
-                        <span class="text-xs font-extrabold text-emerald-900 shrink-0 tabular-nums">
+                        <span class="text-xs font-semibold text-emerald-900 shrink-0 tabular-nums">
                             ৳<span x-text="Number(part.price || 0).toLocaleString()"></span>
                         </span>
                     </a>
@@ -123,7 +123,7 @@
                 :class="primarySection === 'shops' ? 'order-1' : (primarySection === 'packages' ? 'order-4 border-t border-emerald-900/10' : 'order-3 border-t border-emerald-900/10')"
                 class="py-1.5"
             >
-                <div class="px-3.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-900/70">
+                <div class="px-3.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-900/70">
                     Verified Repair Shops
                 </div>
                 <template x-for="(shop, idx) in shops" :key="'shop-' + shop.slug + '-' + idx">
@@ -153,7 +153,7 @@
         <button
             type="button"
             @mousedown.prevent="submitParentForm($el)"
-            class="w-full px-4 py-2 text-xs font-extrabold text-emerald-900 bg-emerald-50/70 hover:bg-emerald-100/80 border-t border-emerald-900/10 text-left flex items-center justify-between transition"
+            class="w-full px-4 py-2 text-xs font-semibold text-emerald-900 bg-emerald-50/70 hover:bg-emerald-100/80 border-t border-emerald-900/10 text-left flex items-center justify-between transition"
         >
             <span>See all results for "<span x-text="query.trim()"></span>"</span>
             <span x-text="scope === 'all' ? (primarySection === 'packages' ? 'Fixed Packages ↵' : (primarySection === 'shops' ? 'Repair Shops ↵' : 'Spare Parts ↵')) : 'Enter ↵'"></span>

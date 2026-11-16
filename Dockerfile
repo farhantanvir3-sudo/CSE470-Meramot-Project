@@ -9,7 +9,7 @@ RUN npm install
 
 COPY frontend/ ./
 COPY backend/ ../backend/
-RUN npm run build:css
+RUN npm run build:css && npm run build:app-css
 
 # ==============================================================================
 # Stage 2: Production PHP 8.2 + Apache Web Server (Laravel 10 MVC + Blade)
@@ -39,6 +39,7 @@ WORKDIR /var/www/meramot
 # Copy separated frontend/ and backend/ directories preserving relative paths
 COPY frontend/ ./frontend/
 COPY --from=frontend-builder /app/frontend/public/dist/styles.css ./frontend/public/dist/styles.css
+COPY --from=frontend-builder /app/frontend/src/styles/compiled.css ./frontend/src/styles/compiled.css
 COPY backend/ ./backend/
 
 # Install PHP dependencies in backend/

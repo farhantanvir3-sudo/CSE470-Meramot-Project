@@ -11,6 +11,7 @@ use App\Services\GeolocationService;
 use App\Services\MarketplacePricingService;
 use App\Services\MarketplaceSearchEngine;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -532,8 +533,24 @@ class SparePartController extends Controller
             }
         }
 
-        // Distinct product count before pagination
-        $distinctProductCount = (clone $query)->distinct('spare_part_listings.product_group_key')->count('spare_part_listings.product_group_key');
+        // Distinct product count before pagination (cached when completely unfiltered outside tests)
+        $isUnfilteredBrowse = ($search === ''
+            && $deviceType === 'all'
+            && $selectedCategory === 'All'
+            && $selectedSubCategory === ''
+            && $selectedBrand === 'All'
+            && $selectedGroup === ''
+            && !$request->filled('seller_shop_id')
+            && !$wholesaleOnly
+            && !$specsOnly
+            && !$localOnly
+            && !$onSaleOnly);
+        $countDistinct = static fn () => (clone $query)
+            ->distinct('spare_part_listings.product_group_key')
+            ->count('spare_part_listings.product_group_key');
+        $distinctProductCount = ($isUnfilteredBrowse && !app()->environment('testing'))
+            ? Cache::remember('meramot.sp_distinct_count.all', 300, $countDistinct)
+            : $countDistinct();
 
         // Determine search context: "Best Deal" winner tags highlight ONLY when actively searching (`q`),
         // while `best_match` defaults for typed queries (`$search !== ''`) and ALL sort options remain available.
@@ -725,30 +742,36 @@ class SparePartController extends Controller
         }
 
         // Minimalistic 3-level Hierarchical Folder Directory: Root Group -> Category Folder -> Sub-Categories & Brands
-        $treeBase = SparePartListing::query()
-            ->join('repair_shops', 'repair_shops.id', '=', 'spare_part_listings.shop_id')
-            ->where('spare_part_listings.is_active', true)
-            ->where('repair_shops.is_active', true);
+        $loadRawSubBrandRows = function () use ($deviceType, $subCategoryCaseSql) {
+            $treeBase = SparePartListing::query()
+                ->join('repair_shops', 'repair_shops.id', '=', 'spare_part_listings.shop_id')
+                ->where('spare_part_listings.is_active', true)
+                ->where('repair_shops.is_active', true);
 
-        if ($deviceType === 'pc') {
-            $treeBase->whereIn('spare_part_listings.part_category', self::PC_CATEGORIES);
-        } elseif ($deviceType === 'mobile') {
-            $treeBase->whereIn('spare_part_listings.part_category', self::MOBILE_CATEGORIES);
-        } elseif ($deviceType === 'others') {
-            $treeBase->whereIn('spare_part_listings.part_category', self::OTHER_CATEGORIES);
-        }
+            if ($deviceType === 'pc') {
+                $treeBase->whereIn('spare_part_listings.part_category', self::PC_CATEGORIES);
+            } elseif ($deviceType === 'mobile') {
+                $treeBase->whereIn('spare_part_listings.part_category', self::MOBILE_CATEGORIES);
+            } elseif ($deviceType === 'others') {
+                $treeBase->whereIn('spare_part_listings.part_category', self::OTHER_CATEGORIES);
+            }
 
-        $rawSubBrandRows = (clone $treeBase)
-            ->select(
-                'spare_part_listings.part_category',
-                DB::raw("{$subCategoryCaseSql} as sub_key"),
-                'spare_part_listings.brand',
-                DB::raw('COUNT(*) as total')
-            )
-            ->groupBy('spare_part_listings.part_category', DB::raw($subCategoryCaseSql), 'spare_part_listings.brand')
-            ->orderBy('spare_part_listings.part_category')
-            ->orderBy('spare_part_listings.brand')
-            ->get();
+            return $treeBase
+                ->select(
+                    'spare_part_listings.part_category',
+                    DB::raw("{$subCategoryCaseSql} as sub_key"),
+                    'spare_part_listings.brand',
+                    DB::raw('COUNT(*) as total')
+                )
+                ->groupBy('spare_part_listings.part_category', DB::raw($subCategoryCaseSql), 'spare_part_listings.brand')
+                ->orderBy('spare_part_listings.part_category')
+                ->orderBy('spare_part_listings.brand')
+                ->get();
+        };
+
+        $rawSubBrandRows = !app()->environment('testing')
+            ? Cache::remember("meramot.sp_dir_tree.{$deviceType}", 300, $loadRawSubBrandRows)
+            : $loadRawSubBrandRows();
 
         $genericBrands = ['PC / Laptop', 'PC Component', 'Universal', 'Generic', 'Other', 'Unknown'];
         $formatBrandsList = static function ($rows) use ($genericBrands): array {
@@ -1308,6 +1331,7 @@ class SparePartController extends Controller
             'slug' => $slug,
             'is_active' => true,
         ]));
+        self::flushCatalogCache();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -1336,9 +1360,17 @@ class SparePartController extends Controller
 
         $ownedShopIds = $vendorProfile->shops()->pluck('id')->all();
         $listing = SparePartListing::whereIn('shop_id', $ownedShopIds)->where('id', $id)->firstOrFail();
+        $prevStock = (int) $listing->stock_quantity;
 
         $payload = $this->validateVendorListingPayload($request, $vendorProfile, $listing);
         $listing->update($payload);
+        app(\App\Services\SparePartInventoryService::class)->recordVendorAdjustment(
+            $listing->fresh(),
+            $prevStock,
+            (int) $payload['stock_quantity'],
+            $request->user()?->id
+        );
+        self::flushCatalogCache();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -1400,6 +1432,7 @@ class SparePartController extends Controller
         $listing = SparePartListing::whereIn('shop_id', $ownedShopIds)->where('id', $id)->firstOrFail();
         $title = $listing->title;
         $listing->delete();
+        self::flushCatalogCache();
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -1412,6 +1445,14 @@ class SparePartController extends Controller
             'tab' => 'spare_parts',
             'shop_id' => $request->input('return_shop_id', 'all'),
         ])->with('success', "Removed spare part listing '{$title}'.");
+    }
+
+    public static function flushCatalogCache(): void
+    {
+        foreach (['all', 'pc', 'mobile', 'others'] as $dt) {
+            Cache::forget("meramot.sp_dir_tree.{$dt}");
+        }
+        Cache::forget('meramot.sp_distinct_count.all');
     }
 
     private function resolveAndSyncCustomerLocation(Request $request): array
@@ -1693,7 +1734,7 @@ class SparePartController extends Controller
         if (empty($highlights)) {
             $highlights = [
                 '100% bench-tested replacement spare part',
-                'Covered by Meramot Escrow Inspection & Return Protection',
+                'Covered by Meramot Inspection & Return Protection',
             ];
         }
 

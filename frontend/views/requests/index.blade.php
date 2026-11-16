@@ -24,28 +24,28 @@ Controller: RepairRequestController@index
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
         <div>
-            <span class="dev-only-badge text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-1.5">
+            <span class="dev-only-badge text-[10px] font-semibold uppercase px-2.5 py-1 rounded bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-1.5">
                 Feature R7 • Shanid Sajjatuz Islam [23201465]
             </span>
-            <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Track Your Repair Requests &amp; Orders</h1>
+            <h1 class="text-xl md:text-2xl font-bold tracking-tight text-[var(--foreground)]">Track Your Repair Requests &amp; Orders</h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1">
-                Compare incoming workshop estimates, approve final bench diagnostics, and monitor scheduled doorstep orders.
+                Compare quotes, approve diagnostics, and track your orders.
             </p>
         </div>
         @php
             $isBannedViewer = auth()->check() && auth()->user()->isBanned();
         @endphp
         <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <a href="/packages/catalog" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+            <a href="/packages/catalog" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                 Fixed Packages
             </a>
             @if($isBannedViewer)
-                <span class="inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700">
+                <span class="inline-flex items-center gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-700">
                     <i class="fa-solid fa-ban text-[11px]"></i>
                     <span>New Requests Restricted</span>
                 </span>
             @else
-                <a href="/requests/create" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                <a href="/requests/create" class="rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                     + Post New Repair Request
                 </a>
             @endif
@@ -63,7 +63,7 @@ Controller: RepairRequestController@index
         ] as $filterKey => $filterLabel)
             <a
                 href="/requests?filter={{ $filterKey }}"
-                class="rounded-full px-4 py-2 font-bold transition {{ $statusFilter === $filterKey ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--mint-100)]' }}"
+                class="rounded-md px-4 py-2 font-bold transition {{ $statusFilter === $filterKey ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'bg-[var(--card)] border border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--mint-100)]' }}"
             >
                 {{ $filterLabel }}
             </a>
@@ -79,18 +79,18 @@ Controller: RepairRequestController@index
                 $activeBidsCount = $req->bids->where('status', '!=', 'WITHDRAWN')->count();
                 $lowestBid = $req->bids->where('status', '!=', 'WITHDRAWN')->min('proposed_cost');
             @endphp
-            <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 md:p-6 shadow-sm hover:border-[var(--accent-dark)]/50 transition">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-5 md:p-6 shadow-sm hover:border-[var(--accent-dark)]/50 transition">
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div class="space-y-1.5 flex-1 min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="font-mono text-xs font-black text-[var(--muted-foreground)]">#{{ $req->id }}</span>
-                            <span class="rounded-full px-3 py-0.5 text-[10px] font-extrabold uppercase {{ $st === 'COMPLETED' ? 'bg-emerald-100 text-emerald-900' : ($st === 'WAITING_APPROVAL' ? 'bg-amber-200 text-amber-950' : ($st === 'BIDDING' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)]' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]')) }}">
+                            <span class="font-mono text-xs font-bold text-[var(--muted-foreground)]">#{{ $req->id }}</span>
+                            <span class="rounded px-3 py-0.5 text-[10px] font-semibold uppercase {{ $st === 'COMPLETED' ? 'bg-emerald-100 text-emerald-900' : ($st === 'WAITING_APPROVAL' ? 'bg-amber-200 text-amber-950' : ($st === 'BIDDING' ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)]' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)]')) }}">
                                 {{ str_replace('_', ' ', $st) }}
                             </span>
-                            <span class="rounded-full border border-[var(--border)] bg-[var(--mint-100)]/70 px-2.5 py-0.5 text-[10px] font-bold text-[var(--foreground)]">
+                            <span class="rounded border border-[var(--border)] bg-[var(--mint-100)]/70 px-2.5 py-0.5 text-[10px] font-bold text-[var(--foreground)]">
                                 {{ ($req->source ?? 'MARKETPLACE') === 'DIRECT_SERVICE' ? 'Workshop Booking' : 'Custom Quote Request' }}
                             </span>
-                            <span class="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--muted-foreground)]">
+                            <span class="rounded border border-[var(--border)] bg-[var(--card)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--muted-foreground)]">
                                 {{ $req->requiresCourierLogistics() ? 'Courier Pickup' : 'In-Shop Walk-In' }}
                             </span>
                             @if($assignedShop)
@@ -100,7 +100,7 @@ Controller: RepairRequestController@index
                             @endif
                         </div>
 
-                        <h2 class="break-words text-base md:text-lg font-black text-[var(--foreground)]">
+                        <h2 class="break-words text-base md:text-lg font-bold text-[var(--foreground)]">
                             {{ $req->brand }} {{ $req->model_name }} — {{ $req->title }}
                         </h2>
 
@@ -121,10 +121,10 @@ Controller: RepairRequestController@index
                         <div class="text-left md:text-right">
                             @if($req->quoted_final_amount)
                                 <span class="text-[10px] uppercase font-bold text-[var(--muted-foreground)] block">Quoted / Agreed</span>
-                                <span class="text-xl font-black text-[var(--accent-dark)]">৳{{ number_format($req->quoted_final_amount, 2) }}</span>
+                                <span class="text-xl font-bold text-[var(--accent-dark)]">৳{{ number_format($req->quoted_final_amount, 2) }}</span>
                             @elseif($activeBidsCount > 0)
                                 <span class="text-[10px] uppercase font-bold text-emerald-700 block">{{ $activeBidsCount }} Workshop {{ Str::plural('Bid', $activeBidsCount) }}</span>
-                                <span class="text-lg font-black text-[var(--accent-dark)]">From ৳{{ number_format($lowestBid, 0) }}</span>
+                                <span class="text-lg font-bold text-[var(--accent-dark)]">From ৳{{ number_format($lowestBid, 0) }}</span>
                             @else
                                 <span class="text-xs font-bold text-[var(--muted-foreground)]">Awaiting Workshop Quotes</span>
                             @endif
@@ -135,7 +135,7 @@ Controller: RepairRequestController@index
                                 @if($req->review)
                                     <a
                                         href="{{ route('shops.show', $assignedShop->slug) }}?edit_review={{ $req->review->id }}#review-{{ $req->review->id }}"
-                                        class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
+                                        class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md border border-emerald-300 bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-900 shadow-sm hover:bg-emerald-200 transition"
                                     >
                                         <i class="fa-solid fa-pen-to-square text-emerald-700 text-[11px]"></i>
                                         <span>Edit Review ({{ $req->review->rating }}★)</span>
@@ -155,7 +155,7 @@ Controller: RepairRequestController@index
                                         <input type="hidden" name="redirect_back" value="1">
                                         <button
                                             type="submit"
-                                            class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
+                                            class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md bg-rose-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-rose-700 transition"
                                         >
                                             <i class="fa-solid fa-trash-can text-[11px]"></i>
                                             <span>Delete Review</span>
@@ -163,14 +163,14 @@ Controller: RepairRequestController@index
                                     </form>
                                 @else
                                     @if($isBannedViewer)
-                                        <span class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700">
+                                        <span class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-700">
                                             <i class="fa-solid fa-ban text-[11px]"></i>
                                             <span>Reviews Restricted (Banned)</span>
                                         </span>
                                     @else
                                         <a
                                             href="{{ route('reviews.create', ['shopId' => $assignedShop->id, 'order_id' => $req->id]) }}"
-                                            class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full border border-emerald-600/40 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                                            class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md border border-emerald-600/40 bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
                                         >
                                             <i class="fa-solid fa-certificate text-[11px]"></i>
                                             <span>Write Verified Repair Review</span>
@@ -181,7 +181,7 @@ Controller: RepairRequestController@index
 
                             <a
                                 href="{{ route('requests.track', $req->id) }}"
-                                class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
+                                class="w-full sm:w-auto inline-flex items-center justify-center whitespace-nowrap gap-1.5 rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition"
                             >
                                 <span>{{ $st === 'WAITING_APPROVAL' ? 'Review Quote 2' : ($st === 'BIDDING' && $activeBidsCount > 0 ? 'Compare Bids' : 'Track Lifecycle') }}</span>
                                 <i class="fa-solid fa-arrow-right text-[10px]"></i>
@@ -191,14 +191,14 @@ Controller: RepairRequestController@index
                 </div>
             </div>
         @empty
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-10 text-center shadow-sm">
-                <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--mint-100)] text-[var(--accent-dark)]">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-10 text-center shadow-sm">
+                <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-lg bg-[var(--mint-100)] text-[var(--accent-dark)]">
                     <i class="fa-solid fa-screwdriver-wrench text-xl"></i>
                 </div>
-                <h3 class="text-lg font-black text-[var(--foreground)]">No repair requests match this filter yet</h3>
+                <h3 class="text-lg font-bold text-[var(--foreground)]">No repair requests match this filter yet</h3>
                 <p class="mt-1 text-xs text-[var(--muted-foreground)]">Publish a repair request to receive estimates from verified local workshops.</p>
                 @if(!$isBannedViewer)
-                    <a href="/requests/create" class="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                    <a href="/requests/create" class="mt-5 inline-flex items-center gap-2 rounded-md bg-[var(--accent-dark)] px-6 py-2.5 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                         Post a Repair Request &rarr;
                     </a>
                 @endif

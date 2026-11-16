@@ -74,18 +74,18 @@
             class="fixed inset-0 z-[140] flex items-center justify-center p-4"
         >
             <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="showSubmittedModal = false"></div>
-            <div class="relative z-[141] w-full max-w-lg rounded-[2rem] border border-[var(--border)] bg-white p-7 shadow-2xl space-y-4">
+            <div class="relative z-[141] w-full max-w-lg rounded-lg border border-[var(--border)] bg-white p-7 shadow-2xl space-y-4">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
                         <i class="fa-solid fa-envelope-circle-check text-xl"></i>
                     </div>
                     <div>
-                        <span class="text-[10px] font-black uppercase tracking-wider text-emerald-800">Application Submitted &bull; Pending Review</span>
-                        <h2 class="text-xl font-black text-[#163625]">Check Your Personal Email for Updates</h2>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800">Application Submitted &bull; Pending Review</span>
+                        <h2 class="text-xl font-bold text-[#163625]">Check Your Personal Email for Updates</h2>
                     </div>
                 </div>
 
-                <div class="rounded-2xl border border-[#cbe0c2] bg-[#eef5ea] p-4 text-xs text-[#163625] space-y-2 leading-relaxed">
+                <div class="rounded-lg border border-[#cbe0c2] bg-[#eef5ea] p-4 text-xs text-[#163625] space-y-2 leading-relaxed">
                     <p>
                         Thank you, <strong>{{ $submittedPopup['name'] ?? 'Applicant' }}</strong>. Your delivery partner application is pending review.
                     </p>
@@ -101,14 +101,14 @@
                 <div class="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
                     <a
                         href="/delivery-agent/status"
-                        class="w-full sm:w-auto text-center rounded-full border-2 border-[#214c34] bg-[#eef5ea] px-5 py-2.5 text-xs font-bold text-[#214c34] hover:bg-[#dcebd5] transition"
+                        class="w-full sm:w-auto text-center rounded-md border-2 border-[#214c34] bg-[#eef5ea] px-5 py-2.5 text-xs font-bold text-[#214c34] hover:bg-[#dcebd5] transition"
                     >
                         Check Application Status
                     </a>
                     <button
                         type="button"
                         @click="showSubmittedModal = false"
-                        class="w-full sm:w-auto rounded-full bg-[#214c34] px-6 py-2.5 text-xs font-bold text-white hover:opacity-95 transition"
+                        class="w-full sm:w-auto rounded-md bg-[#214c34] px-6 py-2.5 text-xs font-bold text-white hover:opacity-95 transition"
                     >
                         Got It
                     </button>
@@ -131,18 +131,18 @@
         </div>
 
         <!-- ── Dedicated Delivery Partner Company Login Card ── -->
-        <div class="relative rounded-[2rem] border border-white/60 bg-white/95 px-5 sm:px-8 py-6 sm:py-7 shadow-2xl backdrop-blur">
+        <div class="relative rounded-lg border border-white/60 bg-white/95 px-5 sm:px-8 py-6 sm:py-7 shadow-2xl backdrop-blur">
             <a
                 href="{{ $backHref }}"
                 title="{{ $backLabel }}"
                 aria-label="{{ $backLabel }}"
-                class="group absolute left-4 sm:left-6 top-5 sm:top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-md"
+                class="group absolute left-4 sm:left-6 top-5 sm:top-6 inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-md"
             >
                 <i class="fa-solid fa-arrow-left text-xs transition-transform duration-200 group-hover:-translate-x-0.5"></i>
             </a>
 
             <div class="mb-5 text-center px-10 sm:px-8">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-[#eef5ea] border border-[#cbe0c2] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#214c34] mb-2">
+                <span class="inline-flex items-center gap-1.5 rounded-md bg-[#eef5ea] border border-[#cbe0c2] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[#214c34] mb-2">
                     <i class="fa-solid fa-motorcycle"></i> Meramot Logistics
                 </span>
                 <h1 class="text-2xl md:text-3xl font-bold leading-tight text-[#214c34]">
@@ -154,24 +154,24 @@
             </div>
 
             @if($currentUser)
-                <div class="mb-4 rounded-2xl border border-[#cbe0c2] bg-[#eef5ea] px-4 py-3 text-xs text-[#163625] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div class="mb-4 rounded-lg border border-[#cbe0c2] bg-[#eef5ea] px-4 py-3 text-xs text-[#163625] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <span>
                         Signed in as <strong>{{ $currentUser->name ?? 'User' }}</strong>. Enter <code class="font-mono font-bold">@meramotbd.com</code> credentials to switch workspaces.
                     </span>
-                    <a href="{{ $backHref }}" class="shrink-0 rounded-full bg-[#214c34] px-3.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90 transition text-center">
+                    <a href="{{ $backHref }}" class="shrink-0 rounded-md bg-[#214c34] px-3.5 py-1.5 text-[11px] font-bold text-white hover:opacity-90 transition text-center">
                         Return &rarr;
                     </a>
                 </div>
             @endif
 
             @if(session('success'))
-                <div class="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-900 font-semibold">
+                <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-900 font-semibold">
                     <i class="fa-solid fa-circle-check text-emerald-700 mr-1.5"></i>{{ session('success') }}
                 </div>
             @endif
 
             @if($errors->any())
-                <div class="mb-4 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-700 space-y-1">
+                <div class="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-xs text-red-700 space-y-1">
                     @foreach($errors->all() as $err)
                         <div><i class="fa-solid fa-circle-exclamation mr-1"></i> {{ $err }}</div>
                     @endforeach
@@ -179,7 +179,7 @@
             @endif
 
             <!-- Company Email & Immutable Password Form Box -->
-            <form method="POST" action="/delivery/login" class="space-y-4 rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-4 sm:p-5">
+            <form method="POST" action="/delivery/login" class="space-y-4 rounded-lg border border-[#d9e5d5] bg-[#f8fbf6] p-4 sm:p-5">
                 @csrf
 
                 <div>
@@ -193,7 +193,7 @@
                         required
                         autocomplete="username"
                         placeholder="yourname@meramotbd.com"
-                        class="w-full rounded-2xl border border-[#c8dac2] bg-white px-4 py-3 text-sm font-mono text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        class="w-full rounded-lg border border-[#c8dac2] bg-white px-4 py-3 text-sm font-mono text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                     />
                 </div>
 
@@ -208,7 +208,7 @@
                             required
                             autocomplete="current-password"
                             placeholder="Enter company password"
-                            class="w-full rounded-2xl border border-[#c8dac2] bg-white pl-4 pr-16 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                            class="w-full rounded-lg border border-[#c8dac2] bg-white pl-4 pr-16 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         />
                         <button
                             type="button"
@@ -222,7 +222,7 @@
 
                 <button
                     type="submit"
-                    class="group w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#163625] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
+                    class="group w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#163625] py-3.5 text-sm font-bold text-white shadow-md transition-all duration-200 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     <span>Sign in as Delivery Partner</span>
                     <i class="fa-solid fa-arrow-right text-xs transition-transform duration-200 group-hover:translate-x-1"></i>
@@ -244,14 +244,14 @@
             <div class="mt-5 space-y-3">
                 <a
                     href="/delivery-agent/status"
-                    class="group flex w-full items-center justify-between gap-3.5 rounded-2xl border border-[#c8dac2] bg-gradient-to-br from-white via-[#f8fbf6] to-[#eef5ea] px-4 py-3.5 text-left shadow-sm transition-all duration-250 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-[0_12px_24px_-8px_rgba(22,54,37,0.22)]"
+                    class="group flex w-full items-center justify-between gap-3.5 rounded-lg border border-[#c8dac2] bg-gradient-to-br from-white via-[#f8fbf6] to-[#eef5ea] px-4 py-3.5 text-left shadow-sm transition-all duration-250 hover:border-[#214c34] hover:shadow-[0_12px_24px_-8px_rgba(22,54,37,0.22)]"
                 >
                     <div class="flex items-center gap-3">
                         <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#c8dac2] bg-[#eef5ea] text-[#163625] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
                             <i class="fa-solid fa-magnifying-glass-chart text-sm"></i>
                         </div>
                         <div>
-                            <span class="block text-xs md:text-sm font-extrabold text-[#163625]">Check Application Status</span>
+                            <span class="block text-xs md:text-sm font-semibold text-[#163625]">Check Application Status</span>
                             <span class="block text-[11px] text-[#5e6d64]">View status, edit documents, or resend credentials</span>
                         </div>
                     </div>
@@ -262,14 +262,14 @@
 
                 <a
                     href="/delivery-agent/register"
-                    class="group flex w-full items-center justify-between gap-3.5 rounded-2xl border border-[#c8dac2] bg-gradient-to-br from-white via-[#f8fbf6] to-[#eef5ea] px-4 py-3.5 text-left shadow-sm transition-all duration-250 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-[0_12px_24px_-8px_rgba(22,54,37,0.22)]"
+                    class="group flex w-full items-center justify-between gap-3.5 rounded-lg border border-[#c8dac2] bg-gradient-to-br from-white via-[#f8fbf6] to-[#eef5ea] px-4 py-3.5 text-left shadow-sm transition-all duration-250 hover:border-[#214c34] hover:shadow-[0_12px_24px_-8px_rgba(22,54,37,0.22)]"
                 >
                     <div class="flex items-center gap-3">
                         <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#c8dac2] bg-[#eef5ea] text-[#163625] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
                             <i class="fa-solid fa-id-card-clip text-sm"></i>
                         </div>
                         <div>
-                            <span class="block text-xs md:text-sm font-extrabold text-[#163625]">Apply as a delivery agent</span>
+                            <span class="block text-xs md:text-sm font-semibold text-[#163625]">Apply as a delivery agent</span>
                             <span class="block text-[11px] text-[#5e6d64]">New courier partner? Submit your NID &amp; license</span>
                         </div>
                     </div>
@@ -312,7 +312,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-            class="relative z-[111] w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
+            class="relative z-[111] w-full max-w-md overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
         >
             <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-[#214c34] to-emerald-400"></div>
 
@@ -320,11 +320,11 @@
             <div x-show="recoverStep === 'form'" class="p-7 sm:p-8">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#214c34]">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-[#214c34]">
                             <i class="fa-solid fa-key text-base"></i>
                         </div>
                         <div>
-                            <h2 id="delivery-recover-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Recover Company Credentials</h2>
+                            <h2 id="delivery-recover-modal-title" class="text-lg font-semibold text-[var(--foreground)]">Recover Company Credentials</h2>
                             <p class="text-xs text-[var(--muted-foreground)]">Re-send your <code class="font-mono font-bold">@meramotbd.com</code> login &amp; password.</p>
                         </div>
                     </div>
@@ -333,7 +333,7 @@
 
                 <form @submit.prevent="submitRecoverCredentials()" class="mt-5 space-y-4">
                     <template x-if="recoverError">
-                        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-800 space-y-1.5">
+                        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-medium text-red-800 space-y-1.5">
                             <div class="flex items-start gap-2">
                                 <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0 text-red-600"></i>
                                 <span x-text="recoverError"></span>
@@ -350,7 +350,7 @@
                             required
                             autocomplete="email"
                             placeholder="rahim@gmail.com or yourname@meramotbd.com"
-                            class="w-full rounded-full border border-[#d7d7d7] bg-white px-5 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34]"
+                            class="w-full rounded-md border border-[#d7d7d7] bg-white px-5 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34]"
                         />
                     </div>
 
@@ -364,14 +364,14 @@
                             type="button"
                             @click="recoverModalOpen = false"
                             :disabled="recoverSending"
-                            class="rounded-full border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
+                            class="rounded-md border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             :disabled="recoverSending"
-                            class="inline-flex items-center gap-2 rounded-full bg-[#163625] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
+                            class="inline-flex items-center gap-2 rounded-md bg-[#163625] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
                         >
                             <i class="fa-solid" :class="recoverSending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
                             <span x-text="recoverSending ? 'Sending...' : 'Re-send Credentials'"></span>
@@ -382,15 +382,15 @@
 
             <!-- Step 2: Sent Confirmation -->
             <div x-show="recoverStep === 'sent'" class="p-7 sm:p-8 text-center">
-                <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-inner">
+                <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-inner">
                     <i class="fa-solid fa-envelope-circle-check text-2xl"></i>
                 </div>
 
-                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]">
+                <h2 class="text-xl sm:text-2xl font-semibold tracking-tight text-[var(--foreground)]">
                     Company Credentials Re-Sent
                 </h2>
 
-                <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
                     <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
                     <span class="truncate" x-text="recoverEmail"></span>
                 </div>
@@ -403,13 +403,13 @@
                     <button
                         type="button"
                         @click="recoverModalOpen = false"
-                        class="w-full rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
+                        class="w-full rounded-md bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
                     >
                         Back to Delivery Login
                     </button>
                     <a
                         href="/delivery-agent/status"
-                        class="block w-full rounded-full border border-[var(--border)] bg-[var(--background)] px-6 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
+                        class="block w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-6 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
                     >
                         Check Application Status
                     </a>

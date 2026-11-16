@@ -1,14 +1,57 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
-    "./src/**/*.{html,js,ts,jsx,tsx}",
-    "./public/**/*.html",
     "./views/**/*.blade.php",
-    "../backend/resources/views/**/*.blade.php"
+    "./js/**/*.js",
+    "./src/**/*.{html,js,ts,jsx,tsx}",
+    "../backend/resources/views/**/*.blade.php",
+    "../backend/app/**/*.php"
   ],
   theme: {
+    borderRadius: {
+      none: '0px',
+      sm: '0.1875rem',
+      DEFAULT: '0.25rem',
+      md: '0.375rem',
+      lg: '0.5rem',
+      xl: '0.5rem',
+      '2xl': '0.625rem',
+      '3xl': '0.75rem',
+      full: '9999px',
+    },
+    fontWeight: {
+      thin: '300',
+      extralight: '300',
+      light: '300',
+      normal: '400',
+      medium: '500',
+      semibold: '600',
+      bold: '700',
+      extrabold: '700',
+      black: '700',
+    },
     extend: {
+      fontFamily: {
+        sans: ['Inter', '"Hind Siliguri"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
+      },
       colors: {
+        'background': 'var(--background)',
+        'foreground': 'var(--foreground)',
+        'card': 'var(--card)',
+        'card-foreground': 'var(--card-foreground)',
+        'muted': 'var(--muted)',
+        'muted-foreground': 'var(--muted-foreground)',
+        'border': 'var(--border)',
+        'mint-50': 'var(--mint-50)',
+        'mint-100': 'var(--mint-100)',
+        'mint-200': 'var(--mint-200)',
+        'mint-300': 'var(--mint-300)',
+        'mint-500': 'var(--mint-500)',
+        'mint-700': 'var(--mint-700)',
+        'accent-dark': 'var(--accent-dark)',
+        'accent-foreground': 'var(--accent-foreground)',
         meramot: {
           50: '#f0fdfa',
           100: '#ccfbf1',
@@ -21,7 +64,5 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/forms'),
-  ],
-}
+  plugins: [],
+};

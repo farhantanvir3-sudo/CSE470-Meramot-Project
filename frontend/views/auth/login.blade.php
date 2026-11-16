@@ -134,7 +134,7 @@
         </div>
 
         <!-- ── Meramot Sign-In Card ── -->
-        <div class="rounded-[2rem] border border-white/60 bg-white/90 px-8 py-6 shadow-2xl backdrop-blur">
+        <div class="rounded-lg border border-white/60 bg-white/90 px-8 py-6 shadow-2xl backdrop-blur">
             
             <div class="mb-4 text-center">
                 <h1 class="text-3xl font-bold leading-tight text-[#214c34]">
@@ -146,13 +146,13 @@
             </div>
 
             @if(session('success'))
-                <div class="mb-4 rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-medium text-emerald-800">
+                <div class="mb-4 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs font-medium text-emerald-800">
                     {{ session('success') }}
                 </div>
             @endif
 
             @if($errors->any())
-                <div class="mb-4 rounded-2xl bg-red-50/90 border border-red-200 px-4 py-3 text-xs font-medium text-red-800 space-y-1.5 shadow-sm">
+                <div class="mb-4 rounded-lg bg-red-50/90 border border-red-200 px-4 py-3 text-xs font-medium text-red-800 space-y-1.5 shadow-sm">
                     @foreach($errors->all() as $err)
                         <div class="flex items-start gap-2 leading-relaxed">
                             <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0 text-red-600"></i>
@@ -165,7 +165,7 @@
             <!-- ── Distinct "Sign in with Google" Button (Requires prior Google Sign-Up) ── -->
             <a
                 href="/auth/google?intent=login"
-                class="group relative mb-4 flex w-full items-center justify-center gap-3 overflow-hidden rounded-full border border-[var(--border)] bg-white px-4 py-3 text-sm font-semibold text-[#203126] transition-all duration-300 hover:border-[#214c34]/40 hover:shadow-[0_0_20px_-5px_rgba(33,76,52,0.3)]"
+                class="group relative mb-4 flex w-full items-center justify-center gap-3 overflow-hidden rounded-md border border-[var(--border)] bg-white px-4 py-3 text-sm font-semibold text-[#203126] transition-all duration-300 hover:border-[#214c34]/40 hover:shadow-[0_0_20px_-5px_rgba(33,76,52,0.3)]"
             >
                 <span class="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-[#214c34]/[0.07] to-transparent transition-transform duration-500 group-hover:translate-x-full"></span>
                 <svg class="relative h-4 w-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
@@ -196,7 +196,7 @@
                         name="identifier"
                         value="{{ old('identifier') }}"
                         required
-                        class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                        class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         placeholder="Username or email"
                     />
                 </div>
@@ -210,7 +210,7 @@
                             :type="show ? 'text' : 'password'"
                             name="password"
                             required
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white pl-4 pr-16 py-3 text-sm outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                             placeholder="Enter your password"
                         />
                         <button 
@@ -232,7 +232,7 @@
 
                 <button
                     type="submit"
-                    class="w-full rounded-full bg-[#163625] py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
+                    class="w-full rounded-full bg-[#163625] py-3.5 text-sm font-semibold text-white shadow-md transition-all duration-200 hover:bg-[#1d4630] hover:shadow-[0_12px_24px_-6px_rgba(22,54,37,0.4)]"
                 >
                     Sign In
                 </button>
@@ -260,7 +260,7 @@
                 <div class="grid grid-cols-1 gap-2 text-left">
                     <a
                         href="/delivery/login"
-                        class="group flex items-center justify-between gap-3 rounded-2xl border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] px-4 py-2.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-md"
+                        class="group flex items-center justify-between gap-3 rounded-lg border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] px-4 py-2.5 shadow-sm transition-all duration-200 hover:border-[#214c34] hover:shadow-md"
                     >
                         <span class="flex items-center gap-2.5 font-bold text-[#1b365d]">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eef5ea] text-[#163625] transition-colors group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
@@ -275,7 +275,7 @@
 
                     <a
                         href="/vendor/apply"
-                        class="group flex items-center justify-between gap-3 rounded-2xl border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] px-4 py-2.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#214c34] hover:shadow-md"
+                        class="group flex items-center justify-between gap-3 rounded-lg border border-[#c8dac2] bg-gradient-to-r from-[#f8fbf6] via-white to-[#eef5ea] px-4 py-2.5 shadow-sm transition-all duration-200 hover:border-[#214c34] hover:shadow-md"
                     >
                         <span class="flex items-center gap-2.5 font-bold text-emerald-900">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eef5ea] text-emerald-800 transition-colors group-hover:bg-[#163625] group-hover:text-[#E4FCD5]">
@@ -294,10 +294,10 @@
             <div class="mt-4 pt-3 border-t border-[var(--border)]/30 text-center">
                 <span class="text-[10px] uppercase font-bold text-[#5e6d64] block mb-2">1-Click Demo Login</span>
                 <div class="flex justify-center gap-1.5 text-[10px]">
-                    <a href="/auth/demo?role=customer" class="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-200 hover:shadow">Customer</a>
-                    <a href="/auth/demo?role=vendor" class="px-3 py-1 rounded-full bg-amber-100 text-amber-900 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-200 hover:shadow">Vendor</a>
-                    <a href="/auth/demo?role=delivery" class="px-3 py-1 rounded-full bg-sky-100 text-sky-900 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-sky-200 hover:shadow">Rider</a>
-                    <a href="/auth/demo?role=admin" class="px-3 py-1 rounded-full bg-rose-100 text-rose-900 font-semibold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-200 hover:shadow">Admin</a>
+                    <a href="/auth/demo?role=customer" class="px-3 py-1 rounded-md bg-emerald-100 text-emerald-900 font-semibold shadow-sm transition-all duration-200 hover:bg-emerald-200 hover:shadow">Customer</a>
+                    <a href="/auth/demo?role=vendor" class="px-3 py-1 rounded-md bg-amber-100 text-amber-900 font-semibold shadow-sm transition-all duration-200 hover:bg-amber-200 hover:shadow">Vendor</a>
+                    <a href="/auth/demo?role=delivery" class="px-3 py-1 rounded-md bg-sky-100 text-sky-900 font-semibold shadow-sm transition-all duration-200 hover:bg-sky-200 hover:shadow">Rider</a>
+                    <a href="/auth/demo?role=admin" class="px-3 py-1 rounded-md bg-rose-100 text-rose-900 font-semibold shadow-sm transition-all duration-200 hover:bg-rose-200 hover:shadow">Admin</a>
                 </div>
             </div>
 
@@ -334,7 +334,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-            class="relative z-[111] w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
+            class="relative z-[111] w-full max-w-md overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
         >
             <div class="h-1.5 w-full bg-gradient-to-r from-emerald-500 via-[#214c34] to-emerald-400"></div>
 
@@ -342,11 +342,11 @@
             <div x-show="forgotStep === 'form'" class="p-7 sm:p-8">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#214c34]">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-[#214c34]">
                             <i class="fa-solid fa-key text-base"></i>
                         </div>
                         <div>
-                            <h2 id="forgot-password-modal-title" class="text-lg font-extrabold text-[var(--foreground)]">Reset Password</h2>
+                            <h2 id="forgot-password-modal-title" class="text-lg font-semibold text-[var(--foreground)]">Reset Password</h2>
                             <p class="text-xs text-[var(--muted-foreground)]">Enter your email or username for a 6-digit reset code.</p>
                         </div>
                     </div>
@@ -355,7 +355,7 @@
 
                 <form @submit.prevent="submitForgotPassword(false)" class="mt-5 space-y-4">
                     <template x-if="forgotError">
-                        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-800 flex items-center gap-2">
+                        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-800 flex items-center gap-2">
                             <i class="fa-solid fa-circle-exclamation text-red-600"></i>
                             <span x-text="forgotError"></span>
                         </div>
@@ -369,7 +369,7 @@
                             required
                             autocomplete="username"
                             placeholder="name@example.com or username"
-                            class="w-full rounded-full border border-[#d7d7d7] bg-white px-5 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34]"
+                            class="w-full rounded-md border border-[#d7d7d7] bg-white px-5 py-3 text-sm text-[#163625] outline-none transition focus:border-[#214c34]"
                         />
                     </div>
 
@@ -383,14 +383,14 @@
                             type="button"
                             @click="forgotModalOpen = false"
                             :disabled="forgotSending"
-                            class="rounded-full border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
+                            class="rounded-md border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             :disabled="forgotSending"
-                            class="inline-flex items-center gap-2 rounded-full bg-[#163625] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
+                            class="inline-flex items-center gap-2 rounded-md bg-[#163625] px-6 py-2.5 text-xs font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
                         >
                             <i class="fa-solid" :class="forgotSending ? 'fa-spinner fa-spin' : 'fa-paper-plane'"></i>
                             <span x-text="forgotSending ? 'Sending...' : 'Send Code'"></span>
@@ -401,15 +401,15 @@
 
             <!-- Step 2: Enter 6-Digit OTP Inside Modal -->
             <div x-show="forgotStep === 'otp'" class="p-7 sm:p-8 text-center">
-                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-[#214c34] shadow-inner">
+                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-[#214c34] shadow-inner">
                     <i class="fa-solid fa-envelope-circle-check text-2xl"></i>
                 </div>
 
-                <h2 class="text-xl font-extrabold tracking-tight text-[var(--foreground)]">
+                <h2 class="text-xl font-semibold tracking-tight text-[var(--foreground)]">
                     Enter Verification Code
                 </h2>
 
-                <div class="mt-2.5 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                <div class="mt-2.5 inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
                     <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
                     <span class="truncate" x-text="forgotTarget || forgotEmail"></span>
                 </div>
@@ -420,14 +420,14 @@
 
                 <form @submit.prevent="submitForgotOtp()" class="mt-4 space-y-3.5 text-left">
                     <template x-if="forgotError">
-                        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-800 flex items-center gap-2">
+                        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-medium text-red-800 flex items-center gap-2">
                             <i class="fa-solid fa-circle-exclamation text-red-600 shrink-0"></i>
                             <span x-text="forgotError"></span>
                         </div>
                     </template>
 
                     <template x-if="forgotNotice">
-                        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-900 flex items-center gap-2">
+                        <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold text-emerald-900 flex items-center gap-2">
                             <i class="fa-solid fa-circle-check text-emerald-600 shrink-0"></i>
                             <span x-text="forgotNotice"></span>
                         </div>
@@ -447,7 +447,7 @@
                             autocomplete="one-time-code"
                             placeholder="000000"
                             data-forgot-otp-input
-                            class="w-full rounded-2xl border border-[#c8dac2] bg-white px-4 py-3 text-center font-mono text-2xl font-extrabold tracking-[0.4em] text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
+                            class="w-full rounded-lg border border-[#c8dac2] bg-white px-4 py-3 text-center font-mono text-2xl font-semibold tracking-[0.4em] text-[#163625] outline-none transition focus:border-[#214c34] focus:ring-2 focus:ring-[#214c34]/20"
                         />
                     </div>
 
@@ -455,7 +455,7 @@
                         type="submit"
                         :disabled="forgotVerifying"
                         data-verify-forgot-otp-btn
-                        class="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
+                        class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition disabled:opacity-60"
                     >
                         <i class="fa-solid" :class="forgotVerifying ? 'fa-spinner fa-spin' : 'fa-shield-halved'"></i>
                         <span x-text="forgotVerifying ? 'Verifying...' : 'Verify Code'"></span>
@@ -484,15 +484,15 @@
 
             <!-- Step 3: OTP Verified -> Set New Password CTA -->
             <div x-show="forgotStep === 'verified'" class="p-7 sm:p-8 text-center">
-                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-inner">
+                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600 shadow-inner">
                     <i class="fa-solid fa-circle-check text-2xl"></i>
                 </div>
 
-                <h2 class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]">
+                <h2 class="text-xl sm:text-2xl font-semibold tracking-tight text-[var(--foreground)]">
                     Code Verified
                 </h2>
 
-                <div class="mt-2.5 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                <div class="mt-2.5 inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
                     <span class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
                     <span class="truncate" x-text="forgotTarget || forgotEmail"></span>
                 </div>
@@ -505,14 +505,14 @@
                     <a
                         :href="forgotResetUrl"
                         data-set-new-password-btn
-                        class="block w-full rounded-full bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
+                        class="block w-full rounded-md bg-[#163625] px-6 py-3 text-sm font-bold text-white shadow-md hover:bg-[#1d4630] transition"
                     >
                         Set New Password &rarr;
                     </a>
                     <button
                         type="button"
                         @click="forgotModalOpen = false"
-                        class="w-full rounded-full border border-[var(--border)] bg-[var(--background)] px-6 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
+                        class="w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-6 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-50)] transition"
                     >
                         Cancel
                     </button>

@@ -18,19 +18,19 @@ Controller: TrackingController@showMap, liveTelemetry, pingLocation
 
 <div class="mx-auto max-w-6xl px-4 py-6 md:px-6 space-y-5">
     @if($notFoundId ?? null)
-        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-8 text-center space-y-4 shadow-sm">
-            <div class="mx-auto h-14 w-14 rounded-2xl bg-[var(--mint-100)] border border-[var(--border)] flex items-center justify-center text-[var(--accent-dark)]">
+        <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-8 text-center space-y-4 shadow-sm">
+            <div class="mx-auto h-14 w-14 rounded-lg bg-[var(--mint-100)] border border-[var(--border)] flex items-center justify-center text-[var(--accent-dark)]">
                 <i class="fa-solid fa-location-crosshairs text-xl"></i>
             </div>
-            <h1 class="text-2xl font-black text-[var(--foreground)]">Live Courier GPS Radar</h1>
+            <h1 class="text-2xl font-bold text-[var(--foreground)]">Live Courier GPS Radar</h1>
             <p class="text-xs text-[var(--muted-foreground)] max-w-md mx-auto">
                 Dispatch reference <span class="font-mono font-bold">#{{ $notFoundId }}</span> has no active courier trip yet. Once a rider accepts your pickup or return leg, live GPS coordinates and ETA appear here automatically.
             </p>
             <div class="flex justify-center gap-3 pt-2">
-                <a href="/requests" class="rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                <a href="/requests" class="rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                     View My Repair Orders
                 </a>
-                <a href="/" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                <a href="/" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-5 py-2.5 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
                     Back to Marketplace
                 </a>
             </div>
@@ -64,7 +64,7 @@ Controller: TrackingController@showMap, liveTelemetry, pingLocation
                         <span>›</span>
                         <span>Live GPS Telemetry</span>
                     </div>
-                    <h1 class="text-2xl font-black text-[var(--foreground)]">Real-Time Courier Route &amp; ETA</h1>
+                    <h1 class="text-2xl font-bold text-[var(--foreground)]">Real-Time Courier Route &amp; ETA</h1>
                     <p class="text-xs text-[var(--muted-foreground)] mt-0.5">
                         Ref: <span class="font-mono font-bold text-[var(--foreground)]" x-text="state.tracking_code"></span>
                         • Leg: <span class="font-bold" x-text="state.direction === 'TO_CUSTOMER' ? 'Workshop → Customer Return' : 'Customer → Workshop Pickup'"></span>
@@ -74,19 +74,19 @@ Controller: TrackingController@showMap, liveTelemetry, pingLocation
                 <div class="flex flex-wrap items-center gap-2.5">
                     <button type="button" @click="toggleAutoRefresh()"
                             :class="autoRefresh ? 'bg-emerald-700 text-white' : 'bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)]'"
-                            class="inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-extrabold transition shadow-sm">
+                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-xs font-semibold transition shadow-sm">
                         <span class="h-2 w-2 rounded-full" :class="autoRefresh ? 'bg-emerald-200 animate-ping' : 'bg-slate-400'"></span>
                         <span x-text="autoRefresh ? 'Live 5s Radar ON' : 'Live Radar Paused'"></span>
                     </button>
                     <button type="button" @click="pollNow()"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--foreground)] transition">
+                            class="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--mint-100)] px-4 py-2 text-xs font-bold text-[var(--foreground)] transition">
                         <i class="fa-solid fa-arrows-rotate" :class="loading ? 'fa-spin' : ''"></i> Refresh
                     </button>
                 </div>
             </div>
 
             <!-- 5-Step Courier Milestone Progress Strip -->
-            <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-4 md:p-5 shadow-sm">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 md:p-5 shadow-sm">
                 <div class="grid grid-cols-5 gap-2 text-center">
                     @foreach($milestones as $idx => $ms)
                         <div class="flex flex-col items-center gap-1.5">
@@ -105,14 +105,14 @@ Controller: TrackingController@showMap, liveTelemetry, pingLocation
 
             <!-- Main Map + Telemetry Sidebar Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-                <div class="lg:col-span-8 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-3 shadow-sm space-y-3">
+                <div class="lg:col-span-8 rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 shadow-sm space-y-3">
                     <div class="relative">
-                        <div id="map" class="w-full h-[420px] rounded-2xl bg-[var(--mint-100)] z-10"></div>
+                        <div id="map" class="w-full h-[420px] rounded-lg bg-[var(--mint-100)] z-10"></div>
 
                         <!-- Floating ETA Pill -->
-                        <div class="absolute top-3 right-3 z-[500] rounded-2xl bg-[var(--accent-dark)]/95 text-white px-4 py-2.5 shadow-lg text-xs">
+                        <div class="absolute top-3 right-3 z-[500] rounded-lg bg-[var(--accent-dark)]/95 text-white px-4 py-2.5 shadow-lg text-xs">
                             <p class="text-[10px] uppercase tracking-wider text-emerald-200 font-bold">Estimated Arrival</p>
-                            <p class="text-base font-black" x-text="state.status === 'DELIVERED' ? 'Delivered' : (state.eta_minutes + ' mins (' + state.distance_km + ' km)')"></p>
+                            <p class="text-base font-bold" x-text="state.status === 'DELIVERED' ? 'Delivered' : (state.eta_minutes + ' mins (' + state.distance_km + ' km)')"></p>
                         </div>
                     </div>
 
@@ -129,17 +129,17 @@ Controller: TrackingController@showMap, liveTelemetry, pingLocation
                 <!-- Right Telemetry Column -->
                 <div class="lg:col-span-4 space-y-4">
                     <!-- Courier Card -->
-                    <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm space-y-3 text-xs">
+                    <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm space-y-3 text-xs">
                         <div class="flex items-center justify-between">
-                            <span class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">Assigned Courier</span>
-                            <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-black uppercase text-[var(--accent-dark)]" x-text="state.status"></span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Assigned Courier</span>
+                            <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2.5 py-0.5 text-[10px] font-bold uppercase text-[var(--accent-dark)]" x-text="state.status"></span>
                         </div>
                         <div class="flex items-center gap-3">
-                            <div class="h-11 w-11 rounded-2xl bg-[var(--accent-dark)] text-[var(--accent-foreground)] flex items-center justify-center font-black text-sm">
+                            <div class="h-11 w-11 rounded-lg bg-[var(--accent-dark)] text-[var(--accent-foreground)] flex items-center justify-center font-bold text-sm">
                                 <i class="fa-solid fa-helmet-safety"></i>
                             </div>
                             <div class="min-w-0">
-                                <p class="text-sm font-black text-[var(--foreground)] truncate" x-text="state.rider_name"></p>
+                                <p class="text-sm font-bold text-[var(--foreground)] truncate" x-text="state.rider_name"></p>
                                 <p class="text-[11px] text-[var(--muted-foreground)]">
                                     <span x-text="state.vehicle_type"></span> • <span x-text="state.type"></span> Dispatch
                                 </p>
@@ -148,11 +148,11 @@ Controller: TrackingController@showMap, liveTelemetry, pingLocation
 
                         @if($job)
                             <div class="flex flex-wrap gap-2 pt-1">
-                                <a href="/support/rider-chat/{{ $job->id }}" class="flex-1 text-center rounded-full bg-[var(--accent-dark)] py-2.5 px-3 font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                                <a href="/support/rider-chat/{{ $job->id }}" class="flex-1 text-center rounded-md bg-[var(--accent-dark)] py-2.5 px-3 font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                                     <i class="fa-solid fa-comments mr-1"></i> Rider Chat
                                 </a>
                                 @if(!empty($t['rider_phone']))
-                                    <a href="tel:{{ $t['rider_phone'] }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] py-2.5 px-4 font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                                    <a href="tel:{{ $t['rider_phone'] }}" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] py-2.5 px-4 font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
                                         <i class="fa-solid fa-phone"></i>
                                     </a>
                                 @endif
@@ -161,15 +161,15 @@ Controller: TrackingController@showMap, liveTelemetry, pingLocation
                     </div>
 
                     <!-- Route Waypoints Card -->
-                    <div class="rounded-[1.75rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm space-y-3 text-xs">
-                        <p class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">Route Waypoints</p>
+                    <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm space-y-3 text-xs">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Route Waypoints</p>
                         <div class="space-y-2.5">
                             <div class="rounded-xl bg-[var(--mint-100)] p-3 border border-[var(--border)]">
-                                <p class="text-[10px] font-extrabold text-blue-700 uppercase">Origin / Pickup</p>
+                                <p class="text-[10px] font-semibold text-blue-700 uppercase">Origin / Pickup</p>
                                 <p class="font-bold text-[var(--foreground)] mt-0.5">{{ $t['pickup_address'] }}</p>
                             </div>
                             <div class="rounded-xl bg-[var(--mint-100)] p-3 border border-[var(--border)]">
-                                <p class="text-[10px] font-extrabold text-emerald-800 uppercase">Destination / Dropoff</p>
+                                <p class="text-[10px] font-semibold text-emerald-800 uppercase">Destination / Dropoff</p>
                                 <p class="font-bold text-[var(--foreground)] mt-0.5">{{ $t['dropoff_address'] }}</p>
                             </div>
                         </div>
@@ -181,19 +181,19 @@ Controller: TrackingController@showMap, liveTelemetry, pingLocation
 
                     <!-- Owner-Only Handover OTP Security Card -->
                     @if($canViewOtp && $job)
-                        <div class="rounded-[1.75rem] border border-emerald-300 bg-emerald-50/90 p-5 shadow-sm space-y-2 text-xs">
-                            <p class="text-[10px] font-black uppercase tracking-wider text-emerald-900">
+                        <div class="rounded-lg border border-emerald-300 bg-emerald-50/90 p-5 shadow-sm space-y-2 text-xs">
+                            <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-900">
                                 <i class="fa-solid fa-key mr-1"></i> Secure Chain-of-Custody OTP
                             </p>
                             <p class="text-[11px] text-emerald-900/85">Share this 6-digit PIN only when handing over or receiving your device in person:</p>
                             <div class="grid grid-cols-2 gap-2 pt-1">
                                 <div class="rounded-xl bg-white border border-emerald-200 p-2.5 text-center">
                                     <span class="text-[10px] text-emerald-800 font-bold block">Pickup OTP</span>
-                                    <span class="font-mono text-base font-black tracking-widest text-emerald-950">{{ $job->pickup_otp ?? '—' }}</span>
+                                    <span class="font-mono text-base font-bold tracking-widest text-emerald-950">{{ $job->pickup_otp ?? '—' }}</span>
                                 </div>
                                 <div class="rounded-xl bg-white border border-emerald-200 p-2.5 text-center">
                                     <span class="text-[10px] text-emerald-800 font-bold block">Dropoff OTP</span>
-                                    <span class="font-mono text-base font-black tracking-widest text-emerald-950">{{ $job->dropoff_otp ?? '—' }}</span>
+                                    <span class="font-mono text-base font-bold tracking-widest text-emerald-950">{{ $job->dropoff_otp ?? '—' }}</span>
                                 </div>
                             </div>
                         </div>

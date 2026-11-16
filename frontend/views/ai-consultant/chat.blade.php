@@ -100,7 +100,7 @@
     <!-- Header -->
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)] flex items-center gap-2">
+            <h1 class="text-2xl md:text-3xl font-bold text-[var(--foreground)] flex items-center gap-2">
                 <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i>
                 <span data-i18n="ai_hw_consultant">AI Hardware Diagnostic Consultant</span>
             </h1>
@@ -111,7 +111,7 @@
                 <span>Instant symptom analysis, fault isolation, and preliminary repair guidance before you book a workshop.</span>
             </p>
         </div>
-        <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-dark)] self-start flex items-center gap-2">
+        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-dark)] self-start flex items-center gap-2">
             <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
             <span data-i18n="ai_active">AI Diagnostics Active</span>
         </span>
@@ -120,7 +120,7 @@
     <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
 
         <!-- Left: Interactive Mint Chat Card -->
-        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm flex flex-col h-[560px] overflow-hidden">
+        <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm flex flex-col h-[560px] overflow-hidden">
 
             <!-- Chat Control Bar -->
             <div class="p-4 border-b border-[var(--border)] bg-[var(--mint-100)] flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -134,7 +134,7 @@
                         <option value="Smartwatch">Smartwatch & Audio</option>
                     </select>
                 </div>
-                <a href="/requests/create" class="rounded-full bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                <a href="/requests/create" class="rounded-md bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                     Post Repair Request &rarr;
                 </a>
             </div>
@@ -145,8 +145,8 @@
                     <div :class="m.sender === 'ai' ? 'flex justify-start' : 'flex justify-end'">
                         <div
                             :class="m.sender === 'ai'
-                                ? 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl rounded-tl-none shadow-sm'
-                                : 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] rounded-2xl rounded-tr-none shadow-sm'"
+                                ? 'bg-[var(--mint-100)] text-[var(--foreground)] border border-[var(--border)] rounded-lg rounded-tl-none shadow-sm'
+                                : 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] rounded-lg rounded-tr-none shadow-sm'"
                             class="max-w-lg px-4 py-3 leading-relaxed"
                         >
                             <div class="text-[10px] font-bold opacity-70 mb-1" x-text="m.sender === 'ai' ? 'Meramot AI Consultant' : 'You'"></div>
@@ -156,7 +156,7 @@
                 </template>
 
                 <div x-show="loading" x-cloak class="flex justify-start">
-                    <div class="bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] rounded-2xl rounded-tl-none px-4 py-2.5 text-xs italic flex items-center gap-2">
+                    <div class="bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] rounded-lg rounded-tl-none px-4 py-2.5 text-xs italic flex items-center gap-2">
                         <i class="fa-solid fa-spinner fa-spin"></i>
                         <span data-i18n="analyzing_symptoms">Analyzing reported device symptoms...</span>
                     </div>
@@ -169,12 +169,12 @@
                     type="text"
                     x-model="userInput"
                     placeholder="Describe your device fault (e.g. MacBook powers on with chime, screen stays black)..."
-                    class="flex-grow rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--card)] text-xs px-4 py-2.5 outline-none placeholder:text-[var(--muted-foreground)] text-[var(--foreground)] transition"
+                    class="flex-grow rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--card)] text-xs px-4 py-2.5 outline-none placeholder:text-[var(--muted-foreground)] text-[var(--foreground)] transition"
                 >
                 <button
                     type="submit"
                     :disabled="loading"
-                    class="rounded-2xl bg-[var(--accent-dark)] hover:opacity-90 disabled:opacity-60 text-[var(--accent-foreground)] px-5 py-2.5 text-xs font-bold transition shadow flex items-center gap-1.5"
+                    class="rounded-lg bg-[var(--accent-dark)] hover:opacity-90 disabled:opacity-60 text-[var(--accent-foreground)] px-5 py-2.5 text-xs font-bold transition shadow flex items-center gap-1.5"
                 >
                     <span x-text="loading ? 'Thinking...' : 'Diagnose'">Diagnose</span>
                     <i class="fa-solid fa-paper-plane text-[10px]"></i>
@@ -184,29 +184,29 @@
 
         <!-- Right Sidebar: Shanid's Quick Examples & Tips (Restyled in Mint Tokens) -->
         <div class="space-y-5">
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
-                <h3 class="text-sm font-black text-[var(--foreground)] mb-3 flex items-center gap-2">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
+                <h3 class="text-sm font-bold text-[var(--foreground)] mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-bolt text-amber-600"></i>
                     <span data-i18n="quick_prompts">Quick Symptom Prompts</span>
                 </h3>
                 <div class="space-y-2 text-xs">
-                    <button type="button" @click="quickPrompt('Phone', 'My iPhone screen is cracked and touch is unresponsive in the top corner')" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] p-3 text-left font-medium text-[var(--foreground)] transition">
+                    <button type="button" @click="quickPrompt('Phone', 'My iPhone screen is cracked and touch is unresponsive in the top corner')" class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] p-3 text-left font-medium text-[var(--foreground)] transition">
                         📱 "My iPhone screen is cracked & unresponsive"
                     </button>
-                    <button type="button" @click="quickPrompt('Laptop', 'Laptop overheating above 95°C and shutting down during heavy workloads')" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] p-3 text-left font-medium text-[var(--foreground)] transition">
+                    <button type="button" @click="quickPrompt('Laptop', 'Laptop overheating above 95°C and shutting down during heavy workloads')" class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] p-3 text-left font-medium text-[var(--foreground)] transition">
                         💻 "Laptop overheating and shutting down"
                     </button>
-                    <button type="button" @click="quickPrompt('Phone', 'Smartphone battery drains from 100% to 20% in two hours and feels warm')" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] p-3 text-left font-medium text-[var(--foreground)] transition">
+                    <button type="button" @click="quickPrompt('Phone', 'Smartphone battery drains from 100% to 20% in two hours and feels warm')" class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] p-3 text-left font-medium text-[var(--foreground)] transition">
                         🔋 "Phone battery drains fast & warms up"
                     </button>
-                    <button type="button" @click="quickPrompt('Laptop', 'Spilled water near keyboard, several keys stopped registering')" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] p-3 text-left font-medium text-[var(--foreground)] transition">
+                    <button type="button" @click="quickPrompt('Laptop', 'Spilled water near keyboard, several keys stopped registering')" class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] p-3 text-left font-medium text-[var(--foreground)] transition">
                         ⌨️ "Liquid spill — keyboard keys not working"
                     </button>
                 </div>
             </div>
 
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm text-xs">
-                <h4 class="font-black text-[var(--foreground)] mb-2 flex items-center gap-1.5">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm text-xs">
+                <h4 class="font-bold text-[var(--foreground)] mb-2 flex items-center gap-1.5">
                     <i class="fa-solid fa-lightbulb text-[var(--accent-dark)]"></i>
                     <span data-i18n="diagnostic_tips">Diagnostic Tips</span>
                 </h4>

@@ -21,11 +21,11 @@ Models Touched: VendorProfile, RepairShop, User
     <div class="flex items-start justify-between gap-3 sm:gap-4">
         <div class="min-w-0">
             <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Partner Governance</p>
-            <h1 class="text-xl sm:text-2xl md:text-3xl font-black leading-tight text-[var(--foreground)]">Vendor Business Verification &amp; Storefront Audit</h1>
+            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold leading-tight text-[var(--foreground)]">Vendor Business Verification &amp; Storefront Audit</h1>
             <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
                 Review submitted trade licenses, owner NID verification documents, storefront addresses, location coordinates, and multi-branch records prior to marketplace publication.
             </p>
-            <span class="dev-only-badge text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mt-1.5">
+            <span class="dev-only-badge text-[10px] font-mono px-2.5 py-0.5 rounded bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mt-1.5">
                 Feature R11 • Assigned to: Farhan Tanvir [22299179] (Team Lead)
             </span>
         </div>
@@ -33,7 +33,7 @@ Models Touched: VendorProfile, RepairShop, User
             href="/admin/vendors/pending"
             title="Refresh Queue"
             aria-label="Refresh Queue"
-            class="group mt-1 inline-flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
+            class="group mt-1 inline-flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
         >
             <i class="fa-solid fa-rotate-right text-xs sm:text-sm transition-transform duration-300 group-hover:rotate-180"></i>
         </a>
@@ -41,42 +41,42 @@ Models Touched: VendorProfile, RepairShop, User
 
     <!-- KPI Cards (Balanced 2 + 3 Bento on Mobile) -->
     <div class="grid grid-cols-6 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 sm:gap-4">
-        <div class="col-span-3 sm:col-span-1 rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
+        <div class="col-span-3 sm:col-span-1 rounded-xl sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
             <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)] block">Pending Audits</span>
-            <span class="text-xl sm:text-2xl font-black text-amber-700 mt-1 block">{{ $stats['pendingCount'] }}</span>
+            <span class="text-xl sm:text-2xl font-bold text-amber-700 mt-1 block">{{ $stats['pendingCount'] }}</span>
         </div>
-        <div class="col-span-3 sm:col-span-1 rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
+        <div class="col-span-3 sm:col-span-1 rounded-xl sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
             <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)] block">Approved Brands</span>
-            <span class="text-xl sm:text-2xl font-black text-emerald-700 mt-1 block">{{ number_format($stats['approvedCount']) }}</span>
+            <span class="text-xl sm:text-2xl font-bold text-emerald-700 mt-1 block">{{ number_format($stats['approvedCount']) }}</span>
         </div>
-        <div class="col-span-2 sm:col-span-1 rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
+        <div class="col-span-2 sm:col-span-1 rounded-xl sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
             <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)] block">
                 <span class="sm:hidden">Storefronts</span>
                 <span class="hidden sm:inline">Public Storefronts</span>
             </span>
-            <span class="text-xl sm:text-2xl font-black text-[var(--foreground)] mt-1 block">{{ number_format($stats['publicStorefrontsCount']) }}</span>
+            <span class="text-xl sm:text-2xl font-bold text-[var(--foreground)] mt-1 block">{{ number_format($stats['publicStorefrontsCount']) }}</span>
         </div>
-        <div class="col-span-2 sm:col-span-1 rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
+        <div class="col-span-2 sm:col-span-1 rounded-xl sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
             <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)] block">
                 <span class="sm:hidden">Branched</span>
                 <span class="hidden sm:inline">Multi-Branch Brands</span>
             </span>
-            <span class="text-xl sm:text-2xl font-black text-[var(--accent-dark)] mt-1 block">{{ $stats['branchedBrandsCount'] }}</span>
+            <span class="text-xl sm:text-2xl font-bold text-[var(--accent-dark)] mt-1 block">{{ $stats['branchedBrandsCount'] }}</span>
         </div>
-        <div class="col-span-2 sm:col-span-1 rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
+        <div class="col-span-2 sm:col-span-1 rounded-xl sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0">
             <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)] block">Rejected</span>
-            <span class="text-xl sm:text-2xl font-black text-rose-700 mt-1 block">{{ $stats['rejectedCount'] }}</span>
+            <span class="text-xl sm:text-2xl font-bold text-rose-700 mt-1 block">{{ $stats['rejectedCount'] }}</span>
         </div>
     </div>
 
     <!-- Pending Vendor Verification Queue -->
-    <div class="rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
+    <div class="rounded-lg sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-5">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
-            <h2 class="text-base font-black text-[var(--foreground)] flex items-center gap-2">
+            <h2 class="text-base font-bold text-[var(--foreground)] flex items-center gap-2">
                 <i class="fa-solid fa-clipboard-check text-amber-600"></i>
                 <span>Pending Vendor Onboarding Applications ({{ $pendingVendors->count() }})</span>
             </h2>
-            <span class="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900">
+            <span class="rounded-md bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900">
                 Requires Admin Sign-Off
             </span>
         </div>
@@ -118,18 +118,18 @@ Models Touched: VendorProfile, RepairShop, User
                     'submitted_at' => optional($vendor->updated_at)->format('M d, Y h:i A'),
                 ];
             @endphp
-            <div class="rounded-2xl border-2 {{ $isUnderReview ? 'border-sky-300 bg-sky-50/40' : 'border-amber-300 bg-[var(--mint-100)]/50' }} p-4 sm:p-5 space-y-4" x-data="{ rejectOpen: false }">
+            <div class="rounded-lg border-2 {{ $isUnderReview ? 'border-sky-300 bg-sky-50/40' : 'border-amber-300 bg-[var(--mint-100)]/50' }} p-4 sm:p-5 space-y-4" x-data="{ rejectOpen: false }">
                 <div class="flex flex-col xl:flex-row xl:items-start justify-between gap-4">
                     <div class="space-y-2 flex-1 min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
                             @if($isUnderReview)
-                                <span class="rounded-full bg-sky-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-white">Under Review</span>
+                                <span class="rounded bg-sky-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-white">Under Review</span>
                             @else
-                                <span class="rounded-full bg-amber-500 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-white">Pending Review</span>
+                                <span class="rounded bg-amber-500 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-white">Pending Review</span>
                             @endif
-                            <h3 class="text-lg font-black text-[var(--foreground)] break-words">{{ $vendor->shop_name }}</h3>
+                            <h3 class="text-lg font-bold text-[var(--foreground)] break-words">{{ $vendor->shop_name }}</h3>
                             @if($vendor->is_branched && $primaryShop?->branch_name)
-                                <span class="rounded-full bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-foreground)]">
+                                <span class="rounded bg-[var(--accent-dark)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-foreground)]">
                                     Branch: {{ $primaryShop->branch_name }}
                                 </span>
                             @endif
@@ -197,7 +197,7 @@ Models Touched: VendorProfile, RepairShop, User
                         @if(!empty($vendor->categories) || $vendor->provides_fixed_packages !== null)
                             <div class="flex flex-wrap items-center gap-1.5 pt-1">
                                 @foreach((array) ($vendor->categories ?? []) as $cat)
-                                    <span class="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--foreground)]">
+                                    <span class="rounded border border-[var(--border)] bg-[var(--card)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--foreground)]">
                                         {{ $cat }}
                                     </span>
                                 @endforeach
@@ -205,11 +205,11 @@ Models Touched: VendorProfile, RepairShop, User
                                     @php
                                         $pkgCount = count((array) ($vendor->offered_package_ids ?? []));
                                     @endphp
-                                    <span class="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                                    <span class="inline-flex items-center gap-1 rounded border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
                                         <i class="fa-solid fa-box-open"></i> {{ $pkgCount }} Fixed {{ \Illuminate\Support\Str::plural('Package', $pkgCount) }}
                                     </span>
                                 @elseif($vendor->provides_fixed_packages === false)
-                                    <span class="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                    <span class="inline-flex items-center gap-1 rounded border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
                                         No Platform Fixed Packages
                                     </span>
                                 @endif
@@ -221,7 +221,7 @@ Models Touched: VendorProfile, RepairShop, User
                         <button
                             type="button"
                             @click="inspectVendor = @js($dossierPayload)"
-                            class="rounded-full border border-[var(--border)] bg-[var(--card)] px-3.5 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition"
+                            class="rounded-md border border-[var(--border)] bg-[var(--card)] px-3.5 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition"
                         >
                             <i class="fa-solid fa-magnifying-glass mr-1 text-[var(--accent-dark)]"></i> Inspect Dossier
                         </button>
@@ -230,7 +230,7 @@ Models Touched: VendorProfile, RepairShop, User
                             <form method="POST" action="{{ route('admin.vendors.status', $vendor->id) }}">
                                 @csrf
                                 <input type="hidden" name="status" value="under_review">
-                                <button type="submit" class="rounded-full border border-sky-300 bg-sky-50 hover:bg-sky-100 px-3.5 py-2 text-xs font-bold text-sky-800 transition">
+                                <button type="submit" class="rounded-md border border-sky-300 bg-sky-50 hover:bg-sky-100 px-3.5 py-2 text-xs font-bold text-sky-800 transition">
                                     <i class="fa-solid fa-eye mr-1"></i> Mark Under Review
                                 </button>
                             </form>
@@ -238,7 +238,7 @@ Models Touched: VendorProfile, RepairShop, User
                             <form method="POST" action="{{ route('admin.vendors.status', $vendor->id) }}">
                                 @csrf
                                 <input type="hidden" name="status" value="pending">
-                                <button type="submit" class="rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3.5 py-2 text-xs font-bold text-amber-800 transition">
+                                <button type="submit" class="rounded-md border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3.5 py-2 text-xs font-bold text-amber-800 transition">
                                     Move to Pending
                                 </button>
                             </form>
@@ -246,7 +246,7 @@ Models Touched: VendorProfile, RepairShop, User
 
                         <form method="POST" action="{{ route('admin.vendors.approve', $vendor->id) }}">
                             @csrf
-                            <button type="submit" class="rounded-full bg-emerald-700 hover:bg-emerald-800 px-5 py-2 text-xs font-bold text-white shadow transition">
+                            <button type="submit" class="rounded-md bg-emerald-700 hover:bg-emerald-800 px-5 py-2 text-xs font-bold text-white shadow transition">
                                 <i class="fa-solid fa-check mr-1"></i> Approve &amp; Publish
                             </button>
                         </form>
@@ -254,7 +254,7 @@ Models Touched: VendorProfile, RepairShop, User
                         <button
                             type="button"
                             @click="rejectOpen = !rejectOpen"
-                            class="rounded-full border border-rose-300 bg-rose-50 hover:bg-rose-100 px-4 py-2 text-xs font-bold text-rose-800 transition"
+                            class="rounded-md border border-rose-300 bg-rose-50 hover:bg-rose-100 px-4 py-2 text-xs font-bold text-rose-800 transition"
                         >
                             <i class="fa-solid fa-xmark mr-1"></i> Reject
                         </button>
@@ -268,7 +268,7 @@ Models Touched: VendorProfile, RepairShop, User
                               data-confirm-cta="Delete Application">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" title="Delete Application" class="rounded-full border border-[var(--border)] bg-[var(--card)] hover:bg-rose-50 hover:text-rose-700 px-3 py-2 text-xs font-bold text-[var(--muted-foreground)] transition">
+                            <button type="submit" title="Delete Application" class="rounded-md border border-[var(--border)] bg-[var(--card)] hover:bg-rose-50 hover:text-rose-700 px-3 py-2 text-xs font-bold text-[var(--muted-foreground)] transition">
                                 <i class="fa-solid fa-trash-can"></i>
                             </button>
                         </form>
@@ -293,7 +293,7 @@ Models Touched: VendorProfile, RepairShop, User
                 </div>
             </div>
         @empty
-            <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/40 py-8 text-center text-xs text-[var(--muted-foreground)]">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/40 py-8 text-center text-xs text-[var(--muted-foreground)]">
                 <i class="fa-solid fa-circle-check text-2xl text-emerald-700 mb-2 block"></i>
                 No pending vendor applications awaiting verification right now.
             </div>
@@ -302,8 +302,8 @@ Models Touched: VendorProfile, RepairShop, User
 
     <!-- Rejected Applications History (if any) -->
     @if($rejectedVendors->count() > 0)
-        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-3">
-            <h2 class="text-sm font-black uppercase tracking-wider text-rose-800">Recently Rejected Applications ({{ $rejectedVendors->count() }})</h2>
+        <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-3">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-rose-800">Recently Rejected Applications ({{ $rejectedVendors->count() }})</h2>
             <div class="divide-y divide-[var(--border)] text-xs">
                 @foreach($rejectedVendors as $rej)
                     @php
@@ -344,7 +344,7 @@ Models Touched: VendorProfile, RepairShop, User
                     <div class="py-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                         <div class="min-w-0 flex-1">
                             <div class="flex flex-wrap items-center gap-2">
-                                <span class="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-extrabold uppercase text-rose-800">Rejected</span>
+                                <span class="rounded bg-rose-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-rose-800">Rejected</span>
                                 <span class="font-bold text-sm text-[var(--foreground)]">{{ $rej->shop_name }}</span>
                                 <span class="text-[var(--muted-foreground)]">({{ $rej->area }}, {{ $rej->city }})</span>
                                 <span class="text-[11px] text-[var(--muted-foreground)]">• {{ $rej->owner_name ?: ($rej->user->name ?? 'Applicant') }} ({{ $rej->business_email ?: ($rej->user->email ?? 'N/A') }})</span>
@@ -357,20 +357,20 @@ Models Touched: VendorProfile, RepairShop, User
                             <button
                                 type="button"
                                 @click="inspectVendor = @js($rejDossier)"
-                                class="rounded-full border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-[11px] font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition"
+                                class="rounded-md border border-[var(--border)] bg-[var(--card)] px-3 py-1.5 text-[11px] font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition"
                             >
                                 <i class="fa-solid fa-magnifying-glass mr-1"></i> Dossier
                             </button>
                             <form method="POST" action="{{ route('admin.vendors.status', $rej->id) }}">
                                 @csrf
                                 <input type="hidden" name="status" value="pending">
-                                <button type="submit" class="rounded-full border border-amber-500 bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-800 hover:bg-amber-100 transition">
+                                <button type="submit" class="rounded-md border border-amber-500 bg-amber-50 px-3 py-1.5 text-[11px] font-bold text-amber-800 hover:bg-amber-100 transition">
                                     Move to Pending
                                 </button>
                             </form>
                             <form method="POST" action="{{ route('admin.vendors.approve', $rej->id) }}">
                                 @csrf
-                                <button type="submit" class="rounded-full border border-emerald-600 bg-emerald-50 px-3.5 py-1.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition">
+                                <button type="submit" class="rounded-md border border-emerald-600 bg-emerald-50 px-3.5 py-1.5 text-[11px] font-bold text-emerald-800 hover:bg-emerald-100 transition">
                                     Override &amp; Approve
                                 </button>
                             </form>
@@ -383,7 +383,7 @@ Models Touched: VendorProfile, RepairShop, User
                                   data-confirm-cta="Delete Permanently">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" title="Delete Application" class="rounded-full border border-rose-200 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 text-[11px] font-bold text-rose-700 transition">
+                                <button type="submit" title="Delete Application" class="rounded-md border border-rose-200 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 text-[11px] font-bold text-rose-700 transition">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </form>
@@ -395,10 +395,10 @@ Models Touched: VendorProfile, RepairShop, User
     @endif
 
     <!-- Verified Partner Directory + Featured Curation -->
-    <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
+    <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-                <h2 class="text-base font-black text-[var(--foreground)]">Verified Partner Brands Directory</h2>
+                <h2 class="text-base font-bold text-[var(--foreground)]">Verified Partner Brands Directory</h2>
                 <p class="text-xs text-[var(--muted-foreground)]">Search approved brands, inspect multi-branch storefronts, curate Homepage Featured Shops, or revoke approval if needed.</p>
             </div>
             <form method="GET" action="/admin/vendors/pending" class="flex items-center gap-2 w-full sm:w-auto">
@@ -407,9 +407,9 @@ Models Touched: VendorProfile, RepairShop, User
                     name="q"
                     value="{{ $search }}"
                     placeholder="Search brand, city, license..."
-                    class="flex-1 sm:w-56 min-w-0 rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs outline-none focus:border-[var(--accent-dark)]"
+                    class="flex-1 sm:w-56 min-w-0 rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2 text-xs outline-none focus:border-[var(--accent-dark)]"
                 >
-                <button type="submit" class="shrink-0 rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)]">
+                <button type="submit" class="shrink-0 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)]">
                     Search
                 </button>
             </form>
@@ -469,12 +469,12 @@ Models Touched: VendorProfile, RepairShop, User
                                 <div class="flex flex-wrap items-center gap-1.5">
                                     <span>{{ $vp->canonical_brand_name }}</span>
                                     @if($vp->is_branched)
-                                        <span class="rounded-full bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-extrabold text-[var(--accent-dark)]">Multi-Branch</span>
+                                        <span class="rounded bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent-dark)]">Multi-Branch</span>
                                     @endif
                                     @if($firstShop && $firstShop->is_public && $firstShop->is_active)
-                                        <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Live</span>
+                                        <span class="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800">Live</span>
                                     @else
-                                        <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Setup Pending</span>
+                                        <span class="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Setup Pending</span>
                                     @endif
                                 </div>
                             </td>
@@ -485,7 +485,7 @@ Models Touched: VendorProfile, RepairShop, User
                                 @if($firstShop)
                                     <form method="POST" action="{{ route('admin.vendors.toggle-featured', $firstShop->id) }}" class="inline">
                                         @csrf
-                                        <button type="submit" class="rounded-full px-3 py-1 text-[10px] font-bold transition {{ $firstShop->is_featured ? 'bg-emerald-700 text-white' : 'bg-[var(--mint-100)] text-[var(--muted-foreground)] border border-[var(--border)] hover:text-[var(--foreground)]' }}">
+                                        <button type="submit" class="rounded px-3 py-1 text-[10px] font-bold transition {{ $firstShop->is_featured ? 'bg-emerald-700 text-white' : 'bg-[var(--mint-100)] text-[var(--muted-foreground)] border border-[var(--border)] hover:text-[var(--foreground)]' }}">
                                             {{ $firstShop->is_featured ? '★ Featured' : '☆ Feature' }}
                                         </button>
                                     </form>
@@ -496,7 +496,7 @@ Models Touched: VendorProfile, RepairShop, User
                                     <button
                                         type="button"
                                         @click="inspectVendor = @js($vpDossier)"
-                                        class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1 text-[10px] font-bold text-[var(--foreground)] hover:border-[var(--accent-dark)] transition"
+                                        class="rounded border border-[var(--border)] bg-[var(--mint-100)] px-2.5 py-1 text-[10px] font-bold text-[var(--foreground)] hover:border-[var(--accent-dark)] transition"
                                     >
                                         Dossier &amp; Status
                                     </button>
@@ -526,13 +526,13 @@ Models Touched: VendorProfile, RepairShop, User
         class="fixed inset-0 z-[150] flex items-center justify-center p-4"
     >
         <div class="fixed inset-0 bg-black/75 backdrop-blur-sm" @click="inspectVendor = null"></div>
-        <div class="relative z-[151] w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl space-y-5">
+        <div class="relative z-[151] w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl space-y-5">
             <div class="flex items-start justify-between gap-3 border-b border-[var(--border)] pb-4">
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">Vendor Application Dossier</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Vendor Application Dossier</span>
                         <span
-                            class="rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase"
+                            class="rounded px-2.5 py-0.5 text-[10px] font-semibold uppercase"
                             :class="{
                                 'bg-emerald-100 text-emerald-900': inspectVendor?.status === 'approved',
                                 'bg-sky-100 text-sky-900': inspectVendor?.status === 'under_review',
@@ -542,7 +542,7 @@ Models Touched: VendorProfile, RepairShop, User
                             x-text="inspectVendor?.status?.replace('_', ' ')"
                         ></span>
                     </div>
-                    <h3 class="text-xl font-black text-[var(--foreground)] mt-1" x-text="inspectVendor?.shop_name"></h3>
+                    <h3 class="text-xl font-bold text-[var(--foreground)] mt-1" x-text="inspectVendor?.shop_name"></h3>
                     <p class="text-xs text-[var(--muted-foreground)]">
                         Application #<span x-text="inspectVendor?.id"></span> • Last updated <span x-text="inspectVendor?.submitted_at"></span>
                     </p>
@@ -551,21 +551,21 @@ Models Touched: VendorProfile, RepairShop, User
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/40 p-3.5 space-y-1">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/40 p-3.5 space-y-1">
                     <span class="text-[10px] font-bold uppercase text-[var(--muted-foreground)] block">Owner &amp; Contact</span>
                     <p class="font-bold text-sm text-[var(--foreground)]" x-text="inspectVendor?.owner_name"></p>
                     <p class="text-[var(--muted-foreground)]">Email: <span class="font-semibold text-[var(--foreground)]" x-text="inspectVendor?.email"></span></p>
                     <p class="text-[var(--muted-foreground)]">Phone: <span class="font-semibold text-[var(--foreground)]" x-text="inspectVendor?.phone"></span></p>
                 </div>
 
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/40 p-3.5 space-y-1">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/40 p-3.5 space-y-1">
                     <span class="text-[10px] font-bold uppercase text-[var(--muted-foreground)] block">Trade License &amp; Identity</span>
                     <p class="text-[var(--muted-foreground)]">Trade License: <span class="font-mono font-bold text-[var(--foreground)]" x-text="inspectVendor?.license"></span></p>
                     <p class="text-[var(--muted-foreground)]">Owner NID: <span class="font-mono font-bold text-[var(--foreground)]" x-text="inspectVendor?.nid"></span></p>
                     <p class="text-[var(--muted-foreground)]">Branch Mode: <span class="font-bold text-[var(--foreground)]" x-text="inspectVendor?.is_branched ? ('Multi-Branch (' + (inspectVendor?.branch_name || 'Main') + ')') : 'Single Storefront'"></span></p>
                 </div>
 
-                <div class="sm:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/40 p-3.5 space-y-1">
+                <div class="sm:col-span-2 rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/40 p-3.5 space-y-1">
                     <span class="text-[10px] font-bold uppercase text-[var(--muted-foreground)] block">Dual Location Verification (GPS vs Public Address)</span>
                     <p class="text-[var(--muted-foreground)]">Public Shop Address: <span class="font-bold text-[var(--foreground)]" x-text="inspectVendor?.shop_address"></span></p>
                     <p class="text-[var(--muted-foreground)]">Pinned GPS Address: <span class="font-semibold text-[var(--foreground)]" x-text="inspectVendor?.gps_address"></span> (<span x-text="inspectVendor?.area"></span>, <span x-text="inspectVendor?.city"></span>)</p>
@@ -575,7 +575,7 @@ Models Touched: VendorProfile, RepairShop, User
 
             <!-- Uploaded Documents inside Dossier -->
             <template x-if="inspectVendor && (inspectVendor.has_logo || inspectVendor.has_doc)">
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/30 p-3.5 space-y-2">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/30 p-3.5 space-y-2">
                     <span class="text-[10px] font-bold uppercase text-[var(--muted-foreground)] block">Uploaded Verification Files</span>
                     <div class="flex flex-wrap gap-3">
                         <template x-if="inspectVendor.has_logo">
@@ -605,10 +605,10 @@ Models Touched: VendorProfile, RepairShop, User
             </template>
 
             <!-- Admin Status Control Form (Transition to any status) -->
-            <form method="POST" :action="'/admin/vendors/' + inspectVendor?.id + '/status'" class="rounded-2xl border-2 border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-3" x-data="{ targetStatus: 'approved' }" x-effect="if (inspectVendor) targetStatus = inspectVendor.status">
+            <form method="POST" :action="'/admin/vendors/' + inspectVendor?.id + '/status'" class="rounded-lg border-2 border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-3" x-data="{ targetStatus: 'approved' }" x-effect="if (inspectVendor) targetStatus = inspectVendor.status">
                 @csrf
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-black uppercase tracking-wider text-[var(--foreground)]">
+                    <span class="text-xs font-bold uppercase tracking-wider text-[var(--foreground)]">
                         <i class="fa-solid fa-sliders mr-1 text-[var(--accent-dark)]"></i> Admin Application Status Control
                     </span>
                     <span class="text-[11px] text-[var(--muted-foreground)]">Audited in Governance Logs</span>
@@ -646,10 +646,10 @@ Models Touched: VendorProfile, RepairShop, User
                 </div>
 
                 <div class="flex items-center justify-end gap-2 pt-1">
-                    <button type="button" @click="inspectVendor = null" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)]">
+                    <button type="button" @click="inspectVendor = null" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)]">
                         Cancel
                     </button>
-                    <button type="submit" class="rounded-full bg-[var(--accent-dark)] px-5 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-95">
+                    <button type="submit" class="rounded-md bg-[var(--accent-dark)] px-5 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-95">
                         Update Application Status
                     </button>
                 </div>
@@ -665,20 +665,20 @@ Models Touched: VendorProfile, RepairShop, User
         class="fixed inset-0 z-[160] flex items-center justify-center p-4"
     >
         <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" @click="lightboxDoc = null"></div>
-        <div class="relative z-[161] w-full max-w-4xl rounded-[2rem] border border-[#c8dac2] bg-white p-4 md:p-6 shadow-2xl space-y-3">
+        <div class="relative z-[161] w-full max-w-4xl rounded-lg border border-[#c8dac2] bg-white p-4 md:p-6 shadow-2xl space-y-3">
             <div class="flex items-center justify-between gap-3 border-b border-[#e7efe2] pb-3">
                 <div>
-                    <span class="text-[10px] font-black uppercase tracking-wider text-[#214c34]">Vendor Verification Lightbox</span>
-                    <h3 class="text-base font-black text-[#163625]" x-text="lightboxDoc?.title"></h3>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[#214c34]">Vendor Verification Lightbox</span>
+                    <h3 class="text-base font-bold text-[#163625]" x-text="lightboxDoc?.title"></h3>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a :href="lightboxDoc?.url" target="_blank" class="rounded-full border border-[#c8dac2] bg-[#eef5ea] px-3.5 py-1.5 text-xs font-bold text-[#163625] hover:bg-[#dcebd5]">
+                    <a :href="lightboxDoc?.url" target="_blank" class="rounded-md border border-[#c8dac2] bg-[#eef5ea] px-3.5 py-1.5 text-xs font-bold text-[#163625] hover:bg-[#dcebd5]">
                         Open Original &nearr;
                     </a>
                     <button type="button" @click="lightboxDoc = null" class="h-9 w-9 rounded-full bg-[#163625] text-white font-bold">✕</button>
                 </div>
             </div>
-            <div class="flex max-h-[75vh] min-h-[320px] w-full items-center justify-center overflow-auto rounded-2xl bg-[#0f1c12] p-3">
+            <div class="flex max-h-[75vh] min-h-[320px] w-full items-center justify-center overflow-auto rounded-lg bg-[#0f1c12] p-3">
                 <template x-if="lightboxDoc && !lightboxDoc.isPdf">
                     <img :src="lightboxDoc.url" :alt="lightboxDoc.title" class="max-h-[70vh] max-w-full rounded-xl object-contain shadow-lg">
                 </template>

@@ -4,13 +4,13 @@
 
 @section('content')
 <div
-    class="flex flex-col rounded-3xl border border-[#d9e5d5] bg-white p-5 md:p-6 shadow-sm"
+    class="flex flex-col rounded-lg border border-[#d9e5d5] bg-white p-5 md:p-6 shadow-sm"
     x-data="meramotRiderMap()"
     x-init="initMap()"
 >
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-            <h1 class="text-xl font-extrabold text-[#163625]">Live Map</h1>
+            <h1 class="text-xl font-semibold text-[#163625]">Live Map</h1>
             <p class="text-xs text-[#163625]/70">Real-time route dispatch pins and turn-by-turn courier navigation</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -38,21 +38,21 @@
     </div>
 
     <div class="mb-4 grid gap-3 md:grid-cols-3">
-        <div class="rounded-2xl border border-[#d9e5d5] bg-[#eef4ea] p-4">
+        <div class="rounded-lg border border-[#d9e5d5] bg-[#eef4ea] p-4">
             <p class="text-xs font-semibold text-[#163625]/70">Current coordinates</p>
             <p class="mt-1 font-mono text-sm font-bold text-[#163625]" x-text="coordsText"></p>
         </div>
-        <div class="rounded-2xl border border-[#d9e5d5] bg-[#eef4ea] p-4">
+        <div class="rounded-lg border border-[#d9e5d5] bg-[#eef4ea] p-4">
             <p class="text-xs font-semibold text-[#163625]/70">Active deliveries</p>
             <p class="mt-1 text-sm font-bold text-[#163625]">{{ $activeDeliveries->count() }}</p>
         </div>
-        <div class="rounded-2xl border border-[#d9e5d5] bg-[#eef4ea] p-4">
+        <div class="rounded-lg border border-[#d9e5d5] bg-[#eef4ea] p-4">
             <p class="text-xs font-semibold text-[#163625]/70">Rider status</p>
             <p class="mt-1 text-sm font-bold text-[#163625]">{{ $agent->status ?? 'AVAILABLE' }}</p>
         </div>
     </div>
 
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d9e5d5] bg-[#eef4ea] p-3">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#d9e5d5] bg-[#eef4ea] p-3">
         <p class="text-xs font-semibold text-[#163625]/80">Direction view</p>
         <select
             x-model="directionFilter"
@@ -65,7 +65,7 @@
         </select>
     </div>
 
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d9e5d5] bg-[#eef4ea] p-3">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#d9e5d5] bg-[#eef4ea] p-3">
         <p class="text-xs font-semibold text-[#163625]/80" x-text="selectedPoint ? ('Selected: ' + selectedPoint.label + ' — ' + selectedPoint.title + ' (' + selectedPoint.lat.toFixed(5) + ', ' + selectedPoint.lng.toFixed(5) + ')') : 'Select any pickup or delivery marker on the map to draw route'"></p>
         <button
             type="button"
@@ -79,7 +79,7 @@
 
     <div x-show="errorMsg" x-cloak class="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-700" x-text="errorMsg"></div>
 
-    <div class="relative rounded-2xl border border-[#d9e5d5] bg-white p-2">
+    <div class="relative rounded-lg border border-[#d9e5d5] bg-white p-2">
         <div id="rider-live-leaflet-map" style="height: 460px; width: 100%;" class="rounded-xl z-10"></div>
 
         <div class="pointer-events-none absolute right-4 top-4 z-[400] rounded-lg bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-[#163625] shadow-sm border border-[#d9e5d5]">
@@ -284,45 +284,57 @@ function meramotRiderMap() {
             }
         },
 
-        updateMyLocation() {
+        async updateMyLocation() {
             if (!navigator.geolocation) {
                 this.errorMsg = 'Browser geolocation is not supported on this device.';
                 return;
             }
             this.updatingLocation = true;
             this.errorMsg = '';
-            navigator.geolocation.getCurrentPosition(
-                async (pos) => {
-                    try {
-                        const lat = pos.coords.latitude;
-                        const lng = pos.coords.longitude;
-                        const resp = await fetch('/delivery/location', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            },
-                            body: JSON.stringify({ latitude: lat, longitude: lng })
-                        });
-                        if (resp.ok) {
-                            this.riderLat = lat;
-                            this.riderLng = lng;
-                            this.renderRiderPin();
-                            this.map.flyTo([lat, lng], 14);
-                        }
-                    } catch (err) {
-                        this.errorMsg = 'Could not sync GPS coordinates.';
-                    } finally {
-                        this.updatingLocation = false;
-                    }
-                },
-                () => {
-                    this.errorMsg = 'Location permission denied by browser.';
-                    this.updatingLocation = false;
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
+
+            // Prefer the shared best-fix routine (waits for satellite GPS instead of the first coarse estimate)
+            let pos;
+            try {
+                if (window.MeramotGeolocation && typeof window.MeramotGeolocation.getCurrentPosition === 'function') {
+                    pos = await window.MeramotGeolocation.getCurrentPosition({ desiredAccuracy: 15, maxWaitMs: 12000 });
+                } else {
+                    pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
+                        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+                        reject,
+                        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+                    ));
+                }
+            } catch (geoErr) {
+                this.errorMsg = geoErr && geoErr.code === 1
+                    ? 'Location permission denied by browser.'
+                    : 'Could not get a GPS fix. Move near a window or outdoors and try again.';
+                this.updatingLocation = false;
+                return;
+            }
+
+            try {
+                const lat = pos.lat;
+                const lng = pos.lng;
+                const resp = await fetch('/delivery/location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ latitude: lat, longitude: lng })
+                });
+                if (resp.ok) {
+                    this.riderLat = lat;
+                    this.riderLng = lng;
+                    this.renderRiderPin();
+                    this.map.flyTo([lat, lng], window.MeramotGeolocation ? window.MeramotGeolocation.zoomForAccuracy(pos.accuracy) : 16);
+                }
+            } catch (err) {
+                this.errorMsg = 'Could not sync GPS coordinates.';
+            } finally {
+                this.updatingLocation = false;
+            }
         }
     };
 }

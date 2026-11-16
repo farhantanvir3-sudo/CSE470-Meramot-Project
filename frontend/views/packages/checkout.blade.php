@@ -63,26 +63,26 @@
         <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
             <a href="{{ route('cart.view') }}" class="hover:underline">&larr; Back to Cart</a>
         </div>
-        <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Booking Checkout</h1>
-        <p class="mt-1 text-xs text-[var(--muted-foreground)]">Review your service option, schedule, and escrow-protected payment before confirming.</p>
+        <h1 class="text-xl md:text-2xl font-bold tracking-tight text-[var(--foreground)]">Booking Checkout</h1>
+        <p class="mt-1 text-xs text-[var(--muted-foreground)]">Confirm fulfillment, schedule, and payment details.</p>
     </div>
 
     @if(session('error'))
-        <div class="mb-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
+        <div class="mb-5 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-900 flex items-center gap-2 shadow-sm">
             <i class="fa-solid fa-circle-exclamation text-rose-700 shrink-0"></i>
             <span>{{ session('error') }}</span>
         </div>
     @endif
 
     @if(session('warning'))
-        <div class="mb-5 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-950 flex items-center gap-2 shadow-sm">
+        <div class="mb-5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-950 flex items-center gap-2 shadow-sm">
             <i class="fa-solid fa-triangle-exclamation text-amber-700 shrink-0"></i>
             <span>{{ session('warning') }}</span>
         </div>
     @endif
 
     @if($errors->any())
-        <div class="mb-5 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-900 space-y-1 shadow-sm">
+        <div class="mb-5 rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-xs text-rose-900 space-y-1 shadow-sm">
             @foreach($errors->all() as $err)
                 <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $err }}</div>
             @endforeach
@@ -94,8 +94,8 @@
 
         <!-- Left: Order Items & Pickup Details -->
         <div class="min-w-0 space-y-6">
-            <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm space-y-4">
-                <h2 class="text-base font-black text-[var(--foreground)] border-b border-[var(--border)] pb-3">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm space-y-4">
+                <h2 class="text-base font-bold text-[var(--foreground)] border-b border-[var(--border)] pb-3">
                     Workshop &amp; Pickup Details
                 </h2>
 
@@ -105,7 +105,7 @@
                     </label>
                     @if((!empty($shopLocked) || !empty($isSparePartCart)) && isset($activeShop) && $activeShop)
                         <input type="hidden" name="shop_id" value="{{ $activeShop->id }}">
-                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--foreground)] flex flex-wrap items-center justify-between gap-2">
+                        <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--foreground)] flex flex-wrap items-center justify-between gap-2">
                             <span>
                                 ✔ {{ $activeShop->name }}{{ $activeShop->display_branch_tag ? ' [' . $activeShop->display_branch_tag . ']' : '' }}
                             </span>
@@ -114,7 +114,7 @@
                             </span>
                         </div>
                     @else
-                        <select name="shop_id" class="w-full min-w-0 max-w-full truncate rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
+                        <select name="shop_id" class="w-full min-w-0 max-w-full truncate rounded-lg border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
                             @forelse($verifiedShops ?? [] as $vShop)
                                 <option value="{{ $vShop->id }}" {{ (isset($activeShop) && $activeShop && $activeShop->id === $vShop->id) ? 'selected' : '' }}>
                                     {{ \Illuminate\Support\Str::limit($vShop->name, 26) }}{{ $vShop->display_branch_tag ? ' [' . \Illuminate\Support\Str::limit($vShop->display_branch_tag, 18) . ']' : ' (' . \Illuminate\Support\Str::limit($vShop->area ?: $vShop->city, 16) . ')' }} • {{ (float) $vShop->rating > 0 ? '★' . number_format($vShop->rating, 1) : 'Verified' }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
@@ -131,7 +131,7 @@
                         <label class="block font-bold text-[var(--foreground)] mb-2">Service Fulfillment Option *</label>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label
-                                class="rounded-2xl border-2 p-3.5 transition flex items-start justify-between gap-2.5 {{ !$allowCourier ? 'opacity-55 cursor-not-allowed bg-slate-50/70' : 'cursor-pointer' }}"
+                                class="rounded-lg border-2 p-3.5 transition flex items-start justify-between gap-2.5 {{ !$allowCourier ? 'opacity-55 cursor-not-allowed bg-slate-50/70' : 'cursor-pointer' }}"
                                 :class="fulfillmentMode === 'COURIER_PICKUP' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'"
                             >
                                 <div class="flex items-start gap-2.5 min-w-0">
@@ -150,13 +150,13 @@
                                         </span>
                                     </div>
                                 </div>
-                                <span class="font-black text-xs text-[var(--accent-dark)] shrink-0">
+                                <span class="font-bold text-xs text-[var(--accent-dark)] shrink-0">
                                     {{ $allowCourier ? '৳' . number_format($regCourierFee, 0) . '+' : 'N/A' }}
                                 </span>
                             </label>
 
                             <label
-                                class="rounded-2xl border-2 p-3.5 transition flex items-start justify-between gap-2.5 {{ !$allowInShop ? 'opacity-55 cursor-not-allowed bg-slate-50/70' : 'cursor-pointer' }}"
+                                class="rounded-lg border-2 p-3.5 transition flex items-start justify-between gap-2.5 {{ !$allowInShop ? 'opacity-55 cursor-not-allowed bg-slate-50/70' : 'cursor-pointer' }}"
                                 :class="fulfillmentMode === 'IN_SHOP' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'"
                             >
                                 <div class="flex items-start gap-2.5 min-w-0">
@@ -175,7 +175,7 @@
                                         </span>
                                     </div>
                                 </div>
-                                <span class="font-black text-xs text-emerald-700 shrink-0">
+                                <span class="font-bold text-xs text-emerald-700 shrink-0">
                                     {{ $allowInShop ? '৳0 Fee' : 'N/A' }}
                                 </span>
                             </label>
@@ -188,14 +188,14 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block font-bold text-[var(--foreground)] mb-1" x-text="isCourierMode ? 'Pickup Schedule *' : 'Visit Schedule *'">Pickup Schedule *</label>
-                        <select name="schedule_type" x-model="scheduleType" class="w-full min-w-0 max-w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
+                        <select name="schedule_type" x-model="scheduleType" class="w-full min-w-0 max-w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
                             <option value="NOW" x-text="isCourierMode ? 'Dispatch Now' : 'Drop Off Today'">Dispatch Now</option>
                             <option value="LATER">Schedule for Later</option>
                         </select>
                     </div>
                     <div x-show="isCourierMode" x-cloak>
                         <label class="block font-bold text-[var(--foreground)] mb-1">Courier Tier *</label>
-                        <select name="delivery_type" x-model="deliveryType" :disabled="!isCourierMode" class="w-full min-w-0 max-w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
+                        <select name="delivery_type" x-model="deliveryType" :disabled="!isCourierMode" class="w-full min-w-0 max-w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 font-semibold text-[var(--foreground)] outline-none">
                             <option value="REGULAR">Regular Courier (৳{{ number_format($regCourierFee, 0) }})</option>
                             <option value="EXPRESS">Express Priority (৳{{ number_format($expCourierFee, 0) }})</option>
                         </select>
@@ -203,8 +203,8 @@
                 </div>
 
                 @if(isset($activeShop) && $activeShop)
-                    <div x-show="!isCourierMode" x-cloak class="rounded-2xl border border-emerald-300 bg-emerald-50/75 p-4 text-xs space-y-1">
-                        <div class="font-black text-emerald-950 flex items-center gap-2">
+                    <div x-show="!isCourierMode" x-cloak class="rounded-lg border border-emerald-300 bg-emerald-50/75 p-4 text-xs space-y-1">
+                        <div class="font-bold text-emerald-950 flex items-center gap-2">
                             <i class="fa-solid fa-store text-emerald-700"></i>
                             <span>In-Shop Service Location (Zero Delivery Fee)</span>
                         </div>
@@ -220,7 +220,7 @@
                         type="datetime-local"
                         name="scheduled_at"
                         value="{{ old('scheduled_at') }}"
-                        class="w-full sm:w-72 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none"
+                        class="w-full sm:w-72 rounded-lg border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-xs font-semibold text-[var(--foreground)] outline-none"
                     >
                 </div>
 
@@ -243,7 +243,7 @@
                             required
                             placeholder="01XXXXXXXXX"
                             value="{{ old('phone', auth()->check() ? (auth()->user()->phone ?? '') : '01712345678') }}"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"
+                            class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"
                         >
                     </div>
                     <div x-show="isCourierMode" x-cloak>
@@ -254,7 +254,7 @@
                             autocomplete="address-level3"
                             x-model="checkoutArea"
                             placeholder="e.g. Banani, Panthapath"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"
+                            class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"
                         >
                     </div>
                 </div>
@@ -268,7 +268,7 @@
                                     <button
                                         type="button"
                                         @click="checkoutAddress = @js(auth()->user()->address)"
-                                        class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] whitespace-nowrap"
+                                        class="rounded border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] whitespace-nowrap"
                                     >
                                         Use Profile Address
                                     </button>
@@ -277,25 +277,25 @@
                             <button
                                 type="button"
                                 @click="$dispatch('meramot-open-location-modal')"
-                                class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-[10px] font-bold text-white hover:opacity-90 whitespace-nowrap"
+                                class="rounded bg-[var(--accent-dark)] px-3 py-1 text-[10px] font-bold text-white hover:opacity-90 whitespace-nowrap"
                             >
                                 <i class="fa-solid fa-location-dot mr-1"></i>Pick on Map
                             </button>
                         </div>
                     </div>
-                    <textarea name="address" x-model="checkoutAddress" rows="3" :required="isCourierMode" placeholder="House or Flat #, Road #, Area, City" class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"></textarea>
+                    <textarea name="address" x-model="checkoutAddress" rows="3" :required="isCourierMode" placeholder="House or Flat #, Road #, Area, City" class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none"></textarea>
                 </div>
 
                 <div>
                     <label class="block font-bold text-[var(--foreground)] mb-1">Device Model &amp; Notes (Optional)</label>
-                    <textarea name="problem_note" rows="2" placeholder="Device model or bench handling notes..." class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none">{{ old('problem_note') }}</textarea>
+                    <textarea name="problem_note" rows="2" placeholder="Device model or bench handling notes..." class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-300)] px-4 py-2.5 text-[var(--foreground)] outline-none">{{ old('problem_note') }}</textarea>
                 </div>
             </div>
         </div>
 
         <!-- Right: Summary & Payment -->
-        <div class="min-w-0 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm space-y-4">
-            <h2 class="text-base font-black text-[var(--foreground)]">Order Summary</h2>
+        <div class="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm space-y-4">
+            <h2 class="text-base font-bold text-[var(--foreground)]">Order Summary</h2>
 
             <div class="space-y-2 border-b border-[var(--border)] pb-3">
                 @foreach($cart as $item)
@@ -333,7 +333,7 @@
                         <span class="shrink-0">-৳<span x-text="activeDiscount.toLocaleString()"></span></span>
                     </div>
                 </template>
-                <div class="pt-2 border-t border-[var(--border)] flex justify-between gap-2 text-base font-black text-[var(--foreground)]">
+                <div class="pt-2 border-t border-[var(--border)] flex justify-between gap-2 text-base font-bold text-[var(--foreground)]">
                     <span>Total</span>
                     <span class="text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 0) + ($initFulfillment === 'IN_SHOP' && empty($isSparePartCart) ? 0 : $regCourierFee) - ($discountAmount ?? 0))) }}</span></span>
                 </div>
@@ -343,16 +343,16 @@
 
             <div>
                 <label class="block font-bold text-[var(--foreground)] mb-1">Payment Method</label>
-                <select name="payment_method" x-model="paymentMethod" class="w-full min-w-0 max-w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 font-semibold text-[var(--foreground)] outline-none">
-                    <option value="SSLCOMMERZ">SSLCommerz Online Escrow (All Channels)</option>
-                    <option value="BKASH">bKash Online Escrow</option>
-                    <option value="NAGAD">Nagad Online Escrow</option>
-                    <option value="CARD">Visa / Mastercard Escrow</option>
+                <select name="payment_method" x-model="paymentMethod" class="w-full min-w-0 max-w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 font-semibold text-[var(--foreground)] outline-none">
+                    <option value="SSLCOMMERZ">SSLCommerz Online Payment (All Channels)</option>
+                    <option value="BKASH">bKash Online Payment</option>
+                    <option value="NAGAD">Nagad Online Payment</option>
+                    <option value="CARD">Visa / Mastercard</option>
                     <option value="CASH" x-text="isCourierMode ? 'Cash on Device Return (COD)' : 'Cash at Workshop (On Completion)'">Cash on Device Return (COD)</option>
                 </select>
             </div>
 
-            <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] py-3 px-5 font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+            <button type="submit" class="w-full rounded-md bg-[var(--accent-dark)] py-3 px-5 font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                 Confirm Booking
             </button>
         </div>

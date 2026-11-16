@@ -18,35 +18,21 @@
         } catch (e) {}
     </script>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'background': 'var(--background)',
-                        'foreground': 'var(--foreground)',
-                        'card': 'var(--card)',
-                        'border': 'var(--border)',
-                        'muted-foreground': 'var(--muted-foreground)',
-                        'mint-50': 'var(--mint-50)',
-                        'mint-100': 'var(--mint-100)',
-                        'mint-200': 'var(--mint-200)',
-                        'mint-300': 'var(--mint-300)',
-                        'mint-500': 'var(--mint-500)',
-                        'mint-700': 'var(--mint-700)',
-                        'accent-dark': 'var(--accent-dark)',
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Non-blocking Crisp E-Commerce Typography (Inter + Hind Siliguri) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"></noscript>
+
+    <!-- Local Compiled Tailwind Styles & FontAwesome Icons (No Runtime Tailwind JIT) -->
+    @php
+        $cssAssetVer = @filemtime(base_path('../frontend/src/styles/compiled.css')) ?: 1;
+        $geoJsVer = @filemtime(base_path('../frontend/js/geolocation-helper.js')) ?: 1;
+        $mpJsVer = @filemtime(base_path('../frontend/js/marketplace-client.js')) ?: 1;
+    @endphp
+    <link rel="stylesheet" href="/styles/compiled.css?v={{ $cssAssetVer }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- OpenStreetMap + Leaflet Open-Source Map Styles & Script (No API Key Required) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
     <!-- Shared UI Helpers (Must load BEFORE Alpine initializes x-data components) -->
     <script>
         window.meramotEvaluatePassword = function (password) {
@@ -89,12 +75,9 @@
             return { checks, passed, score, label, color, barColor };
         };
     </script>
-    <!-- Standalone Client Modules (Served from root `frontend/js/` with cache-busting version) -->
-    @php
-        $jsAssetVer = @filemtime(base_path('../frontend/js/geolocation-helper.js')) ?: time();
-    @endphp
-    <script defer src="/js/geolocation-helper.js?v={{ $jsAssetVer }}"></script>
-    <script defer src="/js/marketplace-client.js?v={{ $jsAssetVer }}"></script>
+    <!-- Standalone Client Modules (Served with immutable cache headers & per-file versions) -->
+    <script defer src="/js/geolocation-helper.js?v={{ $geoJsVer }}"></script>
+    <script defer src="/js/marketplace-client.js?v={{ $mpJsVer }}"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
     <style>
@@ -141,7 +124,12 @@
             width: 100%;
             background-color: var(--background);
             color: var(--foreground);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: Inter, "Hind Siliguri", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            letter-spacing: -0.01em;
+        }
+
+        h1, h2, h3, h4 {
+            letter-spacing: -0.02em;
         }
 
         [x-cloak] { display: none !important; }
@@ -166,9 +154,9 @@
             border-radius: 9999px;
         }
 
-        /* Core Meramot component utilities */
+        /* Core Meramot component utilities (crisp e-commerce squarish edges) */
         .meramot-card {
-            border-radius: 1.5rem;
+            border-radius: 0.5rem;
             border: 1px solid var(--border);
             background-color: var(--card);
         }
@@ -214,13 +202,15 @@
             background-color: var(--accent-dark) !important;
             border-color: var(--accent-dark) !important;
             color: var(--accent-foreground) !important;
-            font-weight: 800;
+            font-weight: 600;
+            border-radius: 0.375rem !important;
         }
         nav[role="navigation"] a,
         nav[role="navigation"] span[aria-disabled="true"] > span {
             background-color: var(--card) !important;
             border-color: var(--border) !important;
             color: var(--foreground) !important;
+            border-radius: 0.375rem !important;
         }
         nav[role="navigation"] p {
             color: var(--muted-foreground) !important;
@@ -459,6 +449,13 @@
     locationLoading: false,
     locationSaving: false,
     locationError: '',
+    gpsAccuracy: null,
+    get gpsAccuracyLabel() {
+        if (!Number.isFinite(this.gpsAccuracy) || !window.MeramotGeolocation) return '';
+        const base = window.MeramotGeolocation.describeAccuracy(this.gpsAccuracy);
+        if (this.locationLoading) return base + ' · refining…';
+        return this.gpsAccuracy > 60 ? base + ' · drag the pin to fine-tune' : base;
+    },
     mapSearchQuery: '',
     mapDistrictFilter: 'Dhaka',
     mapAreaSelect: '',
@@ -499,6 +496,7 @@
     },
     openLocationModal() {
         this.locationError = '';
+        this.gpsAccuracy = null;
         this.draftLocation = this.selectedLocation || (window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null) || {
             address: 'Road 11, Banani, Dhaka 1213',
             city: 'Dhaka',
@@ -521,6 +519,7 @@
                 window.MeramotLocationPicker.initOrRefreshMap('meramot-leaflet-map', {
                     onDraftChange: (loc) => {
                         this.locationError = '';
+                        this.gpsAccuracy = null;
                         this.draftLocation = loc;
                     },
                     onLoading: (loading) => {
@@ -538,10 +537,24 @@
         this.locationLoading = true;
         this.locationError = '';
         try {
-            const pos = await window.MeramotGeolocation.getCurrentPosition();
-            window.MeramotLocationPicker.flyToLocation(pos.lat, pos.lng, 15);
+            const geo = window.MeramotGeolocation;
+            // Move the pin live as the device's fix tightens (Wi-Fi estimate -> satellite GPS)
+            const pos = await geo.getCurrentPosition({
+                desiredAccuracy: 15,
+                maxWaitMs: 6500,
+                onProgress: (fix) => {
+                    this.gpsAccuracy = fix.accuracy;
+                    window.MeramotLocationPicker.flyToLocation(fix.lat, fix.lng, geo.zoomForAccuracy(fix.accuracy), fix.accuracy);
+                }
+            });
+            this.gpsAccuracy = pos.accuracy;
+            window.MeramotLocationPicker.flyToLocation(pos.lat, pos.lng, geo.zoomForAccuracy(pos.accuracy), pos.accuracy);
             const resolved = await window.MeramotLocationPicker.reverseGeocode(pos.lat, pos.lng, 'gps');
             this.draftLocation = resolved;
+            this.mapDistrictFilter = window.MeramotLocationCatalog
+                ? window.MeramotLocationCatalog.findDistrict(resolved.city)
+                : (resolved.city || 'Dhaka');
+            this.mapAreaSelect = resolved.area || '';
             window.MeramotLocationPicker.draftLocation = resolved;
         } catch (err) {
             this.locationError = err.message || 'Location access was declined. Please click directly on the map to pin your address.';
@@ -621,6 +634,7 @@
             if (!found) {
                 this.locationError = 'Unable to locate that address automatically. Please pin your location on the map or select a service hub.';
             } else {
+                this.gpsAccuracy = null;
                 this.draftLocation = found;
                 this.mapDistrictFilter = window.MeramotLocationCatalog ? window.MeramotLocationCatalog.findDistrict(found.city) : (found.city || 'Dhaka');
                 this.mapAreaSelect = found.area || '';
@@ -635,6 +649,7 @@
     },
     selectQuickHub(hub) {
         this.locationError = '';
+        this.gpsAccuracy = null;
         const canonicalCity = (window.MeramotLocationCatalog && hub.city)
             ? window.MeramotLocationCatalog.findDistrict(hub.city)
             : (hub.city || 'Dhaka');
@@ -683,7 +698,11 @@
 @meramot-toast.window="showToast($event.detail)"
 @meramot-open-location-modal.window="openLocationModal()"
 @meramot-open-notif-modal.window="if (window.innerWidth < 768) notifModalOpen = true"
-@meramot-location-changed.window="selectedLocation = $event.detail; locationLabel = window.MeramotLocationPicker ? window.MeramotLocationPicker.buildLocationLabel($event.detail) : locationLabel">
+@meramot-location-changed.window="selectedLocation = $event.detail; locationLabel = window.MeramotLocationPicker ? window.MeramotLocationPicker.buildLocationLabel($event.detail) : locationLabel"
+@meramot-softnav-complete.window="mobileMenuOpen = false">
+
+    <!-- Soft-Navigation Instant Progress Indicator -->
+    <div id="meramot-softnav-bar" class="pointer-events-none fixed top-0 left-0 z-[200] h-[2px] w-0 bg-[var(--accent-dark)] opacity-0 transition-all duration-200"></div>
 
     <!-- Non-Blocking Meramot Mint Toast Notification -->
     <div
@@ -695,11 +714,11 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100 translate-y-0"
         x-transition:leave-end="opacity-0 translate-y-2"
-        class="fixed bottom-5 right-5 z-[150] max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--accent-dark)] px-5 py-3.5 text-xs font-semibold text-[var(--accent-foreground)] shadow-2xl flex items-center gap-3"
+        class="fixed bottom-5 right-5 z-[150] max-w-sm rounded-lg border border-[var(--border)] bg-[var(--accent-dark)] px-4 py-3 text-xs font-medium text-[var(--accent-foreground)] shadow-xl flex items-center gap-3"
     >
         <i class="fa-solid text-sm" :class="toastType === 'error' ? 'fa-circle-exclamation text-rose-300' : (toastType === 'warning' ? 'fa-triangle-exclamation text-amber-300' : 'fa-circle-check text-emerald-300')"></i>
         <span x-text="toastMessage" class="flex-1 leading-snug"></span>
-        <a href="/cart" x-show="toastType === 'success' && toastMessage.toLowerCase().includes('cart')" class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[11px] font-bold text-[#203126] hover:opacity-90 transition">
+        <a href="/cart" x-show="toastType === 'success' && toastMessage.toLowerCase().includes('cart')" class="rounded-md bg-[var(--mint-100)] px-2.5 py-1 text-[11px] font-semibold text-[#203126] hover:opacity-90 transition">
             View Cart
         </a>
     </div>
@@ -713,7 +732,7 @@
         $isCustomerAuth = $navAuthUser && $navUserRole === 'customer';
         $isBannedCustomer = $isCustomerAuth && method_exists($navAuthUser, 'isBanned') && $navAuthUser->isBanned();
 
-        $userNotifications = ($navAuthUser && \Illuminate\Support\Facades\Schema::hasTable('user_notifications'))
+        $userNotifications = $navAuthUser
             ? \App\Models\UserNotification::where('user_id', $navAuthUser->id)->latest()->take(8)->get()
             : collect();
         $unreadNotifCount = $userNotifications->where('is_read', false)->count();
@@ -778,7 +797,7 @@
         <div class="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 md:gap-4 md:px-6 md:py-5">
             
             <!-- ── Row 1: Logo + hamburger (mobile) / Logo + location + actions (desktop) ── -->
-            <div class="flex items-center justify-between gap-3 md:grid md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center md:gap-3 lg:gap-4">
+            <div class="meramot-header-top-row flex items-center justify-between gap-3 md:grid md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center md:gap-3 lg:gap-4">
                 
                 <!-- Hamburger — mobile only -->
                 <button
@@ -833,7 +852,7 @@
                         >
                             <i class="fa-regular fa-bell text-sm"></i>
                             @if($unreadNotifCount > 0)
-                                <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-extrabold text-white shadow">
+                                <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-semibold text-white shadow">
                                     {{ $unreadNotifCount }}
                                 </span>
                             @else
@@ -845,20 +864,20 @@
                             x-show="notifOpen"
                             @click.away="notifOpen = false"
                             x-cloak
-                            class="absolute right-0 z-40 mt-2 w-96 rounded-3xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-2xl text-xs"
+                            class="absolute right-0 z-40 mt-2 w-96 rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 shadow-xl text-xs"
                         >
                             <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5 mb-2.5">
-                                <span class="font-black text-sm text-[var(--foreground)]">Notifications &amp; Alerts</span>
+                                <span class="font-bold text-sm text-[var(--foreground)]">Notifications &amp; Alerts</span>
                                 <div class="flex items-center gap-2">
                                     @if($unreadNotifCount > 0)
                                         <form method="POST" action="{{ route('notifications.mark-read') }}" class="inline">
                                             @csrf
-                                            <button type="submit" class="rounded-full bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                                            <button type="submit" class="rounded-md bg-[var(--mint-100)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                                                 Mark all read
                                             </button>
                                         </form>
                                     @endif
-                                    <span class="rounded-full {{ $unreadNotifCount > 0 ? 'bg-rose-600 text-white' : 'bg-[var(--mint-100)] text-[var(--accent-dark)]' }} px-2.5 py-0.5 text-[10px] font-bold">
+                                    <span class="rounded {{ $unreadNotifCount > 0 ? 'bg-rose-600 text-white' : 'bg-[var(--mint-100)] text-[var(--accent-dark)]' }} px-2 py-0.5 text-[10px] font-semibold">
                                         {{ $unreadNotifCount > 0 ? $unreadNotifCount . ' New' : 'Live' }}
                                     </span>
                                 </div>
@@ -875,14 +894,14 @@
                                                 ? 'border border-amber-300 bg-amber-50/90 dark:bg-amber-950/40'
                                                 : 'border border-[var(--border)] bg-[var(--mint-100)]/90');
                                     @endphp
-                                    <div class="rounded-2xl p-3 {{ $notifCardCls }}">
-                                        <div class="font-extrabold flex items-center justify-between gap-2 {{ $notifDanger ? 'text-rose-900 dark:text-rose-200' : 'text-[var(--foreground)]' }}">
+                                    <div class="rounded-lg p-3 {{ $notifCardCls }}">
+                                        <div class="font-semibold flex items-center justify-between gap-2 {{ $notifDanger ? 'text-rose-900 dark:text-rose-200' : 'text-[var(--foreground)]' }}">
                                             <span class="flex items-center gap-1.5">
                                                 <i class="fa-solid {{ $notifDanger ? 'fa-ban text-rose-600' : ($notifWarn ? 'fa-triangle-exclamation text-amber-600' : 'fa-circle-check text-emerald-600') }}"></i>
                                                 <span>{{ $notif->title }}</span>
                                             </span>
                                             @if(!$notif->is_read)
-                                                <span class="rounded-full bg-rose-600 px-1.5 py-0.5 text-[9px] font-black uppercase text-white">New</span>
+                                                <span class="rounded bg-rose-600 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">New</span>
                                             @endif
                                         </div>
                                         <p class="mt-1 text-[11px] leading-relaxed {{ $notifDanger ? 'text-rose-800 dark:text-rose-300' : 'text-[var(--muted-foreground)]' }}">
@@ -902,7 +921,7 @@
                                 @php
                                     $notifQuoteUrl = $isAdminAuth ? '/admin' : ($isVendorAuth ? $vendorWorkspaceUrl : ($isRiderAuth ? '/delivery' : (auth()->check() ? '/requests' : '/login')));
                                 @endphp
-                                <a href="{{ $notifQuoteUrl }}" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
+                                <a href="{{ $notifQuoteUrl }}" @click="notifOpen = false" class="block rounded-lg bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
                                     <div class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                                         <i class="fa-solid fa-gavel text-amber-600"></i>
                                         <span>Live Estimates &amp; Diagnostics Active</span>
@@ -910,7 +929,7 @@
                                     <p class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Compare incoming workshop estimates and review bench diagnostics in real time.</p>
                                 </a>
 
-                                <a href="/shops?branched=true" @click="notifOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
+                                <a href="/shops?branched=true" @click="notifOpen = false" class="block rounded-lg bg-[var(--mint-100)]/70 p-3 hover:bg-[var(--mint-200)] transition">
                                     <div class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                                         <i class="fa-solid fa-map-location-dot text-[var(--accent-dark)]"></i>
                                         <span>Nationwide Workshop Network</span>
@@ -1019,109 +1038,109 @@
                                     x-show="userMenuOpen"
                                     @click.away="userMenuOpen = false"
                                     x-cloak
-                                    class="absolute right-0 z-30 mt-2 w-64 rounded-3xl border border-[var(--border)] bg-[var(--card)] p-3 shadow-xl text-sm"
+                                    class="absolute right-0 z-30 mt-2 w-64 rounded-lg border border-[var(--border)] bg-[var(--card)] p-2 shadow-xl text-sm"
                                 >
                                     @if($isAdminAuth)
-                                        <a href="/admin" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
+                                        <a href="/admin" class="block rounded-lg bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
                                             <i class="fa-solid fa-shield-halved mr-1.5"></i> Admin Console
                                         </a>
-                                        <a href="/admin/vendors/pending" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/admin/vendors/pending" class="mt-1 block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Verify Vendors
                                         </a>
-                                        <a href="/admin/delivery-agents/pending" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/admin/delivery-agents/pending" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Verify Riders
                                         </a>
-                                        <a href="/admin/financial-overview" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/admin/financial-overview" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Financial Ledger
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
-                                        <a href="/spare-parts" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/spare-parts" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Spare Parts Marketplace
                                         </a>
-                                        <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/shops" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Explore shops
                                         </a>
-                                        <a href="/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/profile" class="block rounded-lg px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> Account Profile
                                         </a>
                                     @elseif($isVendorAuth)
-                                        <a href="{{ $vendorWorkspaceUrl }}" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
+                                        <a href="{{ $vendorWorkspaceUrl }}" class="block rounded-lg bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
                                             <i class="fa-solid fa-store mr-1.5"></i> {{ $vendorWorkspaceLabel }}
                                         </a>
                                         @if($navVendorReady)
-                                            <a href="/vendor/bidding-board" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <a href="/vendor/bidding-board" class="mt-1 block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                                 Live Bidding Board
                                             </a>
                                         @endif
                                         @if($navVendorApproved)
-                                            <a href="/vendor/setup-shop" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <a href="/vendor/setup-shop" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                                 Shop Pricing &amp; Services
                                             </a>
                                         @endif
-                                        <a href="/vendor/onboarding" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/vendor/onboarding" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Verification &amp; Onboarding
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
-                                        <a href="/spare-parts" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/spare-parts" class="block rounded-lg px-4 py-2.5 font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-50)]">
                                             🔩 Spare Parts Marketplace
                                         </a>
-                                        <a href="/orders" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/orders" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             My Spare Part Orders
                                         </a>
-                                        <a href="/cart" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/cart" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Spare Parts Cart
                                         </a>
-                                        <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/shops" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Explore shops
                                         </a>
-                                        <a href="/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/profile" class="block rounded-lg px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> Account Profile
                                         </a>
                                     @elseif($isRiderAuth)
-                                        <a href="/delivery" class="block rounded-2xl bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
+                                        <a href="/delivery" class="block rounded-lg bg-[var(--mint-100)] px-4 py-2.5 font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
                                             <i class="fa-solid fa-motorcycle mr-1.5"></i> Rider Dashboard
                                         </a>
-                                        <a href="/delivery/map" class="mt-1 block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/delivery/map" class="mt-1 block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Live Delivery Map
                                         </a>
-                                        <a href="/delivery/earnings" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/delivery/earnings" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Rider Earnings
                                         </a>
-                                        <a href="/delivery/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/delivery/profile" class="block rounded-lg px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             <i class="fa-regular fa-id-badge mr-1.5 text-[var(--accent-dark)]"></i> Rider Profile
                                         </a>
                                         <div class="my-1.5 border-t border-[var(--border)]"></div>
-                                        <a href="/spare-parts" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/spare-parts" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Spare Parts Marketplace
                                         </a>
-                                        <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/shops" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Explore shops
                                         </a>
                                     @else
-                                        <a href="/requests" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/requests" class="block rounded-lg px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             {{ $isBannedCustomer ? 'Ongoing & Past Orders' : 'My Repair Requests' }}
                                         </a>
                                         @if(!$isBannedCustomer)
-                                            <a href="/requests/create" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <a href="/requests/create" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                                 Make Repair Request
                                             </a>
-                                            <a href="/cart" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <a href="/cart" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                                 View cart
                                             </a>
                                         @endif
-                                        <a href="/shops" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/shops" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Explore shops
                                         </a>
-                                        <a href="/spare-parts" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/spare-parts" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Spare Parts Marketplace
                                         </a>
-                                        <a href="/packages/catalog" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/packages/catalog" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             Service Packages
                                         </a>
-                                        <a href="/ai-consultant/chat" class="block rounded-2xl px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/ai-consultant/chat" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             AI help chat
                                         </a>
-                                        <a href="/profile" class="block rounded-2xl px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/profile" class="block rounded-lg px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
                                             <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> Account Profile
                                         </a>
                                     @endif
@@ -1129,7 +1148,7 @@
                                     <button
                                         type="button"
                                         @click="userMenuOpen = false; showLogoutConfirm = true"
-                                        class="block w-full rounded-2xl px-4 py-2.5 text-left font-medium text-red-700 transition hover:bg-red-50"
+                                        class="block w-full rounded-lg px-4 py-2.5 text-left font-medium text-red-700 transition hover:bg-red-50"
                                     >
                                         Log out
                                     </button>
@@ -1158,19 +1177,19 @@
                                 x-show="langMenuOpen"
                                 @click.away="langMenuOpen = false"
                                 x-cloak
-                                class="absolute right-0 z-30 mt-2 w-44 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-2 shadow-lg text-sm"
+                                class="absolute right-0 z-30 mt-2 w-44 rounded-lg border border-[var(--border)] bg-[var(--card)] p-1.5 shadow-lg text-sm"
                             >
                                 <button
                                     type="button"
                                     @click="currentLang = 'en'; localStorage.setItem('meramot_lang', 'en'); langMenuOpen = false; showToast({ message: 'Language set to English.', type: 'success' })"
-                                    class="block w-full rounded-xl px-4 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
+                                    class="block w-full rounded-md px-3 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
                                 >
                                     English
                                 </button>
                                 <button
                                     type="button"
                                     @click="currentLang = 'bn'; localStorage.setItem('meramot_lang', 'bn'); langMenuOpen = false; showToast({ message: 'Bangla interface selected. Expanded localized copy is rolling out progressively.', type: 'success' })"
-                                    class="block w-full rounded-xl px-4 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
+                                    class="block w-full rounded-md px-3 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
                                 >
                                     বাংলা
                                 </button>
@@ -1235,13 +1254,13 @@
                             @keydown.enter="onEnter($event)"
                             @keydown.escape="close()"
                             placeholder="Search spare parts, workshops, or fixed packages..."
-                            class="w-full rounded-xl border border-[var(--border)] bg-[var(--mint-300)] py-2.5 pl-4 pr-16 text-[0.9rem] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white/85 dark:bg-[var(--mint-100)] py-2 pl-3.5 pr-16 text-[0.875rem] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)]"
                         />
-                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                        <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                             @if(request('q'))
-                                <a href="{{ url()->current() }}" class="flex h-7 w-7 items-center justify-center rounded-lg text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]" title="Clear search">✕</a>
+                                <a href="{{ url()->current() }}" class="flex h-7 w-7 items-center justify-center rounded-md text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]" title="Clear search">✕</a>
                             @endif
-                            <button type="submit" aria-label="Search" class="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                            <button type="submit" aria-label="Search" class="flex h-7 px-2.5 items-center justify-center rounded-md bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                                 <i class="fa-solid fa-magnifying-glass"></i>
                             </button>
                         </div>
@@ -1256,28 +1275,28 @@
                     $activeCategory = request('category', '');
                     $isSparePartsNav = request()->is('spare-parts*') || $activeCategory === 'SPARE_PARTS';
                 @endphp
-                <div class="flex items-center justify-between sm:justify-start gap-x-2.5 sm:gap-x-4 overflow-x-auto no-scrollbar whitespace-nowrap text-[11px] sm:text-xs font-semibold text-[var(--foreground)] md:flex-nowrap md:shrink-0 md:items-end md:gap-4 md:text-sm lg:gap-6 lg:text-base">
+                <div class="flex items-center justify-between sm:justify-start gap-x-3 sm:gap-x-4 overflow-x-auto no-scrollbar whitespace-nowrap text-[12px] sm:text-[13px] font-medium text-[var(--foreground)] md:flex-nowrap md:shrink-0 md:items-end md:gap-5 md:text-[14px]">
                     <a
                         href="/shops?category=COURIER_PICKUP"
-                        class="inline-flex border-b-[3px] pb-1 transition {{ $activeCategory === 'COURIER_PICKUP' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-bold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
+                        class="inline-flex border-b-2 pb-1 transition {{ $activeCategory === 'COURIER_PICKUP' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-semibold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
                     >
                         Courier Pickup
                     </a>
                     <a
                         href="/shops?category=IN_SHOP_REPAIR"
-                        class="inline-flex border-b-[3px] pb-1 transition {{ $activeCategory === 'IN_SHOP_REPAIR' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-bold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
+                        class="inline-flex border-b-2 pb-1 transition {{ $activeCategory === 'IN_SHOP_REPAIR' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-semibold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
                     >
                         In-shop Repair
                     </a>
                     <a
                         href="/spare-parts"
-                        class="inline-flex border-b-[3px] pb-1 transition {{ $isSparePartsNav ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-bold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
+                        class="inline-flex border-b-2 pb-1 transition {{ $isSparePartsNav ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-semibold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
                     >
                         Spare Parts
                     </a>
                     <a
                         href="/packages/catalog"
-                        class="inline-flex border-b-[3px] pb-1 transition {{ request()->is('packages*') ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-bold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
+                        class="inline-flex border-b-2 pb-1 transition {{ request()->is('packages*') ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-semibold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
                     >
                         Fixed Packages
                     </a>
@@ -1306,13 +1325,13 @@
                         @keydown.enter="onEnter($event)"
                         @keydown.escape="close()"
                         placeholder="Search spare parts, workshops, or fixed packages..."
-                        class="w-full rounded-xl border-2 border-[var(--border)] bg-[var(--mint-300)] py-3 pl-5 pr-20 text-sm text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)] transition"
+                        class="w-full rounded-lg border border-[var(--border)] bg-white/85 dark:bg-[var(--mint-100)] py-2.5 pl-4 pr-20 text-[13.5px] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)] transition"
                     />
-                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
                         @if(request('q'))
-                            <a href="{{ url()->current() }}" class="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition" title="Clear search">✕</a>
+                            <a href="{{ url()->current() }}" class="flex h-7 w-7 items-center justify-center rounded-md text-xs font-semibold text-[var(--muted-foreground)] hover:bg-[var(--mint-100)] hover:text-[var(--foreground)] transition" title="Clear search">✕</a>
                         @endif
-                        <button type="submit" aria-label="Search" class="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
+                        <button type="submit" aria-label="Search" class="flex h-7 px-3 items-center justify-center rounded-md bg-[var(--accent-dark)] text-xs text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </button>
                     </div>
@@ -1349,7 +1368,7 @@
                 >
                     <i class="fa-regular fa-bell text-sm"></i>
                     @if($unreadNotifCount > 0)
-                        <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-extrabold text-white shadow">{{ $unreadNotifCount }}</span>
+                        <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-semibold text-white shadow">{{ $unreadNotifCount }}</span>
                     @else
                         <span class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-emerald-600"></span>
                     @endif
@@ -1520,7 +1539,7 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-[0.98] translate-y-1.5"
-            class="relative z-[121] flex max-h-[90vh] w-full max-w-[56rem] flex-col overflow-hidden rounded-[1.5rem] border border-[#244229]/15 dark:border-white/15 bg-[#f6fbf4] dark:bg-[#111914] shadow-[0_28px_70px_-16px_rgba(15,32,20,0.32)]"
+            class="relative z-[121] flex max-h-[90vh] w-full max-w-[56rem] flex-col overflow-hidden rounded-lg border border-[#244229]/15 dark:border-white/15 bg-[#f6fbf4] dark:bg-[#111914] shadow-[0_28px_70px_-16px_rgba(15,32,20,0.32)]"
         >
             <!-- Compact Minimalist Header -->
             <div class="flex items-center justify-between gap-4 border-b border-[#244229]/10 dark:border-white/10 px-5 py-3.5">
@@ -1531,7 +1550,7 @@
                     <div class="min-w-0">
                         <div class="flex items-center gap-2">
                             <h2 id="meramot-location-modal-title" class="text-base sm:text-lg font-semibold tracking-tight text-[var(--foreground)]">Choose your location</h2>
-                            <span class="hidden sm:inline-block rounded-full border border-[#244229]/15 dark:border-white/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--muted-foreground)]">Delivery location</span>
+                            <span class="hidden sm:inline-block rounded border border-[#244229]/15 dark:border-white/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--muted-foreground)]">Delivery location</span>
                         </div>
                         <p class="truncate text-xs text-[var(--muted-foreground)]">
                             Search your area, click or drag the pin, or detect automatically with GPS.
@@ -1553,7 +1572,7 @@
             <div class="grid min-h-0 flex-1 overflow-y-auto lg:overflow-hidden lg:grid-cols-[1fr_320px]">
                 <!-- Left Column: Full-Bleed Map Frame with Floating Frosted Search Bar -->
                 <div class="meramot-map-shell flex flex-col p-3.5 sm:p-4">
-                    <div class="relative flex-1 min-h-[260px] sm:min-h-[340px] lg:min-h-[440px] overflow-hidden rounded-2xl border border-[#244229]/15 dark:border-white/15 bg-[#e5efe3] dark:bg-[#0d1410]">
+                    <div class="relative flex-1 min-h-[260px] sm:min-h-[340px] lg:min-h-[440px] overflow-hidden rounded-lg border border-[#244229]/15 dark:border-white/15 bg-[#e5efe3] dark:bg-[#0d1410]">
                         <!-- Floating Frosted Address Search Bar -->
                         <form @submit.prevent="searchMapAddress()" class="absolute left-3 right-3 top-3 z-[500]">
                             <div class="relative flex items-center gap-1.5 rounded-xl border border-[#244229]/15 dark:border-white/15 bg-white/95 dark:bg-[#151f18]/95 p-1.5 pl-3 shadow-[0_10px_28px_-8px_rgba(16,34,22,0.22)] backdrop-blur-md">
@@ -1609,7 +1628,7 @@
                                             <p class="truncate text-xs font-semibold" x-text="item.area"></p>
                                             <p class="truncate text-[11px] text-[var(--muted-foreground)]" x-text="item.address"></p>
                                         </div>
-                                        <span class="shrink-0 rounded-full border border-[#244229]/15 dark:border-white/15 bg-[#eef7eb]/80 dark:bg-white/5 px-2 py-0.5 text-[10px] font-medium text-[var(--accent-dark)]" x-text="item.city"></span>
+                                        <span class="shrink-0 rounded border border-[#244229]/15 dark:border-white/15 bg-[#eef7eb]/80 dark:bg-white/5 px-2 py-0.5 text-[10px] font-medium text-[var(--accent-dark)]" x-text="item.city"></span>
                                     </button>
                                 </template>
                             </div>
@@ -1619,11 +1638,11 @@
                         <div id="meramot-leaflet-map" class="h-full w-full z-10"></div>
 
                         <!-- Bottom-Left Live Coordinate & Interaction Micro-Pill -->
-                        <div class="meramot-map-pin-pill pointer-events-none absolute bottom-3 left-3 z-[400] inline-flex max-w-[calc(100%-6.5rem)] items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-medium shadow-sm backdrop-blur-md">
+                        <div class="meramot-map-pin-pill pointer-events-none absolute bottom-3 left-3 z-[400] inline-flex max-w-[calc(100%-6.5rem)] items-center gap-2 rounded-md px-3 py-1.5 text-[11px] font-medium shadow-sm backdrop-blur-md">
                             <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-600 dark:bg-emerald-400"></span>
                             <span class="truncate">Click map or drag pin</span>
                             <template x-if="draftLocation && typeof draftLocation.lat === 'number' && typeof draftLocation.lng === 'number'">
-                                <span class="hidden sm:inline shrink-0 border-l border-[#244229]/15 dark:border-white/15 pl-2 font-mono text-[10px] opacity-75" x-text="draftLocation.lat.toFixed(4) + ', ' + draftLocation.lng.toFixed(4)"></span>
+                                <span class="hidden sm:inline shrink-0 border-l border-[#244229]/15 dark:border-white/15 pl-2 font-mono text-[10px] opacity-75" x-text="draftLocation.lat.toFixed(5) + ', ' + draftLocation.lng.toFixed(5)"></span>
                             </template>
                         </div>
                     </div>
@@ -1662,6 +1681,9 @@
                             </span>
                             <span class="rounded-md border border-[#244229]/15 dark:border-white/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">GPS</span>
                         </button>
+                        <p x-show="gpsAccuracyLabel" x-cloak class="-mt-0.5 px-1 text-[10.5px] font-medium text-[var(--muted-foreground)]">
+                            <i class="fa-solid fa-bullseye mr-1 text-[9px] text-[var(--accent-dark)] opacity-80"></i><span x-text="gpsAccuracyLabel"></span>
+                        </p>
 
                         <button
                             type="button"
@@ -1767,7 +1789,7 @@
                                     type="button"
                                     @click="selectQuickHub(@js($hub))"
                                     :class="draftLocation?.area === @js($hub['area']) ? 'border-[var(--accent-dark)] bg-[#244229]/10 dark:bg-white/10 text-[var(--accent-dark)]' : 'border-[#244229]/15 dark:border-white/15 bg-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40 hover:bg-[#eef7eb]/60 dark:hover:bg-white/5'"
-                                    class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition"
+                                    class="rounded-md border px-2.5 py-1 text-[11px] font-medium transition"
                                 >
                                     {{ $hub['area'] }}
                                 </button>
@@ -1788,7 +1810,7 @@
                                     type="button"
                                     @click="selectQuickHub(@js($cityHub))"
                                     :class="draftLocation?.city === @js($cityHub['city']) ? 'border-[var(--accent-dark)] bg-[#244229]/10 dark:bg-white/10 text-[var(--accent-dark)]' : 'border-[#244229]/15 dark:border-white/15 bg-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40 hover:bg-[#eef7eb]/60 dark:hover:bg-white/5'"
-                                    class="rounded-full border px-2.5 py-1 text-[11px] font-medium transition"
+                                    class="rounded-md border px-2.5 py-1 text-[11px] font-medium transition"
                                 >
                                     {{ $cityHub['city'] }}
                                 </button>
@@ -1803,18 +1825,18 @@
     <!-- ── Logout Confirmation Modal (Exact match to Navbar.tsx) ── -->
     <div x-show="showLogoutConfirm" x-cloak class="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-black/30 backdrop-blur-sm" @click="showLogoutConfirm = false"></div>
-        <div class="relative z-[101] w-[90%] max-w-md rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-8 shadow-2xl text-center">
-            <h2 class="text-2xl font-bold text-[var(--accent-dark)]">
+        <div class="relative z-[101] w-[90%] max-w-md rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl text-center">
+            <h2 class="text-xl font-bold text-[var(--accent-dark)]">
                 Are you sure?
             </h2>
-            <p class="mt-3 text-sm text-[var(--muted-foreground)]">
+            <p class="mt-2.5 text-sm text-[var(--muted-foreground)]">
                 You will be logged out of your Meramot account.
             </p>
-            <div class="mt-6 flex items-center justify-center gap-4">
+            <div class="mt-6 flex items-center justify-center gap-3">
                 <button
                     type="button"
                     @click="showLogoutConfirm = false"
-                    class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-50)]"
+                    class="rounded-md border border-[var(--accent-dark)] bg-[var(--card)] px-5 py-2 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-50)]"
                 >
                     No
                 </button>
@@ -1822,7 +1844,7 @@
                     @csrf
                     <button
                         type="submit"
-                        class="rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] transition hover:opacity-90"
+                        class="rounded-md bg-[var(--accent-dark)] px-5 py-2 text-sm font-semibold text-[var(--accent-foreground)] transition hover:opacity-90"
                     >
                         Yes
                     </button>
@@ -1861,16 +1883,16 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-            class="relative z-[111] w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-2xl text-xs"
+            class="relative z-[111] w-full max-w-md overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 shadow-2xl text-xs"
         >
-            <div class="flex items-center justify-between border-b border-[var(--border)] pb-3 mb-3.5">
+            <div class="flex items-center justify-between border-b border-[var(--border)] pb-3 mb-3">
                 <div class="flex items-center gap-2.5">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--accent-dark)]">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-md bg-[var(--mint-200)] text-[var(--accent-dark)]">
                         <i class="fa-regular fa-bell text-sm"></i>
                     </span>
                     <div>
-                        <h2 id="meramot-notif-modal-title" class="font-black text-base text-[var(--foreground)]">Notifications &amp; Alerts</h2>
-                        <span class="inline-flex items-center gap-1 text-[10px] font-bold {{ $unreadNotifCount > 0 ? 'text-rose-600' : 'text-emerald-700' }}">
+                        <h2 id="meramot-notif-modal-title" class="font-bold text-base text-[var(--foreground)]">Notifications &amp; Alerts</h2>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold {{ $unreadNotifCount > 0 ? 'text-rose-600' : 'text-emerald-700' }}">
                             <span class="h-1.5 w-1.5 rounded-full {{ $unreadNotifCount > 0 ? 'bg-rose-600' : 'bg-emerald-600' }}"></span>
                             {{ $unreadNotifCount > 0 ? $unreadNotifCount . ' Unread' : 'Live' }}
                         </span>
@@ -1880,7 +1902,7 @@
                     @if($unreadNotifCount > 0)
                         <form method="POST" action="{{ route('notifications.mark-read') }}" class="inline">
                             @csrf
-                            <button type="submit" class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
+                            <button type="submit" class="rounded-md bg-[var(--mint-100)] px-2.5 py-1 text-[10px] font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
                                 Mark read
                             </button>
                         </form>
@@ -1888,7 +1910,7 @@
                     <button
                         type="button"
                         @click="notifModalOpen = false"
-                        class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-200)] transition"
+                        class="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-200)] transition"
                         aria-label="Close notifications"
                     >
                         ✕
@@ -1907,21 +1929,21 @@
                                 ? 'border border-amber-300 bg-amber-50/90 dark:bg-amber-950/40'
                                 : 'border border-[var(--border)] bg-[var(--mint-100)]/90');
                     @endphp
-                    <div class="rounded-2xl p-3.5 {{ $notifCardCls }}">
-                        <div class="font-extrabold flex items-center justify-between gap-2 {{ $notifDanger ? 'text-rose-900 dark:text-rose-200' : 'text-[var(--foreground)]' }}">
+                    <div class="rounded-lg p-3.5 {{ $notifCardCls }}">
+                        <div class="font-semibold flex items-center justify-between gap-2 {{ $notifDanger ? 'text-rose-900 dark:text-rose-200' : 'text-[var(--foreground)]' }}">
                             <span class="flex items-center gap-1.5">
                                 <i class="fa-solid {{ $notifDanger ? 'fa-ban text-rose-600' : ($notifWarn ? 'fa-triangle-exclamation text-amber-600' : 'fa-circle-check text-emerald-600') }}"></i>
                                 <span>{{ $notif->title }}</span>
                             </span>
                             @if(!$notif->is_read)
-                                <span class="rounded-full bg-rose-600 px-1.5 py-0.5 text-[9px] font-black uppercase text-white">New</span>
+                                <span class="rounded bg-rose-600 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">New</span>
                             @endif
                         </div>
                         <p class="mt-1 text-[11px] leading-relaxed {{ $notifDanger ? 'text-rose-800 dark:text-rose-300' : 'text-[var(--muted-foreground)]' }}">{{ $notif->message }}</p>
                     </div>
                 @endforeach
 
-                <a href="{{ $isAdminAuth ? '/admin' : ($isVendorAuth ? $vendorWorkspaceUrl : ($isRiderAuth ? '/delivery' : (auth()->check() ? '/requests' : '/login'))) }}" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
+                <a href="{{ $isAdminAuth ? '/admin' : ($isVendorAuth ? $vendorWorkspaceUrl : ($isRiderAuth ? '/delivery' : (auth()->check() ? '/requests' : '/login'))) }}" @click="notifModalOpen = false" class="block rounded-lg bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
                     <div class="font-bold text-[var(--foreground)] flex items-center gap-2">
                         <i class="fa-solid fa-gavel text-amber-600"></i>
                         <span>Live Estimates &amp; Diagnostics Active</span>
@@ -1929,7 +1951,7 @@
                     <p class="mt-1 text-[11px] leading-relaxed text-[var(--muted-foreground)]">Compare incoming workshop estimates and review bench diagnostics in real time.</p>
                 </a>
 
-                <a href="/shops?branched=true" @click="notifModalOpen = false" class="block rounded-2xl bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
+                <a href="/shops?branched=true" @click="notifModalOpen = false" class="block rounded-lg bg-[var(--mint-100)]/70 p-3.5 hover:bg-[var(--mint-200)] transition">
                     <div class="font-bold text-[var(--foreground)] flex items-center gap-2">
                         <i class="fa-solid fa-map-location-dot text-[var(--accent-dark)]"></i>
                         <span>Nationwide Workshop Network</span>
@@ -1987,32 +2009,32 @@
             x-transition:leave="transition ease-in duration-150"
             x-transition:leave-start="opacity-100 scale-100 translate-y-0"
             x-transition:leave-end="opacity-0 scale-95 translate-y-2"
-            class="relative z-[111] w-full max-w-md overflow-hidden rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
+            class="relative z-[111] w-full max-w-md overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-[0_24px_64px_rgba(11,31,20,0.28)]"
         >
             <div class="h-1.5 w-full bg-gradient-to-r from-rose-500 via-rose-600 to-amber-500"></div>
 
-            <div class="p-7 sm:p-8 text-center">
-                <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600 shadow-inner">
-                    <i class="fa-solid fa-trash-can text-2xl"></i>
+            <div class="p-6 sm:p-7 text-center">
+                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-lg border border-rose-200 bg-rose-50 text-rose-600 shadow-inner">
+                    <i class="fa-solid fa-trash-can text-xl"></i>
                 </div>
 
-                <h2 id="meramot-delete-modal-title" class="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--foreground)]" x-text="deleteConfirmTitle"></h2>
+                <h2 id="meramot-delete-modal-title" class="text-lg sm:text-xl font-bold tracking-tight text-[var(--foreground)]" x-text="deleteConfirmTitle"></h2>
 
                 <template x-if="deleteConfirmItem">
-                    <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-full border border-[var(--border)] bg-[var(--background)] px-3.5 py-1.5 text-xs font-bold text-[var(--foreground)] shadow-sm">
+                    <div class="mt-3 inline-flex max-w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1 text-xs font-semibold text-[var(--foreground)] shadow-sm">
                         <span class="h-2 w-2 shrink-0 rounded-full bg-rose-500"></span>
                         <span class="truncate" x-text="deleteConfirmItem"></span>
                     </div>
                 </template>
 
-                <p class="mt-3.5 text-sm leading-relaxed text-[var(--muted-foreground)]" x-text="deleteConfirmMessage"></p>
+                <p class="mt-3 text-sm leading-relaxed text-[var(--muted-foreground)]" x-text="deleteConfirmMessage"></p>
 
-                <div class="mt-7 grid grid-cols-2 gap-3">
+                <div class="mt-6 grid grid-cols-2 gap-3">
                     <button
                         type="button"
                         @click="cancelDeleteConfirm()"
                         :disabled="deleteConfirmSubmitting"
-                        class="rounded-full border border-[var(--border)] bg-[var(--background)] px-5 py-2.5 text-sm font-bold text-[var(--foreground)] transition hover:bg-[var(--mint-50)] disabled:opacity-50"
+                        class="rounded-md border border-[var(--border)] bg-[var(--background)] px-4 py-2 text-sm font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)] disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -2020,7 +2042,7 @@
                         type="button"
                         @click="proceedDeleteConfirm()"
                         :disabled="deleteConfirmSubmitting"
-                        class="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-rose-600/20 transition hover:bg-rose-700 active:scale-[0.98] disabled:opacity-60"
+                        class="inline-flex items-center justify-center gap-2 rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-rose-600/20 transition hover:bg-rose-700 disabled:opacity-60"
                     >
                         <i class="fa-solid" :class="deleteConfirmSubmitting ? 'fa-spinner fa-spin' : 'fa-trash-can'"></i>
                         <span x-text="deleteConfirmSubmitting ? 'Deleting...' : deleteConfirmCta"></span>
@@ -2047,9 +2069,9 @@
     <!-- Banned Customer Read-Only Account Restriction Banner -->
     @if($isBannedCustomer)
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-            <div class="p-4 text-xs font-semibold text-rose-950 rounded-2xl bg-rose-50 border border-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+            <div class="p-4 text-xs font-semibold text-rose-950 rounded-lg bg-rose-50 border border-rose-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
                 <div class="space-y-0.5">
-                    <div class="font-extrabold flex items-center gap-2 text-rose-900">
+                    <div class="font-semibold flex items-center gap-2 text-rose-900">
                         <i class="fa-solid fa-ban text-rose-600"></i>
                         <span>Account Restricted from New Orders &amp; Requests</span>
                     </div>
@@ -2058,7 +2080,7 @@
                         You can still view and track your <strong>ongoing and past orders</strong>, while new service bookings, cart orders, repair requests, and review submissions remain disabled.
                     </p>
                 </div>
-                <a href="/requests" class="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-rose-700 px-4 py-2 text-[11px] font-bold text-white hover:bg-rose-800 transition">
+                <a href="/requests" class="shrink-0 inline-flex items-center gap-1.5 rounded-md bg-rose-700 px-4 py-2 text-[11px] font-bold text-white hover:bg-rose-800 transition">
                     <i class="fa-solid fa-list-check"></i>
                     <span>View Ongoing &amp; Past Orders</span>
                 </a>
@@ -2069,21 +2091,21 @@
     <!-- Flash Alert System -->
     @if(session('success'))
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-            <div class="p-3.5 text-xs font-semibold text-[var(--foreground)] rounded-2xl bg-[var(--mint-200)] border border-[var(--border)] flex items-center justify-between shadow-sm">
+            <div class="p-3.5 text-xs font-semibold text-[var(--foreground)] rounded-lg bg-[var(--mint-200)] border border-[var(--border)] flex items-center justify-between shadow-sm">
                 <span><i class="fa-solid fa-circle-check mr-2 text-emerald-700"></i> {{ session('success') }}</span>
             </div>
         </div>
     @endif
     @if(session('warning'))
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-            <div class="p-3.5 text-xs font-semibold text-amber-950 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-between shadow-sm">
+            <div class="p-3.5 text-xs font-semibold text-amber-950 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-between shadow-sm">
                 <span><i class="fa-solid fa-triangle-exclamation mr-2 text-amber-700"></i> {{ session('warning') }}</span>
             </div>
         </div>
     @endif
     @if(session('error'))
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-            <div class="p-3.5 text-xs font-semibold text-rose-900 rounded-2xl bg-rose-100 border border-rose-300 flex items-center justify-between shadow-sm">
+            <div class="p-3.5 text-xs font-semibold text-rose-900 rounded-lg bg-rose-100 border border-rose-300 flex items-center justify-between shadow-sm">
                 <span><i class="fa-solid fa-circle-exclamation mr-2 text-rose-700"></i> {{ session('error') }}</span>
             </div>
         </div>
@@ -2180,7 +2202,7 @@
             <aside class="fixed right-0 top-0 z-[121] flex h-full w-full max-w-md flex-col border-l border-[var(--border)] bg-[var(--background)] shadow-2xl">
                 <div class="flex items-center justify-between border-b border-[var(--border)] bg-[var(--card)] px-5 py-4">
                     <div class="flex items-center gap-2.5">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-2xl bg-[var(--accent-dark)] text-[var(--accent-foreground)]">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-[var(--accent-foreground)]">
                             <i class="fa-solid fa-bag-shopping text-sm"></i>
                         </span>
                         <div>
@@ -2193,19 +2215,19 @@
                     </button>
                 </div>
 
-                <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                <div class="flex-1 overflow-y-auto p-4 space-y-2.5">
                     @forelse($miniCartItems as $mKey => $mItem)
-                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3.5 flex items-start justify-between gap-3">
+                        <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent-dark)]">
                                     {{ $mItem['category'] ?? 'Repair Service' }}
                                 </span>
-                                <p class="mt-1 text-xs font-extrabold text-[var(--foreground)] break-words">{{ $mItem['title'] ?? 'Service' }}</p>
-                                <p class="mt-0.5 text-xs font-bold text-[var(--accent-dark)]">
+                                <p class="mt-1 text-xs font-semibold text-[var(--foreground)] break-words">{{ $mItem['title'] ?? 'Service' }}</p>
+                                <p class="mt-0.5 text-xs font-semibold text-[var(--accent-dark)] tabular-nums">
                                     ৳{{ number_format((float) ($mItem['price'] ?? 0)) }} &times; {{ (int) ($mItem['quantity'] ?? 1) }}
                                 </p>
                             </div>
-                            <span class="font-black text-xs text-[var(--foreground)] shrink-0">
+                            <span class="font-bold text-xs text-[var(--foreground)] shrink-0 tabular-nums">
                                 ৳{{ number_format((float) ($mItem['price'] ?? 0) * (int) ($mItem['quantity'] ?? 1)) }}
                             </span>
                         </div>
@@ -2216,17 +2238,17 @@
                     @endforelse
                 </div>
 
-                <div class="border-t border-[var(--border)] bg-[var(--card)] p-4 space-y-3">
+                <div class="border-t border-[var(--border)] bg-[var(--card)] p-4 space-y-2.5">
                     <div class="flex items-center justify-between text-xs">
                         <span class="font-semibold text-[var(--muted-foreground)]" data-i18n="order_subtotal">Order Subtotal</span>
                         <span class="text-base font-black text-[var(--accent-dark)]">৳{{ number_format($miniCartSubtotal) }}</span>
                     </div>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">Promo codes and delivery preferences can be applied in your cart before checkout.</p>
+                    <p class="text-[11px] text-[var(--muted-foreground)]">Promo codes and delivery options can be applied in your cart.</p>
                     <div class="grid grid-cols-2 gap-2">
-                        <a href="{{ $isVendorAuth ? '/spare-parts' : '/packages/catalog' }}" class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-4 py-2.5 text-center text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
+                        <a href="{{ $isVendorAuth ? '/spare-parts' : '/packages/catalog' }}" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2 text-center text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
                             {{ $isVendorAuth ? '+ Add Spare Parts' : '+ Add Services' }}
                         </a>
-                        <a href="/cart" class="rounded-full bg-[var(--accent-dark)] px-4 py-2.5 text-center text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                        <a href="/cart" class="rounded-md bg-[var(--accent-dark)] px-3.5 py-2 text-center text-xs font-semibold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                             Open Cart &amp; Checkout &rarr;
                         </a>
                     </div>
@@ -2658,13 +2680,48 @@
 
             const MAIN_SELECTOR = '#meramot-main-content';
             const SCROLL_RESTORE_KEY = 'meramot.scrollRestore';
+            const PROGRESS_BAR_ID = 'meramot-softnav-bar';
+            const PREFETCH_TTL_MS = 25000;
+            const PREFETCH_MAX_ENTRIES = 12;
+            const prefetchCache = new Map();
+            const inflightPrefetches = new Map();
+            let prefetchDebounceTimer = null;
             let activeController = null;
             let navSequence = 0;
             let lastSoftPathAndQuery = window.location.pathname + window.location.search;
 
+            function setProgress(state) {
+                const bar = document.getElementById(PROGRESS_BAR_ID);
+                if (!bar) return;
+                if (state === 'start') {
+                    bar.style.transition = 'width 240ms ease, opacity 120ms ease';
+                    bar.style.opacity = '1';
+                    bar.style.width = '68%';
+                } else if (state === 'done') {
+                    bar.style.width = '100%';
+                    setTimeout(() => {
+                        bar.style.opacity = '0';
+                        setTimeout(() => { bar.style.width = '0%'; }, 160);
+                    }, 120);
+                } else {
+                    bar.style.opacity = '0';
+                    bar.style.width = '0%';
+                }
+            }
+
             function isSoftNavExcludedPath(pathname) {
                 return /^\/(auth|login|register|logout|delivery\/login|vendor\/apply)/i.test(pathname)
                     || /\/(receipt|invoice|export|download|pdf)(\/|$)/i.test(pathname);
+            }
+
+            function isSoftNavCapablePath(pathname) {
+                return pathname === '/'
+                    || pathname === '/shops'
+                    || pathname === '/shops/explore'
+                    || /^\/shops\/[^/]+$/.test(pathname)
+                    || pathname === '/spare-parts'
+                    || pathname === '/packages/catalog'
+                    || pathname === '/search';
             }
 
             function canSoftHandleUrl(rawHref) {
@@ -2686,12 +2743,55 @@
                     return null;
                 }
 
-                // Swap in place when filtering/sorting/paginating on the same route
+                // Swap in place on same-route updates AND across script-free catalog/discovery routes
                 if (targetUrl.pathname === currentUrl.pathname) {
+                    return targetUrl;
+                }
+                if (isSoftNavCapablePath(currentUrl.pathname) && isSoftNavCapablePath(targetUrl.pathname)) {
                     return targetUrl;
                 }
 
                 return null;
+            }
+
+            function cachePrefetch(urlKey, entry) {
+                if (prefetchCache.has(urlKey)) prefetchCache.delete(urlKey);
+                prefetchCache.set(urlKey, entry);
+                while (prefetchCache.size > PREFETCH_MAX_ENTRIES) {
+                    const oldestKey = prefetchCache.keys().next().value;
+                    prefetchCache.delete(oldestKey);
+                }
+            }
+
+            function prefetchUrl(rawHref) {
+                const targetUrl = canSoftHandleUrl(rawHref);
+                if (!targetUrl) return;
+                const urlKey = targetUrl.toString();
+                const cached = prefetchCache.get(urlKey);
+                if (cached && (Date.now() - cached.ts) < PREFETCH_TTL_MS) return;
+                if (inflightPrefetches.has(urlKey)) return;
+
+                const p = fetch(urlKey, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'text/html,application/xhtml+xml',
+                        'X-Meramot-SoftNav': '1',
+                        'X-Meramot-Prefetch': '1'
+                    },
+                    credentials: 'same-origin',
+                    priority: 'low'
+                }).then(async (res) => {
+                    const ct = res.headers.get('content-type') || '';
+                    if (!res.ok || !ct.includes('text/html')) return null;
+                    const html = await res.text();
+                    const entry = { html, resolvedUrl: res.url || urlKey, ts: Date.now() };
+                    cachePrefetch(urlKey, entry);
+                    return entry;
+                }).catch(() => null).finally(() => {
+                    inflightPrefetches.delete(urlKey);
+                });
+
+                inflightPrefetches.set(urlKey, p);
             }
 
             function syncHeaderState(doc, resolvedUrl) {
@@ -2805,39 +2905,72 @@
                 const shouldKeepTab = samePath && !targetUrl.searchParams.has('tab') && !targetUrl.hash;
                 const savedTabs = shouldKeepTab ? captureAlpineTabs(mainEl) : [];
 
-                mainEl.style.transition = 'opacity 120ms ease';
-                mainEl.style.opacity = '0.72';
+                mainEl.style.transition = 'opacity 100ms ease';
+                mainEl.style.opacity = '0.78';
+                setProgress('start');
 
                 try {
-                    const response = await fetch(targetUrl.toString(), {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'text/html,application/xhtml+xml',
-                            'X-Meramot-SoftNav': '1'
-                        },
-                        credentials: 'same-origin',
-                        signal: activeController.signal
-                    });
+                    const urlKey = targetUrl.toString();
+                    let html = null;
+                    let resolvedUrl = urlKey;
 
-                    if (seq !== navSequence) return false;
-
-                    const contentType = response.headers.get('content-type') || '';
-                    if (!response.ok || !contentType.includes('text/html')) {
-                        window.location.href = targetUrl.toString();
-                        return false;
+                    const cached = prefetchCache.get(urlKey);
+                    if (cached && (Date.now() - cached.ts) < PREFETCH_TTL_MS) {
+                        prefetchCache.delete(urlKey);
+                        html = cached.html;
+                        resolvedUrl = cached.resolvedUrl;
+                    } else if (inflightPrefetches.has(urlKey)) {
+                        const awaited = await inflightPrefetches.get(urlKey);
+                        if (seq !== navSequence) return false;
+                        if (awaited) {
+                            prefetchCache.delete(urlKey);
+                            html = awaited.html;
+                            resolvedUrl = awaited.resolvedUrl;
+                        }
                     }
 
-                    const resolvedUrl = response.url || targetUrl.toString();
+                    if (html === null) {
+                        const response = await fetch(urlKey, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'text/html,application/xhtml+xml',
+                                'X-Meramot-SoftNav': '1'
+                            },
+                            credentials: 'same-origin',
+                            signal: activeController.signal
+                        });
+
+                        if (seq !== navSequence) return false;
+
+                        const contentType = response.headers.get('content-type') || '';
+                        if (!response.ok || !contentType.includes('text/html')) {
+                            setProgress('reset');
+                            window.location.href = urlKey;
+                            return false;
+                        }
+
+                        resolvedUrl = response.url || urlKey;
+                        const resolvedParsedCheck = new URL(resolvedUrl, window.location.href);
+                        if (isSoftNavExcludedPath(resolvedParsedCheck.pathname)) {
+                            setProgress('reset');
+                            window.location.href = resolvedUrl;
+                            return false;
+                        }
+
+                        html = await response.text();
+                    }
+
                     const resolvedParsed = new URL(resolvedUrl, window.location.href);
                     if (isSoftNavExcludedPath(resolvedParsed.pathname)) {
+                        setProgress('reset');
                         window.location.href = resolvedUrl;
                         return false;
                     }
 
-                    const html = await response.text();
                     const doc = new DOMParser().parseFromString(html, 'text/html');
                     const incomingMain = doc.querySelector(MAIN_SELECTOR);
                     if (!incomingMain) {
+                        setProgress('reset');
                         window.location.href = resolvedUrl;
                         return false;
                     }
@@ -2892,9 +3025,11 @@
                         });
                     });
 
+                    setProgress('done');
                     window.dispatchEvent(new CustomEvent('meramot-softnav-complete', { detail: { url: resolvedUrl } }));
                     return true;
                 } catch (err) {
+                    setProgress('reset');
                     if (err && err.name === 'AbortError') {
                         return false;
                     }
@@ -2956,6 +3091,22 @@
                 e.preventDefault();
                 visit(targetUrl.toString(), { scrollY: capturedScrollY });
             });
+
+            // Hover / touch prefetching so Explore Shops and catalog filters load instantly on click
+            document.addEventListener('mouseover', function (e) {
+                const anchor = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+                if (!anchor || anchor.hasAttribute('download') || anchor.hasAttribute('data-no-softnav') || anchor.hasAttribute('data-no-soft-nav') || anchor.hasAttribute('data-hard-reload')) return;
+                if (anchor.target && anchor.target !== '_self') return;
+                clearTimeout(prefetchDebounceTimer);
+                prefetchDebounceTimer = setTimeout(() => prefetchUrl(anchor.href), 60);
+            }, { passive: true });
+
+            document.addEventListener('touchstart', function (e) {
+                const anchor = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+                if (!anchor || anchor.hasAttribute('download') || anchor.hasAttribute('data-no-softnav') || anchor.hasAttribute('data-no-soft-nav') || anchor.hasAttribute('data-hard-reload')) return;
+                if (anchor.target && anchor.target !== '_self') return;
+                prefetchUrl(anchor.href);
+            }, { passive: true });
 
             // Intercept same-page GET forms & preserve scroll across POST/PATCH/DELETE redirects
             document.addEventListener('submit', function (e) {
@@ -3027,7 +3178,17 @@
                 window.dispatchEvent(new CustomEvent('meramot-open-location-modal'));
             };
 
+            window.spNavigateFilterUrl = function (targetUrl) {
+                if (!targetUrl) return;
+                if (window.MeramotSoftNav && typeof window.MeramotSoftNav.visit === 'function') {
+                    window.MeramotSoftNav.visit(targetUrl, { push: true });
+                } else {
+                    window.location.href = targetUrl;
+                }
+            };
+
             window.addEventListener('meramot-location-changed', function (ev) {
+                prefetchCache.clear();
                 if (!window.location.pathname.startsWith('/spare-parts')) return;
                 const loc = ev && ev.detail ? ev.detail : null;
                 if (!loc) return;

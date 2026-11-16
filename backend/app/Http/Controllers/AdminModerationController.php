@@ -616,6 +616,18 @@ class AdminModerationController extends Controller
                         ]
                     );
                 }
+
+                if ($isFull && $dispute->repair_request_id) {
+                    $disputedOrder = \App\Models\RepairRequest::with('repairJob')->find($dispute->repair_request_id);
+                    if ($disputedOrder) {
+                        app(\App\Services\SparePartInventoryService::class)->restoreForOrder(
+                            $disputedOrder,
+                            \App\Models\SparePartStockMovement::TYPE_RETURN_RESTORE,
+                            "Dispute #{$dispute->id} full refund",
+                            auth()->id()
+                        );
+                    }
+                }
             }
 
             $dispute->update([
@@ -817,7 +829,7 @@ class AdminModerationController extends Controller
             );
         }
 
-        return redirect('/support')->with('success', "Escrow Dispute Case #{$dispute->id} opened for Order #{$req->id}. Meramot Governance will review and respond promptly.");
+        return redirect('/support')->with('success', "Dispute Case #{$dispute->id} opened for Order #{$req->id}. Meramot Governance will review and respond promptly.");
     }
 
     /**

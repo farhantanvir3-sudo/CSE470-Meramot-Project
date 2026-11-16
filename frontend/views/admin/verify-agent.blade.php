@@ -23,11 +23,11 @@
     <div class="flex items-start justify-between gap-3 sm:gap-4">
         <div class="min-w-0">
             <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Delivery Operations</p>
-            <h1 class="text-xl sm:text-2xl md:text-3xl font-black leading-tight text-[var(--foreground)]">Delivery Partner Management &amp; Verification</h1>
+            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold leading-tight text-[var(--foreground)]">Delivery Partner Management &amp; Verification</h1>
             <p class="text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
                 Review applicant identity details, NID, driving license, and uploaded verification scans. Approving a partner automatically provisions and emails a unique <code class="font-mono font-bold text-[var(--accent-dark)]">@meramotbd.com</code> account credential to the applicant's email address.
             </p>
-            <span class="dev-only-badge text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mt-1.5">
+            <span class="dev-only-badge text-[10px] font-mono px-2.5 py-0.5 rounded bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mt-1.5">
                 Feature R1 &bull; Assigned to: Md. Nafiul Islam [22299035]
             </span>
         </div>
@@ -35,14 +35,14 @@
             href="/admin/delivery-agents/pending"
             title="Refresh Desk"
             aria-label="Refresh Desk"
-            class="group mt-1 inline-flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
+            class="group mt-1 inline-flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-full border border-[#c8dac2] bg-white text-[#163625] shadow-sm transition-all duration-200 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-[0_8px_20px_-4px_rgba(22,54,37,0.35)]"
         >
             <i class="fa-solid fa-rotate-right text-xs sm:text-sm transition-transform duration-300 group-hover:rotate-180"></i>
         </a>
     </div>
 
     @error('rejection_reason')
-        <div class="rounded-2xl border border-rose-500/50 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-800">
+        <div class="rounded-lg border border-rose-500/50 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-800">
             <i class="fa-solid fa-circle-exclamation mr-1"></i> {{ $message }}
         </div>
     @enderror
@@ -50,47 +50,47 @@
     <!-- 6 Operations KPI StatCards (2x3 Matrix on Phone, 6-up on Desktop) -->
     @if(isset($stats))
         <div class="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3.5">
-            <div class="rounded-xl sm:rounded-2xl border border-amber-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+            <div class="rounded-xl sm:rounded-lg border border-amber-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
                 <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
                     <span class="sm:hidden">Pending</span>
                     <span class="hidden sm:inline">Pending Approvals</span>
                 </p>
-                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['pendingRegistrations'] ?? 0 }}</p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-bold text-[var(--foreground)]">{{ $stats['pendingRegistrations'] ?? 0 }}</p>
             </div>
-            <div class="rounded-xl sm:rounded-2xl border border-emerald-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+            <div class="rounded-xl sm:rounded-lg border border-emerald-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
                 <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
                     <span class="sm:hidden">Approved</span>
                     <span class="hidden sm:inline">Active Approved Partners</span>
                 </p>
-                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['activeApprovedPartners'] ?? 0 }}</p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-bold text-[var(--foreground)]">{{ $stats['activeApprovedPartners'] ?? 0 }}</p>
             </div>
-            <div class="rounded-xl sm:rounded-2xl border border-sky-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+            <div class="rounded-xl sm:rounded-lg border border-sky-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
                 <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
                     <span class="sm:hidden">Deliveries</span>
                     <span class="hidden sm:inline">Completed Deliveries (All Time)</span>
                 </p>
-                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['completedDeliveriesTotal'] ?? 0 }}</p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-bold text-[var(--foreground)]">{{ $stats['completedDeliveriesTotal'] ?? 0 }}</p>
             </div>
-            <div class="rounded-xl sm:rounded-2xl border border-violet-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+            <div class="rounded-xl sm:rounded-lg border border-violet-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
                 <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
                     <span class="sm:hidden">Active &ge;1</span>
                     <span class="hidden sm:inline">Partners With &ge;1 Completed Job</span>
                 </p>
-                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['partnersWithCompletedDeliveries'] ?? 0 }}</p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-bold text-[var(--foreground)]">{{ $stats['partnersWithCompletedDeliveries'] ?? 0 }}</p>
             </div>
-            <div class="rounded-xl sm:rounded-2xl border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+            <div class="rounded-xl sm:rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
                 <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
                     <span class="sm:hidden">Total</span>
                     <span class="hidden sm:inline">Total Partner Profiles</span>
                 </p>
-                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['totalPartners'] ?? 0 }}</p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-bold text-[var(--foreground)]">{{ $stats['totalPartners'] ?? 0 }}</p>
             </div>
-            <div class="rounded-xl sm:rounded-2xl border border-rose-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
+            <div class="rounded-xl sm:rounded-lg border border-rose-500/40 bg-[var(--card)] p-3 sm:p-4 shadow-sm min-w-0 flex flex-col justify-between">
                 <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider leading-tight text-[var(--muted-foreground)]">
                     <span class="sm:hidden">Rejected</span>
                     <span class="hidden sm:inline">Rejected Registrations</span>
                 </p>
-                <p class="mt-1.5 text-xl sm:text-2xl font-black text-[var(--foreground)]">{{ $stats['rejectedPartners'] ?? 0 }}</p>
+                <p class="mt-1.5 text-xl sm:text-2xl font-bold text-[var(--foreground)]">{{ $stats['rejectedPartners'] ?? 0 }}</p>
             </div>
         </div>
     @endif
@@ -98,9 +98,9 @@
     {{-- ======================================================================
          BLOCK 1: Pending Registration Approvals Table
          ====================================================================== --}}
-    <section class="rounded-2xl sm:rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
+    <section class="rounded-lg sm:rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
         <div class="px-4 sm:px-6 py-4 border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2 bg-[var(--mint-100)]/60">
-            <h2 class="text-sm font-black text-[var(--foreground)] flex items-center gap-2">
+            <h2 class="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
                 <i class="fa-solid fa-id-card-clip text-[var(--accent-dark)]"></i>
                 Pending Registration Approvals ({{ ($pendingAgents ?? collect())->count() }})
             </h2>
@@ -160,7 +160,7 @@
                                 <div class="text-[11px] text-[var(--muted-foreground)]">{{ $dispPhone }}</div>
                             </td>
                             <td class="px-5 py-4 capitalize font-semibold text-[var(--foreground)]">
-                                <span class="px-2.5 py-1 rounded-full bg-[var(--mint-100)] border border-[var(--border)]">
+                                <span class="px-2.5 py-1 rounded-md bg-[var(--mint-100)] border border-[var(--border)]">
                                     {{ $agent->vehicle_type ?? 'Motorcycle' }}
                                 </span>
                             </td>
@@ -172,7 +172,7 @@
                                 <button
                                     type="button"
                                     @click='inspectAgent = @json($inspectorPayload)'
-                                    class="inline-flex items-center gap-1.5 rounded-full bg-white border border-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-dark)] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--mint-100)] hover:shadow"
+                                    class="inline-flex items-center gap-1.5 rounded-md bg-white border border-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-dark)] shadow-sm transition-all duration-200 hover:bg-[var(--mint-100)] hover:shadow"
                                 >
                                     <i class="fa-solid fa-magnifying-glass-plus"></i>
                                     <span>Inspect Info &amp; Docs</span>
@@ -260,7 +260,7 @@
                                 <div class="flex flex-wrap items-center justify-end gap-2">
                                     <form method="POST" action="/admin/delivery-agents/{{ $agent->id }}/approve" class="inline">
                                         @csrf
-                                        <button type="submit" class="px-3.5 py-1.5 bg-[var(--accent-dark)] text-[var(--accent-foreground)] rounded-full text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1d4630] hover:shadow-md">
+                                        <button type="submit" class="px-3.5 py-1.5 bg-[var(--accent-dark)] text-[var(--accent-foreground)] rounded-md text-xs font-bold shadow-sm transition-all duration-200 hover:bg-[#1d4630] hover:shadow-md">
                                             <i class="fa-solid fa-check mr-1"></i>Approve
                                         </button>
                                     </form>
@@ -275,7 +275,7 @@
                                           class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="px-3 py-1.5 rounded-full border border-rose-300 bg-white text-rose-700 text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-50 hover:shadow">
+                                        <button type="submit" class="px-3 py-1.5 rounded-md border border-rose-300 bg-white text-rose-700 text-xs font-bold shadow-sm transition-all duration-200 hover:bg-rose-50 hover:shadow">
                                             <i class="fa-solid fa-trash-can"></i> Delete
                                         </button>
                                     </form>
@@ -285,7 +285,7 @@
                                     @csrf
                                     <input type="text" name="rejection_reason" placeholder="Required textual reason for rejection..." required
                                            class="rounded-xl border border-[var(--border)] bg-white px-3 py-1.5 text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] w-60 outline-none focus:border-rose-600">
-                                    <button type="submit" class="px-3.5 py-1.5 bg-rose-700 text-white rounded-full text-xs font-bold shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-800 hover:shadow-md">
+                                    <button type="submit" class="px-3.5 py-1.5 bg-rose-700 text-white rounded-md text-xs font-bold shadow-sm transition-all duration-200 hover:bg-rose-800 hover:shadow-md">
                                         Reject
                                     </button>
                                 </form>
@@ -307,9 +307,9 @@
          BLOCK 2: All Delivery Partners Directory
          ====================================================================== --}}
     @if(isset($allPartners) && $allPartners->count() > 0)
-        <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
+        <section class="rounded-lg border border-[var(--border)] bg-[var(--card)] shadow-sm overflow-hidden">
             <div class="px-4 sm:px-6 py-4 border-b border-[var(--border)] flex flex-wrap items-center justify-between gap-2 bg-[var(--mint-100)]/40">
-                <h2 class="text-sm font-black text-[var(--foreground)] flex items-center gap-2">
+                <h2 class="text-sm font-bold text-[var(--foreground)] flex items-center gap-2">
                     <i class="fa-solid fa-motorcycle text-[var(--accent-dark)]"></i>
                     All Delivery Partners Directory ({{ $allPartners->count() }})
                 </h2>
@@ -344,11 +344,11 @@
                                 </td>
                                 <td class="px-5 py-3.5">
                                     @if($partner->registration_status === 'APPROVED')
-                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">APPROVED</span>
+                                        <span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">APPROVED</span>
                                     @elseif($partner->registration_status === 'PENDING')
-                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">PENDING</span>
+                                        <span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">PENDING</span>
                                     @else
-                                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">{{ $partner->registration_status }}</span>
+                                        <span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300">{{ $partner->registration_status }}</span>
                                     @endif
                                 </td>
                                 <td class="px-5 py-3.5 font-mono text-[11px] text-[var(--foreground)]">
@@ -373,14 +373,14 @@
                                         @if($partner->is_active)
                                             <form method="POST" action="/admin/delivery-agents/{{ $partner->id }}/block" class="inline">
                                                 @csrf
-                                                <button type="submit" class="px-3 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-bold hover:bg-amber-100 transition">
+                                                <button type="submit" class="px-3 py-1 rounded-md border border-amber-300 bg-amber-50 text-amber-800 text-[11px] font-bold hover:bg-amber-100 transition">
                                                     Suspend
                                                 </button>
                                             </form>
                                         @else
                                             <form method="POST" action="/admin/delivery-agents/{{ $partner->id }}/approve" class="inline">
                                                 @csrf
-                                                <button type="submit" class="px-3 py-1 rounded-full bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-[11px] font-bold hover:opacity-90 transition">
+                                                <button type="submit" class="px-3 py-1 rounded-md bg-[var(--accent-dark)] text-[var(--accent-foreground)] text-[11px] font-bold hover:opacity-90 transition">
                                                     {{ $partner->registration_status === 'APPROVED' ? 'Activate' : 'Approve' }}
                                                 </button>
                                             </form>
@@ -396,7 +396,7 @@
                                               class="inline">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="px-2.5 py-1 rounded-full border border-rose-300 bg-white text-rose-700 text-[11px] font-bold hover:bg-rose-50 transition" title="Delete Application">
+                                            <button type="submit" class="px-2.5 py-1 rounded-md border border-rose-300 bg-white text-rose-700 text-[11px] font-bold hover:bg-rose-50 transition" title="Delete Application">
                                                 <i class="fa-solid fa-trash-can"></i>
                                             </button>
                                         </form>
@@ -413,17 +413,17 @@
     <!-- ── Applicant Info & Document Verification Modal ── -->
     <div x-show="inspectAgent" x-cloak class="fixed inset-0 z-[140] flex items-center justify-center p-4">
         <div class="fixed inset-0 bg-black/45 backdrop-blur-sm" @click="inspectAgent = null"></div>
-        <div class="relative z-[141] w-full max-w-2xl rounded-[2rem] border border-[var(--border)] bg-white p-6 md:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+        <div class="relative z-[141] w-full max-w-2xl rounded-lg border border-[var(--border)] bg-white p-6 md:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
             <div class="flex items-start justify-between gap-3 border-b border-[#e7efe2] pb-4">
                 <div>
-                    <span class="text-[10px] font-black uppercase tracking-wider text-[#214c34]">Admin Verification Dossier</span>
-                    <h3 class="text-xl font-black text-[#163625]" x-text="inspectAgent?.name"></h3>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[#214c34]">Admin Verification Dossier</span>
+                    <h3 class="text-xl font-bold text-[#163625]" x-text="inspectAgent?.name"></h3>
                     <p class="font-mono text-xs text-[#5e6d64]" x-text="'Personal Email: ' + (inspectAgent?.personal_email || '—')"></p>
                 </div>
                 <button type="button" @click="inspectAgent = null" class="h-9 w-9 rounded-full bg-[#eef4ea] text-[#163625] font-bold">✕</button>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-4 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-lg border border-[#d9e5d5] bg-[#f8fbf6] p-4 text-xs">
                 <div>
                     <span class="text-[#5e6d64] block">Mobile Phone</span>
                     <span class="font-bold text-[#163625]" x-text="inspectAgent?.phone || '—'"></span>
@@ -448,12 +448,12 @@
 
             <div class="space-y-2.5">
                 <div class="flex items-center justify-between">
-                    <h4 class="text-xs font-black uppercase tracking-wider text-[#163625]">Uploaded Verification Documents</h4>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-[#163625]">Uploaded Verification Documents</h4>
                     <span class="text-[11px] font-semibold text-[#5e6d64]">Click any card to zoom in Lightbox</span>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <template x-if="inspectAgent?.has_profile">
-                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
+                        <div class="rounded-lg border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
                             <div
                                 @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/profile', title: inspectAgent.name + ' — Profile Photo', isPdf: inspectAgent.profile_is_pdf }"
                                 class="group relative h-32 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
@@ -467,7 +467,7 @@
                                         <span class="text-[10px] font-bold mt-1">PDF Document</span>
                                     </div>
                                 </template>
-                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
+                                <span class="absolute bottom-2 right-2 rounded bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
                             </div>
                             <div class="flex items-center justify-between font-bold text-[#163625]">
                                 <span><i class="fa-solid fa-camera mr-1.5"></i>Profile Photo</span>
@@ -477,7 +477,7 @@
                     </template>
 
                     <template x-if="inspectAgent?.has_nid">
-                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
+                        <div class="rounded-lg border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
                             <div
                                 @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/nid', title: inspectAgent.name + ' — NID Scan', isPdf: inspectAgent.nid_is_pdf }"
                                 class="group relative h-32 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
@@ -491,7 +491,7 @@
                                         <span class="text-[10px] font-bold mt-1">PDF Document</span>
                                     </div>
                                 </template>
-                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
+                                <span class="absolute bottom-2 right-2 rounded bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
                             </div>
                             <div class="flex items-center justify-between font-bold text-[#163625]">
                                 <span><i class="fa-solid fa-id-card mr-1.5"></i>NID Scan</span>
@@ -501,7 +501,7 @@
                     </template>
 
                     <template x-if="inspectAgent?.has_license">
-                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
+                        <div class="rounded-lg border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
                             <div
                                 @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/license', title: inspectAgent.name + ' — Driving License Scan', isPdf: inspectAgent.license_is_pdf }"
                                 class="group relative h-32 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
@@ -515,7 +515,7 @@
                                         <span class="text-[10px] font-bold mt-1">PDF Document</span>
                                     </div>
                                 </template>
-                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
+                                <span class="absolute bottom-2 right-2 rounded bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
                             </div>
                             <div class="flex items-center justify-between font-bold text-[#163625]">
                                 <span><i class="fa-solid fa-id-badge mr-1.5"></i>Driving License Scan</span>
@@ -525,7 +525,7 @@
                     </template>
 
                     <template x-if="inspectAgent?.has_education">
-                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
+                        <div class="rounded-lg border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2">
                             <div
                                 @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/education', title: inspectAgent.name + ' — Education Certificate', isPdf: inspectAgent.education_is_pdf }"
                                 class="group relative h-32 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
@@ -539,7 +539,7 @@
                                         <span class="text-[10px] font-bold mt-1">PDF Document</span>
                                     </div>
                                 </template>
-                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
+                                <span class="absolute bottom-2 right-2 rounded bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Zoom</span>
                             </div>
                             <div class="flex items-center justify-between font-bold text-[#163625]">
                                 <span><i class="fa-solid fa-graduation-cap mr-1.5"></i>Education Certificate</span>
@@ -549,7 +549,7 @@
                     </template>
 
                     <template x-if="inspectAgent?.has_cv">
-                        <div class="rounded-2xl border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2 sm:col-span-2">
+                        <div class="rounded-lg border border-[#c8dac2] bg-[#f4f9f1] p-3 space-y-2 sm:col-span-2">
                             <div
                                 @click="lightboxDoc = { url: '/admin/delivery-agents/' + inspectAgent.id + '/document/cv', title: inspectAgent.name + ' — CV / Resume', isPdf: inspectAgent.cv_is_pdf }"
                                 class="group relative h-28 w-full cursor-pointer overflow-hidden rounded-xl border border-[#d9e5d5] bg-white flex items-center justify-center"
@@ -563,7 +563,7 @@
                                         <span class="text-[10px] font-bold mt-1">Click to preview PDF Resume</span>
                                     </div>
                                 </template>
-                                <span class="absolute bottom-2 right-2 rounded-full bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Preview</span>
+                                <span class="absolute bottom-2 right-2 rounded bg-[#163625]/85 px-2.5 py-0.5 text-[10px] font-bold text-white"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i>Preview</span>
                             </div>
                             <div class="flex items-center justify-between font-bold text-[#163625]">
                                 <span><i class="fa-solid fa-file-lines mr-1.5"></i>CV / Resume</span>
@@ -587,20 +587,20 @@
         class="fixed inset-0 z-[160] flex items-center justify-center p-4"
     >
         <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" @click="lightboxDoc = null"></div>
-        <div class="relative z-[161] w-full max-w-4xl rounded-[2rem] border border-[#c8dac2] bg-white p-4 md:p-6 shadow-2xl space-y-3">
+        <div class="relative z-[161] w-full max-w-4xl rounded-lg border border-[#c8dac2] bg-white p-4 md:p-6 shadow-2xl space-y-3">
             <div class="flex items-center justify-between gap-3 border-b border-[#e7efe2] pb-3">
                 <div>
-                    <span class="text-[10px] font-black uppercase tracking-wider text-[#214c34]">Document Lightbox Preview</span>
-                    <h3 class="text-base font-black text-[#163625]" x-text="lightboxDoc?.title"></h3>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[#214c34]">Document Lightbox Preview</span>
+                    <h3 class="text-base font-bold text-[#163625]" x-text="lightboxDoc?.title"></h3>
                 </div>
                 <div class="flex items-center gap-2">
-                    <a :href="lightboxDoc?.url" target="_blank" class="rounded-full border border-[#c8dac2] bg-[#eef5ea] px-3.5 py-1.5 text-xs font-bold text-[#163625] hover:bg-[#dcebd5]">
+                    <a :href="lightboxDoc?.url" target="_blank" class="rounded-md border border-[#c8dac2] bg-[#eef5ea] px-3.5 py-1.5 text-xs font-bold text-[#163625] hover:bg-[#dcebd5]">
                         Open Original &nearr;
                     </a>
                     <button type="button" @click="lightboxDoc = null" class="h-9 w-9 rounded-full bg-[#163625] text-white font-bold">✕</button>
                 </div>
             </div>
-            <div class="flex max-h-[75vh] min-h-[320px] w-full items-center justify-center overflow-auto rounded-2xl bg-[#0f1c12] p-3">
+            <div class="flex max-h-[75vh] min-h-[320px] w-full items-center justify-center overflow-auto rounded-lg bg-[#0f1c12] p-3">
                 <template x-if="lightboxDoc && !lightboxDoc.isPdf">
                     <img :src="lightboxDoc.url" :alt="lightboxDoc.title" class="max-h-[70vh] max-w-full rounded-xl object-contain shadow-lg">
                 </template>

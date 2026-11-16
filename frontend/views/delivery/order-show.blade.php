@@ -14,20 +14,20 @@
     $customerPhone = $req?->contact_phone ?: ($cust?->phone ?: 'Not provided');
 @endphp
 
-<div class="flex flex-col bg-white rounded-3xl overflow-hidden shadow-sm border border-[#d9e5d5] relative" x-data="{ chatOpen: false }">
+<div class="flex flex-col bg-white rounded-lg overflow-hidden shadow-sm border border-[#d9e5d5] relative" x-data="{ chatOpen: false }">
 
     <!-- Top Action Bar -->
     <div class="p-4 sm:p-6 border-b border-[#e7efe2]">
         <div class="flex justify-between items-center gap-3">
             <a
                 href="/delivery"
-                class="group w-11 h-11 rounded-full bg-white flex items-center justify-center text-[#163625] border border-[#c8dac2] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-md"
+                class="group w-11 h-11 rounded-full bg-white flex items-center justify-center text-[#163625] border border-[#c8dac2] shadow-sm transition-all duration-200 hover:border-[#163625] hover:bg-[#163625] hover:text-[#E4FCD5] hover:shadow-md"
                 title="Back to Delivery Dashboard"
                 aria-label="Back to Delivery Dashboard"
             >
                 <i class="fa-solid fa-arrow-left text-sm transition-transform duration-200 group-hover:-translate-x-0.5"></i>
             </a>
-            <div class="bg-[#163625] text-[#E4FCD5] px-3.5 py-1.5 rounded-full text-xs font-bold font-mono">
+            <div class="bg-[#163625] text-[#E4FCD5] px-3.5 py-1.5 rounded-md text-xs font-bold font-mono">
                 Delivery #{{ $delivery->tracking_code ?: $delivery->id }}
             </div>
         </div>
@@ -67,21 +67,21 @@
     <div class="p-4 sm:p-6">
         <div class="mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
             <div class="min-w-0">
-                <h1 class="text-xl md:text-2xl font-extrabold text-[#163625] mb-1 break-words">{{ $title }}</h1>
+                <h1 class="text-xl md:text-2xl font-semibold text-[#163625] mb-1 break-words">{{ $title }}</h1>
                 <p class="text-sm text-[#163625]/70">
                     {{ strtoupper((string) $delivery->direction) === 'TO_SHOP' ? 'Customer to service center' : 'Service center to customer' }}
                 </p>
             </div>
             <div class="sm:text-right shrink-0">
-                <h3 class="text-2xl font-extrabold text-emerald-700 whitespace-nowrap">BDT {{ number_format((float) ($delivery->fee ?? 0), 2) }}</h3>
-                <span class="inline-block mt-1 text-[10px] uppercase font-bold tracking-wider text-[#163625] bg-[#eef4ea] border border-[#d9e5d5] px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                <h3 class="text-2xl font-semibold text-emerald-700 whitespace-nowrap">BDT {{ number_format((float) ($delivery->fee ?? 0), 2) }}</h3>
+                <span class="inline-block mt-1 text-[10px] uppercase font-bold tracking-wider text-[#163625] bg-[#eef4ea] border border-[#d9e5d5] px-2.5 py-0.5 rounded whitespace-nowrap">
                     {{ $canonicalLabel ?? $delivery->milestone_label }}
                 </span>
             </div>
         </div>
 
         <!-- Device, Shop & Customer Card -->
-        <div class="mb-6 rounded-2xl border border-[#d9e5d5] bg-[#eef4ea] p-4">
+        <div class="mb-6 rounded-lg border border-[#d9e5d5] bg-[#eef4ea] p-4">
             <div class="flex items-start gap-3.5">
                 <div class="w-11 h-11 bg-white rounded-xl flex items-center justify-center shrink-0 border border-[#d9e5d5] text-[#163625]">
                     <i class="fa-solid fa-box-open text-lg"></i>
@@ -97,7 +97,7 @@
 
         <!-- Pickup & Dropoff Cards -->
         <div class="grid gap-4 grid-cols-1 lg:grid-cols-2 mb-8">
-            <div class="rounded-2xl border border-[#d9e5d5] p-4 bg-white min-w-0">
+            <div class="rounded-lg border border-[#d9e5d5] p-4 bg-white min-w-0">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                     <p class="text-[10px] font-bold text-[#163625]/60 uppercase tracking-wider">Pickup</p>
                     @if($delivery->pickup_otp && (session('dev_mode', false) || config('app.debug')))
@@ -110,7 +110,7 @@
                 <p class="break-words text-sm font-semibold text-[#163625]">{{ $delivery->pickup_address }}</p>
             </div>
 
-            <div class="rounded-2xl border border-[#d9e5d5] p-4 bg-white min-w-0">
+            <div class="rounded-lg border border-[#d9e5d5] p-4 bg-white min-w-0">
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-1">
                     <p class="text-[10px] font-bold text-[#163625]/60 uppercase tracking-wider">Dropoff</p>
                     @if($delivery->dropoff_otp && (session('dev_mode', false) || config('app.debug')))
@@ -125,7 +125,7 @@
         </div>
 
         <!-- 6-Step Milestone Flow -->
-        <div class="mb-8 rounded-2xl border border-[#d9e5d5] bg-[#f8fbf6] p-4 sm:p-5">
+        <div class="mb-8 rounded-lg border border-[#d9e5d5] bg-[#f8fbf6] p-4 sm:p-5">
             <p class="mb-3 text-xs font-bold uppercase tracking-wider text-[#163625]/70">
                 {{ strtoupper((string) $delivery->direction) === 'TO_SHOP' ? 'Inbound Pickup Milestones' : 'Return Delivery Milestones' }}
             </p>
@@ -151,7 +151,7 @@
                                 </p>
                             </div>
                             @if($isCurrent)
-                                <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200 shrink-0">Current</span>
+                                <span class="rounded bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200 shrink-0">Current</span>
                             @elseif($currentStepIndex > $idx)
                                 <i class="fa-solid fa-check text-emerald-700 text-xs shrink-0"></i>
                             @endif
@@ -251,7 +251,7 @@
                 @forelse($chatMessages as $msg)
                     @php $isMine = strtoupper((string) $msg->sender_role) === 'DELIVERY'; @endphp
                     <div class="flex {{ $isMine ? 'justify-end' : 'justify-start' }}">
-                        <div class="max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs {{ $isMine ? 'bg-[#163625] text-[#E4FCD5]' : 'border border-[#d9e5d5] bg-white text-[#163625]' }}">
+                        <div class="max-w-[85%] rounded-lg px-3.5 py-2.5 text-xs {{ $isMine ? 'bg-[#163625] text-[#E4FCD5]' : 'border border-[#d9e5d5] bg-white text-[#163625]' }}">
                             <p>{{ $msg->message }}</p>
                             <p class="mt-1 text-[10px] opacity-70">{{ optional($msg->created_at)->format('h:i A') }}</p>
                         </div>

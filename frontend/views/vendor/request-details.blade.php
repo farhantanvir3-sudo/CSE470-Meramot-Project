@@ -43,7 +43,7 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
                 <span>&rsaquo;</span>
                 <span class="font-semibold text-[var(--foreground)]">Ticket #{{ $req?->id ?? 'Preview' }}</span>
             </div>
-            <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)] flex items-center gap-2">
+            <h1 class="text-2xl md:text-3xl font-bold text-[var(--foreground)] flex items-center gap-2">
                 <i class="fa-solid fa-microchip text-[var(--accent-dark)]"></i>
                 <span>AI Hardware Fault Triage &amp; Quote Builder</span>
             </h1>
@@ -55,13 +55,13 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
             </p>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <a href="/vendor/bidding-board" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
+            <a href="/vendor/bidding-board" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
                 &larr; Bidding Board
             </a>
             @if($req)
                 <form method="POST" action="/vendor/request-details/{{ $req->id }}/regenerate" class="inline">
                     @csrf
-                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
                         <i class="fa-solid fa-arrows-rotate"></i>
                         <span>Regenerate AI Triage</span>
                     </button>
@@ -71,15 +71,15 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
     </div>
 
     @if(session('success'))
-        <div class="rounded-2xl border border-emerald-400 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
+        <div class="rounded-lg border border-emerald-400 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-900 flex items-center gap-2 shadow-sm">
             <i class="fa-solid fa-circle-check text-emerald-700"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     @if(!$req)
-        <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-10 text-center">
-            <h2 class="text-lg font-black text-[var(--foreground)]">No repair tickets published yet</h2>
+        <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-10 text-center">
+            <h2 class="text-lg font-bold text-[var(--foreground)]">No repair tickets published yet</h2>
             <p class="mt-1 text-xs text-[var(--muted-foreground)]">Once a customer posts a diagnostic repair request, full AI hardware triage appears here.</p>
         </div>
     @else
@@ -87,13 +87,13 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
             <!-- Left Column (7 cols): Customer Report + AI Hardware Fault Triage -->
             <div class="lg:col-span-7 space-y-6 min-w-0">
                 <!-- Customer Fault Submission Card -->
-                <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm space-y-4">
+                <section class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm space-y-4">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <span class="rounded-full bg-[var(--accent-dark)] px-3 py-0.5 text-[10px] font-black uppercase text-[var(--accent-foreground)]">
+                            <span class="rounded bg-[var(--accent-dark)] px-3 py-0.5 text-[10px] font-bold uppercase text-[var(--accent-foreground)]">
                                 Ticket #{{ $req->id }} • {{ $req->status }}
                             </span>
-                            <h2 class="mt-2 text-xl font-black text-[var(--foreground)] break-words">
+                            <h2 class="mt-2 text-xl font-bold text-[var(--foreground)] break-words">
                                 {{ $req->brand }} {{ $req->model_name }} ({{ $req->device_type }})
                             </h2>
                             <p class="text-sm font-bold text-[var(--accent-dark)] mt-0.5 break-words">{{ $req->title }}</p>
@@ -105,7 +105,7 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
                         </div>
                     </div>
 
-                    <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/75 p-4 text-xs text-[var(--foreground)] leading-relaxed whitespace-pre-line">{{ $req->problem ?: $req->description }}</div>
+                    <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/75 p-4 text-xs text-[var(--foreground)] leading-relaxed whitespace-pre-line">{{ $req->problem ?: $req->description }}</div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-3">
@@ -138,35 +138,35 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
                 </section>
 
                 <!-- Structured AI Hardware Triage Report Card -->
-                <section class="rounded-[2rem] border-2 border-[var(--accent-dark)]/25 bg-[var(--card)] p-5 md:p-6 shadow-sm space-y-4">
+                <section class="rounded-lg border-2 border-[var(--accent-dark)]/25 bg-[var(--card)] p-5 md:p-6 shadow-sm space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
                         <div class="flex items-center gap-2">
-                            <span class="flex h-9 w-9 items-center justify-center rounded-2xl bg-[var(--accent-dark)] text-[var(--accent-foreground)]">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent-dark)] text-[var(--accent-foreground)]">
                                 <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
                             </span>
                             <div>
-                                <h3 class="text-base font-black text-[var(--foreground)]">AI Diagnostic Brief</h3>
+                                <h3 class="text-base font-bold text-[var(--foreground)]">AI Diagnostic Brief</h3>
                                 <p class="text-[11px] text-[var(--muted-foreground)]">Engine: <span class="font-mono font-semibold">{{ $providerLabel }} ({{ $modelLabel }})</span></p>
                             </div>
                         </div>
-                        <span class="rounded-full border px-3 py-1 text-[11px] font-black {{ $riskClasses }}">
+                        <span class="rounded-md border px-3 py-1 text-[11px] font-bold {{ $riskClasses }}">
                             {{ $riskLevel }} BENCH RISK
                         </span>
                     </div>
 
-                    <p class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] p-4 text-xs sm:text-sm font-semibold text-[var(--foreground)] leading-relaxed">
+                    <p class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-4 text-xs sm:text-sm font-semibold text-[var(--foreground)] leading-relaxed">
                         {{ $req->ai_summary ?: 'Hardware diagnostic triage ready.' }}
                     </p>
 
                     <!-- Triage KPI Strip -->
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/65 p-3">
+                        <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/65 p-3">
                             <span class="text-[10px] font-bold uppercase text-[var(--muted-foreground)] block">Est. Bench Time</span>
-                            <span class="text-base font-black text-[var(--accent-dark)]">{{ number_format((float) $benchHours, 1) }} hrs</span>
+                            <span class="text-base font-bold text-[var(--accent-dark)]">{{ number_format((float) $benchHours, 1) }} hrs</span>
                         </div>
-                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/65 p-3">
+                        <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/65 p-3">
                             <span class="text-[10px] font-bold uppercase text-[var(--muted-foreground)] block">Market Reference Band</span>
-                            <span class="text-sm font-black text-[var(--accent-dark)]">
+                            <span class="text-sm font-bold text-[var(--accent-dark)]">
                                 @if($costMin && $costMax)
                                     ৳{{ number_format((int) $costMin) }} – ৳{{ number_format((int) $costMax) }}
                                 @else
@@ -174,15 +174,15 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
                                 @endif
                             </span>
                         </div>
-                        <div class="col-span-2 sm:col-span-1 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/65 p-3">
+                        <div class="col-span-2 sm:col-span-1 rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/65 p-3">
                             <span class="text-[10px] font-bold uppercase text-[var(--muted-foreground)] block">Competing Bids</span>
-                            <span class="text-base font-black text-[var(--foreground)]">{{ $req->bids->count() }} Active</span>
+                            <span class="text-base font-bold text-[var(--foreground)]">{{ $req->bids->count() }} Active</span>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4">
-                            <h4 class="font-black text-[var(--foreground)] mb-2 flex items-center gap-1.5">
+                        <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/50 p-4">
+                            <h4 class="font-bold text-[var(--foreground)] mb-2 flex items-center gap-1.5">
                                 <i class="fa-solid fa-bolt text-amber-700"></i>
                                 <span>Suspected Fault Points</span>
                             </h4>
@@ -192,7 +192,7 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
                                         $faultText = is_array($fault) ? ($fault['title'] ?? $fault['name'] ?? json_encode($fault)) : (string) $fault;
                                     @endphp
                                     <li class="flex items-start gap-2">
-                                        <span class="text-[var(--accent-dark)] font-black">&bull;</span>
+                                        <span class="text-[var(--accent-dark)] font-bold">&bull;</span>
                                         <span class="text-[var(--foreground)]">{{ $faultText }}</span>
                                     </li>
                                 @empty
@@ -201,9 +201,9 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
                             </ul>
                         </div>
 
-                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 flex flex-col justify-between gap-3">
+                        <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 flex flex-col justify-between gap-3">
                             <div>
-                                <h4 class="font-black text-[var(--foreground)] mb-2 flex items-center gap-1.5">
+                                <h4 class="font-bold text-[var(--foreground)] mb-2 flex items-center gap-1.5">
                                     <i class="fa-solid fa-screwdriver-wrench text-[var(--accent-dark)]"></i>
                                     <span>Candidate Replacement Parts</span>
                                 </h4>
@@ -232,7 +232,7 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
                                 <button
                                     type="button"
                                     @click="$dispatch('meramot-prefill-quote-parts', { requestId: {{ (int) $req->id }}, parts: @js($suggestedParts) })"
-                                    class="w-full rounded-full bg-[var(--accent-dark)] px-3.5 py-2 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
+                                    class="w-full rounded-md bg-[var(--accent-dark)] px-3.5 py-2 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition"
                                 >
                                     <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>1-Click Pre-Fill Parts into Quote Builder
                                 </button>
@@ -244,8 +244,8 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
 
             <!-- Right Column (5 cols): Itemized Quote Submission & Audit History -->
             <div class="lg:col-span-5 space-y-5 min-w-0 lg:sticky lg:top-6">
-                <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
-                    <h3 class="text-base font-black text-[var(--foreground)] mb-1 flex items-center gap-2">
+                <section class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm">
+                    <h3 class="text-base font-bold text-[var(--foreground)] mb-1 flex items-center gap-2">
                         <i class="fa-solid fa-file-invoice-dollar text-[var(--accent-dark)]"></i>
                         <span>Submit Workshop Quote</span>
                     </h3>
@@ -260,22 +260,22 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
                             'lockedShopId' => null,
                         ])
                     @else
-                        <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] p-4 text-xs text-[var(--foreground)]">
+                        <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-4 text-xs text-[var(--foreground)]">
                             Bidding on this ticket is closed (Current Status: <strong>{{ $req->status }}</strong>).
                         </div>
                     @endif
                 </section>
 
                 @if(($summaryLogs ?? collect())->isNotEmpty())
-                    <section class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm space-y-2.5 text-xs">
-                        <h4 class="font-black text-[var(--foreground)] uppercase tracking-wider text-[11px]">AI Triage Audit Trail</h4>
+                    <section class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm space-y-2.5 text-xs">
+                        <h4 class="font-bold text-[var(--foreground)] uppercase tracking-wider text-[11px]">AI Triage Audit Trail</h4>
                         @foreach($summaryLogs as $log)
                             <div class="rounded-xl border border-[var(--border)] bg-[var(--mint-100)]/60 px-3 py-2 flex items-center justify-between gap-2">
                                 <div class="min-w-0">
                                     <p class="font-mono font-bold text-[11px] text-[var(--foreground)] truncate">{{ $log->provider }} • {{ $log->model_name }}</p>
                                     <p class="text-[10px] text-[var(--muted-foreground)]">{{ $log->created_at?->diffForHumans() }} • Risk: {{ $log->risk_level }}</p>
                                 </div>
-                                <span class="rounded-full bg-[var(--card)] border border-[var(--border)] px-2.5 py-0.5 font-mono text-[10px] font-bold text-[var(--accent-dark)] shrink-0">
+                                <span class="rounded bg-[var(--card)] border border-[var(--border)] px-2.5 py-0.5 font-mono text-[10px] font-bold text-[var(--accent-dark)] shrink-0">
                                     {{ $log->latency_ms ?? 0 }} ms
                                 </span>
                             </div>
@@ -288,7 +288,7 @@ Controller: AISummaryController@showRequestDetails, regenerateSummary
 
     <!-- Photo Lightbox -->
     <div x-show="lightboxPhoto" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" @click="lightboxPhoto = null">
-        <img :src="lightboxPhoto" alt="Zoomed device photo" class="max-h-[88vh] max-w-[92vw] rounded-2xl shadow-2xl">
+        <img :src="lightboxPhoto" alt="Zoomed device photo" class="max-h-[88vh] max-w-[92vw] rounded-lg shadow-2xl">
     </div>
 </div>
 @endsection

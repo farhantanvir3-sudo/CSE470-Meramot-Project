@@ -139,21 +139,21 @@
             @if(($user->role ?? '') === 'admin')
                 <a
                     href="/admin"
-                    class="rounded-full bg-[var(--accent-dark)] px-5 py-2 text-xs md:text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                    class="rounded-md bg-[var(--accent-dark)] px-5 py-2 text-xs md:text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                 >
                     <i class="fa-solid fa-shield-halved mr-1.5"></i>Admin Console
                 </a>
             @elseif(($user->role ?? '') === 'vendor')
                 <a
                     href="/vendor/dashboard"
-                    class="rounded-full bg-[var(--accent-dark)] px-5 py-2 text-xs md:text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+                    class="rounded-md bg-[var(--accent-dark)] px-5 py-2 text-xs md:text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
                 >
                     <i class="fa-solid fa-store mr-1.5"></i>Vendor Dashboard
                 </a>
             @endif
             <a
                 href="/"
-                class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-5 py-2 text-xs md:text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                class="rounded-md border border-[var(--accent-dark)] bg-[var(--card)] px-5 py-2 text-xs md:text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
             >
                 Back to home
             </a>
@@ -161,14 +161,14 @@
     </div>
 
     @if(session('success'))
-        <div class="mb-5 rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3.5 text-sm font-medium text-emerald-900 flex items-center gap-2.5 shadow-sm">
+        <div class="mb-5 rounded-lg border border-emerald-300 bg-emerald-50 px-5 py-3.5 text-sm font-medium text-emerald-900 flex items-center gap-2.5 shadow-sm">
             <i class="fa-solid fa-circle-check text-emerald-700"></i>
             <span>{{ session('success') }}</span>
         </div>
     @endif
 
     @if($errors->any())
-        <div class="mb-5 rounded-2xl border border-rose-300 bg-rose-50 px-5 py-3.5 text-xs text-rose-800 space-y-1">
+        <div class="mb-5 rounded-lg border border-rose-300 bg-rose-50 px-5 py-3.5 text-xs text-rose-800 space-y-1">
             @foreach($errors->all() as $error)
                 <div class="font-semibold"><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ $error }}</div>
             @endforeach
@@ -177,9 +177,9 @@
 
     {{-- Prompt Banner if Phone or Delivery Address Not Yet Set (e.g., Fresh Google Sign-Up) --}}
     @if($user->role === 'customer' && !$user->isBanned() && (empty($user->phone) || empty($user->address)))
-        <div class="mb-6 rounded-3xl border border-amber-300 bg-amber-50/95 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="mb-6 rounded-lg border border-amber-300 bg-amber-50/95 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="space-y-1">
-                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-600 px-3 py-0.5 text-[10px] font-extrabold uppercase text-white">
+                <span class="inline-flex items-center gap-1.5 rounded bg-amber-600 px-3 py-0.5 text-[10px] font-semibold uppercase text-white">
                     <i class="fa-solid fa-truck-fast"></i> Ready for Doorstep Delivery
                 </span>
                 <h2 class="text-sm md:text-base font-bold text-amber-950">
@@ -193,7 +193,7 @@
                 type="button"
                 @click="editing = true"
                 x-show="!editing"
-                class="shrink-0 rounded-full bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-white shadow transition hover:opacity-95"
+                class="shrink-0 rounded-md bg-[var(--accent-dark)] px-5 py-2.5 text-xs font-bold text-white shadow transition hover:opacity-95"
             >
                 Complete Details Now
             </button>
@@ -201,7 +201,7 @@
     @endif
 
     <!-- Main Profile Card (Matches Reference Profile Dashboard + Dual Address Picker) -->
-    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 md:p-8 shadow-sm">
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 sm:p-6 md:p-8 shadow-sm">
         @csrf
 
         <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
@@ -211,7 +211,7 @@
                         Profile
                     </p>
                     @if(!empty($user->google_id))
-                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/90 border border-[var(--border)] px-3 py-0.5 text-[11px] font-semibold text-[#203126]">
+                        <span class="inline-flex items-center gap-1.5 rounded bg-white/90 border border-[var(--border)] px-3 py-0.5 text-[11px] font-semibold text-[#203126]">
                             <i class="fa-brands fa-google text-[#4285F4]"></i> Connected with Google
                         </span>
                     @endif
@@ -227,18 +227,18 @@
             <!-- Avatar Preview & Upload -->
             <div class="flex flex-col items-center gap-2.5">
                 <template x-if="avatarPreview">
-                    <div class="relative h-20 w-20 overflow-hidden rounded-3xl border border-[var(--border)] bg-white shadow-sm">
+                    <div class="relative h-20 w-20 overflow-hidden rounded-lg border border-[var(--border)] bg-white shadow-sm">
                         <img :src="avatarPreview" alt="Profile Avatar" class="h-full w-full object-cover">
                     </div>
                 </template>
                 <template x-if="!avatarPreview">
-                    <div class="grid h-20 w-20 place-items-center rounded-3xl bg-[var(--mint-100)] border border-[var(--border)] text-3xl font-bold text-[var(--accent-dark)]">
+                    <div class="grid h-20 w-20 place-items-center rounded-lg bg-[var(--mint-100)] border border-[var(--border)] text-3xl font-bold text-[var(--accent-dark)]">
                         {{ strtoupper(substr($firstName, 0, 1)) }}
                     </div>
                 </template>
 
                 <div x-show="editing" x-cloak class="flex justify-center">
-                    <label class="cursor-pointer rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-4 py-1.5 text-xs font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
+                    <label class="cursor-pointer rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-4 py-1.5 text-xs font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-200)]">
                         <span x-text="avatarPreview ? 'Change picture' : 'Upload picture'">Upload picture</span>
                         <input
                             type="file"
@@ -255,7 +255,7 @@
         <!-- Core Profile Fields Grid -->
         <div class="mt-8 grid gap-4 md:grid-cols-2">
             <!-- 1. Full Name -->
-            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
                     Full name
                 </p>
@@ -265,7 +265,7 @@
                         name="name"
                         x-model="draft.name"
                         required
-                        class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                        class="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         placeholder="Your full name"
                     >
                 </template>
@@ -277,7 +277,7 @@
             </div>
 
             <!-- 2. Username (Read-Only) -->
-            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
                     Username
                 </p>
@@ -287,20 +287,20 @@
             </div>
 
             <!-- 3. Email (Read-Only + Verification Status) -->
-            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
                         Email
                     </p>
                     @if($user->is_email_verified)
-                        <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                        <span class="rounded bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
                             <i class="fa-solid fa-circle-check mr-1"></i>Verified
                         </span>
                     @else
                         <button
                             type="button"
                             @click="openOtpModal('email')"
-                            class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-[11px] font-bold text-white hover:opacity-90"
+                            class="rounded-md bg-[var(--accent-dark)] px-3 py-1 text-[11px] font-bold text-white hover:opacity-90"
                         >
                             Verify Email
                         </button>
@@ -312,14 +312,14 @@
             </div>
 
             <!-- 4. Phone Number (Editable Anytime — Required When Ordering) -->
-            <div class="rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-50)] p-4 sm:p-5 min-w-0">
                 <div class="flex items-center justify-between gap-2">
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
                         Phone
                     </p>
                     @if(!empty($user->phone))
                         @if($user->is_phone_verified)
-                            <span class="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                            <span class="rounded bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
                                 <i class="fa-solid fa-circle-check mr-1"></i>Verified
                             </span>
                         @else
@@ -327,13 +327,13 @@
                                 type="button"
                                 x-show="!editing"
                                 @click="openOtpModal('phone')"
-                                class="rounded-full bg-[var(--accent-dark)] px-3 py-1 text-[11px] font-bold text-white hover:opacity-90"
+                                class="rounded-md bg-[var(--accent-dark)] px-3 py-1 text-[11px] font-bold text-white hover:opacity-90"
                             >
                                 Verify Phone
                             </button>
                         @endif
                     @else
-                        <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
+                        <span class="rounded bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
                             Needed for orders
                         </span>
                     @endif
@@ -349,7 +349,7 @@
                             inputmode="tel"
                             maxlength="14"
                             placeholder="01XXXXXXXXX"
-                            class="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                            class="mt-2 w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
                         <p class="mt-1 text-[11px] text-[var(--muted-foreground)]">
                             Used by riders &amp; workshops when you order repairs or spare parts.
@@ -365,7 +365,7 @@
         </div>
 
         <!-- ── Delivery Address Section (Location Picker OR Manual Input & Confirm) ── -->
-        <div class="mt-6 rounded-3xl border border-[var(--border)] bg-[var(--mint-50)] p-5 md:p-6 space-y-4">
+        <div class="mt-6 rounded-lg border border-[var(--border)] bg-[var(--mint-50)] p-5 md:p-6 space-y-4">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                     <div class="flex items-center gap-2">
@@ -373,7 +373,7 @@
                             Delivery &amp; Pickup Address
                         </p>
                         <template x-if="addressConfirmed && draft.address">
-                            <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
+                            <span class="inline-flex items-center gap-1 rounded bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800">
                                 <i class="fa-solid fa-check"></i>
                                 <span x-text="draft.latitude && draft.longitude ? 'Map Pinned' : 'Confirmed'"></span>
                             </span>
@@ -388,7 +388,7 @@
                     <button
                         type="button"
                         @click="editing = true; addressInputMode = 'MAP'; $dispatch('meramot-open-location-modal')"
-                        class="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-90"
+                        class="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:opacity-90"
                     >
                         <i class="fa-solid fa-location-dot"></i>
                         <span>Use Location Picker</span>
@@ -396,7 +396,7 @@
                     <button
                         type="button"
                         @click="editing = true; addressInputMode = 'MANUAL'"
-                        class="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                        class="inline-flex items-center gap-1.5 rounded-md border border-[var(--accent-dark)] bg-[var(--card)] px-4 py-2 text-xs font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
                     >
                         <i class="fa-solid fa-keyboard"></i>
                         <span>Manual Input</span>
@@ -406,7 +406,7 @@
 
             <!-- View Mode Display -->
             <div x-show="!editing" class="grid gap-4 md:grid-cols-3 pt-1">
-                <div class="md:col-span-3 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 min-w-0">
+                <div class="md:col-span-3 rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 min-w-0">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Street Address</p>
                     <p class="mt-1 break-words text-base font-medium text-[var(--foreground)]">
                         {{ $user->address ?: 'Not provided' }}
@@ -417,11 +417,11 @@
                         </p>
                     @endif
                 </div>
-                <div class="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 min-w-0">
+                <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 min-w-0">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">City</p>
                     <p class="mt-1 break-words text-base font-medium text-[var(--foreground)]">{{ $user->city ?: 'Not provided' }}</p>
                 </div>
-                <div class="md:col-span-2 rounded-2xl border border-[var(--border)] bg-[var(--card)] p-4 min-w-0">
+                <div class="md:col-span-2 rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 min-w-0">
                     <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Area / Neighborhood</p>
                     <p class="mt-1 break-words text-base font-medium text-[var(--foreground)]">{{ $user->area ?: 'Not provided' }}</p>
                 </div>
@@ -433,7 +433,7 @@
                 <input type="hidden" name="longitude" :value="draft.longitude">
 
                 <template x-if="addressInputMode === 'MAP' && draft.latitude && draft.longitude">
-                    <div class="rounded-2xl border border-emerald-300 bg-emerald-50/90 px-4 py-3 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2">
+                    <div class="rounded-lg border border-emerald-300 bg-emerald-50/90 px-4 py-3 text-xs text-emerald-900 flex flex-wrap items-center justify-between gap-2">
                         <div>
                             <span class="font-bold"><i class="fa-solid fa-map-location-dot mr-1"></i>Selected via Location Picker:</span>
                             <span x-text="draft.address"></span>
@@ -442,7 +442,7 @@
                         <button
                             type="button"
                             @click="$dispatch('meramot-open-location-modal')"
-                            class="rounded-full bg-emerald-700 px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-800"
+                            class="rounded-md bg-emerald-700 px-3 py-1 text-[11px] font-bold text-white hover:bg-emerald-800"
                         >
                             Change Pin
                         </button>
@@ -460,7 +460,7 @@
                             x-model="draft.address"
                             @input="if (addressInputMode === 'MANUAL') addressConfirmed = false"
                             placeholder="e.g. House 14, Road 11, Block E, Banani, Dhaka"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
                     </div>
 
@@ -474,7 +474,7 @@
                             x-model="draft.city"
                             autocomplete="address-level2"
                             placeholder="Dhaka"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
                     </div>
 
@@ -488,7 +488,7 @@
                             x-model="draft.area"
                             autocomplete="address-level3"
                             placeholder="Banani, Dhanmondi, Mirpur, Uttara..."
-                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-[var(--card)] px-4 py-3 text-sm md:text-base font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
                     </div>
                 </div>
@@ -499,7 +499,7 @@
                         <button
                             type="button"
                             @click="confirmManualAddress()"
-                            class="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-dark)] bg-white px-4 py-2 text-xs font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                            class="inline-flex items-center gap-1.5 rounded-md border border-[var(--accent-dark)] bg-white px-4 py-2 text-xs font-bold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
                         >
                             <i class="fa-solid fa-circle-check"></i>
                             <span x-text="addressConfirmed && addressInputMode === 'MANUAL' ? 'Manual Address Confirmed' : 'Confirm Manual Address'"></span>
@@ -515,7 +515,7 @@
                 type="button"
                 x-show="!editing"
                 @click="editing = true"
-                class="rounded-full bg-[var(--accent-dark)] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
+                class="rounded-md bg-[var(--accent-dark)] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
             >
                 Edit profile
             </button>
@@ -524,7 +524,7 @@
                 type="submit"
                 x-show="editing"
                 x-cloak
-                class="rounded-full bg-[var(--accent-dark)] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
+                class="rounded-md bg-[var(--accent-dark)] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-95"
             >
                 Save changes
             </button>
@@ -534,7 +534,7 @@
                 x-show="editing"
                 x-cloak
                 @click="window.location.href = '{{ route('profile.show') }}'"
-                class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                class="rounded-md border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
             >
                 Cancel
             </button>
@@ -542,21 +542,21 @@
             @if(($user->role ?? '') === 'vendor')
                 <a
                     href="/vendor/dashboard"
-                    class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                    class="rounded-md border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
                 >
                     Vendor dashboard
                 </a>
             @elseif(($user->role ?? '') === 'admin')
                 <a
                     href="/admin"
-                    class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                    class="rounded-md border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
                 >
                     Admin console
                 </a>
             @else
                 <a
                     href="/orders"
-                    class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
+                    class="rounded-md border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-3 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-100)]"
                 >
                     My orders
                 </a>
@@ -566,7 +566,7 @@
                 <button
                     type="button"
                     @click="showDeleteConfirm = true"
-                    class="rounded-full border border-red-500 bg-[var(--card)] px-6 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+                    class="rounded-md border border-red-500 bg-[var(--card)] px-6 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50"
                 >
                     Delete profile
                 </button>
@@ -579,11 +579,11 @@
     @endphp
     <section
         data-profile-password-card
-        class="mt-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm"
+        class="mt-6 rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm"
     >
         <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
             <div>
-                <h2 class="text-lg font-extrabold text-[var(--foreground)] flex items-center gap-2">
+                <h2 class="text-lg font-semibold text-[var(--foreground)] flex items-center gap-2">
                     <i class="fa-solid fa-shield-halved text-[var(--accent-dark)]"></i>
                     <span>Password &amp; Security</span>
                 </h2>
@@ -591,13 +591,13 @@
                     {{ $hasPassword ? 'Update your password anytime using a strong mix of characters.' : 'Signed up with Google. Set a password if you also want email login.' }}
                 </p>
             </div>
-            <span class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
+            <span class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)]">
                 {{ $hasPassword ? 'Password Active' : 'Google OAuth Only' }}
             </span>
         </div>
 
         @if($errors->has('current_password') || $errors->has('password'))
-            <div class="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 space-y-1">
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-700 space-y-1">
                 @foreach(['current_password', 'password'] as $pwField)
                     @if($errors->has($pwField))
                         <p>{{ $errors->first($pwField) }}</p>
@@ -635,7 +635,7 @@
                             autocomplete="current-password"
                             required
                             placeholder="Enter current password"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] pl-4 pr-16 py-3 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-50)] pl-4 pr-16 py-3 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
                         <button type="button" @click="showCurrent = !showCurrent" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--muted-foreground)]">
                             <span x-text="showCurrent ? 'Hide' : 'Show'">Show</span>
@@ -663,7 +663,7 @@
                             minlength="8"
                             required
                             placeholder="Min. 8 characters"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] pl-4 pr-16 py-3 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-50)] pl-4 pr-16 py-3 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
                         <button type="button" @click="showNew = !showNew" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--muted-foreground)]">
                             <span x-text="showNew ? 'Hide' : 'Show'">Show</span>
@@ -684,7 +684,7 @@
                             minlength="8"
                             required
                             placeholder="Re-enter new password"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-50)] pl-4 pr-16 py-3 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-50)] pl-4 pr-16 py-3 text-sm font-medium text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                         >
                         <button type="button" @click="showConfirm = !showConfirm" class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--muted-foreground)]">
                             <span x-text="showConfirm ? 'Hide' : 'Show'">Show</span>
@@ -703,7 +703,7 @@
             <div class="pt-1 flex flex-wrap items-center justify-end gap-3">
                 <button
                     type="submit"
-                    class="rounded-full bg-[var(--accent-dark)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
+                    class="rounded-md bg-[var(--accent-dark)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
                 >
                     {{ $hasPassword ? 'Update Password' : 'Set Account Password' }}
                 </button>
@@ -714,7 +714,7 @@
     <!-- Delete Profile Confirmation Modal -->
     <div x-show="showDeleteConfirm" x-cloak class="fixed inset-0 z-[120] flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-black/35 backdrop-blur-sm" @click="showDeleteConfirm = false"></div>
-        <div class="relative z-[121] w-full max-w-md rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-8 shadow-2xl">
+        <div class="relative z-[121] w-full max-w-md rounded-lg border border-[var(--border)] bg-[var(--card)] p-8 shadow-2xl">
             <h2 class="text-center text-2xl font-bold text-red-600">
                 Delete profile?
             </h2>
@@ -725,7 +725,7 @@
                 <button
                     type="button"
                     @click="showDeleteConfirm = false"
-                    class="rounded-full border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-50)]"
+                    class="rounded-md border border-[var(--accent-dark)] bg-[var(--card)] px-6 py-2.5 text-sm font-semibold text-[var(--accent-dark)] transition hover:bg-[var(--mint-50)]"
                 >
                     Cancel
                 </button>
@@ -735,7 +735,7 @@
                     <button
                         type="submit"
                         :disabled="deleting"
-                        class="rounded-full bg-red-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+                        class="rounded-md bg-red-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
                     >
                         <span x-text="deleting ? 'Deleting...' : 'Yes, delete'">Yes, delete</span>
                     </button>
@@ -746,7 +746,7 @@
 
     <!-- OTP Verification Modal (Email or Phone) -->
     <div x-show="otpModalOpen" x-cloak class="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div class="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div class="relative w-full max-w-md overflow-hidden rounded-lg bg-white shadow-2xl">
             <button
                 type="button"
                 @click="otpModalOpen = false"
@@ -774,7 +774,7 @@
                             type="button"
                             @click="sendOtpNow()"
                             :disabled="otpSending"
-                            class="w-full rounded-2xl bg-[#244229] py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:opacity-50"
+                            class="w-full rounded-lg bg-[#244229] py-3 text-sm font-semibold text-white transition hover:opacity-95 disabled:opacity-50"
                         >
                             <span x-text="otpSending ? 'Sending...' : 'Send Verification Code'"></span>
                         </button>
@@ -792,13 +792,13 @@
                             x-model="otpCode"
                             maxlength="6"
                             placeholder="123456"
-                            class="mb-4 w-full rounded-2xl border border-slate-300 px-4 py-3 text-center text-lg tracking-[0.25em] outline-none focus:border-[#244229]"
+                            class="mb-4 w-full rounded-lg border border-slate-300 px-4 py-3 text-center text-lg tracking-[0.25em] outline-none focus:border-[#244229]"
                         >
                         <button
                             type="button"
                             @click="verifyOtpNow()"
                             :disabled="otpVerifying"
-                            class="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                            class="w-full rounded-lg bg-emerald-600 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-50"
                         >
                             <span x-text="otpVerifying ? 'Verifying...' : 'Verify Code'"></span>
                         </button>

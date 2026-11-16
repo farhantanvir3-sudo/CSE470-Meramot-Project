@@ -179,7 +179,7 @@
     }"
     @meramot-location-changed.window="applyMapLocation($event.detail)"
 >
-    <div class="rounded-[2rem] border border-white/60 bg-white/90 p-4 sm:p-6 md:p-8 shadow-2xl backdrop-blur">
+    <div class="rounded-lg border border-white/60 bg-white/90 p-4 sm:p-6 md:p-8 shadow-2xl backdrop-blur">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[#58725f]">
             Vendor
         </p>
@@ -193,7 +193,7 @@
         </p>
 
         @if($branches->count() > 1)
-            <div class="mt-5 flex flex-col gap-2 rounded-2xl border border-[var(--border)] bg-[#f6faf4] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="mt-5 flex flex-col gap-2 rounded-lg border border-[var(--border)] bg-[#f6faf4] p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
                     <span class="block text-xs font-bold uppercase tracking-wider text-[#244229]">
                         <i class="fa-solid fa-code-branch mr-1"></i> Active Branch Configuration
@@ -217,7 +217,7 @@
         @endif
 
         @if($errors->any())
-            <div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs md:text-sm text-rose-700 space-y-1">
+            <div class="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs md:text-sm text-rose-700 space-y-1">
                 @foreach($errors->all() as $error)
                     <div>• {{ $error }}</div>
                 @endforeach
@@ -236,16 +236,16 @@
             <input type="hidden" name="shop_id" value="{{ $primaryShop->id ?? '' }}">
 
             <!-- 1. Shop Identity -->
-            <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
+            <section class="rounded-lg bg-[#f6faf4] p-5 md:p-6">
                 <h2 class="text-lg font-semibold text-[#244229]">Shop identity</h2>
 
                 <div class="mt-4 grid gap-4 md:grid-cols-[auto_1fr] items-center">
                     <div class="flex flex-col sm:flex-row items-center gap-4">
-                        <div class="relative h-24 w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[var(--border)] bg-[var(--mint-50)]">
+                        <div class="relative h-24 w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--mint-50)]">
                             <template x-if="logoPreview">
                                 <div class="h-full w-full relative">
                                     <img :src="logoPreview" alt="Shop Logo" class="h-full w-full object-cover">
-                                    <button type="button" @click="logoPreview = ''; if ($refs.setupLogo) $refs.setupLogo.value = ''" class="absolute right-1 top-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-red-600">✕</button>
+                                    <button type="button" @click="logoPreview = ''; if ($refs.setupLogo) $refs.setupLogo.value = ''" class="absolute right-1 top-1 rounded bg-black/60 px-2 py-0.5 text-xs text-white hover:bg-red-600">✕</button>
                                 </div>
                             </template>
                             <template x-if="!logoPreview">
@@ -262,11 +262,11 @@
                         </div>
                     </div>
 
-                    <div class="relative h-24 md:h-28 w-full overflow-hidden rounded-[1.5rem] border-2 border-dashed border-[var(--border)] bg-white/80">
+                    <div class="relative h-24 md:h-28 w-full overflow-hidden rounded-lg border-2 border-dashed border-[var(--border)] bg-white/80">
                         <template x-if="bannerPreview">
                             <div class="h-full w-full relative">
                                 <img :src="bannerPreview" alt="Storefront Cover Banner" class="h-full w-full object-cover">
-                                <button type="button" @click="bannerPreview = ''; if ($refs.setupBanner) $refs.setupBanner.value = ''" class="absolute right-2 top-2 rounded-full bg-black/65 px-2.5 py-0.5 text-xs font-bold text-white hover:bg-red-600">✕ Remove Cover</button>
+                                <button type="button" @click="bannerPreview = ''; if ($refs.setupBanner) $refs.setupBanner.value = ''" class="absolute right-2 top-2 rounded bg-black/65 px-2.5 py-0.5 text-xs font-bold text-white hover:bg-red-600">✕ Remove Cover</button>
                             </div>
                         </template>
                         <template x-if="!bannerPreview">
@@ -289,7 +289,7 @@
                             x-model="shopName"
                             required
                             placeholder="Enter your shop name"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
 
@@ -304,7 +304,7 @@
                             maxlength="14"
                             required
                             placeholder="01XXXXXXXXX"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
 
@@ -315,20 +315,20 @@
                             x-model="description"
                             rows="3"
                             placeholder="Tell customers what your workshop specializes in"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         ></textarea>
                     </label>
                 </div>
             </section>
 
             <!-- 2. Shop Location -->
-            <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
+            <section class="rounded-lg bg-[#f6faf4] p-5 md:p-6">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <h2 class="text-lg font-semibold text-[#244229]">Shop location</h2>
                     <button
                         type="button"
                         @click="$dispatch('meramot-open-location-modal')"
-                        class="inline-flex items-center gap-2 rounded-2xl bg-[#e4fcd5] border border-[var(--border)] px-4 py-2.5 text-xs font-bold text-[#1f3a2d] hover:bg-[#c8e7c5] transition"
+                        class="inline-flex items-center gap-2 rounded-lg bg-[#e4fcd5] border border-[var(--border)] px-4 py-2.5 text-xs font-bold text-[#1f3a2d] hover:bg-[#c8e7c5] transition"
                     >
                         <i class="fa-solid fa-location-dot"></i>
                         <span x-text="lat && lng ? 'Update location on map' : 'Pin exact location on map'"></span>
@@ -354,7 +354,7 @@
                             x-model="address"
                             required
                             placeholder="Full public storefront address"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </div>
 
@@ -374,7 +374,7 @@
             </section>
 
             <!-- 3. Store Capabilities & Fulfillment Modes -->
-            <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
+            <section class="rounded-lg bg-[#f6faf4] p-5 md:p-6">
                 <div class="flex flex-wrap items-baseline justify-between gap-2">
                     <div>
                         <h2 class="text-lg font-semibold text-[#244229]">Store capabilities &amp; fulfillment modes</h2>
@@ -386,7 +386,7 @@
                 <div class="mt-4 grid gap-3 md:grid-cols-3">
                     <label
                         :class="capCourier ? 'border-[#244229] bg-white ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white/80'"
-                        class="flex items-start gap-3 rounded-2xl border p-4 text-sm text-slate-700 cursor-pointer transition"
+                        class="flex items-start gap-3 rounded-lg border p-4 text-sm text-slate-700 cursor-pointer transition"
                     >
                         <input type="checkbox" name="courier_pickup" value="1" x-model="capCourier" {{ old('courier_pickup', $profile->courier_pickup ?? ($primaryShop?->supportsCourierPickup() ?? false)) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
                         <div>
@@ -396,7 +396,7 @@
                     </label>
                     <label
                         :class="capInShop ? 'border-[#244229] bg-white ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white/80'"
-                        class="flex items-start gap-3 rounded-2xl border p-4 text-sm text-slate-700 cursor-pointer transition"
+                        class="flex items-start gap-3 rounded-lg border p-4 text-sm text-slate-700 cursor-pointer transition"
                     >
                         <input type="checkbox" name="in_shop_repair" value="1" x-model="capInShop" {{ old('in_shop_repair', $profile->in_shop_repair ?? ($primaryShop?->supportsInShopRepair() ?? true)) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
                         <div>
@@ -406,7 +406,7 @@
                     </label>
                     <label
                         :class="capSpareParts ? 'border-[#244229] bg-white ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white/80'"
-                        class="flex items-start gap-3 rounded-2xl border p-4 text-sm text-slate-700 cursor-pointer transition"
+                        class="flex items-start gap-3 rounded-lg border p-4 text-sm text-slate-700 cursor-pointer transition"
                     >
                         <input type="checkbox" name="spare_parts" value="1" x-model="capSpareParts" {{ old('spare_parts', $profile->spare_parts ?? ($primaryShop?->supportsSpareParts() ?? false)) ? 'checked' : '' }} class="mt-0.5 h-4 w-4 accent-[#244229] shrink-0">
                         <div>
@@ -416,17 +416,17 @@
                     </label>
                 </div>
 
-                <div x-show="capError" x-cloak class="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-800" x-text="capError"></div>
+                <div x-show="capError" x-cloak class="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-800" x-text="capError"></div>
             </section>
 
             <!-- 4. Your Pricing -->
-            <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
+            <section class="rounded-lg bg-[#f6faf4] p-5 md:p-6">
                 <h2 class="text-lg font-semibold text-[#244229]">Your pricing</h2>
                 <p class="mt-1 text-xs md:text-sm text-slate-600">
                     Configure your standard rates below. Workshops are published only with merchant-confirmed pricing.
                 </p>
 
-                <div x-show="isPureSparePartsWholesaler" x-cloak class="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-xs text-emerald-950">
+                <div x-show="isPureSparePartsWholesaler" x-cloak class="mt-3 rounded-lg border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-xs text-emerald-950">
                     <i class="fa-solid fa-boxes-stacked mr-1.5 text-emerald-700"></i>
                     <strong>Spare Parts Wholesaler / Store Mode active:</strong> inspection and base labor fees are optional and default to ৳0 for pure parts storefronts.
                 </div>
@@ -445,7 +445,7 @@
                             onwheel="this.blur()"
                             :required="!isPureSparePartsWholesaler"
                             placeholder="e.g. 300"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
 
@@ -462,7 +462,7 @@
                             onwheel="this.blur()"
                             :required="!isPureSparePartsWholesaler"
                             placeholder="e.g. 500"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
 
@@ -478,7 +478,7 @@
                             value="{{ $formatRateInput(old('pickup_fee', $primaryShop->pickup_fee ?? '')) }}"
                             onwheel="this.blur()"
                             placeholder="e.g. 120"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
 
@@ -492,13 +492,13 @@
                             value="{{ $formatRateInput(old('express_fee', $primaryShop->express_fee ?? '')) }}"
                             onwheel="this.blur()"
                             placeholder="e.g. 250"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
                 </div>
 
                 @if($branches->count() > 1)
-                    <label class="mt-4 flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-xs sm:text-sm font-medium text-slate-700 cursor-pointer">
+                    <label class="mt-4 flex items-center gap-3 rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-xs sm:text-sm font-medium text-slate-700 cursor-pointer">
                         <input
                             type="checkbox"
                             name="sync_pricing_all_branches"
@@ -512,7 +512,7 @@
             </section>
 
             <!-- 5. Fixed-Price Services & Packages -->
-            <section class="rounded-3xl bg-[#f6faf4] p-5 md:p-6">
+            <section class="rounded-lg bg-[#f6faf4] p-5 md:p-6">
                 <div class="flex flex-wrap items-start justify-between gap-2">
                     <div class="min-w-0">
                         <h2 class="text-lg font-semibold text-[#244229]">Fixed-price services &amp; packages</h2>
@@ -520,7 +520,7 @@
                             Publish services customers can book instantly at a set price. This is optional — without fixed-price items, customers can still request custom quotes.
                         </p>
                     </div>
-                    <span class="shrink-0 rounded-full border border-[var(--border)] bg-white px-3 py-1 text-xs font-bold text-[#244229]" x-text="services.length + (services.length === 1 ? ' item' : ' items')"></span>
+                    <span class="shrink-0 rounded-md border border-[var(--border)] bg-white px-3 py-1 text-xs font-bold text-[#244229]" x-text="services.length + (services.length === 1 ? ' item' : ' items')"></span>
                 </div>
 
                 <!-- Meramot Platform Fixed-Price Packages Opt-In -->
@@ -533,7 +533,7 @@
                 </div>
 
                 <!-- Suggestions derived from onboarding specialty tags -->
-                <div class="mt-4 rounded-2xl border border-dashed border-[#b9d3b6] bg-white/70 p-4" x-show="suggestions.length > 0">
+                <div class="mt-4 rounded-lg border border-dashed border-[#b9d3b6] bg-white/70 p-4" x-show="suggestions.length > 0">
                     <p class="text-xs font-semibold uppercase tracking-wide text-[#58725f]">
                         <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>
                         Suggested for your specialties
@@ -551,7 +551,7 @@
                                 type="button"
                                 x-show="!isAdded(sug.name)"
                                 @click="useSuggestion(sug)"
-                                class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-[var(--border)] bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:border-[#244229] hover:bg-[var(--mint-100)]"
+                                class="inline-flex max-w-full items-center gap-1.5 rounded-md border border-[var(--border)] bg-white px-3 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:border-[#244229] hover:bg-[var(--mint-100)]"
                                 :title="'Typical market price around ৳' + Number(sug.hint).toLocaleString()"
                             >
                                 <i class="fa-solid fa-plus text-[10px] text-[#244229]"></i>
@@ -563,7 +563,7 @@
                 </div>
 
                 <!-- Add / edit form -->
-                <div class="mt-4 rounded-2xl border border-[var(--border)] bg-white p-4">
+                <div class="mt-4 rounded-lg border border-[var(--border)] bg-white p-4">
                     <p class="text-sm font-semibold text-slate-800" x-text="editingIndex !== null ? 'Edit service' : 'Add a service or package'"></p>
                     <div class="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_10rem]">
                         <div class="relative min-w-0">
@@ -577,7 +577,7 @@
                                 @blur="setTimeout(() => showSuggestions = false, 180)"
                                 @keydown.enter.prevent="addService()"
                                 placeholder="e.g. iPhone 13 Screen Replacement"
-                                class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                                class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                             >
                             <div x-show="showSuggestions && serviceName.trim() !== '' && filteredSuggestions().length > 0" x-cloak class="absolute left-0 right-0 top-full z-20 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[var(--border)] bg-white p-1 shadow-lg">
                                 <template x-for="sug in filteredSuggestions()" :key="'dd-' + sug.name">
@@ -604,7 +604,7 @@
                                     onwheel="this.blur()"
                                     @keydown.enter.prevent="addService()"
                                     :placeholder="priceHint ? ('e.g. ' + priceHint) : 'Price'"
-                                    class="w-full rounded-2xl border border-[var(--border)] bg-white py-3 pl-8 pr-3 text-sm outline-none focus:border-[#244229]"
+                                    class="w-full rounded-lg border border-[var(--border)] bg-white py-3 pl-8 pr-3 text-sm outline-none focus:border-[#244229]"
                                 >
                             </div>
                         </div>
@@ -618,7 +618,7 @@
                             maxlength="400"
                             @keydown.enter.prevent="addService()"
                             placeholder="e.g. Genuine part, 90-day warranty, same-day service"
-                            class="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
+                            class="w-full rounded-lg border border-[var(--border)] bg-white px-4 py-3 text-sm outline-none focus:border-[#244229]"
                         >
                     </label>
 
@@ -632,21 +632,21 @@
                             type="button"
                             x-show="editingIndex !== null || serviceName || servicePrice || serviceDescription"
                             @click="resetServiceForm()"
-                            class="h-11 rounded-2xl border border-[var(--border)] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[var(--mint-100)]"
+                            class="h-11 rounded-lg border border-[var(--border)] bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-[var(--mint-100)]"
                         >
                             Cancel
                         </button>
                         <button
                             type="button"
                             @click="addService()"
-                            class="h-11 rounded-2xl bg-[#244229] px-5 text-sm font-bold text-white transition hover:opacity-95"
+                            class="h-11 rounded-lg bg-[#244229] px-5 text-sm font-bold text-white transition hover:opacity-95"
                             x-text="editingIndex !== null ? 'Save changes' : '+ Add to list'"
                         ></button>
                     </div>
                 </div>
 
                 <!-- Published list -->
-                <div x-show="services.length === 0" class="mt-4 rounded-2xl border border-dashed border-[var(--border)] bg-white/60 px-4 py-6 text-center">
+                <div x-show="services.length === 0" class="mt-4 rounded-lg border border-dashed border-[var(--border)] bg-white/60 px-4 py-6 text-center">
                     <i class="fa-solid fa-box-open text-xl text-slate-300"></i>
                     <p class="mt-2 text-sm font-medium text-slate-600">No fixed-price services yet</p>
                     <p class="mt-1 text-xs text-slate-500">Pick a suggestion above or add your own to start receiving direct orders.</p>
@@ -681,13 +681,13 @@
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
                 <a
                     href="{{ route('vendor.onboarding') }}"
-                    class="rounded-2xl border border-[var(--border)] bg-white px-6 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-[var(--mint-100)]"
+                    class="rounded-lg border border-[var(--border)] bg-white px-6 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-[var(--mint-100)]"
                 >
                     Back to onboarding
                 </a>
                 <button
                     type="submit"
-                    class="rounded-2xl bg-[#244229] px-6 py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
+                    class="rounded-lg bg-[#244229] px-6 py-3 text-sm font-semibold text-white shadow transition hover:opacity-95"
                 >
                     {{ $isEditMode ? 'Save vendor details' : 'Save shop setup & Go Live' }}
                 </button>

@@ -44,20 +44,20 @@
     @endif
 
     <!-- View Mode: Pre-submitted Itemized Quote Summary + Edit Toggle -->
-    <div x-show="existingBid && !editing" x-cloak class="rounded-2xl border border-emerald-600/40 bg-[var(--mint-100)]/70 p-3.5 space-y-2.5">
+    <div x-show="existingBid && !editing" x-cloak class="rounded-lg border border-emerald-600/40 bg-[var(--mint-100)]/70 p-3.5 space-y-2.5">
         <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
-                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-800 px-2.5 py-0.5 text-[10px] font-black uppercase text-white">
+                <span class="inline-flex items-center gap-1 rounded bg-emerald-800 px-2.5 py-0.5 text-[10px] font-bold uppercase text-white">
                     <i class="fa-solid fa-check"></i> Submitted Estimate
                 </span>
                 <p class="mt-1 text-[11px] font-semibold text-[var(--muted-foreground)]" x-text="(@js($shopNamesMap)[selectedShopId] || 'Your Branch') + ' • ' + estimatedDays + 'd turnaround'"></p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <span class="text-base font-black text-[var(--accent-dark)]">৳<span x-text="formatMoney(existingBid ? existingBid.proposed_cost : 0)">0.00</span></span>
+                <span class="text-base font-bold text-[var(--accent-dark)]">৳<span x-text="formatMoney(existingBid ? existingBid.proposed_cost : 0)">0.00</span></span>
                 <button
                     type="button"
                     @click="startEdit()"
-                    class="rounded-full border border-[var(--accent-dark)] bg-white px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--accent-dark)] hover:text-white transition"
+                    class="rounded-md border border-[var(--accent-dark)] bg-white px-3 py-1 text-[11px] font-bold text-[var(--accent-dark)] hover:bg-[var(--accent-dark)] hover:text-white transition"
                 >
                     <i class="fa-solid fa-pen-to-square mr-1"></i>Edit Quote
                 </button>
@@ -70,7 +70,7 @@
                         class="inline"
                     >
                         @csrf
-                        <button type="submit" class="rounded-full border border-rose-300 bg-rose-50 px-3 py-1 text-[11px] font-bold text-rose-800 hover:bg-rose-100 transition">
+                        <button type="submit" class="rounded-md border border-rose-300 bg-rose-50 px-3 py-1 text-[11px] font-bold text-rose-800 hover:bg-rose-100 transition">
                             Withdraw
                         </button>
                     </form>
@@ -79,13 +79,13 @@
         </div>
 
         <div class="rounded-xl border border-[var(--border)]/60 bg-[var(--card)] p-2.5 space-y-1.5">
-            <span class="block text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">Parts Breakdown</span>
+            <span class="block text-[10px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">Parts Breakdown</span>
             <template x-for="(part, idx) in (existingBid ? existingBid.parts_items : [])" :key="idx">
                 <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[11px]">
                     <div class="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
                         <span class="text-[var(--foreground)] break-words" x-text="(idx + 1) + '. ' + part.name"></span>
                         <span
-                            class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0"
+                            class="inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold shrink-0"
                             :class="(part.has_warranty && Number(part.warranty_days) > 0) ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--mint-100)] text-[var(--muted-foreground)] border border-[var(--border)]'"
                         >
                             <i :class="(part.has_warranty && Number(part.warranty_days) > 0) ? 'fa-solid fa-shield-halved text-[9px] text-emerald-700' : 'fa-regular fa-circle-xmark text-[9px]'"></i>
@@ -110,7 +110,7 @@
 
         <div class="flex flex-wrap items-center justify-between gap-2 text-[11px]">
             <span
-                class="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-bold"
+                class="inline-flex items-center gap-1 rounded px-2.5 py-0.5 font-bold"
                 :class="(existingBid && existingBid.has_warranty) ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-[var(--card)] text-[var(--muted-foreground)] border border-[var(--border)]'"
             >
                 <i :class="(existingBid && existingBid.has_warranty) ? 'fa-solid fa-shield-halved text-emerald-700' : 'fa-regular fa-circle-xmark'"></i>
@@ -178,7 +178,7 @@
         <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border)]/70 bg-[var(--mint-100)]/70 px-3 py-2">
             <div>
                 <span class="block text-[10px] font-bold uppercase text-[var(--muted-foreground)]">Total Quote Estimate</span>
-                <span class="text-sm font-black text-[var(--accent-dark)]">৳<span x-text="formatMoney(totalEstimate)">0.00</span></span>
+                <span class="text-sm font-bold text-[var(--accent-dark)]">৳<span x-text="formatMoney(totalEstimate)">0.00</span></span>
             </div>
             <div class="flex items-center gap-2">
                 <button
@@ -186,13 +186,13 @@
                     x-cloak
                     type="button"
                     @click="cancelEdit()"
-                    class="rounded-full border border-[var(--border)] bg-[var(--card)] px-3.5 py-2 text-[11px] font-bold text-[var(--foreground)] hover:opacity-80 transition"
+                    class="rounded-md border border-[var(--border)] bg-[var(--card)] px-3.5 py-2 text-[11px] font-bold text-[var(--foreground)] hover:opacity-80 transition"
                 >
                     Cancel
                 </button>
                 <button
                     type="submit"
-                    class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-white shadow hover:opacity-90 transition"
+                    class="rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-white shadow hover:opacity-90 transition"
                     x-text="existingBid ? 'Update Itemized Quote' : 'Submit Itemized Estimate →'"
                 ></button>
             </div>

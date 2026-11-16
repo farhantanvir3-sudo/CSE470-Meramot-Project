@@ -4,6 +4,7 @@
   "description": "Frontend views, Tailwind styling, and reactive interface for Meramot Repair Marketplace",
   "main": "src/index.js",
   "scripts": {
+    "build:app-css": "tailwindcss -i ./src/styles/main.css -o ./src/styles/compiled.css --minify",
     "build:css": "tailwindcss -i ./src/styles/main.css -o ./public/dist/styles.css --minify",
     "watch:css": "tailwindcss -i ./src/styles/main.css -o ./public/dist/styles.css --watch"
   },
