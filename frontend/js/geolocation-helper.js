@@ -499,24 +499,116 @@ const MeramotGeolocation = {
         });
     },
 
-    async getCurrentPosition() {
+    async getCurrentPosition(options = {}) {
         try {
-            return await this.requestPosition({
-                enableHighAccuracy: true,
-                timeout: 4500,
-                maximumAge: 300000 // 5 minutes cache
-            });
+            return await this.watchForBestFix(options);
         } catch (primaryError) {
             if (primaryError && primaryError.code === 1) {
                 throw primaryError;
             }
-            // Indoor / mobile coarse network-based fallback when high-accuracy GPS times out or fails
+            // Indoor / no-satellite fallback: accept a recent network-based fix rather than failing outright
             return await this.requestPosition({
                 enableHighAccuracy: false,
-                timeout: 5000,
-                maximumAge: 600000 // 10 minutes cache
+                timeout: 6000,
+                maximumAge: 120000
             });
         }
+    },
+
+    /**
+     * Collect fresh fixes for a short window and keep the most precise one.
+     * The first fix a device reports is usually a coarse Wi-Fi / cell estimate; real GPS
+     * readings typically arrive a few seconds later and are far tighter.
+     *
+     * @param {{desiredAccuracy?: number, maxWaitMs?: number, onProgress?: Function}} options
+     */
+    watchForBestFix({ desiredAccuracy = 20, maxWaitMs = 12000, onProgress = null } = {}) {
+        return new Promise((resolve, reject) => {
+            if (!this.isSupported()) {
+                const err = new Error('GPS is not available in this browser.');
+                err.code = 0;
+                reject(err);
+                return;
+            }
+
+            let best = null;
+            let settled = false;
+            let watchId = null;
+            let timer = null;
+
+            const finish = (result, error) => {
+                if (settled) return;
+                settled = true;
+                if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+                if (timer) clearTimeout(timer);
+                if (result) resolve(result);
+                else reject(error);
+            };
+
+            const toFix = (position) => ({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: position.timestamp
+            });
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const fix = toFix(position);
+                    if (!Number.isFinite(fix.lat) || !Number.isFinite(fix.lng) || !Number.isFinite(fix.accuracy)) return;
+
+                    // Keep only readings that are tighter than what we already have
+                    if (best && fix.accuracy >= best.accuracy) return;
+                    best = fix;
+                    if (typeof onProgress === 'function') {
+                        try { onProgress(fix); } catch (e) { /* UI callback errors must not break GPS */ }
+                    }
+                    if (fix.accuracy <= desiredAccuracy) {
+                        finish(fix);
+                    }
+                },
+                (error) => {
+                    // Permission denied ends immediately; transient errors keep waiting for a later fix
+                    if (error.code === error.PERMISSION_DENIED) {
+                        const err = new Error('Location access is disabled. Tap anywhere on the map or search an area to set your address.');
+                        err.code = error.code;
+                        finish(null, err);
+                    }
+                },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: maxWaitMs }
+            );
+
+            timer = setTimeout(() => {
+                if (best) {
+                    finish(best);
+                } else {
+                    const err = new Error('Location lookup timed out. Tap anywhere on the map to pin your location.');
+                    err.code = 3;
+                    finish(null, err);
+                }
+            }, maxWaitMs);
+        });
+    },
+
+    /**
+     * Human-readable precision label for a fix accuracy radius in metres.
+     */
+    describeAccuracy(accuracyMeters) {
+        if (!Number.isFinite(accuracyMeters)) return '';
+        if (accuracyMeters < 1000) return `Accurate to about ${Math.max(1, Math.round(accuracyMeters))} m`;
+        return `Accurate to about ${(accuracyMeters / 1000).toFixed(1)} km`;
+    },
+
+    /**
+     * Map zoom level that comfortably frames a fix of the given accuracy.
+     */
+    zoomForAccuracy(accuracyMeters) {
+        if (!Number.isFinite(accuracyMeters)) return 15;
+        if (accuracyMeters <= 30) return 18;
+        if (accuracyMeters <= 80) return 17;
+        if (accuracyMeters <= 250) return 16;
+        if (accuracyMeters <= 1000) return 15;
+        return 14;
     },
 
     /**
@@ -631,7 +723,8 @@ const MeramotGeolocation = {
         }
 
         try {
-            const position = await this.getCurrentPosition();
+            // Nearby-shop distances only need neighbourhood precision, so settle faster here
+            const position = await this.getCurrentPosition({ desiredAccuracy: 100, maxWaitMs: 7000 });
             this.updateUrlWithLocation(position.lat, position.lng);
             // Persist resolved coordinates & neighborhood asynchronously without triggering a second reload
             if (window.MeramotLocationPicker && typeof MeramotLocationPicker.reverseGeocode === 'function') {
@@ -668,6 +761,7 @@ const MeramotGeolocation = {
 const MeramotLocationPicker = {
     mapInstance: null,
     markerInstance: null,
+    accuracyCircle: null,
     resizeObserver: null,
     draftLocation: null,
     callbacks: {},
@@ -1091,6 +1185,8 @@ const MeramotLocationPicker = {
 
             const handleCoordinatePick = async (lat, lng, source = 'map') => {
                 marker.setLatLng([lat, lng]);
+                // A manually placed pin is exact, so the GPS uncertainty ring no longer applies
+                this.clearAccuracyCircle();
                 this.callbacks.onLoading?.(true);
                 const resolved = await this.reverseGeocode(lat, lng, source);
                 this.draftLocation = resolved;
@@ -1123,6 +1219,7 @@ const MeramotLocationPicker = {
             if (this.markerInstance) {
                 this.markerInstance.setLatLng([startLat, startLng]);
             }
+            this.clearAccuracyCircle();
         }
 
         [40, 160, 350].forEach((delay) => {
@@ -1135,9 +1232,10 @@ const MeramotLocationPicker = {
     },
 
     /**
-     * Fly map & marker to specific coordinates
+     * Fly map & marker to specific coordinates. When a GPS accuracy radius is supplied,
+     * a subtle circle shows how precise the fix is so the user can fine-tune the pin.
      */
-    async flyToLocation(lat, lng, zoom = 15) {
+    async flyToLocation(lat, lng, zoom = 15, accuracyMeters = null) {
         if (!this.mapInstance) {
             await this.initOrRefreshMap('meramot-leaflet-map', this.callbacks);
         }
@@ -1146,6 +1244,36 @@ const MeramotLocationPicker = {
         this.mapInstance.flyTo([lat, lng], zoom, { duration: 0.6 });
         if (this.markerInstance) {
             this.markerInstance.setLatLng([lat, lng]);
+        }
+        this.showAccuracyCircle(lat, lng, accuracyMeters);
+    },
+
+    showAccuracyCircle(lat, lng, accuracyMeters) {
+        if (!this.mapInstance || typeof window.L === 'undefined') return;
+        if (!Number.isFinite(accuracyMeters) || accuracyMeters <= 0) {
+            this.clearAccuracyCircle();
+            return;
+        }
+        if (this.accuracyCircle) {
+            this.accuracyCircle.setLatLng([lat, lng]);
+            this.accuracyCircle.setRadius(accuracyMeters);
+        } else {
+            this.accuracyCircle = L.circle([lat, lng], {
+                radius: accuracyMeters,
+                color: '#244229',
+                weight: 1,
+                opacity: 0.45,
+                fillColor: '#244229',
+                fillOpacity: 0.08,
+                interactive: false
+            }).addTo(this.mapInstance);
+        }
+    },
+
+    clearAccuracyCircle() {
+        if (this.accuracyCircle) {
+            this.accuracyCircle.remove();
+            this.accuracyCircle = null;
         }
     }
 };

@@ -284,45 +284,57 @@ function meramotRiderMap() {
             }
         },
 
-        updateMyLocation() {
+        async updateMyLocation() {
             if (!navigator.geolocation) {
                 this.errorMsg = 'Browser geolocation is not supported on this device.';
                 return;
             }
             this.updatingLocation = true;
             this.errorMsg = '';
-            navigator.geolocation.getCurrentPosition(
-                async (pos) => {
-                    try {
-                        const lat = pos.coords.latitude;
-                        const lng = pos.coords.longitude;
-                        const resp = await fetch('/delivery/location', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                            },
-                            body: JSON.stringify({ latitude: lat, longitude: lng })
-                        });
-                        if (resp.ok) {
-                            this.riderLat = lat;
-                            this.riderLng = lng;
-                            this.renderRiderPin();
-                            this.map.flyTo([lat, lng], 14);
-                        }
-                    } catch (err) {
-                        this.errorMsg = 'Could not sync GPS coordinates.';
-                    } finally {
-                        this.updatingLocation = false;
-                    }
-                },
-                () => {
-                    this.errorMsg = 'Location permission denied by browser.';
-                    this.updatingLocation = false;
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
+
+            // Prefer the shared best-fix routine (waits for satellite GPS instead of the first coarse estimate)
+            let pos;
+            try {
+                if (window.MeramotGeolocation && typeof window.MeramotGeolocation.getCurrentPosition === 'function') {
+                    pos = await window.MeramotGeolocation.getCurrentPosition({ desiredAccuracy: 15, maxWaitMs: 12000 });
+                } else {
+                    pos = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
+                        (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+                        reject,
+                        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+                    ));
+                }
+            } catch (geoErr) {
+                this.errorMsg = geoErr && geoErr.code === 1
+                    ? 'Location permission denied by browser.'
+                    : 'Could not get a GPS fix. Move near a window or outdoors and try again.';
+                this.updatingLocation = false;
+                return;
+            }
+
+            try {
+                const lat = pos.lat;
+                const lng = pos.lng;
+                const resp = await fetch('/delivery/location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ latitude: lat, longitude: lng })
+                });
+                if (resp.ok) {
+                    this.riderLat = lat;
+                    this.riderLng = lng;
+                    this.renderRiderPin();
+                    this.map.flyTo([lat, lng], window.MeramotGeolocation ? window.MeramotGeolocation.zoomForAccuracy(pos.accuracy) : 16);
+                }
+            } catch (err) {
+                this.errorMsg = 'Could not sync GPS coordinates.';
+            } finally {
+                this.updatingLocation = false;
+            }
         }
     };
 }

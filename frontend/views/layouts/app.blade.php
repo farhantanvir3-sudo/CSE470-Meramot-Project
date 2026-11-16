@@ -459,6 +459,13 @@
     locationLoading: false,
     locationSaving: false,
     locationError: '',
+    gpsAccuracy: null,
+    get gpsAccuracyLabel() {
+        if (!Number.isFinite(this.gpsAccuracy) || !window.MeramotGeolocation) return '';
+        const base = window.MeramotGeolocation.describeAccuracy(this.gpsAccuracy);
+        if (this.locationLoading) return base + ' · refining…';
+        return this.gpsAccuracy > 60 ? base + ' · drag the pin to fine-tune' : base;
+    },
     mapSearchQuery: '',
     mapDistrictFilter: 'Dhaka',
     mapAreaSelect: '',
@@ -499,6 +506,7 @@
     },
     openLocationModal() {
         this.locationError = '';
+        this.gpsAccuracy = null;
         this.draftLocation = this.selectedLocation || (window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null) || {
             address: 'Road 11, Banani, Dhaka 1213',
             city: 'Dhaka',
@@ -521,6 +529,7 @@
                 window.MeramotLocationPicker.initOrRefreshMap('meramot-leaflet-map', {
                     onDraftChange: (loc) => {
                         this.locationError = '';
+                        this.gpsAccuracy = null;
                         this.draftLocation = loc;
                     },
                     onLoading: (loading) => {
@@ -538,8 +547,18 @@
         this.locationLoading = true;
         this.locationError = '';
         try {
-            const pos = await window.MeramotGeolocation.getCurrentPosition();
-            window.MeramotLocationPicker.flyToLocation(pos.lat, pos.lng, 15);
+            const geo = window.MeramotGeolocation;
+            // Move the pin live as the device's fix tightens (Wi-Fi estimate -> satellite GPS)
+            const pos = await geo.getCurrentPosition({
+                desiredAccuracy: 20,
+                maxWaitMs: 12000,
+                onProgress: (fix) => {
+                    this.gpsAccuracy = fix.accuracy;
+                    window.MeramotLocationPicker.flyToLocation(fix.lat, fix.lng, geo.zoomForAccuracy(fix.accuracy), fix.accuracy);
+                }
+            });
+            this.gpsAccuracy = pos.accuracy;
+            window.MeramotLocationPicker.flyToLocation(pos.lat, pos.lng, geo.zoomForAccuracy(pos.accuracy), pos.accuracy);
             const resolved = await window.MeramotLocationPicker.reverseGeocode(pos.lat, pos.lng, 'gps');
             this.draftLocation = resolved;
             window.MeramotLocationPicker.draftLocation = resolved;
@@ -621,6 +640,7 @@
             if (!found) {
                 this.locationError = 'Unable to locate that address automatically. Please pin your location on the map or select a service hub.';
             } else {
+                this.gpsAccuracy = null;
                 this.draftLocation = found;
                 this.mapDistrictFilter = window.MeramotLocationCatalog ? window.MeramotLocationCatalog.findDistrict(found.city) : (found.city || 'Dhaka');
                 this.mapAreaSelect = found.area || '';
@@ -635,6 +655,7 @@
     },
     selectQuickHub(hub) {
         this.locationError = '';
+        this.gpsAccuracy = null;
         const canonicalCity = (window.MeramotLocationCatalog && hub.city)
             ? window.MeramotLocationCatalog.findDistrict(hub.city)
             : (hub.city || 'Dhaka');
@@ -1662,6 +1683,9 @@
                             </span>
                             <span class="rounded-md border border-[#244229]/15 dark:border-white/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">GPS</span>
                         </button>
+                        <p x-show="gpsAccuracyLabel" x-cloak class="-mt-0.5 px-1 text-[10.5px] font-medium text-[var(--muted-foreground)]">
+                            <i class="fa-solid fa-bullseye mr-1 text-[9px] text-[var(--accent-dark)] opacity-80"></i><span x-text="gpsAccuracyLabel"></span>
+                        </p>
 
                         <button
                             type="button"
