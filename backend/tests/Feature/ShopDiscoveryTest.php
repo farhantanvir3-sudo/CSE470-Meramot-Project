@@ -256,7 +256,7 @@ class ShopDiscoveryTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('ProTech Solutions');
         $response->assertDontSee('Budget Fix Center');
-        $response->assertSee('Sale');
+        $response->assertSee('Active Sale');
 
         // 2. Also with has_sale=true
         $altResponse = $this->get('/shops/explore?has_sale=true');
@@ -270,5 +270,89 @@ class ShopDiscoveryTest extends TestCase
         $apiShops = collect($apiResponse->json('data.data'));
         $this->assertTrue($apiShops->contains('name', 'ProTech Solutions'));
         $this->assertFalse($apiShops->contains('name', 'Budget Fix Center'));
+    }
+
+    /** @test */
+    public function it_filters_shops_by_active_service_deals_and_renders_deal_badges_and_strikethrough()
+    {
+        $proTech = RepairShop::where('name', 'ProTech Solutions')->first();
+        $budget = RepairShop::where('name', 'Budget Fix Center')->first();
+
+        // ProTech publishes a service with an active promotional deal
+        \App\Models\ShopService::create([
+            'shop_id' => $proTech->id,
+            'slug' => 'thermal-paste-deal',
+            'name' => 'Thermal Paste & Deep Cleaning',
+            'short_description' => 'Component-level thermal paste replacement and fan tuning.',
+            'device_type' => 'Laptop',
+            'issue_category' => 'Cooling',
+            'pricing_type' => 'STARTING_FROM',
+            'base_price' => 500,
+            'regular_price' => 800,
+            'deal_enabled' => true,
+            'deal_price' => 500,
+            'deal_discount_pct' => 38,
+            'deal_starts_at' => now()->subDays(2),
+            'deal_ends_at' => now()->addDays(7),
+            'is_active' => true,
+        ]);
+
+        // Budget Fix Center has a service, but NO active deal
+        \App\Models\ShopService::create([
+            'shop_id' => $budget->id,
+            'slug' => 'budget-screen-repair',
+            'name' => 'Standard Screen Repair',
+            'short_description' => 'Regular screen repair service.',
+            'device_type' => 'Smartphone',
+            'issue_category' => 'Screen',
+            'pricing_type' => 'FIXED',
+            'base_price' => 1200,
+            'regular_price' => null,
+            'deal_enabled' => false,
+            'is_active' => true,
+        ]);
+
+        $this->assertTrue($proTech->fresh()->hasActiveServiceDeals());
+        $this->assertFalse($budget->fresh()->hasActiveServiceDeals());
+
+        // 1. Explore page with deals=true filter strictly returns shops with active service deals
+        $dealResp = $this->get('/shops/explore?deals=true');
+        $dealResp->assertStatus(200);
+        $dealResp->assertSee('ProTech Solutions');
+        $dealResp->assertDontSee('Budget Fix Center');
+        $dealResp->assertSee('Active Deal');
+        $dealResp->assertDontSee('>Deal<', false); // No arbitrary bare 'Deal' tag
+
+        // 2. Explore page with has_deals=true also works
+        $hasDealResp = $this->get('/shops/explore?has_deals=true');
+        $hasDealResp->assertStatus(200);
+        $hasDealResp->assertSee('ProTech Solutions');
+        $hasDealResp->assertDontSee('Budget Fix Center');
+
+        // 3. API search with deals=true
+        $apiResp = $this->getJson('/api/shops/search?deals=true');
+        $apiResp->assertStatus(200);
+        $apiShops = collect($apiResp->json('data.data'));
+        $this->assertTrue($apiShops->contains('name', 'ProTech Solutions'));
+        $this->assertFalse($apiShops->contains('name', 'Budget Fix Center'));
+
+        // 4. Shop Profile page displays Active Deal badge in capability row AND strikethrough in services tab
+        $profileResp = $this->get("/shops/{$proTech->slug}");
+        $profileResp->assertStatus(200);
+        $profileResp->assertSee('data-badge="active-deal"', false);
+        $profileResp->assertSee('data-service-deal-badge', false);
+        $profileResp->assertSee('38% OFF');
+        $profileResp->assertSee('800'); // strikethrough regular price
+        $profileResp->assertSee('500'); // promotional deal price
+        $profileResp->assertDontSee('>Coupon Voucher<', false); // No arbitrary meaningless tag
+
+        // 5. When deal ends, shop no longer matches deals filter
+        \App\Models\ShopService::where('slug', 'thermal-paste-deal')->update([
+            'deal_ends_at' => now()->subMinute(),
+        ]);
+        $this->assertFalse($proTech->fresh()->hasActiveServiceDeals());
+        $expiredResp = $this->get('/shops/explore?deals=true');
+        $expiredResp->assertStatus(200);
+        $expiredResp->assertDontSee('ProTech Solutions');
     }
 }

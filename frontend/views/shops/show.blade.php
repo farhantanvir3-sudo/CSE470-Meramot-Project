@@ -199,6 +199,16 @@
                             <i class="fa-solid fa-microchip text-sky-700 mr-1"></i> {{ $isPureWholesaler ? 'Spare Parts Wholesaler' : 'Spare Parts Store' }}
                         </span>
                     @endif
+                    @if($shop->hasActiveServiceDeals())
+                        <span class="rounded-md bg-rose-50 border border-rose-300 px-3 py-1 font-bold text-rose-800" data-badge="active-deal">
+                            <i class="fa-solid fa-fire text-rose-600 mr-1"></i> Active Deal
+                        </span>
+                    @endif
+                    @if($shop->hasSparePartsOnSale())
+                        <span class="rounded-md bg-rose-50 border border-rose-300 px-3 py-1 font-bold text-rose-800" data-badge="active-sale">
+                            <i class="fa-solid fa-bolt text-rose-600 mr-1"></i> Active Sale
+                        </span>
+                    @endif
                     <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-bold text-[var(--accent-dark)]">
                         Tier {{ str_repeat('৳', $shop->price_level ?? 2) }}
                     </span>
@@ -340,7 +350,10 @@
                 }
 
                 foreach ($dbServices as $svc) {
-                    $hasFixedPrice = $svc->base_price !== null && (float) $svc->base_price > 0;
+                    $hasDeal = method_exists($svc, 'isDealActive') ? $svc->isDealActive() : false;
+                    $normalPrice = method_exists($svc, 'resolvedNormalPrice') ? $svc->resolvedNormalPrice() : (float) ($svc->base_price ?? 0);
+                    $effectivePrice = method_exists($svc, 'effectivePrice') ? $svc->effectivePrice() : (float) ($svc->base_price ?? 0);
+                    $hasFixedPrice = $effectivePrice > 0;
                     $rawPricingType = strtoupper((string) ($svc->pricing_type ?: ($hasFixedPrice ? 'FIXED' : 'QUOTE')));
                     $displayServices[] = [
                         'kind' => 'shop_service',
@@ -350,7 +363,10 @@
                         'turnaround' => null,
                         'warranty_months' => null,
                         'pricing_type' => $hasFixedPrice ? ($rawPricingType === 'STARTING_FROM' ? 'STARTING_FROM' : 'FIXED') : 'QUOTE',
-                        'estimate' => $hasFixedPrice ? (float) $svc->base_price : null,
+                        'estimate' => $hasFixedPrice ? (float) $effectivePrice : null,
+                        'regular_price' => ($hasDeal && $normalPrice > $effectivePrice) ? (float) $normalPrice : null,
+                        'has_deal' => $hasDeal,
+                        'deal_discount_pct' => method_exists($svc, 'effectiveDiscountPct') ? $svc->effectiveDiscountPct() : null,
                         'summary' => $svc->short_description ?: ($svc->description ?: ($hasFixedPrice
                             ? 'Certified workshop service with genuine replacement components, bench testing, and repair warranty.'
                             : 'Priced after diagnosis — request a quote from the workshop.')),
@@ -455,6 +471,12 @@
                                                             Fixed Package &bull; {{ $svcItem['category'] ?? 'All Devices' }}
                                                         </span>
                                                     @endif
+                                                    @if(!empty($svcItem['has_deal']))
+                                                        <span class="inline-flex items-center gap-1 rounded bg-rose-100 border border-rose-300 px-2.5 py-0.5 text-[10px] font-bold text-rose-800" data-service-deal-badge>
+                                                            <i class="fa-solid fa-fire text-rose-600 text-[9px]"></i>
+                                                            <span>Active Deal &bull; {{ !empty($svcItem['deal_discount_pct']) ? $svcItem['deal_discount_pct'] . '% OFF' : 'Special Price' }}</span>
+                                                        </span>
+                                                    @endif
                                                 </div>
                                                 <p class="mt-1 text-xs md:text-sm leading-relaxed text-[var(--muted-foreground)]">{{ $svcItem['summary'] }}</p>
                                                 @if(($svcItem['pricing_type'] ?? '') === 'FIXED_PACKAGE')
@@ -468,16 +490,21 @@
 
                                             <div class="shrink-0 text-right">
                                                 @if($svcItem['estimate'] !== null)
+                                                    @if(!empty($svcItem['regular_price']))
+                                                        <div class="text-xs line-through text-[var(--muted-foreground)] tabular-nums">
+                                                            ৳{{ number_format($svcItem['regular_price']) }}
+                                                        </div>
+                                                    @endif
                                                     @if(($svcItem['pricing_type'] ?? '') === 'STARTING_FROM')
-                                                        <div class="text-base md:text-lg font-bold text-[var(--accent-dark)]">
+                                                        <div class="text-base md:text-lg font-bold {{ !empty($svcItem['has_deal']) ? 'text-rose-800' : 'text-[var(--accent-dark)]' }}">
                                                             From ৳{{ number_format($svcItem['estimate']) }}
                                                         </div>
-                                                        <div class="text-[10px] text-[var(--muted-foreground)]">base estimate</div>
+                                                        <div class="text-[10px] text-[var(--muted-foreground)]">{{ !empty($svcItem['has_deal']) ? 'limited-time deal' : 'base estimate' }}</div>
                                                     @else
-                                                        <div class="text-base md:text-lg font-bold text-[var(--accent-dark)]">
+                                                        <div class="text-base md:text-lg font-bold {{ !empty($svcItem['has_deal']) ? 'text-rose-800' : 'text-[var(--accent-dark)]' }}">
                                                             ৳{{ number_format($svcItem['estimate']) }}
                                                         </div>
-                                                        <div class="text-[10px] text-[var(--muted-foreground)]">fixed price</div>
+                                                        <div class="text-[10px] text-[var(--muted-foreground)]">{{ !empty($svcItem['has_deal']) ? 'limited-time deal' : 'fixed price' }}</div>
                                                     @endif
                                                 @else
                                                     <div class="text-sm font-bold text-[var(--accent-dark)]">Assessed on diagnosis</div>

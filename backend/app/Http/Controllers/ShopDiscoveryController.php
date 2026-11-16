@@ -146,7 +146,7 @@ class ShopDiscoveryController extends Controller
                 ->where('supports_pickup', true);
         }
         if ($request->boolean('deals') || $request->boolean('has_deals')) {
-            $query->where('has_deals', true);
+            $query->hasActiveServiceDeals();
         }
         if ($request->boolean('sale') || $request->boolean('has_sale')) {
             $query->hasSparePartsOnSale();
@@ -155,6 +155,9 @@ class ShopDiscoveryController extends Controller
         $now = now();
         $query->withExists(['sparePartListings as has_sale_parts' => function ($spQ) use ($now) {
             RepairShop::applySparePartsOnSaleCondition($spQ, $now);
+        }]);
+        $query->withExists(['services as has_active_service_deals' => function ($sQ) use ($now) {
+            RepairShop::applyServiceDealCondition($sQ, $now);
         }]);
 
         // 7. Minimum Rating
@@ -532,7 +535,7 @@ class ShopDiscoveryController extends Controller
         }
 
         if ($request->boolean('has_deals') || $request->boolean('deals')) {
-            $query->where('has_deals', true);
+            $query->hasActiveServiceDeals();
         }
         if ($request->boolean('has_voucher') || $request->boolean('voucher')) {
             $query->where('has_voucher', true);
@@ -547,6 +550,9 @@ class ShopDiscoveryController extends Controller
         $now = now();
         $query->withExists(['sparePartListings as has_sale_parts' => function ($spQ) use ($now) {
             RepairShop::applySparePartsOnSaleCondition($spQ, $now);
+        }]);
+        $query->withExists(['services as has_active_service_deals' => function ($sQ) use ($now) {
+            RepairShop::applyServiceDealCondition($sQ, $now);
         }]);
 
         $rawSort = $request->input('sort', 'rating');

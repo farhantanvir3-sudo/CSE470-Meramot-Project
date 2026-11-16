@@ -1390,6 +1390,8 @@ class ShopSeeder extends Seeder
             $includesPickup = in_array('COURIER_PICKUP', $entry['categories'], true);
             $seenSvcSlugs = [];
 
+            $hasShopDeals = (bool) ($entry['has_deals'] ?? false);
+
             foreach ($specsToSeed as $svcIdx => $specName) {
                 $normalizedSvc = $this->normalizeBookableService((string) $specName);
                 $svcSlug = Str::slug($normalizedSvc['name']) ?: ('service-' . ($svcIdx + 1));
@@ -1397,6 +1399,12 @@ class ShopSeeder extends Seeder
                     $svcSlug .= '-' . ($svcIdx + 1);
                 }
                 $seenSvcSlugs[$svcSlug] = true;
+
+                $normalBasePrice = $baseLabor + ($svcIdx * 250);
+                // If shop offers active deals, configure promotional limited-time deal pricing on its services
+                $isServiceDeal = $hasShopDeals && ($svcIdx < 2);
+                $dealDiscountPct = $isServiceDeal ? ($svcIdx === 0 ? 25 : 20) : null;
+                $dealPrice = $isServiceDeal ? round($normalBasePrice * (1 - ($dealDiscountPct / 100)), 2) : null;
 
                 $serviceRows[] = [
                     'shop_id' => $shopId,
@@ -1406,7 +1414,13 @@ class ShopSeeder extends Seeder
                     'device_type' => $normalizedSvc['device_type'],
                     'issue_category' => $normalizedSvc['issue_category'],
                     'pricing_type' => 'STARTING_FROM',
-                    'base_price' => $baseLabor + ($svcIdx * 250),
+                    'base_price' => $isServiceDeal ? $dealPrice : $normalBasePrice,
+                    'regular_price' => $isServiceDeal ? $normalBasePrice : null,
+                    'deal_enabled' => $isServiceDeal,
+                    'deal_price' => $dealPrice,
+                    'deal_discount_pct' => $dealDiscountPct,
+                    'deal_starts_at' => $isServiceDeal ? $now->copy()->subDays(3) : null,
+                    'deal_ends_at' => $isServiceDeal ? $now->copy()->addDays(14) : null,
                     'estimated_days_min' => 1,
                     'estimated_days_max' => 3,
                     'includes_pickup' => $includesPickup,
@@ -1425,7 +1439,9 @@ class ShopSeeder extends Seeder
                 ['shop_id', 'slug'],
                 [
                     'name', 'short_description', 'device_type', 'issue_category',
-                    'pricing_type', 'base_price', 'estimated_days_min', 'estimated_days_max',
+                    'pricing_type', 'base_price', 'regular_price', 'deal_enabled',
+                    'deal_price', 'deal_discount_pct', 'deal_starts_at', 'deal_ends_at',
+                    'estimated_days_min', 'estimated_days_max',
                     'includes_pickup', 'sort_order', 'is_featured', 'is_active', 'updated_at',
                 ]
             );

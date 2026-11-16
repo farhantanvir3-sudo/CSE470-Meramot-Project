@@ -389,4 +389,59 @@ class RepairShop extends Model
             static::applySparePartsOnSaleCondition($spQ, $at);
         });
     }
+
+    /**
+     * Reusable condition for active service deals (promotional pricing on services).
+     */
+    public static function applyServiceDealCondition(\Illuminate\Database\Eloquent\Builder $sQ, ?\Illuminate\Support\Carbon $at = null): void
+    {
+        $now = $at ?: now();
+        $sQ->where('is_active', true)
+            ->where('deal_enabled', true)
+            ->where(function ($w) use ($now) {
+                $w->whereNull('deal_starts_at')->orWhere('deal_starts_at', '<=', $now);
+            })
+            ->where(function ($w) use ($now) {
+                $w->whereNull('deal_ends_at')->orWhere('deal_ends_at', '>=', $now);
+            })
+            ->where(function ($w) {
+                $w->where(function ($p) {
+                    $p->whereNotNull('deal_price')->where('deal_price', '>', 0);
+                })->orWhere(function ($pct) {
+                    $pct->whereNotNull('deal_discount_pct')->where('deal_discount_pct', '>', 0);
+                });
+            });
+    }
+
+    /**
+     * Whether this workshop has active promotional deals on any listed services.
+     */
+    public function hasActiveServiceDeals(?\Illuminate\Support\Carbon $at = null): bool
+    {
+        if (isset($this->attributes['has_active_service_deals'])) {
+            return (bool) $this->attributes['has_active_service_deals'];
+        }
+
+        if ($this->relationLoaded('services')) {
+            return $this->services->contains(function ($service) use ($at) {
+                return (bool) $service->is_active && $service->isDealActive($at);
+            });
+        }
+
+        return $this->services()
+            ->where(function ($sQ) use ($at) {
+                static::applyServiceDealCondition($sQ, $at);
+            })
+            ->exists();
+    }
+
+    /**
+     * Scope query to only shops that have active service deals.
+     */
+    public function scopeHasActiveServiceDeals(\Illuminate\Database\Eloquent\Builder $query, ?\Illuminate\Support\Carbon $at = null): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereHas('services', function ($sQ) use ($at) {
+            static::applyServiceDealCondition($sQ, $at);
+        });
+    }
 }

@@ -366,6 +366,7 @@
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($dealsParams)) }}"
+                               data-filter-chip="deals"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-md border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasDeals ? 'bg-[var(--accent-dark)] text-white font-semibold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-fire text-[10px] {{ $hasDeals ? 'text-amber-200' : 'text-amber-600' }}"></i>
                                 <span data-i18n="deals_filter">Deals</span>
@@ -588,9 +589,14 @@
                             @if($shop->supportsSpareParts())
                                 <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-medium text-sky-950" data-i18n="nav_spare_parts">Spare Parts</span>
                             @endif
+                            @if($shop->hasActiveServiceDeals())
+                                <span class="rounded bg-rose-100 border border-rose-300 px-2 py-0.5 font-bold text-rose-800" data-shop-deal-badge>
+                                    <i class="fa-solid fa-fire mr-0.5 text-[9px] text-rose-600"></i>Active Deal
+                                </span>
+                            @endif
                             @if($shop->hasSparePartsOnSale())
                                 <span class="rounded bg-rose-100 border border-rose-300 px-2 py-0.5 font-bold text-rose-800" data-shop-sale-badge>
-                                    <i class="fa-solid fa-bolt mr-0.5 text-[9px] text-rose-600"></i>Sale
+                                    <i class="fa-solid fa-bolt mr-0.5 text-[9px] text-rose-600"></i>Active Sale
                                 </span>
                             @endif
                             <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-semibold">
