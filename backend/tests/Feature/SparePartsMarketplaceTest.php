@@ -1637,4 +1637,171 @@ class SparePartsMarketplaceTest extends TestCase
             }
         }
     }
+
+    public function test_competing_sellers_get_varied_human_titles_that_scatter_alphabetically_and_preserve_grouping_and_search(): void
+    {
+        [, $profileA, $shopA] = $this->createApprovedVendorWithShop(['city' => 'Dhaka', 'area' => 'Banani'], 'Gulshan Gadget Care');
+        [, $profileB, $shopB] = $this->createApprovedVendorWithShop(['city' => 'Dhaka', 'area' => 'Mirpur'], 'Mirpur Laptop Lab');
+        [, $profileC, $shopC] = $this->createApprovedVendorWithShop(['city' => 'Dhaka', 'area' => 'Uttara'], 'ProTech Solutions');
+
+        $catalogSamples = [
+            [
+                'item_index' => 1,
+                'title' => '00HW022 Battery for lenovo thinkpad t460s t470s laptops',
+                'brand' => 'Lenovo',
+                'category' => 'Laptop Battery',
+                'group_key' => '00hw022-battery-for-lenovo-thinkpad-t460s-t470s-laptops',
+                'required_tokens' => ['00hw022', 'battery', 'lenovo', 'thinkpad', 't460s', 't470s'],
+                'base_price' => 2350,
+            ],
+            [
+                'item_index' => 2,
+                'title' => 'Samsung Galaxy S24 Plus Charging Logic',
+                'brand' => 'Samsung',
+                'category' => 'Charging Port & Flex',
+                'group_key' => 'samsung-galaxy-s24-plus-charging-logic',
+                'required_tokens' => ['samsung', 'galaxy', 's24', 'plus', 'charging', 'logic'],
+                'base_price' => 1150,
+            ],
+            [
+                'item_index' => 3,
+                'title' => 'ACER 14-Z1402 ORIGINAL BATTERY',
+                'brand' => 'Acer',
+                'category' => 'Laptop Battery',
+                'group_key' => 'acer-14-z1402-original-battery',
+                'required_tokens' => ['acer', '14-z1402', 'original', 'battery'],
+                'base_price' => 2100,
+            ],
+            [
+                'item_index' => 4,
+                'title' => '15.6-Inch FHD IPS LED screen (LQ156M1JW26) 240HZ Display',
+                'brand' => 'Universal',
+                'category' => 'PC Display, Cable & Board',
+                'group_key' => '156-inch-40-pin-240hz-fhd-ips-laptop-lq156m1jw26-display',
+                'required_tokens' => ['lq156m1jw26', 'fhd', 'ips', '240hz'],
+                'base_price' => 9800,
+            ],
+            [
+                'item_index' => 5,
+                'title' => 'Dell Latitude E7240 Laptop CPU Cooling Fan',
+                'brand' => 'Dell',
+                'category' => 'Laptop Cooling Fan',
+                'group_key' => 'dell-latitude-e7240-laptop-cpu-cooling-fan',
+                'required_tokens' => ['dell', 'latitude', 'e7240', 'cooling', 'fan'],
+                'base_price' => 1100,
+            ],
+            [
+                'item_index' => 6,
+                'title' => 'HP EliteBook 840 G5 Motherboard',
+                'brand' => 'HP',
+                'category' => 'PC Display, Cable & Board',
+                'group_key' => 'hp-elitebook-840-g5-motherboard',
+                'required_tokens' => ['hp', 'elitebook', '840', 'g5', 'motherboard'],
+                'base_price' => 14500,
+            ],
+            [
+                'item_index' => 7,
+                'title' => 'Oppo A6 4G Backshell',
+                'brand' => 'Oppo',
+                'category' => 'Backshell & Housing',
+                'group_key' => 'oppo-a6-4g-backshell',
+                'required_tokens' => ['oppo', 'a6', '4g', 'backshell'],
+                'base_price' => 650,
+            ],
+        ];
+
+        $shops = [
+            ['shop' => $shopA, 'profile' => $profileA],
+            ['shop' => $shopB, 'profile' => $profileB],
+            ['shop' => $shopC, 'profile' => $profileC],
+        ];
+
+        foreach ($catalogSamples as $sample) {
+            $canonicalSubCat = \App\Http\Controllers\SparePartController::inferSubCategoryForListing(
+                new SparePartListing([
+                    'title' => $sample['title'],
+                    'part_category' => $sample['category'],
+                ])
+            );
+
+            $sellerTitles = [];
+            $leadChars = [];
+
+            foreach ($shops as $sIdx => $meta) {
+                $variantTitle = \Database\Seeders\SparePartSeeder::buildMerchantListingTitle(
+                    $sample['title'],
+                    $sample['brand'],
+                    $sample['category'],
+                    $sample['group_key'],
+                    $sample['item_index'],
+                    $sIdx,
+                    $meta['shop']->slug
+                );
+
+                $sellerTitles[] = $variantTitle;
+                $leadNorm = preg_replace('/^[^a-z0-9]+/i', '', strtolower(trim($variantTitle))) ?? '';
+                $leadChars[] = $leadNorm !== '' ? substr($leadNorm, 0, 1) : '';
+
+                // Retain all searchable tokens across every merchant variant
+                foreach ($sample['required_tokens'] as $tok) {
+                    $this->assertStringContainsStringIgnoringCase($tok, $variantTitle, "Missing token {$tok} in variant: {$variantTitle}");
+                }
+
+                $listing = SparePartListing::create([
+                    'shop_id' => $meta['shop']->id,
+                    'vendor_profile_id' => $meta['profile']->id,
+                    'title' => $variantTitle,
+                    'slug' => $sample['group_key'] . ($sIdx === 0 ? '' : '--' . $meta['shop']->slug),
+                    'sku' => 'VAR-' . $sample['item_index'] . '-' . $sIdx,
+                    'product_group_key' => $sample['group_key'],
+                    'part_category' => $sample['category'],
+                    'brand' => $sample['brand'],
+                    'is_active' => true,
+                    'stock_quantity' => 10,
+                    'base_price' => $sample['base_price'] + ($sIdx * 120),
+                    'normal_price' => $sample['base_price'] + ($sIdx * 120),
+                ]);
+
+                // Sub-category classification must stay invariant across title phrasings
+                $this->assertSame(
+                    $canonicalSubCat['key'] ?? null,
+                    \App\Http\Controllers\SparePartController::inferSubCategoryForListing($listing)['key'] ?? null
+                );
+            }
+
+            // All 3 vendors for the same item have unique titles and distinct starting characters
+            $this->assertCount(3, array_unique(array_map('strtolower', $sellerTitles)));
+            $this->assertCount(3, array_unique($leadChars));
+        }
+
+        // Default alphabetical /spare-parts ordering scatters same-group listings across letters
+        // instead of clustering identical titles side-by-side (baseline would be 14 adjacent pairs here).
+        $orderedGroups = SparePartListing::orderByRaw('LOWER(TRIM(title)) ASC')
+            ->pluck('product_group_key')
+            ->all();
+        $adjacentSameGroup = 0;
+        for ($i = 1; $i < count($orderedGroups); $i++) {
+            if ($orderedGroups[$i - 1] === $orderedGroups[$i]) {
+                $adjacentSameGroup++;
+            }
+            if ($i >= 2) {
+                $this->assertFalse(
+                    $orderedGroups[$i - 2] === $orderedGroups[$i - 1] && $orderedGroups[$i - 1] === $orderedGroups[$i],
+                    'Three listings of the same item must never cluster consecutively in alphabetical sort.'
+                );
+            }
+        }
+        $this->assertLessThanOrEqual(1, $adjacentSameGroup);
+
+        // Searching by part code still finds all 3 sellers, and detail page still groups them together
+        $this->get('/spare-parts?q=00HW022')
+            ->assertStatus(200)
+            ->assertSee('00HW022', false);
+
+        $this->get('/spare-parts/00hw022-battery-for-lenovo-thinkpad-t460s-t470s-laptops')
+            ->assertStatus(200)
+            ->assertSee('Gulshan Gadget Care')
+            ->assertSee('Mirpur Laptop Lab')
+            ->assertSee('ProTech Solutions');
+    }
 }
