@@ -208,6 +208,57 @@
             box-shadow: 0 0 0 3px rgba(181, 228, 168, 0.22);
         }
 
+        /* Compact, touch-friendly filled track styling for shop distance sliders */
+        .meramot-range-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 9999px;
+            background: linear-gradient(
+                to right,
+                var(--accent-dark) 0%,
+                var(--accent-dark) var(--range-progress, 45.83%),
+                var(--border) var(--range-progress, 45.83%),
+                var(--border) 100%
+            );
+            outline: none;
+            touch-action: manipulation;
+        }
+        .meramot-range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: #ffffff;
+            border: 2.5px solid var(--accent-dark);
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
+            cursor: pointer;
+            transition: transform 120ms ease, box-shadow 120ms ease;
+        }
+        .meramot-range-slider::-webkit-slider-thumb:hover,
+        .meramot-range-slider:active::-webkit-slider-thumb {
+            transform: scale(1.1);
+            box-shadow: 0 0 0 4px rgba(36, 66, 41, 0.14);
+        }
+        .meramot-range-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            background: #ffffff;
+            border: 2.5px solid var(--accent-dark);
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.22);
+            cursor: pointer;
+        }
+        .dark .meramot-range-slider::-webkit-slider-thumb {
+            background: #0f291e;
+            border-color: var(--accent-dark);
+        }
+        .dark .meramot-range-slider::-moz-range-thumb {
+            background: #0f291e;
+            border-color: var(--accent-dark);
+        }
+
         /* Cohesive Meramot styling for Laravel Tailwind pagination */
         nav[role="navigation"] span[aria-current="page"] > span {
             background-color: var(--accent-dark) !important;
@@ -3320,6 +3371,66 @@
                 },
             };
 
+            window.meramotDistanceFilter = function (initialDist, initiallyActive) {
+                const parsed = Number.parseInt(initialDist, 10);
+                const safeDist = Number.isFinite(parsed) ? Math.min(25, Math.max(1, parsed)) : 12;
+                return {
+                    dist: safeDist,
+                    active: Boolean(initiallyActive),
+                    dragging: false,
+                    get progressPct() {
+                        const clamped = Math.min(25, Math.max(1, Number(this.dist) || 12));
+                        return (((clamped - 1) / 24) * 100).toFixed(2) + '%';
+                    },
+                    applyDistanceFilter() {
+                        this.dragging = false;
+                        this.active = true;
+                        const clamped = Math.min(25, Math.max(1, Number(this.dist) || 12));
+                        this.dist = clamped;
+                        const params = new URLSearchParams(window.location.search);
+                        params.set('maxDistanceKm', String(clamped));
+                        params.delete('max_distance_km');
+                        params.set('page', '1');
+                        if (!params.get('lat') || !params.get('lng')) {
+                            const stored = window.MeramotLocationPicker
+                                ? window.MeramotLocationPicker.parseStoredLocation()
+                                : null;
+                            if (stored && typeof stored.lat === 'number' && typeof stored.lng === 'number') {
+                                params.set('lat', stored.lat.toFixed(6));
+                                params.set('lng', stored.lng.toFixed(6));
+                            }
+                        }
+                        const basePath = window.location.pathname.startsWith('/shops')
+                            ? window.location.pathname
+                            : '/shops';
+                        const nextUrl = basePath + '?' + params.toString();
+                        if (window.MeramotSoftNav) {
+                            window.MeramotSoftNav.visit(nextUrl);
+                        } else {
+                            window.location.href = nextUrl;
+                        }
+                    },
+                    clearDistanceFilter() {
+                        this.dragging = false;
+                        this.active = false;
+                        const params = new URLSearchParams(window.location.search);
+                        params.delete('maxDistanceKm');
+                        params.delete('max_distance_km');
+                        params.set('page', '1');
+                        const basePath = window.location.pathname.startsWith('/shops')
+                            ? window.location.pathname
+                            : '/shops';
+                        const qs = params.toString();
+                        const nextUrl = basePath + (qs ? '?' + qs : '');
+                        if (window.MeramotSoftNav) {
+                            window.MeramotSoftNav.visit(nextUrl);
+                        } else {
+                            window.location.href = nextUrl;
+                        }
+                    },
+                };
+            };
+
             window.meramotHomeRecentSearches = function (initialItems) {
                 return {
                     items: Array.isArray(initialItems) ? initialItems : [],
@@ -3701,6 +3812,8 @@
                 'explore_verified_shops': 'যাচাইকৃত মেরামত শপ খুঁজুন',
                 'sort_shops': 'শপ সাজান',
                 'distance_label': 'দূরত্ব',
+                'distance_row_label': 'দূরত্ব:',
+                'any_distance': 'যেকোনো',
                 'offers_savings': 'অফার ও ছাড়',
                 'pin_location_map': 'ম্যাপে লোকেশন পিন করুন',
                 'sort_label': 'সাজান:',

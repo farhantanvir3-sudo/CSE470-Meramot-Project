@@ -95,43 +95,38 @@
             </div>
 
             <!-- 2. Distance & OpenStreetMap Filter Card -->
-            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm" x-data="{
-                dist: {{ request('maxDistanceKm', 12) }},
-                applyDistanceFilter() {
-                    const params = new URLSearchParams(window.location.search);
-                    params.set('maxDistanceKm', this.dist);
-                    params.set('page', '1');
-                    if (!params.get('lat') || !params.get('lng')) {
-                        const stored = window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null;
-                        if (stored && typeof stored.lat === 'number' && typeof stored.lng === 'number') {
-                            params.set('lat', stored.lat.toFixed(6));
-                            params.set('lng', stored.lng.toFixed(6));
-                        }
-                    }
-                    const nextUrl = '/shops?' + params.toString();
-                    if (window.MeramotSoftNav) {
-                        window.MeramotSoftNav.visit(nextUrl);
-                    } else {
-                        window.location.href = nextUrl;
-                    }
-                }
-            }">
-                <div class="mb-2.5 flex items-center justify-between">
+            <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm"
+                 x-data="meramotDistanceFilter(@js((int) request('maxDistanceKm', request('max_distance_km', 12))), @js(request()->filled('maxDistanceKm') || request()->filled('max_distance_km')))">
+                <div class="mb-2.5 flex items-center justify-between gap-2">
                     <h3 class="text-sm font-semibold text-[var(--foreground)]" data-i18n="distance_label">
                         Distance
                     </h3>
-                    <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent-dark)] tabular-nums">
-                        Up to <span x-text="dist">12</span> km
-                    </span>
+                    <div class="flex items-center gap-1">
+                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent-dark)] tabular-nums">
+                            Up to <span x-text="dist">{{ (int) request('maxDistanceKm', request('max_distance_km', 12)) }}</span> km
+                        </span>
+                        <button
+                            type="button"
+                            x-show="active"
+                            x-cloak
+                            @click="clearDistanceFilter()"
+                            title="Clear distance filter"
+                            aria-label="Clear distance filter"
+                            class="inline-flex h-5 w-5 items-center justify-center rounded border border-[var(--border)] bg-[var(--mint-50)] text-[10px] font-semibold text-[var(--muted-foreground)] hover:bg-[var(--mint-200)] hover:text-[var(--foreground)] transition cursor-pointer"
+                        >✕</button>
+                    </div>
                 </div>
                 <input
                     type="range"
                     min="1"
                     max="25"
                     step="1"
-                    x-model="dist"
+                    x-model.number="dist"
+                    @input="dragging = true"
                     @change="applyDistanceFilter()"
-                    class="w-full accent-[var(--accent-dark)]"
+                    :style="'--range-progress: ' + progressPct"
+                    aria-label="Maximum distance in kilometers"
+                    class="meramot-range-slider w-full cursor-pointer"
                 />
                 <div class="mt-3 flex flex-col gap-1.5">
                     <button
@@ -378,6 +373,59 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Row 4 (Mobile/Tablet < lg): Compact Inline Distance Radius Slider -->
+                <div x-data="meramotDistanceFilter(@js((int) request('maxDistanceKm', request('max_distance_km', 12))), @js(request()->filled('maxDistanceKm') || request()->filled('max_distance_km')))"
+                     data-mobile-distance-row
+                     class="lg:hidden border-t border-[var(--border)]/60 pt-2 flex items-center gap-2 text-xs min-w-0">
+                    <span class="font-semibold text-[var(--foreground)] text-[10px] sm:text-[11px] uppercase tracking-wider shrink-0 flex items-center">
+                        <i class="fa-solid fa-route text-[var(--accent-dark)] mr-1 text-[10px]"></i>
+                        <span data-i18n="distance_row_label">Distance:</span>
+                    </span>
+
+                    <div class="flex-1 min-w-0 flex items-center gap-1.5 py-0.5">
+                        <span class="hidden sm:inline text-[10px] text-[var(--muted-foreground)] tabular-nums shrink-0">1km</span>
+                        <input
+                            type="range"
+                            min="1"
+                            max="25"
+                            step="1"
+                            x-model.number="dist"
+                            @input="dragging = true"
+                            @change="applyDistanceFilter()"
+                            :style="'--range-progress: ' + progressPct"
+                            aria-label="Maximum distance in kilometers"
+                            data-mobile-distance-slider
+                            class="meramot-range-slider w-full min-w-0 cursor-pointer"
+                        />
+                        <span class="hidden sm:inline text-[10px] text-[var(--muted-foreground)] tabular-nums shrink-0">25km</span>
+                    </div>
+
+                    <div class="shrink-0 flex items-center gap-1">
+                        <button
+                            type="button"
+                            @click="applyDistanceFilter()"
+                            data-mobile-distance-badge
+                            :class="(active || dragging)
+                                ? 'bg-[var(--accent-dark)] text-white border-[var(--accent-dark)] font-semibold shadow-2xs'
+                                : 'bg-[var(--mint-100)] text-[var(--foreground)] border-[var(--border)] font-medium hover:bg-[var(--mint-200)]'"
+                            class="min-w-[54px] text-center select-none rounded-md border px-2 py-0.5 text-[11px] tabular-nums transition cursor-pointer"
+                        >
+                            <span x-show="!active && !dragging" data-i18n="any_distance">Any</span>
+                            <span x-show="active || dragging" x-cloak>&le; <span x-text="dist">{{ (int) request('maxDistanceKm', request('max_distance_km', 12)) }}</span> km</span>
+                        </button>
+                        <button
+                            type="button"
+                            x-show="active"
+                            x-cloak
+                            @click="clearDistanceFilter()"
+                            data-mobile-distance-clear
+                            title="Clear distance filter"
+                            aria-label="Clear distance filter"
+                            class="inline-flex h-6 w-6 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--mint-50)] text-[10px] font-semibold text-[var(--muted-foreground)] hover:bg-[var(--mint-200)] hover:text-[var(--foreground)] transition cursor-pointer"
+                        >✕</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Active Results Counter & Filter Summary -->
@@ -397,6 +445,11 @@
                     @if(request('area') && request('area') !== 'All')
                         <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent-dark)]">
                             {{ request('area') }}
+                        </span>
+                    @endif
+                    @if(request()->filled('maxDistanceKm') || request()->filled('max_distance_km'))
+                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent-dark)] tabular-nums">
+                            &le; {{ (int) request('maxDistanceKm', request('max_distance_km')) }} km
                         </span>
                     @endif
                 </div>

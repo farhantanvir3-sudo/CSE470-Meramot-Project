@@ -156,6 +156,18 @@ class ShopDiscoveryTest extends TestCase
     }
 
     /** @test */
+    public function it_filters_shops_by_max_distance_km_and_renders_mobile_distance_slider()
+    {
+        $response = $this->get('/shops?lat=23.7937&lng=90.4066&maxDistanceKm=3');
+
+        $response->assertStatus(200);
+        $response->assertSee('ProTech Solutions');
+        $response->assertDontSee('Budget Fix Center');
+        $response->assertSee('data-mobile-distance-slider', false);
+        $response->assertSee('&le; 3 km', false);
+    }
+
+    /** @test */
     public function it_paginates_results()
     {
         // Create more shops to trigger pagination
