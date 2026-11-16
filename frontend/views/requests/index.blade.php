@@ -88,7 +88,10 @@ Controller: RepairRequestController@index
                                 {{ str_replace('_', ' ', $st) }}
                             </span>
                             <span class="rounded-full border border-[var(--border)] bg-[var(--mint-100)]/70 px-2.5 py-0.5 text-[10px] font-bold text-[var(--foreground)]">
-                                {{ ($req->source ?? 'MARKETPLACE') === 'DIRECT_SERVICE' ? 'Direct-Order Cart' : 'Marketplace Bidding' }}
+                                {{ ($req->source ?? 'MARKETPLACE') === 'DIRECT_SERVICE' ? 'Workshop Booking' : 'Custom Quote Request' }}
+                            </span>
+                            <span class="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--muted-foreground)]">
+                                {{ $req->requiresCourierLogistics() ? 'Courier Pickup' : 'In-Shop Walk-In' }}
                             </span>
                             @if($assignedShop)
                                 <span class="text-xs font-bold text-[var(--accent-dark)] break-words">

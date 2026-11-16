@@ -285,4 +285,117 @@ class VendorFixedPriceServicesTest extends TestCase
         $this->assertEquals(300.0, (float) $branch2->inspection_fee);
         $this->assertSame('Inspection ৳300', $branch2->offer_summary);
     }
+
+    /** @test */
+    public function vendor_onboarding_fixed_packages_opt_in_syncs_profile_services_tab_and_booking()
+    {
+        $this->seed(\Database\Seeders\ServicePackageSeeder::class);
+        $packages = \App\Models\ServicePackage::where('is_active', true)->orderBy('id')->take(3)->get();
+        $this->assertCount(3, $packages);
+        [$pkgA, $pkgB, $pkgC] = [$packages[0], $packages[1], $packages[2]];
+
+        // 1. New vendor opts in during /vendor/apply
+        $applyResp = $this->post('/vendor/apply', [
+            'owner_name' => 'Nadia Karim',
+            'business_email' => 'nadia.fixedpkg@example.com',
+            'phone' => '01712345670',
+            'password' => 'StrongPass123!',
+            'password_confirmation' => 'StrongPass123!',
+            'shop_name' => 'Nadia Logic & OS Lab',
+            'business_license_no' => 'TRAD/DNCC/554433',
+            'nid_number' => '1994556677889',
+            'city' => 'Dhaka',
+            'area' => 'Uttara',
+            'gps_address' => 'Sector 7, Uttara, Dhaka',
+            'same_as_gps_location' => '1',
+            'shop_latitude' => 23.8759,
+            'shop_longitude' => 90.3795,
+            'specialties' => json_encode(['Windows OS', 'Thermal Clean']),
+            'in_shop_repair' => '1',
+            'provides_fixed_packages' => '1',
+            'service_package_ids' => [$pkgA->id, $pkgB->id],
+        ]);
+        $applyResp->assertRedirect();
+
+        $vendor = User::where('email', 'nadia.fixedpkg@example.com')->firstOrFail();
+        $profile = VendorProfile::where('user_id', $vendor->id)->firstOrFail();
+        $shop = RepairShop::where('vendor_profile_id', $profile->id)->firstOrFail();
+
+        $this->assertTrue((bool) $profile->provides_fixed_packages);
+        $this->assertEqualsCanonicalizing([$pkgA->id, $pkgB->id], array_map('intval', $profile->offered_package_ids));
+        $this->assertEqualsCanonicalizing([$pkgA->id, $pkgB->id], $shop->servicePackages()->pluck('service_packages.id')->map(fn ($id) => (int) $id)->all());
+
+        // Approve vendor & complete post-approval setup updating package selection to [$pkgB, $pkgC]
+        $profile->update(['verification_status' => 'approved']);
+        $vendor->update(['role' => 'vendor']);
+        $shop->update(['is_active' => true, 'is_public' => true, 'accepts_direct_orders' => true]);
+
+        $this->actingAs($vendor)->get('/vendor/setup-shop')->assertOk()->assertSee($pkgA->title);
+
+        $this->actingAs($vendor)->post('/vendor/setup-shop', [
+            'shop_id' => $shop->id,
+            'shop_name' => 'Nadia Logic & OS Lab',
+            'phone' => '01712345670',
+            'city' => 'Dhaka',
+            'area' => 'Uttara',
+            'address' => 'House 12, Sector 7, Uttara, Dhaka',
+            'gps_address' => 'Sector 7, Uttara, Dhaka',
+            'same_as_gps_location' => '0',
+            'courier_pickup' => '1',
+            'in_shop_repair' => '1',
+            'inspection_fee' => 300,
+            'base_labor_fee' => 500,
+            'provides_fixed_packages' => '1',
+            'service_package_ids' => [$pkgB->id, $pkgC->id],
+        ])->assertRedirect('/vendor/dashboard');
+
+        $shop->refresh();
+        $profile->refresh();
+        $this->assertEqualsCanonicalizing([$pkgB->id, $pkgC->id], array_map('intval', $profile->offered_package_ids));
+        $this->assertEqualsCanonicalizing([$pkgB->id, $pkgC->id], $shop->servicePackages()->pluck('service_packages.id')->map(fn ($id) => (int) $id)->all());
+
+        // 2. Public shop profile Services tab automatically renders opted-in Fixed-Price Packages with direct Add to Cart
+        $customer = User::factory()->create(['role' => 'customer', 'is_active' => true]);
+        $shopPage = $this->actingAs($customer)->get("/shops/{$shop->slug}");
+        $shopPage->assertOk()
+            ->assertSee($pkgB->title)
+            ->assertSee($pkgC->title)
+            ->assertSee('Fixed Package')
+            ->assertSee("MeramotCart.addDirectPackage({$shop->id}, {$pkgB->id}, this)", false)
+            ->assertDontSee($pkgA->title);
+
+        $this->actingAs($customer)
+            ->postJson('/cart/add', ['package_id' => $pkgB->id, 'shop_id' => $shop->id])
+            ->assertOk()
+            ->assertJson(['success' => true, 'shop_id' => $shop->id]);
+
+        // 3. Opting out on setup-shop removes fixed packages from pivot and shop Services tab
+        $this->actingAs($vendor)->post('/vendor/setup-shop', [
+            'shop_id' => $shop->id,
+            'shop_name' => 'Nadia Logic & OS Lab',
+            'phone' => '01712345670',
+            'city' => 'Dhaka',
+            'area' => 'Uttara',
+            'address' => 'House 12, Sector 7, Uttara, Dhaka',
+            'gps_address' => 'Sector 7, Uttara, Dhaka',
+            'same_as_gps_location' => '0',
+            'courier_pickup' => '1',
+            'in_shop_repair' => '1',
+            'inspection_fee' => 300,
+            'base_labor_fee' => 500,
+            'provides_fixed_packages' => '0',
+        ])->assertRedirect('/vendor/dashboard');
+
+        $profile->refresh();
+        $this->assertFalse((bool) $profile->provides_fixed_packages);
+        $this->assertEmpty($profile->offered_package_ids);
+        $this->assertCount(0, $shop->servicePackages()->get());
+
+        $this->flushSession();
+
+        $this->actingAs($customer)->get("/shops/{$shop->slug}")
+            ->assertOk()
+            ->assertSee("This workshop hasn't published fixed-price services yet.", false)
+            ->assertDontSee($pkgB->title);
+    }
 }

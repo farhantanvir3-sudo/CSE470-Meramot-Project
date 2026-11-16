@@ -603,6 +603,14 @@ class SparePartListing extends Model
             return false;
         }
 
+        $shop = $this->relationLoaded('shop')
+            ? $this->shop
+            : ($this->shop_id ? $this->shop()->with('vendorProfile', 'servicePackages')->first() : null);
+
+        if ($shop && $shop->isPureSparePartsWholesaler()) {
+            return false;
+        }
+
         return true;
     }
 

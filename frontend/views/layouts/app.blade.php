@@ -949,8 +949,8 @@
                     <a
                         href="/cart"
                         class="meramot-cart-btn relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition duration-200 hover:bg-[var(--mint-300)] md:hidden"
-                        title="Direct-Order Cart"
-                        aria-label="Direct-Order Cart"
+                        title="Service Cart"
+                        aria-label="Service Cart"
                     >
                         <i class="fa-solid fa-cart-shopping text-sm"></i>
                         <span
@@ -1183,8 +1183,8 @@
                             href="/cart"
                             @click="if ({{ $navCartCount }} > 0 && !window.location.pathname.startsWith('/cart')) { $event.preventDefault(); miniCartOpen = true; }"
                             class="meramot-cart-btn relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--mint-200)] text-[var(--foreground)] transition duration-200 hover:scale-105 hover:bg-[var(--mint-300)]"
-                            title="Direct-Order Cart"
-                            aria-label="Direct-Order Cart"
+                            title="Service Cart"
+                            aria-label="Service Cart"
                         >
                             <i class="fa-solid fa-cart-shopping text-sm"></i>
                             <span
@@ -1445,7 +1445,7 @@
                             Make Repair Request
                         </a>
                         <a href="/cart" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                            Direct-Order Cart
+                            Service Cart
                         </a>
                     @endif
                     <a href="/packages/catalog" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
@@ -3224,8 +3224,6 @@
             };
         })();
     </script>
-<<<<<<< Updated upstream
-=======
 <script>
 window.MeramotI18n = (function () {
   var bn = {
@@ -3353,6 +3351,5 @@ window.MeramotI18n = (function () {
 })();
 document.addEventListener('DOMContentLoaded', function () { window.MeramotI18n.apply(); });
 </script>
->>>>>>> Stashed changes
 </body>
 </html>

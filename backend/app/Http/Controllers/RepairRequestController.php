@@ -99,6 +99,10 @@ class RepairRequestController extends Controller
         $selectedShop = $request->filled('shop_id')
             ? RepairShop::where('is_active', true)->where('is_public', true)->find($request->query('shop_id'))
             : null;
+        if ($selectedShop && $selectedShop->isPureSparePartsWholesaler()) {
+            return redirect()->route('shops.show', $selectedShop->slug)
+                ->with('info', "{$selectedShop->name} operates exclusively as a Spare Parts Store. Browse and order available parts below.");
+        }
         $prefilledIssue = (string) $request->query('issue', '');
 
         return view('requests.create', compact('selectedShop', 'prefilledIssue'));
@@ -164,6 +168,24 @@ class RepairRequestController extends Controller
         abort_if(!$customerId, 403, 'A customer account is required to post a repair request.');
         $requestedShopId = $validated['preferred_shop_id'] ?? null;
         $targetShop = $requestedShopId ? RepairShop::find($requestedShopId) : null;
+
+        if ($targetShop) {
+            if ($targetShop->isPureSparePartsWholesaler()) {
+                throw ValidationException::withMessages([
+                    'preferred_shop_id' => "{$targetShop->name} operates exclusively as a Spare Parts Store and does not accept repair bookings.",
+                ]);
+            }
+            if ($validated['preferred_service_type'] === 'pickup_dropoff' && !$targetShop->supportsCourierPickup()) {
+                throw ValidationException::withMessages([
+                    'preferred_service_type' => "{$targetShop->name} offers In-Shop Walk-In repair only and does not support Courier Pickup.",
+                ]);
+            }
+            if ($validated['preferred_service_type'] === 'walk_in' && !$targetShop->supportsInShopRepair()) {
+                throw ValidationException::withMessages([
+                    'preferred_service_type' => "{$targetShop->name} operates via Courier Pickup & Return only and does not accept walk-in drop-offs.",
+                ]);
+            }
+        }
 
         $cityName = trim((string) ($validated['city'] ?? 'Dhaka')) ?: 'Dhaka';
         $areaName = trim((string) ($validated['area'] ?? ''));

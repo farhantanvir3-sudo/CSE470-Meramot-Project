@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Direct Fixed Service Packages & Quickmatch | Meramot')
+@section('title', 'Fixed-Price Repair Packages | Meramot')
 
 {{-- ==========================================================================
      FEATURE R8: Direct Service Package Catalog & Quickmatch Cart Flow
@@ -182,18 +182,25 @@
                 <div class="mt-6 pt-4 border-t border-[var(--border)] space-y-2.5 min-w-0">
                     <div class="min-w-0">
                         <label for="shop-select-{{ $pkg->id }}" class="block text-[10px] font-bold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
-                            Workshop Assignment
+                            Select Workshop
                         </label>
+                        @php
+                            $pkgShops = ($packageShopsMap ?? [])[$pkg->id] ?? ($verifiedShops ?? collect());
+                        @endphp
                         <select
                             id="shop-select-{{ $pkg->id }}"
                             class="w-full min-w-0 max-w-full truncate rounded-xl border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-semibold text-[var(--foreground)] outline-none"
                         >
-                            <option value="">Auto-match nearest top-rated shop</option>
-                            @foreach($verifiedShops ?? [] as $vShop)
-                                <option value="{{ $vShop->id }}" {{ session('cart_shop_id') == $vShop->id ? 'selected' : '' }}>
-                                    {{ \Illuminate\Support\Str::limit($vShop->name, 26) }}{{ $vShop->display_branch_tag ? ' [' . \Illuminate\Support\Str::limit($vShop->display_branch_tag, 18) . ']' : ' (' . \Illuminate\Support\Str::limit($vShop->area ?: $vShop->city, 18) . ')' }} • ★{{ number_format($vShop->rating, 1) }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
-                                </option>
-                            @endforeach
+                            @if($pkgShops->isNotEmpty())
+                                <option value="">Nearest Verified Workshop ({{ $pkgShops->count() }} available)</option>
+                                @foreach($pkgShops as $vShop)
+                                    <option value="{{ $vShop->id }}" {{ session('cart_shop_id') == $vShop->id ? 'selected' : '' }}>
+                                        {{ \Illuminate\Support\Str::limit($vShop->name, 26) }}{{ $vShop->display_branch_tag ? ' [' . \Illuminate\Support\Str::limit($vShop->display_branch_tag, 18) . ']' : ' (' . \Illuminate\Support\Str::limit($vShop->area ?: $vShop->city, 18) . ')' }} • {{ (float) $vShop->rating > 0 ? '★' . number_format($vShop->rating, 1) : 'Verified' }}{{ isset($vShop->distance_km) ? ' • ' . number_format($vShop->distance_km, 1) . ' km' : '' }}
+                                    </option>
+                                @endforeach
+                            @else
+                                <option value="">Currently unavailable in your selected city</option>
+                            @endif
                         </select>
                     </div>
 

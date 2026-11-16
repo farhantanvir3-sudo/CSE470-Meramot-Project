@@ -129,16 +129,18 @@
                         </div>
                         <div class="min-w-0">
                             <span class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--accent-dark)]">
-                                Direct Service Order
+                                Workshop Booking
                             </span>
                             <h3 class="text-base font-black text-[var(--foreground)] break-words">{{ $repairRequest->requestedShop->name }}</h3>
                             <p class="text-xs text-[var(--muted-foreground)]">
                                 @if($currentStatus === 'PENDING')
-                                    Sent to workshop's <strong>Direct Orders</strong> queue — awaiting confirmation.
+                                    Sent to {{ $repairRequest->requestedShop->name }} — awaiting booking confirmation.
                                 @elseif($currentStatus === 'REJECTED')
                                     Declined by workshop — any payment hold has been refunded.
+                                @elseif($repairRequest->requiresCourierLogistics())
+                                    Confirmed by workshop — courier dispatch and bench repair progress below.
                                 @else
-                                    Confirmed by workshop — courier and bench workflow active.
+                                    Confirmed for in-shop service — bring your device to {{ $repairRequest->requestedShop->name }} when ready.
                                 @endif
                             </p>
                         </div>
@@ -159,11 +161,14 @@
                 $bookedItems = ($repairRequest->source ?? '') === 'DIRECT_SERVICE' && is_array($repairRequest->repairJob?->final_quote_items)
                     ? $repairRequest->repairJob->final_quote_items
                     : [];
+                $needsCourierOrder = $repairRequest->requiresCourierLogistics();
             @endphp
             @if(!empty($bookedItems))
                 @php
                     $bookedSubtotal = collect($bookedItems)->sum(fn ($it) => ((float) ($it['price'] ?? 0)) * ((int) ($it['quantity'] ?? 1)));
-                    $bookedCourierFee = ($repairRequest->delivery_type === 'EXPRESS') ? 150 : 80;
+                    $bookedCourierFee = $needsCourierOrder
+                        ? (($repairRequest->delivery_type === 'EXPRESS') ? 150 : 80)
+                        : 0.0;
                     $bookedEscrowFee = (float) ($repairRequest->commission_amount ?? $repairRequest->checkup_fee ?? 0);
                     $bookedRatePct = $bookedSubtotal > 0 && $bookedEscrowFee > 0
                         ? rtrim(rtrim(number_format(($bookedEscrowFee / $bookedSubtotal) * 100, 2), '0'), '.')
@@ -219,10 +224,17 @@
                             <span>Service &amp; Protection Fee</span>
                             <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedEscrowFee, 2) }}</span>
                         </div>
-                        <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                            <span>Doorstep Pickup &amp; Delivery ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }})</span>
-                            <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedCourierFee, 2) }}</span>
-                        </div>
+                        @if($needsCourierOrder)
+                            <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
+                                <span>Doorstep Pickup &amp; Delivery ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }})</span>
+                                <span class="font-semibold text-[var(--foreground)] shrink-0">৳{{ number_format($bookedCourierFee, 2) }}</span>
+                            </div>
+                        @else
+                            <div class="flex justify-between gap-2 text-emerald-800 font-semibold">
+                                <span>In-Shop Walk-In (No Delivery Needed)</span>
+                                <span class="shrink-0">৳0.00</span>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -547,6 +559,33 @@
                         @endforeach
                     </div>
                 </div>
+            @elseif(!$repairRequest->requiresCourierLogistics())
+                @php
+                    $walkInShop = $repairRequest->repairJob?->shop ?? $repairRequest->requestedShop;
+                @endphp
+                <div class="meramot-card p-5 sm:p-6 shadow-sm border border-emerald-300 bg-emerald-50/60 space-y-2.5">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-emerald-950">
+                            <i class="fa-solid fa-store mr-1.5 text-emerald-700"></i>In-Shop Walk-In Service
+                        </h2>
+                        <span class="rounded-full bg-emerald-100 border border-emerald-300 px-3 py-0.5 text-[11px] font-bold text-emerald-900">
+                            No Courier Needed &bull; ৳0 Delivery
+                        </span>
+                    </div>
+                    <p class="text-xs text-[var(--foreground)] leading-relaxed">
+                        @if($currentStatus === 'RETURN_SCHEDULED' || $currentStatus === 'READY_TO_RETURN')
+                            Your device repair is complete and ready for pickup at the workshop counter. Complete payment via Meramot and collect your device directly.
+                        @else
+                            Drop off your device in person at {{ $walkInShop?->name ?? 'the workshop' }} and settle payment securely via Meramot — no courier dispatch is required.
+                        @endif
+                    </p>
+                    @if($walkInShop)
+                        <div class="rounded-xl border border-[var(--border)] bg-[var(--card)] px-3.5 py-2.5 text-xs">
+                            <span class="font-bold text-[var(--foreground)]">{{ $walkInShop->name }}{{ $walkInShop->display_branch_tag ? ' [' . $walkInShop->display_branch_tag . ']' : '' }}</span>
+                            <span class="block text-[var(--muted-foreground)] mt-0.5">{{ $walkInShop->public_address }}</span>
+                        </div>
+                    @endif
+                </div>
             @endif
 
             <!-- Device Information Card -->
@@ -838,10 +877,13 @@
                         <span class="font-bold text-[var(--foreground)]">#{{ $repairRequest->id }}</span>
                     </div>
 
+                    @php
+                        $summaryNeedsCourier = $repairRequest->requiresCourierLogistics();
+                    @endphp
                     <div class="flex items-center justify-between">
-                        <span class="text-[var(--muted-foreground)]">Entry Flow</span>
+                        <span class="text-[var(--muted-foreground)]">Booking Type</span>
                         <span class="font-bold text-[var(--accent-dark)]">
-                            {{ ($repairRequest->source ?? 'MARKETPLACE') === 'DIRECT_SERVICE' ? 'Direct-Order Cart' : 'Marketplace Bidding' }}
+                            {{ ($repairRequest->source ?? 'MARKETPLACE') === 'DIRECT_SERVICE' ? 'Workshop Booking' : 'Custom Quote Request' }}
                         </span>
                     </div>
 
@@ -851,13 +893,20 @@
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <span class="text-[var(--muted-foreground)]">Logistics Mode</span>
-                        <span class="font-bold text-[var(--foreground)] capitalize">
-                            {{ str_replace('_', ' ', $repairRequest->preferred_service_type ?? 'Pickup & Dropoff') }}
+                        <span class="text-[var(--muted-foreground)]">Service Mode</span>
+                        <span class="font-bold text-[var(--foreground)]">
+                            {{ $summaryNeedsCourier ? 'Courier Pickup & Return' : 'In-Shop Walk-In (৳0 Delivery)' }}
                         </span>
                     </div>
 
-                    @if($repairRequest->pickup_address)
+                    @if(!$summaryNeedsCourier)
+                    <div class="pt-3 border-t border-[var(--border)]">
+                        <p class="text-[var(--muted-foreground)] mb-1">Workshop Location</p>
+                        <p class="font-semibold text-[var(--foreground)] leading-relaxed">
+                            {{ $repairRequest->requestedShop?->address ?: ($repairRequest->requestedShop?->area ? ($repairRequest->requestedShop->area . ', ' . ($repairRequest->requestedShop->city ?? 'Dhaka')) : 'Workshop Counter') }}
+                        </p>
+                    </div>
+                    @elseif($repairRequest->pickup_address)
                     <div class="pt-3 border-t border-[var(--border)]">
                         <p class="text-[var(--muted-foreground)] mb-1">Pickup Address</p>
                         <p class="font-semibold text-[var(--foreground)] leading-relaxed">

@@ -54,11 +54,11 @@ class PaymentGatewayController extends Controller
                 ? (float) $quoteItems[0]['delivery_fee']
                 : null;
 
-            $deliveryFee = $explicitDeliveryFee !== null
-                ? round($explicitDeliveryFee, 2)
-                : (($repairRequest->delivery_type === 'EXPRESS')
-                    ? 150.0
-                    : (($repairRequest->preferred_pickup ?? true) ? 80.0 : 0.0));
+            $deliveryFee = !$repairRequest->requiresCourierLogistics()
+                ? 0.0
+                : ($explicitDeliveryFee !== null
+                    ? round($explicitDeliveryFee, 2)
+                    : (($repairRequest->delivery_type === 'EXPRESS') ? 150.0 : 80.0));
             $storedTotal = round((float) ($repairRequest->quoted_final_amount ?? 0), 2);
             $storedCommission = round((float) ($repairRequest->commission_amount ?? $repairRequest->checkup_fee ?? 0), 2);
 
@@ -136,7 +136,7 @@ class PaymentGatewayController extends Controller
         ), 2);
 
         $escrowFee = round($acceptedBidCost * ($commissionRatePct / 100.0), 2);
-        $deliveryFee = ($repairRequest->preferred_pickup ?? true)
+        $deliveryFee = $repairRequest->requiresCourierLogistics()
             ? (($repairRequest->delivery_type === 'REGULAR') ? 80.0 : 150.0)
             : 0.0;
         $totalPayable = max(0.0, round($acceptedBidCost + $escrowFee + $deliveryFee - $discountAmount, 2));

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\RepairShop;
+use App\Models\ServicePackage;
 use App\Models\ShopService;
 use App\Models\User;
 use App\Models\VendorProfile;
@@ -13,9 +14,11 @@ use App\Services\MediaUploadService;
 use App\Services\ServiceSuggestionCatalog;
 use App\Support\InputSanitizer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -98,7 +101,7 @@ class VendorOnboardingController extends Controller
         }
 
         if ($user && $user->role === 'vendor') {
-            $profile = VendorProfile::with('shops')->where('user_id', $user->id)->first();
+            $profile = VendorProfile::with(['shops', 'shops.servicePackages:id'])->where('user_id', $user->id)->first();
             if ($profile) {
                 if ($profile->verification_status === 'approved') {
                     $primaryShop = $profile->shops->sortBy('id')->first();
@@ -109,7 +112,9 @@ class VendorOnboardingController extends Controller
             }
         }
 
-        return view('vendor.apply', compact('profile', 'isEditMode'));
+        $availablePackages = $this->activePlatformPackages();
+
+        return view('vendor.apply', compact('profile', 'isEditMode', 'availablePackages'));
     }
 
     /**
@@ -143,6 +148,9 @@ class VendorOnboardingController extends Controller
             'courier_pickup' => 'nullable|boolean',
             'in_shop_repair' => 'nullable|boolean',
             'spare_parts' => 'nullable|boolean',
+            'provides_fixed_packages' => 'nullable|boolean',
+            'service_package_ids' => 'nullable|array|max:100',
+            'service_package_ids.*' => 'integer',
             'notes' => 'nullable|string|max:2000',
             'logo' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
             'logo_url' => 'nullable|string',
@@ -226,11 +234,19 @@ class VendorOnboardingController extends Controller
             $specialties = ['Smartphone Repair', 'Laptop Repair'];
         }
 
+        $pkgOpt = $this->normalizePackageOptIn($request);
+
         $courierPickup = $request->boolean('courier_pickup');
-        $inShopRepair = $request->has('in_shop_repair') ? $request->boolean('in_shop_repair') : true;
+        $inShopRepair = $request->boolean('in_shop_repair');
         $spareParts = $request->boolean('spare_parts');
-        if (!$courierPickup && !$inShopRepair && !$spareParts) {
-            $inShopRepair = true;
+        $hasFixedPackages = $pkgOpt['provided']
+            ? (bool) $pkgOpt['provides_fixed_packages']
+            : (bool) ($existingProfile?->provides_fixed_packages ?? false);
+
+        if (!$courierPickup && !$inShopRepair && !$spareParts && !$hasFixedPackages) {
+            throw ValidationException::withMessages([
+                'services' => 'Please select at least one store capability: Courier pickup, In-shop repair, Spare parts wholesaler, or Fixed-price repair packages.',
+            ]);
         }
 
         $serviceCategories = array_values(array_filter([
@@ -264,7 +280,7 @@ class VendorOnboardingController extends Controller
             $isEditMode, $authUser, $existingProfile, $validated, $email, $cleanPhone, $cleanNid,
             $lat, $lng, $city, $area, $gpsAddress, $vendorAddress, $sameAsGps,
             $isBranched, $branchName, $specialties, $courierPickup, $inShopRepair, $spareParts,
-            $serviceCategories, $logoUrl, $documentsPath
+            $serviceCategories, $logoUrl, $documentsPath, $pkgOpt
         ) {
             if ($isEditMode && $authUser && $existingProfile) {
                 $authUser->update([
@@ -335,6 +351,11 @@ class VendorOnboardingController extends Controller
                 'rating' => 0.00,
             ];
 
+            if ($pkgOpt['provided']) {
+                $profileData['provides_fixed_packages'] = $pkgOpt['provides_fixed_packages'];
+                $profileData['offered_package_ids'] = $pkgOpt['package_ids'];
+            }
+
             $savedProfile = VendorProfile::updateOrCreate(
                 ['user_id' => $vendorUser->id],
                 $profileData
@@ -361,6 +382,8 @@ class VendorOnboardingController extends Controller
                 'categories' => $serviceCategories,
                 'specialties' => $specialties,
                 'supports_pickup' => $courierPickup,
+                'supports_onsite_repair' => $inShopRepair,
+                'free_delivery' => false,
                 'inspection_fee' => null,
                 'base_labor_fee' => null,
                 'is_active' => false,
@@ -382,6 +405,14 @@ class VendorOnboardingController extends Controller
                     'rating' => 0.00,
                     'review_count' => 0,
                 ]));
+            }
+
+            if ($pkgOpt['provided']) {
+                $this->syncShopFixedPackages(
+                    $primaryShop,
+                    $pkgOpt['provides_fixed_packages'],
+                    $pkgOpt['package_ids']
+                );
             }
 
             DB::table('shop_staff')->updateOrInsert(
@@ -487,13 +518,17 @@ class VendorOnboardingController extends Controller
         }
 
         if ($primaryShop) {
-            $primaryShop->load(['services' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')]);
+            $primaryShop->load([
+                'services' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order'),
+                'servicePackages:id',
+            ]);
         }
 
         $onboardingTags = self::onboardingSpecialtyTags($profile);
         $serviceSuggestions = ServiceSuggestionCatalog::forTags($onboardingTags);
+        $availablePackages = $this->activePlatformPackages();
 
-        return view('vendor.setup-shop', compact('profile', 'primaryShop', 'branches', 'user', 'onboardingTags', 'serviceSuggestions'));
+        return view('vendor.setup-shop', compact('profile', 'primaryShop', 'branches', 'user', 'onboardingTags', 'serviceSuggestions', 'availablePackages'));
     }
 
     /**
@@ -552,11 +587,14 @@ class VendorOnboardingController extends Controller
             'courier_pickup' => 'nullable|boolean',
             'in_shop_repair' => 'nullable|boolean',
             'spare_parts' => 'nullable|boolean',
-            'inspection_fee' => 'required|numeric|min:0',
-            'base_labor_fee' => 'required|numeric|min:0',
+            'inspection_fee' => 'nullable|numeric|min:0',
+            'base_labor_fee' => 'nullable|numeric|min:0',
             'pickup_fee' => 'nullable|numeric|min:0',
             'express_fee' => 'nullable|numeric|min:0',
             // Fixed-price services & packages are optional: new vendors start with an empty list.
+            'provides_fixed_packages' => 'nullable|boolean',
+            'service_package_ids' => 'nullable|array|max:100',
+            'service_package_ids.*' => 'integer',
             'skill_tags' => 'nullable|array|max:50',
             'skill_tags.*' => 'nullable|string|max:600',
             'logo' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
@@ -575,12 +613,37 @@ class VendorOnboardingController extends Controller
         $courierPickup = $request->boolean('courier_pickup');
         $inShopRepair = $request->boolean('in_shop_repair');
         $spareParts = $request->boolean('spare_parts');
+        $pkgOpt = $this->normalizePackageOptIn($request);
+        $hasFixedPackages = ($pkgOpt['provided'] && $pkgOpt['provides_fixed_packages'])
+            || ($profile->provides_fixed_packages && !$pkgOpt['provided']);
 
-        if (!$courierPickup && !$inShopRepair && !$spareParts) {
+        if (!$courierPickup && !$inShopRepair && !$spareParts && !$hasFixedPackages) {
             throw ValidationException::withMessages([
-                'services' => 'Please select at least one service option (Courier pickup, In-shop repair, or Spare parts).',
+                'services' => 'Please select at least one store capability (Courier Pickup, In-Shop Repair, Spare Parts Store, or Fixed-Price Repair Packages).',
             ]);
         }
+
+        $offersRepairs = $courierPickup || $inShopRepair || $hasFixedPackages;
+        if (
+            $offersRepairs
+            && (
+                !isset($validated['inspection_fee'])
+                || $validated['inspection_fee'] === ''
+                || !isset($validated['base_labor_fee'])
+                || $validated['base_labor_fee'] === ''
+            )
+        ) {
+            throw ValidationException::withMessages([
+                'inspection_fee' => 'Please enter inspection and base labor fees for repair services (enter 0 if complimentary).',
+            ]);
+        }
+
+        $inspectionFee = $offersRepairs
+            ? (float) $validated['inspection_fee']
+            : (float) ($validated['inspection_fee'] ?? 0);
+        $baseLaborFee = $offersRepairs
+            ? (float) $validated['base_labor_fee']
+            : (float) ($validated['base_labor_fee'] ?? 0);
 
         $serviceCategories = array_values(array_filter([
             $courierPickup ? 'COURIER_PICKUP' : null,
@@ -681,7 +744,8 @@ class VendorOnboardingController extends Controller
         DB::transaction(function () use (
             $user, $profile, $primaryShop, $isEditingFirstShop, $request, $validated, $cleanPhone,
             $address, $gpsAddress, $sameAsGps, $city, $area, $lat, $lng, $courierPickup,
-            $inShopRepair, $spareParts, $serviceCategories, $skillTags, $logoUrl, $bannerUrl,
+            $inShopRepair, $spareParts, $offersRepairs, $inspectionFee, $baseLaborFee,
+            $pkgOpt, $serviceCategories, $skillTags, $logoUrl, $bannerUrl,
             $parsedServices, $shopSpecialties, &$shop
         ) {
             $user->update([
@@ -718,7 +782,7 @@ class VendorOnboardingController extends Controller
 
             $shopData = [
                 'name' => trim($validated['shop_name']),
-                'description' => !empty($validated['description']) ? trim($validated['description']) : "Verified electronic repair workshop in {$area}, {$city}.",
+                'description' => !empty($validated['description']) ? trim($validated['description']) : ($offersRepairs ? "Verified electronic repair workshop in {$area}, {$city}." : "Verified spare parts store in {$area}, {$city}."),
                 'logo_url' => $logoUrl,
                 'banner_url' => $bannerUrl,
                 'phone' => $cleanPhone,
@@ -733,18 +797,28 @@ class VendorOnboardingController extends Controller
                 'categories' => $serviceCategories,
                 'specialties' => $shopSpecialties,
                 'supports_pickup' => $courierPickup,
-                'inspection_fee' => (float) $validated['inspection_fee'],
-                'base_labor_fee' => (float) $validated['base_labor_fee'],
-                'pickup_fee' => isset($validated['pickup_fee']) && $validated['pickup_fee'] !== '' ? (float) $validated['pickup_fee'] : null,
-                'express_fee' => isset($validated['express_fee']) && $validated['express_fee'] !== '' ? (float) $validated['express_fee'] : null,
+                'supports_onsite_repair' => $inShopRepair,
+                'free_delivery' => $courierPickup ? ($primaryShop->free_delivery ?? false) : false,
+                'inspection_fee' => $inspectionFee,
+                'base_labor_fee' => $baseLaborFee,
+                'pickup_fee' => $courierPickup && isset($validated['pickup_fee']) && $validated['pickup_fee'] !== '' ? (float) $validated['pickup_fee'] : null,
+                'express_fee' => $courierPickup && isset($validated['express_fee']) && $validated['express_fee'] !== '' ? (float) $validated['express_fee'] : null,
                 'is_active' => true,
                 'is_public' => true,
                 'setup_complete' => true,
                 'accepts_direct_orders' => true,
             ];
 
-            if ($primaryShop === null || $primaryShop->offer_summary === null || str_starts_with((string) $primaryShop->offer_summary, 'Inspection ৳')) {
-                $shopData['offer_summary'] = 'Inspection ৳' . (int) round((float) $validated['inspection_fee']);
+            $defaultOffer = (!$offersRepairs && $spareParts)
+                ? 'Verified Spare Parts Store'
+                : ('Inspection ৳' . (int) round($inspectionFee));
+            if (
+                $primaryShop === null
+                || $primaryShop->offer_summary === null
+                || str_starts_with((string) $primaryShop->offer_summary, 'Inspection ৳')
+                || $primaryShop->offer_summary === 'Verified Spare Parts Store'
+            ) {
+                $shopData['offer_summary'] = $defaultOffer;
             }
 
             if ($primaryShop) {
@@ -791,20 +865,43 @@ class VendorOnboardingController extends Controller
                 ->when(!empty($keptSlugs), fn ($q) => $q->whereNotIn('slug', $keptSlugs))
                 ->update(['is_active' => false]);
 
+            if ($pkgOpt['provided']) {
+                $profile->update([
+                    'provides_fixed_packages' => $pkgOpt['provides_fixed_packages'],
+                    'offered_package_ids' => $pkgOpt['package_ids'],
+                ]);
+                $this->syncShopFixedPackages(
+                    $shop,
+                    $pkgOpt['provides_fixed_packages'],
+                    $pkgOpt['package_ids']
+                );
+            }
+
             if ($request->boolean('sync_pricing_all_branches') && $profile->shops->count() > 1) {
                 $sharedRates = [
-                    'inspection_fee' => (float) $validated['inspection_fee'],
-                    'base_labor_fee' => (float) $validated['base_labor_fee'],
-                    'pickup_fee' => isset($validated['pickup_fee']) && $validated['pickup_fee'] !== '' ? (float) $validated['pickup_fee'] : null,
-                    'express_fee' => isset($validated['express_fee']) && $validated['express_fee'] !== '' ? (float) $validated['express_fee'] : null,
+                    'inspection_fee' => $inspectionFee,
+                    'base_labor_fee' => $baseLaborFee,
+                    'pickup_fee' => $courierPickup && isset($validated['pickup_fee']) && $validated['pickup_fee'] !== '' ? (float) $validated['pickup_fee'] : null,
+                    'express_fee' => $courierPickup && isset($validated['express_fee']) && $validated['express_fee'] !== '' ? (float) $validated['express_fee'] : null,
                 ];
                 $otherBranches = $profile->shops()->where('id', '!=', $shop->id)->get();
                 foreach ($otherBranches as $otherBranch) {
                     $branchUpdate = $sharedRates;
-                    if ($otherBranch->offer_summary === null || str_starts_with((string) $otherBranch->offer_summary, 'Inspection ৳')) {
-                        $branchUpdate['offer_summary'] = 'Inspection ৳' . (int) round((float) $validated['inspection_fee']);
+                    if (
+                        $otherBranch->offer_summary === null
+                        || str_starts_with((string) $otherBranch->offer_summary, 'Inspection ৳')
+                        || $otherBranch->offer_summary === 'Verified Spare Parts Store'
+                    ) {
+                        $branchUpdate['offer_summary'] = $defaultOffer;
                     }
                     $otherBranch->update($branchUpdate);
+                    if ($pkgOpt['provided']) {
+                        $this->syncShopFixedPackages(
+                            $otherBranch,
+                            $pkgOpt['provides_fixed_packages'],
+                            $pkgOpt['package_ids']
+                        );
+                    }
                 }
             }
         });
@@ -836,7 +933,7 @@ class VendorOnboardingController extends Controller
         }
 
         $profile = $user
-            ? VendorProfile::with('shops')->where('user_id', $user->id)->first()
+            ? VendorProfile::with(['shops', 'shops.servicePackages:id'])->where('user_id', $user->id)->first()
             : null;
 
         if ($request->expectsJson() || $request->is('api/*')) {
@@ -846,7 +943,9 @@ class VendorOnboardingController extends Controller
             ]);
         }
 
-        return view('vendor.onboarding', compact('profile'));
+        $availablePackages = $this->activePlatformPackages();
+
+        return view('vendor.onboarding', compact('profile', 'availablePackages'));
     }
 
     /**
@@ -872,6 +971,12 @@ class VendorOnboardingController extends Controller
             'is_branched' => 'nullable|boolean',
             'branch_name' => 'nullable|string|max:120',
             'categories' => 'required|array|min:1',
+            'courier_pickup' => 'nullable|boolean',
+            'in_shop_repair' => 'nullable|boolean',
+            'spare_parts' => 'nullable|boolean',
+            'provides_fixed_packages' => 'nullable|boolean',
+            'service_package_ids' => 'nullable|array|max:100',
+            'service_package_ids.*' => 'integer',
             'logo' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif|max:15360',
             'verification_document' => 'nullable|file|mimetypes:image/jpeg,image/pjpeg,image/png,image/webp,image/gif,image/bmp,image/avif,application/pdf|max:15360',
         ]);
@@ -889,6 +994,25 @@ class VendorOnboardingController extends Controller
                 'nid_number' => 'National ID must be 10, 13, or 17 digits (numbers only).',
             ]);
         }
+
+        $pkgOpt = $this->normalizePackageOptIn($request);
+        $hasExplicitFulfillment = $request->hasAny(['courier_pickup', 'in_shop_repair', 'spare_parts']);
+        $courierPickup = $hasExplicitFulfillment ? $request->boolean('courier_pickup') : true;
+        $inShopRepair = $hasExplicitFulfillment ? $request->boolean('in_shop_repair') : true;
+        $spareParts = $hasExplicitFulfillment ? $request->boolean('spare_parts') : false;
+
+        if ($hasExplicitFulfillment && !$courierPickup && !$inShopRepair && !$spareParts && !$pkgOpt['provides_fixed_packages']) {
+            throw ValidationException::withMessages([
+                'services' => 'Please select at least one store capability (Courier Pickup, In-Shop Repair, Spare Parts Store, or Fixed-Price Repair Packages).',
+            ]);
+        }
+
+        $serviceCategories = array_values(array_filter([
+            $courierPickup ? 'COURIER_PICKUP' : null,
+            $inShopRepair ? 'IN_SHOP_REPAIR' : null,
+            $spareParts ? 'SPARE_PARTS' : null,
+        ]));
+        $offersRepairs = $courierPickup || $inShopRepair || $pkgOpt['provides_fixed_packages'];
 
         $sameAsGps = $request->boolean('same_as_gps_location');
         $gpsAddress = trim((string) ($validated['gps_address'] ?? ''));
@@ -999,6 +1123,13 @@ class VendorOnboardingController extends Controller
             ]
         );
 
+        if ($pkgOpt['provided']) {
+            $profile->update([
+                'provides_fixed_packages' => $pkgOpt['provides_fixed_packages'],
+                'offered_package_ids' => $pkgOpt['package_ids'],
+            ]);
+        }
+
         $primaryShop = RepairShop::where('vendor_profile_id', $profile->id)->orderBy('id')->first();
         $baseSlug = Str::slug($validated['shop_name'] . ($branchName ? '-' . $branchName : ''));
         if ($baseSlug === '') {
@@ -1018,9 +1149,12 @@ class VendorOnboardingController extends Controller
                 'area' => $area,
                 'latitude' => $lat,
                 'longitude' => $lng,
+                'categories' => $serviceCategories,
+                'supports_pickup' => $courierPickup,
+                'supports_onsite_repair' => $inShopRepair,
                 'specialties' => $validated['categories'],
-                'inspection_fee' => $primaryShop->inspection_fee ?? 250,
-                'base_labor_fee' => $primaryShop->base_labor_fee ?? 500,
+                'inspection_fee' => $offersRepairs ? ($primaryShop->inspection_fee ?? 250) : 0,
+                'base_labor_fee' => $offersRepairs ? ($primaryShop->base_labor_fee ?? 500) : 0,
                 'is_active' => true,
                 'is_public' => false,
                 'setup_complete' => false,
@@ -1038,7 +1172,9 @@ class VendorOnboardingController extends Controller
                 'is_branch' => $isBranched,
                 'branch_name' => $branchName,
                 'logo_url' => $logoUrl,
-                'description' => "Verified electronic repair workshop in {$area}, {$city}.",
+                'description' => $offersRepairs
+                    ? "Verified electronic repair workshop in {$area}, {$city}."
+                    : "Verified spare parts store in {$area}, {$city}.",
                 'address' => $vendorAddress,
                 'gps_address' => $gpsAddress,
                 'same_as_gps_location' => ($vendorAddress === $gpsAddress) && $sameAsGps,
@@ -1048,16 +1184,26 @@ class VendorOnboardingController extends Controller
                 'longitude' => $lng,
                 'rating' => 0.00,
                 'review_count' => 0,
-                'categories' => ['IN_SHOP_REPAIR', 'COURIER_PICKUP'],
+                'categories' => $serviceCategories,
+                'supports_pickup' => $courierPickup,
+                'supports_onsite_repair' => $inShopRepair,
                 'specialties' => $validated['categories'],
-                'inspection_fee' => 250,
-                'base_labor_fee' => 500,
+                'inspection_fee' => $offersRepairs ? 250 : 0,
+                'base_labor_fee' => $offersRepairs ? 500 : 0,
                 'phone' => $user->phone ?? '+8801711000000',
                 'is_active' => true,
                 'is_public' => false,
                 'setup_complete' => false,
                 'accepts_direct_orders' => false,
             ]);
+        }
+
+        if ($pkgOpt['provided']) {
+            $this->syncShopFixedPackages(
+                $primaryShop,
+                $pkgOpt['provides_fixed_packages'],
+                $pkgOpt['package_ids']
+            );
         }
 
         DB::table('shop_staff')->updateOrInsert(
@@ -1089,19 +1235,19 @@ class VendorOnboardingController extends Controller
      */
     public function adminIndex(Request $request)
     {
-        $pendingVendors = VendorProfile::with(['user', 'shops'])
+        $pendingVendors = VendorProfile::with(['user', 'shops', 'shops.servicePackages:id'])
             ->whereIn('verification_status', ['pending', 'under_review'])
             ->orderByDesc('updated_at')
             ->get();
 
-        $rejectedVendors = VendorProfile::with(['user', 'shops'])
+        $rejectedVendors = VendorProfile::with(['user', 'shops', 'shops.servicePackages:id'])
             ->where('verification_status', 'rejected')
             ->orderByDesc('updated_at')
             ->take(20)
             ->get();
 
         $search = trim((string) $request->query('q', ''));
-        $approvedQuery = VendorProfile::with(['user', 'shops'])
+        $approvedQuery = VendorProfile::with(['user', 'shops', 'shops.servicePackages:id'])
             ->where('verification_status', 'approved');
 
         if ($search !== '') {
@@ -1129,12 +1275,15 @@ class VendorOnboardingController extends Controller
             'publicStorefrontsCount' => RepairShop::where('is_active', true)->where('is_public', true)->count(),
         ];
 
+        $availablePackages = $this->activePlatformPackages();
+
         return view('admin.verify-vendor', compact(
             'pendingVendors',
             'rejectedVendors',
             'approvedVendors',
             'stats',
-            'search'
+            'search',
+            'availablePackages'
         ));
     }
 
@@ -1193,6 +1342,14 @@ class VendorOnboardingController extends Controller
                     'setup_complete' => false,
                     'accepts_direct_orders' => false,
                 ]);
+            }
+
+            if ($profile->provides_fixed_packages === true
+                && is_array($profile->offered_package_ids)
+                && !empty($profile->offered_package_ids)
+                && Schema::hasTable('repair_shop_service_package')
+                && $shop->servicePackages()->count() === 0) {
+                $this->syncShopFixedPackages($shop, true, array_map('intval', $profile->offered_package_ids));
             }
         }
 
@@ -1510,5 +1667,88 @@ class VendorOnboardingController extends Controller
             || str_starts_with($trimmed, 'http://')
             || (str_starts_with($trimmed, '/') && !str_starts_with($trimmed, '//'))
             || str_starts_with($trimmed, 'data:image/');
+    }
+
+    private function activePlatformPackages(): Collection
+    {
+        if (!Schema::hasTable('service_packages')) {
+            return collect();
+        }
+
+        return ServicePackage::where('is_active', true)
+            ->orderBy('device_category')
+            ->orderBy('fixed_price')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * Normalize fixed-price platform package opt-in submitted from onboarding/setup forms.
+     *
+     * @return array{provided: bool, provides_fixed_packages: ?bool, package_ids: int[]}
+     */
+    private function normalizePackageOptIn(Request $request): array
+    {
+        if (!$request->has('provides_fixed_packages') && !$request->has('service_package_ids')) {
+            return [
+                'provided' => false,
+                'provides_fixed_packages' => null,
+                'package_ids' => [],
+            ];
+        }
+
+        if ($request->has('provides_fixed_packages') && !$request->boolean('provides_fixed_packages')) {
+            return [
+                'provided' => true,
+                'provides_fixed_packages' => false,
+                'package_ids' => [],
+            ];
+        }
+
+        $rawIds = array_values(array_unique(array_filter(
+            array_map('intval', (array) $request->input('service_package_ids', [])),
+            fn (int $id) => $id > 0
+        )));
+
+        $validIds = (!empty($rawIds) && Schema::hasTable('service_packages'))
+            ? ServicePackage::where('is_active', true)
+                ->whereIn('id', $rawIds)
+                ->orderBy('id')
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all()
+            : [];
+
+        if ($request->boolean('provides_fixed_packages') && empty($validIds)) {
+            throw ValidationException::withMessages([
+                'service_package_ids' => 'Please select at least one fixed-price repair package, or choose No.',
+            ]);
+        }
+
+        return [
+            'provided' => true,
+            'provides_fixed_packages' => !empty($validIds),
+            'package_ids' => $validIds,
+        ];
+    }
+
+    /**
+     * Synchronize a workshop's offered platform Fixed-Price Repair Packages.
+     *
+     * @param  int[]  $packageIds
+     */
+    private function syncShopFixedPackages(RepairShop $shop, ?bool $provides, array $packageIds): void
+    {
+        if ($provides === null || !Schema::hasTable('repair_shop_service_package')) {
+            return;
+        }
+
+        if ($provides === false) {
+            $shop->servicePackages()->sync([]);
+            return;
+        }
+
+        $shop->servicePackages()->sync(array_values(array_unique(array_map('intval', $packageIds))));
     }
 }

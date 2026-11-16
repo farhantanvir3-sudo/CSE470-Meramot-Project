@@ -194,13 +194,25 @@ Models Touched: VendorProfile, RepairShop, User
                             </div>
                         @endif
 
-                        @if(!empty($vendor->categories))
+                        @if(!empty($vendor->categories) || $vendor->provides_fixed_packages !== null)
                             <div class="flex flex-wrap items-center gap-1.5 pt-1">
-                                @foreach((array) $vendor->categories as $cat)
+                                @foreach((array) ($vendor->categories ?? []) as $cat)
                                     <span class="rounded-full border border-[var(--border)] bg-[var(--card)] px-2.5 py-0.5 text-[10px] font-semibold text-[var(--foreground)]">
                                         {{ $cat }}
                                     </span>
                                 @endforeach
+                                @if($vendor->provides_fixed_packages === true)
+                                    @php
+                                        $pkgCount = count((array) ($vendor->offered_package_ids ?? []));
+                                    @endphp
+                                    <span class="inline-flex items-center gap-1 rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                                        <i class="fa-solid fa-box-open"></i> {{ $pkgCount }} Fixed {{ \Illuminate\Support\Str::plural('Package', $pkgCount) }}
+                                    </span>
+                                @elseif($vendor->provides_fixed_packages === false)
+                                    <span class="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-100 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600">
+                                        No Platform Fixed Packages
+                                    </span>
+                                @endif
                             </div>
                         @endif
                     </div>

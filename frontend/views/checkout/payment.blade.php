@@ -129,10 +129,17 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                     <span>Service &amp; Escrow Protection Fee:</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($escrowFee, 2) }}</span>
                 </div>
-                <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Doorstep Pickup &amp; Delivery ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }}):</span>
-                    <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($deliveryFee, 2) }}</span>
-                </div>
+                @if($repairRequest->requiresCourierLogistics())
+                    <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
+                        <span>Doorstep Pickup &amp; Delivery ({{ $repairRequest->delivery_type === 'EXPRESS' ? 'Express' : 'Regular' }}):</span>
+                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($deliveryFee, 2) }}</span>
+                    </div>
+                @else
+                    <div class="flex justify-between gap-3 text-emerald-800 font-semibold">
+                        <span>In-Shop Walk-In (No Delivery):</span>
+                        <span class="shrink-0">৳0.00</span>
+                    </div>
+                @endif
             @else
                 @php
                     $quoteSourceJob = $repairRequest->repairJob;
@@ -177,10 +184,17 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                     <span>Service &amp; Escrow Protection Fee:</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($escrowFee, 2) }}</span>
                 </div>
-                <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Doorstep Pickup &amp; Delivery:</span>
-                    <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($deliveryFee, 2) }}</span>
-                </div>
+                @if($repairRequest->requiresCourierLogistics())
+                    <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
+                        <span>Doorstep Pickup &amp; Delivery:</span>
+                        <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($deliveryFee, 2) }}</span>
+                    </div>
+                @else
+                    <div class="flex justify-between gap-3 text-emerald-800 font-semibold">
+                        <span>In-Shop Walk-In (No Delivery):</span>
+                        <span class="shrink-0">৳0.00</span>
+                    </div>
+                @endif
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
                     <span>Escrow Buyer Protection Coverage:</span>
                     <span class="font-bold text-emerald-700 shrink-0">Included</span>

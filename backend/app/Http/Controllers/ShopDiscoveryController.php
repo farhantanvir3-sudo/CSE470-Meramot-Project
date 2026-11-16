@@ -123,9 +123,16 @@ class ShopDiscoveryController extends Controller
         $searchRelevanceOrder = MarketplaceSearchEngine::applyShopSearch($query, $request->input('q'));
 
         // 2. Category Tab Filter (COURIER_PICKUP, IN_SHOP_REPAIR, SPARE_PARTS)
+        // Exclude pure spare-parts-only wholesalers from default repair workshop listings unless searching explicitly.
         if ($request->filled('category')) {
             $category = $request->input('category');
             $query->whereRaw("categories::text ILIKE ?", ["%{$category}%"]);
+        } elseif (!$request->filled('q')) {
+            $query->where(function ($q) {
+                $q->whereRaw("categories::text ILIKE ?", ['%COURIER_PICKUP%'])
+                    ->orWhereRaw("categories::text ILIKE ?", ['%IN_SHOP_REPAIR%'])
+                    ->orWhereHas('vendorProfile', fn ($vp) => $vp->where('provides_fixed_packages', true));
+            });
         }
 
         // 3. Nationwide District / City Filter
@@ -148,7 +155,8 @@ class ShopDiscoveryController extends Controller
             $query->where('has_voucher', true);
         }
         if ($request->boolean('freeDelivery') || $request->boolean('free_delivery')) {
-            $query->where('free_delivery', true);
+            $query->where('free_delivery', true)
+                ->where('supports_pickup', true);
         }
         if ($request->boolean('deals') || $request->boolean('has_deals')) {
             $query->where('has_deals', true);
@@ -312,6 +320,12 @@ class ShopDiscoveryController extends Controller
             'services' => function ($q) {
                 $q->where('is_active', true)->orderBy('sort_order', 'asc');
             },
+            'servicePackages' => function ($q) {
+                $q->where('service_packages.is_active', true)
+                    ->orderByDesc('is_popular')
+                    ->orderBy('fixed_price', 'asc')
+                    ->orderBy('service_packages.id', 'asc');
+            },
         ])->where('slug', $slug)->firstOrFail();
 
         if ($shop->latitude !== null && $shop->longitude !== null) {
@@ -346,6 +360,13 @@ class ShopDiscoveryController extends Controller
         $relatedShops = RepairShop::where('is_active', true)
             ->where('is_public', true)
             ->where('id', '!=', $shop->id)
+            ->when(!$shop->isPureSparePartsWholesaler(), function ($q) {
+                $q->where(function ($sub) {
+                    $sub->whereRaw("categories::text ILIKE ?", ['%COURIER_PICKUP%'])
+                        ->orWhereRaw("categories::text ILIKE ?", ['%IN_SHOP_REPAIR%'])
+                        ->orWhereHas('vendorProfile', fn ($vp) => $vp->where('provides_fixed_packages', true));
+                });
+            })
             ->where(function ($q) use ($shop) {
                 $q->where('area', $shop->area)->orWhere('city', $shop->city);
             })

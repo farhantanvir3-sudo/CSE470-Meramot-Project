@@ -121,6 +121,11 @@ class RepairShop extends Model
         return $this->hasMany(ShopService::class, 'shop_id');
     }
 
+    public function servicePackages()
+    {
+        return $this->belongsToMany(ServicePackage::class, 'repair_shop_service_package')->withTimestamps();
+    }
+
     public function carts()
     {
         return $this->hasMany(Cart::class, 'shop_id');
@@ -197,5 +202,86 @@ class RepairShop extends Model
         }
 
         return VendorProfile::DEFAULT_COMMISSION_RATE;
+    }
+
+    /**
+     * Normalized uppercase capability tags stored on this storefront.
+     *
+     * @return string[]
+     */
+    private function normalizedCategoryTags(): array
+    {
+        return array_values(array_unique(array_filter(array_map(
+            fn ($item) => strtoupper(trim((string) $item)),
+            (array) ($this->categories ?? [])
+        ))));
+    }
+
+    /**
+     * Whether this workshop supports platform Courier Pickup & Return logistics.
+     */
+    public function supportsCourierPickup(): bool
+    {
+        $cats = $this->normalizedCategoryTags();
+        if (!empty($cats)) {
+            return in_array('COURIER_PICKUP', $cats, true);
+        }
+
+        return (bool) $this->supports_pickup;
+    }
+
+    /**
+     * Whether customers can walk into this workshop for on-site repair without delivery.
+     */
+    public function supportsInShopRepair(): bool
+    {
+        $cats = $this->normalizedCategoryTags();
+        if (!empty($cats)) {
+            return in_array('IN_SHOP_REPAIR', $cats, true);
+        }
+
+        return (bool) ($this->supports_onsite_repair ?? true);
+    }
+
+    /**
+     * Whether this storefront sells replacement hardware / wholesale spare parts.
+     */
+    public function supportsSpareParts(): bool
+    {
+        return in_array('SPARE_PARTS', $this->normalizedCategoryTags(), true);
+    }
+
+    /**
+     * Whether this workshop offers model-independent Fixed-Price Repair Packages.
+     */
+    public function supportsFixedPackages(): bool
+    {
+        if ($this->relationLoaded('vendorProfile') && $this->vendorProfile && $this->vendorProfile->provides_fixed_packages === true) {
+            return true;
+        }
+
+        if ($this->relationLoaded('servicePackages')) {
+            return $this->servicePackages->isNotEmpty();
+        }
+
+        return $this->servicePackages()->exists();
+    }
+
+    /**
+     * Whether customers can book device repairs (via courier, in-shop walk-in, or fixed packages).
+     */
+    public function supportsRepairBookings(): bool
+    {
+        return $this->supportsCourierPickup()
+            || $this->supportsInShopRepair()
+            || $this->supportsFixedPackages();
+    }
+
+    /**
+     * Whether this store operates strictly as a Spare Parts Wholesaler / Store without repair bench services.
+     */
+    public function isPureSparePartsWholesaler(): bool
+    {
+        return $this->supportsSpareParts() && !$this->supportsRepairBookings();
     }
 }

@@ -100,9 +100,13 @@
                                         Voucher
                                     </span>
                                 @endif
-                                @if($shop->free_delivery)
+                                @if($shop->supportsCourierPickup() && $shop->free_delivery)
                                     <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[var(--accent-dark)] text-xs md:text-sm">
-                                        Free delivery
+                                        Free Courier Pickup
+                                    </span>
+                                @elseif(!$shop->supportsCourierPickup() && $shop->supportsInShopRepair())
+                                    <span class="rounded-full bg-[var(--mint-100)] px-3 py-1 text-[var(--accent-dark)] text-xs md:text-sm">
+                                        In-Shop Walk-In
                                     </span>
                                 @endif
                                 @if($shop->has_deals)
@@ -170,7 +174,7 @@
                                         VOUCHER
                                     </span>
                                 @endif
-                                @if($shop->free_delivery)
+                                @if($shop->supportsCourierPickup() && $shop->free_delivery)
                                     <span class="rounded bg-[var(--mint-100)] px-1.5 py-[3px] text-[7px] font-bold uppercase tracking-widest text-[var(--accent-dark)] leading-none">
                                         FREE
                                     </span>

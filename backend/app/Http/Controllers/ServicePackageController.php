@@ -323,9 +323,10 @@ class ServicePackageController extends Controller
         session()->put('customer_location', $location);
 
         $matched = null;
+        $requiredPackageIds = $this->extractRequiredPackageIds();
         if (!session('cart_shop_locked')) {
             session()->forget(['cart_shop_manual', 'cart_shop_id']);
-            $matched = $this->quickMatchWorkshop($location);
+            $matched = $this->quickMatchWorkshop($location, $requiredPackageIds);
             if (!empty(session('cart', []))) {
                 if ($matched) {
                     session()->put('cart_shop_id', $matched->id);
@@ -476,20 +477,91 @@ class ServicePackageController extends Controller
      * Filter workshops to strictly the customer's city and within max local service radius,
      * computing dynamic Haversine distance when customer coordinates exist.
      */
-    private function collectLocalEligibleShops(array $customerLocation, float $maxRadiusKm = self::MAX_QUICKMATCH_RADIUS_KM): Collection
+    private function isStrictPackageCapabilityActive(): bool
+    {
+        if (!Schema::hasTable('repair_shop_service_package')) {
+            return false;
+        }
+
+        return DB::table('repair_shop_service_package')->exists()
+            || VendorProfile::whereNotNull('provides_fixed_packages')->exists();
+    }
+
+    /**
+     * @return int[]
+     */
+    private function extractRequiredPackageIds(?array $cart = null): array
+    {
+        $items = $cart ?? session()->get('cart', []);
+        $ids = [];
+        foreach ($items as $item) {
+            if (($item['source'] ?? '') === 'QUICKMATCH_PACKAGE' && !empty($item['id'])) {
+                $ids[] = (int) $item['id'];
+            }
+        }
+        return array_values(array_unique(array_filter($ids, fn (int $id) => $id > 0)));
+    }
+
+    /**
+     * @param  int[]  $packageIds
+     */
+    private function shopSupportsPackages(?RepairShop $shop, array $packageIds): bool
+    {
+        if (!$shop) {
+            return false;
+        }
+        if (empty($packageIds) || !$this->isStrictPackageCapabilityActive()) {
+            return true;
+        }
+
+        if ($shop->relationLoaded('servicePackages')) {
+            $offered = $shop->servicePackages->pluck('id')->map(fn ($id) => (int) $id)->all();
+            foreach ($packageIds as $pkgId) {
+                if (!in_array((int) $pkgId, $offered, true)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        $matchedCount = DB::table('repair_shop_service_package')
+            ->where('repair_shop_id', $shop->id)
+            ->whereIn('service_package_id', $packageIds)
+            ->distinct('service_package_id')
+            ->count('service_package_id');
+
+        return $matchedCount >= count($packageIds);
+    }
+
+    /**
+     * @param  int[]  $packageIds
+     */
+    private function collectLocalEligibleShops(array $customerLocation, float $maxRadiusKm = self::MAX_QUICKMATCH_RADIUS_KM, array $packageIds = []): Collection
     {
         $city = strtolower(trim((string) ($customerLocation['city'] ?? 'Dhaka')));
         $hasCoords = !empty($customerLocation['has_coordinates'])
             && $customerLocation['lat'] !== null
             && $customerLocation['lng'] !== null;
 
-        $candidates = RepairShop::query()
+        $query = RepairShop::query()
             ->where('is_active', true)
             ->where('is_public', true)
             ->where('setup_complete', true)
             ->where('accepts_direct_orders', true)
-            ->whereRaw('LOWER(TRIM(city)) = ?', [$city])
-            ->get();
+            ->where(function ($q) {
+                $q->whereRaw("categories::text ILIKE ?", ['%COURIER_PICKUP%'])
+                    ->orWhereRaw("categories::text ILIKE ?", ['%IN_SHOP_REPAIR%'])
+                    ->orWhereHas('vendorProfile', fn ($vp) => $vp->where('provides_fixed_packages', true));
+            })
+            ->whereRaw('LOWER(TRIM(city)) = ?', [$city]);
+
+        if (!empty($packageIds) && $this->isStrictPackageCapabilityActive()) {
+            foreach ($packageIds as $pkgId) {
+                $query->whereHas('servicePackages', fn ($q) => $q->where('service_packages.id', (int) $pkgId));
+            }
+        }
+
+        $candidates = $query->get();
 
         return $candidates->filter(function (RepairShop $shop) use ($customerLocation, $hasCoords, $maxRadiusKm) {
             if (!$hasCoords) {
@@ -529,9 +601,12 @@ class ServicePackageController extends Controller
      *   2. Fallback: If distance/ratings cannot resolve a match, prefer Featured shops in the same city.
      *   3. Final Local Fallback: Best rated / closest verified same-city shop within range, else null.
      */
-    public function quickMatchWorkshop(array $customerLocation): ?RepairShop
+    /**
+     * @param  int[]  $packageIds
+     */
+    public function quickMatchWorkshop(array $customerLocation, array $packageIds = []): ?RepairShop
     {
-        $eligible = $this->collectLocalEligibleShops($customerLocation, self::MAX_QUICKMATCH_RADIUS_KM);
+        $eligible = $this->collectLocalEligibleShops($customerLocation, self::MAX_QUICKMATCH_RADIUS_KM, $packageIds);
         if ($eligible->isEmpty()) {
             return null;
         }
@@ -688,14 +763,14 @@ class ServicePackageController extends Controller
     /**
      * Return bounded local-city workshops sorted by proximity, rating & featured status for dropdown selectors.
      */
-    private function getLocalSelectableShops(array $customerLocation, ?RepairShop $activeShop = null): Collection
+    /**
+     * Sort local eligible workshops by proximity band, rating, featured priority, exact distance, and name.
+     *
+     * @param  RepairShop[]  $shops
+     * @return RepairShop[]
+     */
+    private function sortLocalShops(array $shops, bool $hasCoords): array
     {
-        $hasCoords = !empty($customerLocation['has_coordinates'])
-            && $customerLocation['lat'] !== null
-            && $customerLocation['lng'] !== null;
-
-        $shops = $this->collectLocalEligibleShops($customerLocation, 25.0)->all();
-
         usort($shops, function (RepairShop $a, RepairShop $b) use ($hasCoords) {
             $rankA = ((float) $a->rating > 0 || $a->is_featured) ? 1 : 0;
             $rankB = ((float) $b->rating > 0 || $b->is_featured) ? 1 : 0;
@@ -728,9 +803,28 @@ class ServicePackageController extends Controller
             return strcmp((string) $a->name, (string) $b->name);
         });
 
+        return $shops;
+    }
+
+    /**
+     * Return bounded local-city workshops sorted by proximity, rating & featured status for dropdown selectors.
+     *
+     * @param  int[]  $packageIds
+     */
+    private function getLocalSelectableShops(array $customerLocation, ?RepairShop $activeShop = null, array $packageIds = []): Collection
+    {
+        $hasCoords = !empty($customerLocation['has_coordinates'])
+            && $customerLocation['lat'] !== null
+            && $customerLocation['lng'] !== null;
+
+        $shops = $this->sortLocalShops(
+            $this->collectLocalEligibleShops($customerLocation, 25.0, $packageIds)->all(),
+            $hasCoords
+        );
+
         $collection = collect(array_slice($shops, 0, 25));
 
-        if ($activeShop && !$collection->contains('id', $activeShop->id)) {
+        if ($activeShop && $this->shopSupportsPackages($activeShop, $packageIds) && !$collection->contains('id', $activeShop->id)) {
             $collection->prepend($activeShop);
         }
 
@@ -739,16 +833,22 @@ class ServicePackageController extends Controller
 
     /**
      * Resolve target workshop for Direct Order (explicit/locked shop or Smart Quick-Match).
+     *
+     * @param  int[]  $packageIds
      */
-    private function resolveTargetShop(?int $requestedShopId = null, ?Request $request = null): ?RepairShop
+    private function resolveTargetShop(?int $requestedShopId = null, ?Request $request = null, array $packageIds = []): ?RepairShop
     {
         $customerLocation = $this->resolveCustomerLocation($request);
 
         if ($requestedShopId) {
             $shop = RepairShop::where('is_active', true)->where('is_public', true)->find($requestedShopId);
             if ($shop) {
+                if (!empty($packageIds) && !$this->shopSupportsPackages($shop, $packageIds)) {
+                    return null;
+                }
                 return $this->attachDistanceToShop($shop, $customerLocation);
             }
+            return null;
         }
 
         $sessionShopId = session('cart_shop_id');
@@ -756,16 +856,22 @@ class ServicePackageController extends Controller
             $shop = RepairShop::where('is_active', true)->where('is_public', true)->find($sessionShopId);
             if ($shop) {
                 if (session('cart_shop_locked')) {
+                    if (!empty($packageIds) && !$this->shopSupportsPackages($shop, $packageIds)) {
+                        return null;
+                    }
                     return $this->attachDistanceToShop($shop, $customerLocation);
                 }
 
                 if (session('cart_shop_manual')) {
                     if (strcasecmp((string) $shop->city, (string) ($customerLocation['city'] ?? 'Dhaka')) === 0) {
+                        if (!empty($packageIds) && !$this->shopSupportsPackages($shop, $packageIds)) {
+                            return null;
+                        }
                         return $this->attachDistanceToShop($shop, $customerLocation);
                     }
                     session()->forget(['cart_shop_manual', 'cart_shop_id']);
                 } else {
-                    $matched = $this->quickMatchWorkshop($customerLocation);
+                    $matched = $this->quickMatchWorkshop($customerLocation, $packageIds);
                     if ($matched) {
                         session()->put('cart_shop_id', $matched->id);
                     } else {
@@ -776,7 +882,7 @@ class ServicePackageController extends Controller
             }
         }
 
-        $matched = $this->quickMatchWorkshop($customerLocation);
+        $matched = $this->quickMatchWorkshop($customerLocation, $packageIds);
         if ($matched) {
             session()->put('cart_shop_id', $matched->id);
         }
@@ -873,11 +979,51 @@ class ServicePackageController extends Controller
             ->toArray();
 
         $customerLocation = $this->resolveCustomerLocation($request);
-        $activeShop = session('cart_shop_id') ? $this->resolveTargetShop(null, $request) : null;
+        $requiredPackageIds = $this->extractRequiredPackageIds();
+        $activeShop = session('cart_shop_id') ? $this->resolveTargetShop(null, $request, $requiredPackageIds) : null;
         $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
         $cartCount = count(session()->get('cart', []));
 
-        return view('packages.catalog', compact('packages', 'categories', 'verifiedShops', 'cartCount', 'customerLocation'));
+        $packageShopsMap = [];
+        $pkgIds = $packages->getCollection()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if (!empty($pkgIds)) {
+            if ($this->isStrictPackageCapabilityActive()) {
+                $hasCoords = !empty($customerLocation['has_coordinates'])
+                    && $customerLocation['lat'] !== null
+                    && $customerLocation['lng'] !== null;
+                $allSortedLocal = $this->sortLocalShops(
+                    $this->collectLocalEligibleShops($customerLocation, 25.0)->all(),
+                    $hasCoords
+                );
+                $pivotRows = DB::table('repair_shop_service_package')
+                    ->whereIn('service_package_id', $pkgIds)
+                    ->get(['repair_shop_id', 'service_package_id']);
+
+                $pivotByPkg = [];
+                foreach ($pivotRows as $row) {
+                    $pivotByPkg[(int) $row->service_package_id][(int) $row->repair_shop_id] = true;
+                }
+
+                foreach ($pkgIds as $pkgId) {
+                    $allowedShopIds = $pivotByPkg[$pkgId] ?? [];
+                    $matched = array_values(array_filter(
+                        $allSortedLocal,
+                        fn (RepairShop $s) => isset($allowedShopIds[(int) $s->id])
+                    ));
+                    $col = collect(array_slice($matched, 0, 25));
+                    if ($activeShop && isset($allowedShopIds[(int) $activeShop->id]) && !$col->contains('id', $activeShop->id)) {
+                        $col->prepend($activeShop);
+                    }
+                    $packageShopsMap[$pkgId] = $col;
+                }
+            } else {
+                foreach ($pkgIds as $pkgId) {
+                    $packageShopsMap[$pkgId] = $verifiedShops;
+                }
+            }
+        }
+
+        return view('packages.catalog', compact('packages', 'categories', 'verifiedShops', 'packageShopsMap', 'cartCount', 'customerLocation'));
     }
 
     /**
@@ -894,29 +1040,79 @@ class ServicePackageController extends Controller
     }
 
     /**
-     * Compute regular/express courier delivery fees (distance-based nationwide for Spare Parts,
-     * fixed metro rates for standard workshop services).
+     * Determine allowed fulfillment options (`COURIER_PICKUP`, `IN_SHOP`) and safe default mode
+     * for a workshop or spare parts store.
+     *
+     * @return array{can_courier: bool, can_in_shop: bool, default_mode: string}
      */
-    private function resolveCartDeliveryQuote(array $cart, ?RepairShop $shop, array $customerLocation, string $deliveryType = 'REGULAR'): array
+    private function resolveShopFulfillmentCapabilities(?RepairShop $shop, bool $isSparePartCart): array
     {
-        if ($this->cartHasSpareParts($cart) && $shop) {
+        if ($isSparePartCart) {
+            return [
+                'can_courier' => true,
+                'can_in_shop' => false,
+                'default_mode' => 'COURIER_PICKUP',
+            ];
+        }
+
+        if (!$shop) {
+            return [
+                'can_courier' => true,
+                'can_in_shop' => true,
+                'default_mode' => 'COURIER_PICKUP',
+            ];
+        }
+
+        $canCourier = $shop->supportsCourierPickup();
+        $canInShop = $shop->supportsInShopRepair();
+        if (!$canCourier && !$canInShop && $shop->supportsFixedPackages()) {
+            $canInShop = true;
+        }
+
+        $defaultMode = $canCourier ? 'COURIER_PICKUP' : ($canInShop ? 'IN_SHOP' : 'COURIER_PICKUP');
+
+        return [
+            'can_courier' => $canCourier,
+            'can_in_shop' => $canInShop,
+            'default_mode' => $defaultMode,
+        ];
+    }
+
+    /**
+     * Compute regular/express courier delivery fees (distance-based nationwide for Spare Parts,
+     * fixed metro rates for standard workshop services, or ৳0 for In-Shop Walk-In).
+     */
+    private function resolveCartDeliveryQuote(
+        array $cart,
+        ?RepairShop $shop,
+        array $customerLocation,
+        string $deliveryType = 'REGULAR',
+        string $fulfillmentMode = 'COURIER_PICKUP'
+    ): array {
+        $isSparePart = $this->cartHasSpareParts($cart);
+        $isInShop = !$isSparePart && strtoupper($fulfillmentMode) === 'IN_SHOP';
+
+        if ($isSparePart && $shop) {
             $quote = SparePartListing::calculateDeliveryQuote($shop, $customerLocation, $deliveryType);
-            return array_merge($quote, ['is_spare_part' => true]);
+            return array_merge($quote, ['is_spare_part' => true, 'is_in_shop' => false]);
         }
 
         $reg = (float) self::REGULAR_DELIVERY_FEE;
         $exp = (float) self::EXPRESS_DELIVERY_FEE;
+        $courierFee = strtoupper($deliveryType) === 'EXPRESS' ? $exp : $reg;
+
         return [
             'distance_km' => $shop?->distance_km,
             'distance_formatted' => null,
-            'delivery_fee' => strtoupper($deliveryType) === 'EXPRESS' ? $exp : $reg,
+            'delivery_fee' => $isInShop ? 0.0 : $courierFee,
             'regular_delivery_fee' => $reg,
             'express_delivery_fee' => $exp,
-            'eta_minutes' => $shop?->eta_minutes ?? 120,
+            'eta_minutes' => $isInShop ? 0 : ($shop?->eta_minutes ?? 120),
             'eta_label' => null,
-            'zone_label' => 'Doorstep Courier',
+            'zone_label' => $isInShop ? 'In-Shop Walk-In' : 'Doorstep Courier',
             'is_same_city' => true,
             'is_spare_part' => false,
+            'is_in_shop' => $isInShop,
         ];
     }
 
@@ -1007,8 +1203,50 @@ class ServicePackageController extends Controller
 
         $quantity = (int) ($validated['quantity'] ?? 1);
         $explicitShopId = isset($validated['shop_id']) ? (int) $validated['shop_id'] : null;
-        $shop = $this->resolveTargetShop($explicitShopId, $request);
+        $addingPackageId = !empty($validated['package_id']) ? (int) $validated['package_id'] : null;
         $cart = session()->get('cart', []);
+
+        if ($addingPackageId && $explicitShopId) {
+            $requestedShop = RepairShop::where('is_active', true)->where('is_public', true)->find($explicitShopId);
+            if ($requestedShop && $requestedShop->isPureSparePartsWholesaler()) {
+                $msg = "{$requestedShop->name} operates exclusively as a Spare Parts Store and does not accept repair bookings.";
+                if (!$request->expectsJson()) {
+                    return back()->withErrors(['cart' => $msg]);
+                }
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+        }
+
+        $strictCapability = $this->isStrictPackageCapabilityActive();
+        if ($addingPackageId && $strictCapability) {
+            if ($explicitShopId) {
+                $requestedShop = RepairShop::where('is_active', true)->where('is_public', true)->find($explicitShopId);
+                if (!$requestedShop || !$this->shopSupportsPackages($requestedShop, [$addingPackageId])) {
+                    $msg = 'This workshop does not offer the selected fixed-price package.';
+                    if (!$request->expectsJson()) {
+                        return back()->withErrors(['cart' => $msg]);
+                    }
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+            } elseif (empty($cart)) {
+                session()->forget(['cart_shop_manual', 'cart_shop_id']);
+            }
+        }
+
+        $requiredPackageIds = $addingPackageId
+            ? array_values(array_unique(array_merge($this->extractRequiredPackageIds($cart), [$addingPackageId])))
+            : $this->extractRequiredPackageIds($cart);
+
+        $shop = $this->resolveTargetShop($explicitShopId, $request, $requiredPackageIds);
+        if ($addingPackageId && $strictCapability && !$shop) {
+            $msg = !empty($cart)
+                ? 'Your currently selected workshop does not support all fixed-price packages in your cart together. Complete or clear your existing cart first.'
+                : 'No verified workshop in your pickup area currently provides this fixed-price package.';
+            if (!$request->expectsJson()) {
+                return back()->withErrors(['cart' => $msg]);
+            }
+            return response()->json(['success' => false, 'message' => $msg], 422);
+        }
 
         // Server-side price authority: only vendor-published fixed-price services can be
         // added, and always at the price the workshop set (never the client-supplied price).
@@ -1315,9 +1553,16 @@ class ServicePackageController extends Controller
                 ->with('warning', "Please select a workshop within {$customerCity} for doorstep pickup, or update your pickup location first.");
         }
 
+        $cart = session()->get('cart', []);
+        $requiredPackageIds = $this->extractRequiredPackageIds($cart);
+        if (!empty($requiredPackageIds) && $this->isStrictPackageCapabilityActive() && !$this->shopSupportsPackages($shop, $requiredPackageIds)) {
+            return redirect()->route('cart.view')
+                ->with('warning', "{$shop->name} does not offer all fixed-price packages currently in your cart.");
+        }
+
         session()->put('cart_shop_id', $shop->id);
         session()->put('cart_shop_manual', true);
-        $this->syncDatabaseCart($request->user(), $shop, session()->get('cart', []));
+        $this->syncDatabaseCart($request->user(), $shop, $cart);
 
         $locationTag = $shop->display_branch_tag
             ? " [{$shop->display_branch_tag}]"
@@ -1344,20 +1589,26 @@ class ServicePackageController extends Controller
         }, 0);
 
         $customerLocation = $this->resolveCustomerLocation($request);
-        $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request) : null;
+        $requiredPackageIds = $this->extractRequiredPackageIds($cart);
+        $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request, $requiredPackageIds) : null;
         $commissionRatePct = self::resolveCommissionRatePct($activeShop, $customerLocation, $cart);
         $serviceCharge = self::calculateServiceCharge($total, $activeShop, $customerLocation, $cart);
         $shopLocked = (bool) session('cart_shop_locked', false);
         $shopManuallySelected = (bool) session('cart_shop_manual', false);
-        $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
-        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
+        $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop, $requiredPackageIds);
+        $fulfillmentCaps = $this->resolveShopFulfillmentCapabilities($activeShop, $isSparePartCart);
+        $canCourierPickup = $fulfillmentCaps['can_courier'];
+        $canInShopRepair = $fulfillmentCaps['can_in_shop'];
+        $defaultFulfillmentMode = $fulfillmentCaps['default_mode'];
+
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR', $defaultFulfillmentMode);
         $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
         $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
 
         $voucherEval = self::evaluateVoucher(
             session('cart_voucher_code'),
             (float) $total,
-            $regularDeliveryFee,
+            (float) $deliveryQuote['delivery_fee'],
             $activeShop,
             $request->user(),
             $commissionRatePct
@@ -1384,7 +1635,10 @@ class ServicePackageController extends Controller
             'isSparePartCart',
             'deliveryQuote',
             'regularDeliveryFee',
-            'expressDeliveryFee'
+            'expressDeliveryFee',
+            'canCourierPickup',
+            'canInShopRepair',
+            'defaultFulfillmentMode'
         ));
     }
 
@@ -1544,19 +1798,25 @@ class ServicePackageController extends Controller
         }, 0);
 
         $customerLocation = $this->resolveCustomerLocation($request);
-        $activeShop = $this->resolveTargetShop(null, $request);
+        $requiredPackageIds = $this->extractRequiredPackageIds($cart);
+        $activeShop = $this->resolveTargetShop(null, $request, $requiredPackageIds);
         $commissionRatePct = self::resolveCommissionRatePct($activeShop, $customerLocation, $cart);
         $serviceCharge = self::calculateServiceCharge($total, $activeShop, $customerLocation, $cart);
         $shopLocked = (bool) session('cart_shop_locked', false);
-        $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop);
-        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
+        $verifiedShops = $this->getLocalSelectableShops($customerLocation, $activeShop, $requiredPackageIds);
+        $fulfillmentCaps = $this->resolveShopFulfillmentCapabilities($activeShop, $isSparePartCart);
+        $canCourierPickup = $fulfillmentCaps['can_courier'];
+        $canInShopRepair = $fulfillmentCaps['can_in_shop'];
+        $defaultFulfillmentMode = $fulfillmentCaps['default_mode'];
+
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR', $defaultFulfillmentMode);
         $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
         $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
 
         $voucherEval = self::evaluateVoucher(
             session('cart_voucher_code'),
             (float) $total,
-            $regularDeliveryFee,
+            (float) $deliveryQuote['delivery_fee'],
             $activeShop,
             $request->user(),
             $commissionRatePct
@@ -1580,7 +1840,10 @@ class ServicePackageController extends Controller
             'isSparePartCart',
             'deliveryQuote',
             'regularDeliveryFee',
-            'expressDeliveryFee'
+            'expressDeliveryFee',
+            'canCourierPickup',
+            'canInShopRepair',
+            'defaultFulfillmentMode'
         ));
     }
 
@@ -1604,19 +1867,20 @@ class ServicePackageController extends Controller
 
         $validated = $request->validate([
             'shop_id' => 'nullable|exists:repair_shops,id',
+            'fulfillment_mode' => 'nullable|in:COURIER_PICKUP,IN_SHOP',
             'schedule_type' => 'required|in:NOW,LATER',
             'scheduled_at' => 'nullable|date',
-            'delivery_type' => 'required|in:REGULAR,EXPRESS',
+            'delivery_type' => 'nullable|in:REGULAR,EXPRESS',
             'payment_method' => 'required|in:CASH,SSLCOMMERZ,BKASH,NAGAD,CARD',
             'voucher_code' => 'nullable|string|max:40',
             'area' => 'nullable|string|max:100',
-            'address' => 'required|string|max:500',
+            'address' => 'nullable|string|max:500',
             'phone' => 'required|string|max:30',
             'problem_note' => 'nullable|string|max:1000',
         ]);
 
         if ($validated['schedule_type'] === 'LATER' && empty($validated['scheduled_at'])) {
-            return back()->withErrors(['scheduled_at' => 'Please choose a pickup date and time for scheduled bookings.'])->withInput();
+            return back()->withErrors(['scheduled_at' => 'Please choose a preferred date and time for scheduled bookings.'])->withInput();
         }
 
         $cleanPhone = InputSanitizer::sanitizePhone($validated['phone']);
@@ -1630,12 +1894,43 @@ class ServicePackageController extends Controller
         if (!empty($validated['area'])) {
             $customerLocation['area'] = trim((string) $validated['area']);
         }
-        $shop = $this->resolveTargetShop(isset($validated['shop_id']) ? (int) $validated['shop_id'] : null, $request);
+        $requiredPackageIds = $this->extractRequiredPackageIds($cart);
+        $shop = $this->resolveTargetShop(isset($validated['shop_id']) ? (int) $validated['shop_id'] : null, $request, $requiredPackageIds);
         if (!$shop) {
             $cityLabel = $customerLocation['city'] ?? 'your selected area';
-            return back()->with('error', "No verified workshop is available within {$cityLabel} for doorstep dispatch. Please update your pickup location or select an available workshop.");
+            $errMsg = !empty($requiredPackageIds) && $this->isStrictPackageCapabilityActive()
+                ? "No verified workshop in {$cityLabel} provides all selected fixed-price packages. Please choose an eligible workshop or adjust your cart."
+                : "No verified workshop is currently available in {$cityLabel}. Please adjust your area or select a workshop.";
+            return back()->with('error', $errMsg);
         }
         $shop->loadMissing('vendorProfile');
+
+        if (!$isSparePartCart && $shop->isPureSparePartsWholesaler()) {
+            return back()->with('error', "{$shop->name} operates exclusively as a Spare Parts Store and does not accept repair bookings.");
+        }
+
+        $fulfillmentCaps = $this->resolveShopFulfillmentCapabilities($shop, $isSparePartCart);
+        $requestedMode = strtoupper(trim((string) ($validated['fulfillment_mode'] ?? '')));
+        $fulfillmentMode = $requestedMode !== '' ? $requestedMode : $fulfillmentCaps['default_mode'];
+
+        if ($fulfillmentMode === 'COURIER_PICKUP' && !$fulfillmentCaps['can_courier']) {
+            throw ValidationException::withMessages([
+                'fulfillment_mode' => "{$shop->name} offers In-Shop Walk-In repair only and does not support Courier Pickup.",
+            ]);
+        }
+        if ($fulfillmentMode === 'IN_SHOP' && !$fulfillmentCaps['can_in_shop']) {
+            throw ValidationException::withMessages([
+                'fulfillment_mode' => "{$shop->name} operates via Courier Pickup & Return only and does not support walk-in drop-offs.",
+            ]);
+        }
+
+        $isCourierPickup = ($fulfillmentMode === 'COURIER_PICKUP');
+        if ($isCourierPickup && trim((string) ($validated['address'] ?? '')) === '') {
+            throw ValidationException::withMessages([
+                'address' => 'Please enter your doorstep street / house address for Courier Pickup.',
+            ]);
+        }
+        $deliveryType = $isCourierPickup ? strtoupper((string) ($validated['delivery_type'] ?? 'REGULAR')) : 'REGULAR';
 
         // Re-verify that a vendor buyer cannot place a Spare Parts order against their own workshop
         if ($request->user() && $request->user()->role === 'vendor') {
@@ -1684,7 +1979,7 @@ class ServicePackageController extends Controller
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0);
         $commissionRatePct = self::resolveCommissionRatePct($shop, $customerLocation, $cart);
         $serviceCharge = self::calculateServiceCharge($subtotal, $shop, $customerLocation, $cart);
-        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $shop, $customerLocation, $validated['delivery_type']);
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $shop, $customerLocation, $deliveryType, $fulfillmentMode);
         $deliveryFee = (float) $deliveryQuote['delivery_fee'];
 
         // Attach computed delivery fee onto quote items so online checkout & PDF invoices reflect exact courier fee
@@ -1718,26 +2013,36 @@ class ServicePackageController extends Controller
             ? $firstItem['title']
             : count($cart) . ' Direct Services • ' . $shop->name;
 
-        $scheduleLabel = $validated['schedule_type'] === 'NOW'
-            ? 'Immediate Courier Pickup (NOW)'
-            : 'Scheduled Pickup (' . $validated['scheduled_at'] . ')';
+        $scheduleLabel = $isCourierPickup
+            ? ($validated['schedule_type'] === 'NOW'
+                ? 'Immediate Courier Pickup (NOW)'
+                : 'Scheduled Courier Pickup (' . $validated['scheduled_at'] . ')')
+            : ($validated['schedule_type'] === 'NOW'
+                ? 'Walk-In Drop-Off (Today)'
+                : 'Scheduled Workshop Visit (' . $validated['scheduled_at'] . ')');
 
         $customerCity = $customerLocation['city'] ?? ($shop->city ?: 'Dhaka');
-        $fullAddress = trim($validated['address']);
-        if (!empty($validated['area']) && !str_contains(strtolower($fullAddress), strtolower($validated['area']))) {
-            $fullAddress .= ', ' . $validated['area'];
-            if (!str_contains(strtolower($fullAddress), strtolower($customerCity))) {
-                $fullAddress .= ', ' . $customerCity;
+        $fullAddress = '';
+        if ($isCourierPickup) {
+            $fullAddress = trim((string) ($validated['address'] ?? ''));
+            if (!empty($validated['area']) && $fullAddress !== '' && !str_contains(strtolower($fullAddress), strtolower($validated['area']))) {
+                $fullAddress .= ', ' . $validated['area'];
+                if (!str_contains(strtolower($fullAddress), strtolower($customerCity))) {
+                    $fullAddress .= ', ' . $customerCity;
+                }
             }
         }
 
         $repairRequest = DB::transaction(function () use (
             $user, $shop, $cart, $firstItem, $validated, $cleanPhone, $title, $serviceLines, $scheduleLabel,
-            $subtotal, $commissionRatePct, $serviceCharge, $deliveryFee, $totalAmount, $fullAddress, $customerCity,
-            $appliedVoucherCode, $discountAmount, $scheduledPickupAt
+            $subtotal, $commissionRatePct, $serviceCharge, $deliveryFee, $deliveryType, $isCourierPickup,
+            $totalAmount, $fullAddress, $customerCity, $appliedVoucherCode, $discountAmount, $scheduledPickupAt
         ) {
             $requestedServiceId = is_numeric($firstItem['id'] ?? null) ? (int) $firstItem['id'] : null;
             $discountLine = $discountAmount > 0 ? " | Discount ({$appliedVoucherCode}): -৳" . number_format($discountAmount, 2) : '';
+            $logisticsSummary = $isCourierPickup
+                ? "Courier Pickup & Return ({$deliveryType} • ৳" . number_format($deliveryFee, 2) . ')'
+                : 'In-Shop Walk-In Repair (No Delivery Needed • ৳0.00)';
 
             $req = RepairRequest::create([
                 'customer_id' => $user->id,
@@ -1747,7 +2052,7 @@ class ServicePackageController extends Controller
                 'title' => $title,
                 'description' => "Direct Service Booking ({$shop->name})\n"
                     . "Schedule: {$scheduleLabel}\n"
-                    . "Platform Pickup & Delivery Logistics: {$validated['delivery_type']} (৳{$deliveryFee})\n"
+                    . "Service Mode: {$logisticsSummary}\n"
                     . "Payment: {$validated['payment_method']}\n"
                     . "Order Subtotal: ৳" . number_format($subtotal, 2) . " | Service & Protection Fee: ৳" . number_format($serviceCharge, 2) . $discountLine . " | Total: ৳" . number_format($totalAmount, 2) . "\n\n"
                     . "Selected Services:\n{$serviceLines}",
@@ -1761,11 +2066,11 @@ class ServicePackageController extends Controller
                 'mode' => 'DIRECT_REPAIR',
                 // Starts as PENDING in Vendor Dashboard "Direct Orders" queue
                 'status' => RepairRequest::STATUS_PENDING,
-                'preferred_pickup' => true,
-                'preferred_service_type' => 'pickup_dropoff',
-                'delivery_type' => $validated['delivery_type'],
+                'preferred_pickup' => $isCourierPickup,
+                'preferred_service_type' => $isCourierPickup ? 'pickup_dropoff' : 'walk_in',
+                'delivery_type' => $isCourierPickup ? $deliveryType : null,
                 'contact_phone' => $cleanPhone ?? $validated['phone'],
-                'pickup_address' => $fullAddress,
+                'pickup_address' => $isCourierPickup ? ($fullAddress !== '' ? $fullAddress : null) : null,
                 'dropoff_address' => $shop->public_address ?: ($shop->address ?? trim(implode(', ', array_filter([$shop->area, $shop->city ?: $customerCity])))),
                 'checkup_fee' => $serviceCharge,
                 'commission_amount' => $serviceCharge,
@@ -1810,12 +2115,15 @@ class ServicePackageController extends Controller
             }
 
             if ($shop->vendorProfile?->user_id && Schema::hasTable('user_notifications')) {
+                $actionNote = $isCourierPickup
+                    ? 'Review and confirm courier pickup.'
+                    : 'Review and confirm in-shop walk-in booking.';
                 UserNotification::create([
                     'user_id' => $shop->vendorProfile->user_id,
                     'type' => 'direct_order_new',
                     'severity' => 'info',
                     'title' => "New Direct Order #{$req->id}",
-                    'message' => "{$user->name} booked {$title} (৳" . number_format($totalAmount, 0) . '). Review and confirm pickup dispatch.',
+                    'message' => "{$user->name} booked {$title} (৳" . number_format($totalAmount, 0) . "). {$actionNote}",
                     'action_url' => '/vendor/dashboard?tab=direct_orders',
                     'is_read' => false,
                 ]);
@@ -1829,7 +2137,7 @@ class ServicePackageController extends Controller
         if ($validated['payment_method'] !== 'CASH') {
             session()->flash('preselected_payment_method', $validated['payment_method']);
             return redirect("/checkout/payment/{$repairRequest->id}")
-                ->with('success', "Booking #{$repairRequest->id} created with {$shop->name}. Complete escrow authorization below.");
+                ->with('success', "Booking #{$repairRequest->id} created with {$shop->name}. Complete checkout below.");
         }
 
         return redirect()

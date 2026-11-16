@@ -67,6 +67,14 @@ class SprintOneDemoSeeder extends Seeder
         $logisticsAdmin = User::where('email', 'delivery.admin@meramot.demo')->first()
             ?? $meramotAdmin;
 
+        $demoPkgMap = ServicePackage::where('is_active', true)->pluck('id', 'title')->all();
+        $electroPackageIds = array_values(array_filter([
+            $demoPkgMap['Thermal Repasting & Internal Dust Deep Clean'] ?? null,
+            $demoPkgMap['BIOS / UEFI Firmware Update & Recovery'] ?? null,
+            $demoPkgMap['Gaming Console Thermal Clean & Fan Maintenance'] ?? null,
+            $demoPkgMap['Ultrasonic Liquid-Spill Chemical Cleaning'] ?? null,
+        ]));
+
         /* --------------------------------------------------------------------
          * 1. Feature R11: Pending & Rejected Vendor Applications for Admin Desk
          *    (Strictly 0.00 rating, 0 reviews, hidden & non-bookable before approval!)
@@ -105,6 +113,8 @@ class SprintOneDemoSeeder extends Seeder
                 'shop_longitude' => 90.3760,
                 'categories' => ['Laptop', 'Phone', 'Console'],
                 'courier_pickup' => true,
+                'provides_fixed_packages' => true,
+                'offered_package_ids' => $electroPackageIds,
                 'rating' => 0.00,
             ]
         );
@@ -144,6 +154,10 @@ class SprintOneDemoSeeder extends Seeder
             ]
         );
 
+        if (\Illuminate\Support\Facades\Schema::hasTable('repair_shop_service_package')) {
+            $pendingShop1->servicePackages()->sync($electroPackageIds);
+        }
+
         $pendingVendorUser2 = User::updateOrCreate(
             ['email' => 'ctg.microsolder@meramot.demo'],
             [
@@ -178,6 +192,8 @@ class SprintOneDemoSeeder extends Seeder
                 'shop_longitude' => 91.8212,
                 'categories' => ['Phone', 'Tablet'],
                 'courier_pickup' => true,
+                'provides_fixed_packages' => false,
+                'offered_package_ids' => [],
                 'rating' => 0.00,
             ]
         );
@@ -251,6 +267,8 @@ class SprintOneDemoSeeder extends Seeder
                 'shop_longitude' => 90.3872,
                 'categories' => ['Phone'],
                 'courier_pickup' => false,
+                'provides_fixed_packages' => false,
+                'offered_package_ids' => [],
                 'rating' => 0.00,
             ]
         );

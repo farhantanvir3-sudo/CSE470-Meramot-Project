@@ -56,6 +56,23 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
         presetOptions: @js($presetSpecialties),
         selectedSpecialties: @js(array_values($existingSpecs)),
         customSpecialty: '',
+        capCourier: {{ old('courier_pickup', $profile->courier_pickup ?? false) ? 'true' : 'false' }},
+        capInShop: {{ old('in_shop_repair', $profile->in_shop_repair ?? true) ? 'true' : 'false' }},
+        capSpareParts: {{ old('spare_parts', $profile->spare_parts ?? false) ? 'true' : 'false' }},
+        capFixedPackages: {{ old('provides_fixed_packages', $profile->provides_fixed_packages ?? false) ? 'true' : 'false' }},
+        capError: '',
+        get hasAnyCapability() {
+            return this.capCourier || this.capInShop || this.capSpareParts || this.capFixedPackages;
+        },
+        get isPureWholesaler() {
+            return this.capSpareParts && !this.capCourier && !this.capInShop && !this.capFixedPackages;
+        },
+        syncFixedPkgFromDom(formEl) {
+            const radio = formEl?.querySelector('input[name=provides_fixed_packages]:checked');
+            if (radio) {
+                this.capFixedPackages = radio.value === '1';
+            }
+        },
         get passwordsMismatch() {
             return this.confirmPassword.length > 0 && this.password !== this.confirmPassword;
         },
@@ -190,7 +207,15 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
             </div>
         @endif
 
-        <form method="POST" action="{{ route('vendor.apply.store') }}" enctype="multipart/form-data" class="space-y-5" autocomplete="off">
+        <form
+            method="POST"
+            action="{{ route('vendor.apply.store') }}"
+            enctype="multipart/form-data"
+            class="space-y-5"
+            autocomplete="off"
+            @change="syncFixedPkgFromDom($event.currentTarget); if (hasAnyCapability) capError = ''"
+            @submit="syncFixedPkgFromDom($event.currentTarget); if (!hasAnyCapability) { $event.preventDefault(); capError = 'Select at least one capability (Courier Pickup, In-Shop Repair, Spare Parts Store, or Fixed-Price Packages).'; }"
+        >
             @csrf
 
             <!-- Shop Logo & Trade Verification Document Dashed Dropzone Cards -->
@@ -689,40 +714,80 @@ Controller: VendorOnboardingController@showApply, storeApply, checkEmail
                 >{{ old('notes', $profile->notes ?? '') }}</textarea>
             </div>
 
-            <!-- Service Mode Checkboxes -->
-            <div class="grid gap-3 sm:grid-cols-3 pt-1">
-                <label class="flex items-center gap-2.5 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] cursor-pointer">
-                    <input
-                        type="checkbox"
-                        name="courier_pickup"
-                        value="1"
-                        {{ old('courier_pickup', $profile->courier_pickup ?? false) ? 'checked' : '' }}
-                        class="h-4 w-4 rounded accent-[#244229]"
-                    >
-                    <span>Courier pickup</span>
-                </label>
+            @include('vendor.partials.fixed-packages-opt-in', [
+                'availablePackages' => $availablePackages ?? collect(),
+                'profile' => $profile ?? null,
+                'targetShop' => ($profile ?? null)?->shops?->sortBy('id')?->first(),
+            ])
 
-                <label class="flex items-center gap-2.5 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] cursor-pointer">
-                    <input
-                        type="checkbox"
-                        name="in_shop_repair"
-                        value="1"
-                        {{ old('in_shop_repair', $profile->in_shop_repair ?? true) ? 'checked' : '' }}
-                        class="h-4 w-4 rounded accent-[#244229]"
+            <!-- Store Capabilities & Fulfillment Modes -->
+            <div class="space-y-2.5 pt-1">
+                <div class="flex flex-wrap items-baseline justify-between gap-2 pl-1">
+                    <label class="text-xs font-semibold text-slate-700">Store Capabilities &amp; Fulfillment Modes *</label>
+                    <span class="text-[11px] text-slate-500">Choose both, one, spare parts only, or enable Fixed-Price Packages</span>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <label
+                        :class="capCourier ? 'border-[#244229] bg-[#f4faf1] ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white'"
+                        class="flex items-start gap-2.5 rounded-2xl border p-3.5 text-sm text-[#203126] cursor-pointer transition"
                     >
-                    <span>In-shop repair</span>
-                </label>
+                        <input
+                            type="checkbox"
+                            name="courier_pickup"
+                            value="1"
+                            x-model="capCourier"
+                            {{ old('courier_pickup', $profile->courier_pickup ?? false) ? 'checked' : '' }}
+                            class="mt-0.5 h-4 w-4 rounded accent-[#244229] shrink-0"
+                        >
+                        <div>
+                            <span class="block font-bold text-xs text-[#203126]">Courier Pickup</span>
+                            <span class="block text-[11px] text-[#58725f] leading-snug mt-0.5">Platform rider collects the device from the customer, brings it to your shop, and delivers it back after repair.</span>
+                        </div>
+                    </label>
 
-                <label class="flex items-center gap-2.5 rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[#203126] cursor-pointer">
-                    <input
-                        type="checkbox"
-                        name="spare_parts"
-                        value="1"
-                        {{ old('spare_parts', $profile->spare_parts ?? false) ? 'checked' : '' }}
-                        class="h-4 w-4 rounded accent-[#244229]"
+                    <label
+                        :class="capInShop ? 'border-[#244229] bg-[#f4faf1] ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white'"
+                        class="flex items-start gap-2.5 rounded-2xl border p-3.5 text-sm text-[#203126] cursor-pointer transition"
                     >
-                    <span>Spare parts</span>
-                </label>
+                        <input
+                            type="checkbox"
+                            name="in_shop_repair"
+                            value="1"
+                            x-model="capInShop"
+                            {{ old('in_shop_repair', $profile->in_shop_repair ?? true) ? 'checked' : '' }}
+                            class="mt-0.5 h-4 w-4 rounded accent-[#244229] shrink-0"
+                        >
+                        <div>
+                            <span class="block font-bold text-xs text-[#203126]">In-Shop Repair</span>
+                            <span class="block text-[11px] text-[#58725f] leading-snug mt-0.5">Customer walks into your shop, gets repaired on-site, and pays via Meramot with zero delivery needed.</span>
+                        </div>
+                    </label>
+
+                    <label
+                        :class="capSpareParts ? 'border-[#244229] bg-[#f4faf1] ring-1 ring-[#244229]/25' : 'border-[var(--border)] bg-white'"
+                        class="flex items-start gap-2.5 rounded-2xl border p-3.5 text-sm text-[#203126] cursor-pointer transition"
+                    >
+                        <input
+                            type="checkbox"
+                            name="spare_parts"
+                            value="1"
+                            x-model="capSpareParts"
+                            {{ old('spare_parts', $profile->spare_parts ?? false) ? 'checked' : '' }}
+                            class="mt-0.5 h-4 w-4 rounded accent-[#244229] shrink-0"
+                        >
+                        <div>
+                            <span class="block font-bold text-xs text-[#203126]">Spare Parts Store</span>
+                            <span class="block text-[11px] text-[#58725f] leading-snug mt-0.5">Sell genuine stocked spare parts. Leave repair options unchecked to operate strictly as a Spare Parts Wholesaler.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div x-show="isPureWholesaler" x-cloak class="rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-2.5 text-xs text-emerald-900">
+                    <i class="fa-solid fa-boxes-stacked mr-1.5 text-emerald-700"></i>
+                    <strong>Spare Parts Wholesaler / Store mode:</strong> your storefront will list your parts inventory without repair service intake.
+                </div>
+
+                <div x-show="capError" x-cloak class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-xs font-semibold text-rose-800" x-text="capError"></div>
             </div>
 
             <button

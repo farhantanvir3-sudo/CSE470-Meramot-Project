@@ -50,6 +50,8 @@ class RepairShopFactory extends Factory
             'is_public' => true,
             'setup_complete' => true,
             'accepts_direct_orders' => true,
+            'supports_pickup' => true,
+            'supports_onsite_repair' => true,
             'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR'],
             'specialties' => ['Screen Replacement', 'Battery Service', 'Board Repair'],
         ];

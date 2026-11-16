@@ -114,6 +114,14 @@
             }, triggerBtn);
         },
 
+        async addDirectPackage(shopId, packageId, triggerBtn = null) {
+            return this.addItem({
+                package_id: packageId,
+                shop_id: shopId,
+                quantity: 1
+            }, triggerBtn);
+        },
+
         async addShopService(shopId, serviceName, description, price, triggerBtn = null) {
             return this.addItem({
                 shop_id: shopId,

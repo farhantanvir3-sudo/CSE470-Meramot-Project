@@ -176,15 +176,22 @@ class StatusTransitionController extends Controller
                 ]
             );
 
-            $this->ensureCourierDeliveryJob($repairRequest->fresh(), $job, 'TO_SHOP');
+            $requiresCourier = $repairRequest->requiresCourierLogistics();
+            if ($requiresCourier) {
+                $this->ensureCourierDeliveryJob($repairRequest->fresh(), $job, 'TO_SHOP');
+            }
         });
+
+        $requiresCourier = $repairRequest->requiresCourierLogistics();
 
         if ($bid->shop?->vendorProfile?->user) {
             app(\App\Services\MultiChannelNotificationService::class)->notifyUser(
                 user: $bid->shop->vendorProfile->user,
                 eventType: 'BID_ACCEPTED',
                 title: "Your Quote Won Request #{$repairRequest->id}",
-                message: "Customer accepted your ৳" . number_format((float) $bid->proposed_cost, 0) . " estimate for {$repairRequest->title}. Courier pickup has been queued.",
+                message: $requiresCourier
+                    ? "Customer accepted your ৳" . number_format((float) $bid->proposed_cost, 0) . " estimate for {$repairRequest->title}. Courier pickup has been queued."
+                    : "Customer accepted your ৳" . number_format((float) $bid->proposed_cost, 0) . " estimate for {$repairRequest->title} (In-Shop Walk-In). Customer will visit the workshop directly.",
                 actionUrl: '/vendor/dashboard?tab=assigned_jobs',
                 repairRequestId: $repairRequest->id,
                 severity: 'info'
@@ -193,7 +200,12 @@ class StatusTransitionController extends Controller
 
         return redirect()
             ->route('requests.track', $repairRequest->id)
-            ->with('success', 'Initial estimate accepted. The workshop has been assigned and courier pickup is ready.');
+            ->with(
+                'success',
+                $requiresCourier
+                    ? 'Initial estimate accepted. The workshop has been assigned and courier pickup is ready.'
+                    : 'Initial estimate accepted. Bring your device directly to the workshop and pay securely via Meramot.'
+            );
     }
 
     /**
@@ -241,23 +253,34 @@ class StatusTransitionController extends Controller
                 $job = null;
             }
 
-            if ($job) {
-                $this->ensureCourierDeliveryJob($repairRequest->fresh(), $job, 'TO_SHOP');
+            $freshRequest = $repairRequest->fresh();
+            $needsCourier = $freshRequest ? $freshRequest->requiresCourierLogistics() : $repairRequest->requiresCourierLogistics();
+
+            if ($job && $needsCourier) {
+                $this->ensureCourierDeliveryJob($freshRequest ?? $repairRequest, $job, 'TO_SHOP');
             }
 
             if ($repairRequest->customer_id && Schema::hasTable('user_notifications')) {
+                $shopTitle = $repairRequest->requestedShop?->name ?? 'The workshop';
                 UserNotification::create([
                     'user_id' => $repairRequest->customer_id,
                     'type' => 'direct_order_accepted',
                     'severity' => 'info',
-                    'title' => "Direct Order #{$repairRequest->id} Confirmed",
-                    'message' => ($repairRequest->requestedShop?->name ?? 'The workshop') . ' accepted your booking and queued doorstep courier pickup.',
+                    'title' => "Order #{$repairRequest->id} Confirmed",
+                    'message' => $needsCourier
+                        ? "{$shopTitle} confirmed your booking and queued doorstep courier pickup."
+                        : "{$shopTitle} confirmed your in-shop walk-in booking. Bring your device to the workshop when ready.",
                     'action_url' => '/requests/' . $repairRequest->id . '/track',
                     'is_read' => false,
                 ]);
             }
 
-            return back()->with('success', "Direct Order #{$repairRequest->id} confirmed and queued for courier pickup.");
+            return back()->with(
+                'success',
+                $needsCourier
+                    ? "Order #{$repairRequest->id} confirmed and queued for courier pickup."
+                    : "In-shop walk-in order #{$repairRequest->id} confirmed."
+            );
         }
 
         // Vendor declined: transition PENDING -> REJECTED & auto-refund paid/authorized transactions
@@ -342,16 +365,24 @@ class StatusTransitionController extends Controller
             }
         } else {
             if ($repairRequest->transitionTo(RepairRequest::STATUS_RETURN_SCHEDULED)) {
+                $requiresCourier = $repairRequest->requiresCourierLogistics();
                 if ($repairRequest->repairJob) {
                     $repairRequest->repairJob->update([
                         'customer_approved' => false,
                         'status' => 'READY_TO_RETURN',
                     ]);
-                    $this->ensureCourierDeliveryJob($repairRequest->fresh(), $repairRequest->repairJob, 'TO_CUSTOMER');
+                    if ($requiresCourier) {
+                        $this->ensureCourierDeliveryJob($repairRequest->fresh(), $repairRequest->repairJob, 'TO_CUSTOMER');
+                    }
                 }
                 return redirect()
                     ->route('requests.track', $repairRequest->id)
-                    ->with('success', 'Final diagnosis quote declined. Return courier has been scheduled to bring your device back.');
+                    ->with(
+                        'success',
+                        $requiresCourier
+                            ? 'Final diagnosis quote declined. Return courier has been scheduled to bring your device back.'
+                            : 'Final diagnosis quote declined. Your device is ready for in-shop collection.'
+                    );
             }
         }
 

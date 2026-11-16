@@ -3,12 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\RepairShop;
+use App\Models\ServicePackage;
 use App\Models\ShopService;
 use App\Models\User;
 use App\Models\VendorProfile;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 /**
@@ -723,7 +725,7 @@ class ShopSeeder extends Seeder
                 'free_delivery' => true,
                 'has_deals' => false,
                 'is_featured' => false,
-                'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR'],
+                'categories' => ['COURIER_PICKUP'],
                 'specialties' => ['Power surge repair', 'Logic board repair', 'Printer servicing'],
                 'eta_minutes' => 90,
                 'result_tag' => null,
@@ -1041,6 +1043,35 @@ class ShopSeeder extends Seeder
                 'phone' => '+8801711000032',
                 'email' => 'laptopharbor@meramot.local',
             ],
+            [
+                'name' => 'Elephant Road Parts Wholesale',
+                'slug' => 'elephant-road-parts-wholesale',
+                'description' => 'Dedicated OEM and Grade-A electronics spare parts wholesaler supplying mobile displays, batteries, flex cables, and laptop components nationwide.',
+                'address' => 'Multiplan Center, New Elephant Road, Dhaka',
+                'gps_address' => 'Multiplan Center, New Elephant Road, Dhaka',
+                'same_as_gps_location' => true,
+                'city' => 'Dhaka',
+                'area' => 'New Market',
+                'lat' => 23.738800,
+                'lng' => 90.386500,
+                'rating' => 4.8,
+                'review_count' => 215,
+                'price_level' => 1,
+                'has_voucher' => false,
+                'free_delivery' => false,
+                'has_deals' => true,
+                'is_featured' => false,
+                'categories' => ['SPARE_PARTS'],
+                'specialties' => ['OEM Display Assemblies', 'Laptop Batteries & Chargers', 'Wholesale Component Supply'],
+                'provides_fixed_packages' => false,
+                'eta_minutes' => 90,
+                'result_tag' => 'Parts Wholesaler',
+                'offer_summary' => 'Verified Spare Parts Store',
+                'inspection_fee' => 0,
+                'base_labor_fee' => 0,
+                'phone' => '+8801711000033',
+                'email' => 'wholesale@meramot.local',
+            ],
         ];
 
         // ---------------------------------------------------------------------
@@ -1061,6 +1092,8 @@ class ShopSeeder extends Seeder
             $slug = $s['slug'];
             $usedSlugs[$slug] = true;
             $groupKey = $s['vendor_group_key'] ?? ('curated_standalone:' . $slug);
+            $sCats = $s['categories'] ?? ['IN_SHOP_REPAIR'];
+            $hasCourier = in_array('COURIER_PICKUP', $sCats, true);
 
             $combinedEntries[] = [
                 'osm_id' => null,
@@ -1088,10 +1121,11 @@ class ShopSeeder extends Seeder
                 'eta_minutes' => (int) ($s['eta_minutes'] ?? 60),
                 'has_deals' => (bool) ($s['has_deals'] ?? false),
                 'has_voucher' => (bool) ($s['has_voucher'] ?? false),
-                'free_delivery' => (bool) ($s['free_delivery'] ?? false),
+                'free_delivery' => $hasCourier && (bool) ($s['free_delivery'] ?? false),
                 'is_featured' => (bool) ($s['is_featured'] ?? false),
-                'categories' => $s['categories'] ?? ['IN_SHOP_REPAIR'],
+                'categories' => $sCats,
                 'specialties' => $s['specialties'] ?? ['Laptop repair', 'Phone repair'],
+                'provides_fixed_packages' => array_key_exists('provides_fixed_packages', $s) ? $s['provides_fixed_packages'] : null,
                 'phone' => $s['phone'] ?? null,
                 'email' => $s['email'] ?? ($slug . '@meramot.local'),
                 'opening_hours_text' => 'Sat – Thu: 10:00 AM – 8:30 PM',
@@ -1106,6 +1140,8 @@ class ShopSeeder extends Seeder
             }
             $usedSlugs[$slug] = true;
 
+            $osmCats = $osm['categories'] ?? ['IN_SHOP_REPAIR', 'SPARE_PARTS'];
+            $osmCourier = in_array('COURIER_PICKUP', $osmCats, true);
             $inspFee = (float) ($osm['inspection_fee'] ?? 200);
             $combinedEntries[] = [
                 'osm_id' => $osm['osm_id'],
@@ -1133,10 +1169,11 @@ class ShopSeeder extends Seeder
                 'eta_minutes' => (int) ($osm['eta_minutes'] ?? 60),
                 'has_deals' => (bool) ($osm['has_deals'] ?? false),
                 'has_voucher' => (bool) ($osm['has_voucher'] ?? false),
-                'free_delivery' => (bool) ($osm['free_delivery'] ?? false),
+                'free_delivery' => $osmCourier && (bool) ($osm['free_delivery'] ?? false),
                 'is_featured' => false,
-                'categories' => $osm['categories'] ?? ['IN_SHOP_REPAIR', 'SPARE_PARTS'],
+                'categories' => $osmCats,
                 'specialties' => $osm['specialties'] ?? ['Electronics Diagnostics', 'Circuit & Component Repair'],
+                'provides_fixed_packages' => null,
                 'phone' => !empty($osm['phone']) ? $osm['phone'] : null,
                 'email' => Str::limit($slug, 42, '') . '@osm.meramot.bd',
                 'opening_hours_text' => $osm['opening_hours_text'] ?? 'Sat – Thu: 10:00 AM – 8:30 PM',
@@ -1156,6 +1193,20 @@ class ShopSeeder extends Seeder
                 $licenseCode = 'TRAD/BD/' . str_pad((string) $vendorIndex, 6, '0', STR_PAD_LEFT);
                 $nidNumber = '199' . str_pad((string) $vendorIndex, 10, '0', STR_PAD_LEFT);
                 $vendorIndex++;
+
+                $specBlob = strtolower($gKey . ' ' . $entry['name'] . ' ' . implode(' ', $entry['specialties']));
+                $isPureHardwareSpecialist = (
+                    str_contains($specBlob, 'bga')
+                    || str_contains($specBlob, 'micro-soldering')
+                    || str_contains($specBlob, 'motherboard')
+                ) && ! preg_match('/\b(os|software|macbook|ssd|ram|upgrade)\b/i', $specBlob);
+
+                $offersRepairs = in_array('COURIER_PICKUP', $entry['categories'], true)
+                    || in_array('IN_SHOP_REPAIR', $entry['categories'], true);
+                $explicitPkgFlag = $entry['provides_fixed_packages'] ?? null;
+                $resolvedPkgFlag = $explicitPkgFlag !== null
+                    ? $explicitPkgFlag
+                    : (($isPureHardwareSpecialist || !$offersRepairs) ? false : null);
 
                 $vendorBlueprints[$gKey] = [
                     'user_id' => $entry['owner_user_id'],
@@ -1179,6 +1230,8 @@ class ShopSeeder extends Seeder
                     'courier_pickup' => in_array('COURIER_PICKUP', $entry['categories'], true),
                     'in_shop_repair' => in_array('IN_SHOP_REPAIR', $entry['categories'], true),
                     'spare_parts' => in_array('SPARE_PARTS', $entry['categories'], true),
+                    'provides_fixed_packages' => $resolvedPkgFlag,
+                    'offered_package_ids' => $resolvedPkgFlag === false ? json_encode([]) : null,
                     'commission_rate' => $vendorIndex <= 2
                         ? VendorProfile::DEFAULT_COMMISSION_RATE
                         : ([6.00, 6.50, 7.00, 7.50, 8.00, 8.50, 9.00, 9.50][$vendorIndex % 8]),
@@ -1204,7 +1257,7 @@ class ShopSeeder extends Seeder
         foreach ($vendorBlueprints as $gKey => $bp) {
             $noteTag = 'group_key:' . $gKey;
             if (isset($existingByGroupKey[$noteTag])) {
-                VendorProfile::where('id', $existingByGroupKey[$noteTag])->update([
+                $updateFields = [
                     'user_id' => $bp['user_id'],
                     'shop_name' => $bp['shop_name'],
                     'brand_name' => $bp['brand_name'],
@@ -1218,7 +1271,13 @@ class ShopSeeder extends Seeder
                     'reviewed_by_admin_id' => $meramotAdmin?->id,
                     'reviewed_at' => $reviewedAt,
                     'updated_at' => $now,
-                ]);
+                ];
+                if ($bp['provides_fixed_packages'] === false) {
+                    $updateFields['provides_fixed_packages'] = false;
+                    $updateFields['offered_package_ids'] = json_encode([]);
+                }
+
+                VendorProfile::where('id', $existingByGroupKey[$noteTag])->update($updateFields);
             } else {
                 $profilesToInsert[] = $bp;
             }
@@ -1276,6 +1335,7 @@ class ShopSeeder extends Seeder
                 'setup_complete' => true,
                 'accepts_direct_orders' => true,
                 'supports_pickup' => in_array('COURIER_PICKUP', $entry['categories'], true),
+                'supports_onsite_repair' => in_array('IN_SHOP_REPAIR', $entry['categories'], true),
                 'categories' => json_encode($entry['categories'], JSON_UNESCAPED_UNICODE),
                 'specialties' => json_encode($entry['specialties'], JSON_UNESCAPED_UNICODE),
                 'phone' => $entry['phone'],
@@ -1297,7 +1357,7 @@ class ShopSeeder extends Seeder
                     'price_level', 'inspection_fee', 'base_labor_fee', 'offer_summary',
                     'result_tag', 'eta_minutes', 'has_deals', 'has_voucher', 'free_delivery',
                     'is_featured', 'is_active', 'is_public', 'setup_complete',
-                    'accepts_direct_orders', 'supports_pickup', 'categories', 'specialties',
+                    'accepts_direct_orders', 'supports_pickup', 'supports_onsite_repair', 'categories', 'specialties',
                     'phone', 'email', 'opening_hours_text', 'updated_at',
                 ]
             );
@@ -1314,6 +1374,11 @@ class ShopSeeder extends Seeder
         foreach ($combinedEntries as $entry) {
             $shopId = $shopIdBySlug[$entry['slug']] ?? null;
             if (!$shopId) {
+                continue;
+            }
+            $offersRepair = in_array('COURIER_PICKUP', $entry['categories'], true)
+                || in_array('IN_SHOP_REPAIR', $entry['categories'], true);
+            if (!$offersRepair) {
                 continue;
             }
 
@@ -1393,6 +1458,22 @@ class ShopSeeder extends Seeder
                 ['shop_id', 'user_id'],
                 ['role', 'is_active', 'updated_at']
             );
+        }
+
+        if (Schema::hasTable('repair_shop_service_package')) {
+            $optedOutShopIds = RepairShop::query()
+                ->whereHas('vendorProfile', fn ($q) => $q->where('provides_fixed_packages', false))
+                ->pluck('id');
+
+            if ($optedOutShopIds->isNotEmpty()) {
+                DB::table('repair_shop_service_package')
+                    ->whereIn('repair_shop_id', $optedOutShopIds->all())
+                    ->delete();
+            }
+
+            if (ServicePackage::where('is_active', true)->exists()) {
+                (new ServicePackageSeeder())->syncSeededShopCapabilities();
+            }
         }
     }
 
