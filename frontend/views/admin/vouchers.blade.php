@@ -141,14 +141,46 @@
                         </div>
                     </div>
 
-                    <div>
-                        <label class="block font-bold mb-1">Exclude Specific Vendor Shop Branches (Optional)</label>
-                        <div class="max-h-40 overflow-y-auto rounded-md border border-[var(--border)] bg-white p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
-                            @php $defExIds = $defaultFreeVoucher->excludedShops->pluck('id')->all(); @endphp
+                    <div x-data="{ defShopFilter: '' }">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                            <div class="flex items-center gap-2">
+                                <label class="font-bold">Exclude Specific Vendor Shop Branches (Optional)</label>
+                                @php $defExIds = $defaultFreeVoucher->excludedShops->pluck('id')->all(); @endphp
+                                @if(count($defExIds) > 0)
+                                    <span class="rounded bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
+                                        {{ count($defExIds) }} excluded
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="relative w-full sm:w-72">
+                                <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--muted-foreground)] pointer-events-none"></i>
+                                <input
+                                    type="text"
+                                    x-model="defShopFilter"
+                                    placeholder="Filter shops or branches..."
+                                    class="w-full rounded-md border border-[var(--border)] bg-white pl-8 pr-7 py-1 text-[11px] focus:outline-none focus:border-[var(--accent-dark)]"
+                                >
+                                <button
+                                    type="button"
+                                    x-show="defShopFilter"
+                                    @click="defShopFilter = ''"
+                                    class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer font-bold"
+                                    title="Clear search"
+                                >&times;</button>
+                            </div>
+                        </div>
+                        <div class="max-h-48 overflow-y-auto rounded-md border border-[var(--border)] bg-white p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                             @foreach($selectableShops as $sh)
-                                <label class="flex items-center gap-1.5 text-[11px] truncate cursor-pointer">
-                                    <input type="checkbox" name="excluded_shop_ids[]" value="{{ $sh->id }}" {{ in_array($sh->id, $defExIds) ? 'checked' : '' }} class="accent-[#244229]">
-                                    <span class="truncate">{{ $sh->name }}{{ $sh->display_branch_tag ? ' [' . $sh->display_branch_tag . ']' : '' }} ({{ $sh->area }})</span>
+                                @php
+                                    $searchHay = strtolower($sh->name . ' ' . ($sh->branch_name ?? '') . ' ' . ($sh->display_branch_tag ?? '') . ' ' . $sh->area . ' ' . $sh->city);
+                                    $isDefChecked = in_array($sh->id, $defExIds, true);
+                                @endphp
+                                <label
+                                    x-show="!defShopFilter || @js($searchHay).includes(defShopFilter.toLowerCase())"
+                                    class="flex items-center gap-1.5 text-[11px] truncate cursor-pointer hover:bg-[var(--mint-50)] p-1 rounded transition"
+                                >
+                                    <input type="checkbox" name="excluded_shop_ids[]" value="{{ $sh->id }}" {{ $isDefChecked ? 'checked' : '' }} class="accent-[#244229]">
+                                    <span class="truncate">{{ $sh->name }}{{ $sh->display_branch_tag ? ' [' . $sh->display_branch_tag . ']' : '' }} ({{ $sh->area }}{{ $sh->city ? ', ' . $sh->city : '' }})</span>
                                 </label>
                             @endforeach
                         </div>
@@ -491,15 +523,30 @@
             <div>
                 <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                     <label class="font-bold">Exclude Specific Vendor Shop Branches (Optional)</label>
-                    <input type="text" x-model="shopFilter" placeholder="Filter shops or branches..." class="rounded-md border border-[var(--border)] bg-white px-2.5 py-1 text-[11px]">
+                    <div class="relative w-full sm:w-72">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--muted-foreground)] pointer-events-none"></i>
+                        <input
+                            type="text"
+                            x-model="shopFilter"
+                            placeholder="Filter shops or branches..."
+                            class="w-full rounded-md border border-[var(--border)] bg-white pl-8 pr-7 py-1 text-[11px] focus:outline-none focus:border-[var(--accent-dark)]"
+                        >
+                        <button
+                            type="button"
+                            x-show="shopFilter"
+                            @click="shopFilter = ''"
+                            class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer font-bold"
+                            title="Clear search"
+                        >&times;</button>
+                    </div>
                 </div>
                 <div class="max-h-48 overflow-y-auto rounded-md border border-[var(--border)] bg-white p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                     @php $oldExcluded = array_map('intval', old('excluded_shop_ids', [])); @endphp
                     @foreach($selectableShops as $sh)
-                        @php $searchHay = strtolower($sh->name . ' ' . ($sh->branch_name ?? '') . ' ' . $sh->area . ' ' . $sh->city); @endphp
-                        <label x-show="!shopFilter || @js($searchHay).includes(shopFilter.toLowerCase())" class="flex items-center gap-1.5 text-[11px] truncate cursor-pointer hover:bg-slate-50 p-0.5 rounded">
+                        @php $searchHay = strtolower($sh->name . ' ' . ($sh->branch_name ?? '') . ' ' . ($sh->display_branch_tag ?? '') . ' ' . $sh->area . ' ' . $sh->city); @endphp
+                        <label x-show="!shopFilter || @js($searchHay).includes(shopFilter.toLowerCase())" class="flex items-center gap-1.5 text-[11px] truncate cursor-pointer hover:bg-[var(--mint-50)] p-1 rounded transition">
                             <input type="checkbox" name="excluded_shop_ids[]" value="{{ $sh->id }}" {{ in_array($sh->id, $oldExcluded, true) ? 'checked' : '' }} class="accent-[#244229]">
-                            <span class="truncate">{{ $sh->name }}{{ $sh->display_branch_tag ? ' [' . $sh->display_branch_tag . ']' : '' }} ({{ $sh->area }}, {{ $sh->city }})</span>
+                            <span class="truncate">{{ $sh->name }}{{ $sh->display_branch_tag ? ' [' . $sh->display_branch_tag . ']' : '' }} ({{ $sh->area }}{{ $sh->city ? ', ' . $sh->city : '' }})</span>
                         </label>
                     @endforeach
                 </div>
@@ -704,13 +751,44 @@
                             </div>
                         </div>
 
-                        <div>
-                            <label class="block font-bold mb-1">Excluded Shop Branches</label>
-                            <div class="max-h-36 overflow-y-auto rounded-md border border-[var(--border)] bg-white p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                        <div x-data="{ editShopFilter: '' }">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                                <div class="flex items-center gap-2">
+                                    <label class="font-bold">Exclude Specific Vendor Shop Branches (Optional)</label>
+                                    @if(count($exIds) > 0)
+                                        <span class="rounded bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-800">
+                                            {{ count($exIds) }} excluded
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="relative w-full sm:w-72">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--muted-foreground)] pointer-events-none"></i>
+                                    <input
+                                        type="text"
+                                        x-model="editShopFilter"
+                                        placeholder="Filter shops or branches..."
+                                        class="w-full rounded-md border border-[var(--border)] bg-white pl-8 pr-7 py-1 text-[11px] focus:outline-none focus:border-[var(--accent-dark)]"
+                                    >
+                                    <button
+                                        type="button"
+                                        x-show="editShopFilter"
+                                        @click="editShopFilter = ''"
+                                        class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer font-bold"
+                                        title="Clear search"
+                                    >&times;</button>
+                                </div>
+                            </div>
+                            <div class="max-h-40 overflow-y-auto rounded-md border border-[var(--border)] bg-white p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                                 @foreach($selectableShops as $sh)
-                                    <label class="flex items-center gap-1.5 text-[11px] truncate cursor-pointer">
+                                    @php
+                                        $searchHay = strtolower($sh->name . ' ' . ($sh->branch_name ?? '') . ' ' . ($sh->display_branch_tag ?? '') . ' ' . $sh->area . ' ' . $sh->city);
+                                    @endphp
+                                    <label
+                                        x-show="!editShopFilter || @js($searchHay).includes(editShopFilter.toLowerCase())"
+                                        class="flex items-center gap-1.5 text-[11px] truncate cursor-pointer hover:bg-[var(--mint-50)] p-1 rounded transition"
+                                    >
                                         <input type="checkbox" name="excluded_shop_ids[]" value="{{ $sh->id }}" {{ in_array($sh->id, $exIds) ? 'checked' : '' }} class="accent-[#244229]">
-                                        <span class="truncate">{{ $sh->name }}{{ $sh->display_branch_tag ? ' [' . $sh->display_branch_tag . ']' : '' }} ({{ $sh->area }})</span>
+                                        <span class="truncate">{{ $sh->name }}{{ $sh->display_branch_tag ? ' [' . $sh->display_branch_tag . ']' : '' }} ({{ $sh->area }}{{ $sh->city ? ', ' . $sh->city : '' }})</span>
                                     </label>
                                 @endforeach
                             </div>

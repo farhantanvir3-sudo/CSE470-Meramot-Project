@@ -112,8 +112,27 @@
             </div>
 
             <!-- Branch Scope Selection -->
-            <div class="space-y-2 rounded-lg border border-[var(--border)] bg-white p-3.5">
-                <label class="block font-bold">Branch Scope *</label>
+            <div class="space-y-2 rounded-lg border border-[var(--border)] bg-white p-3.5" x-data="{ branchFilter: '' }">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <label class="block font-bold">Branch Scope *</label>
+                    @if(count($branches) > 3)
+                        <div x-show="vBranchScope === 'SPECIFIC_BRANCHES'" x-cloak class="relative w-full sm:w-60">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--muted-foreground)] pointer-events-none"></i>
+                            <input
+                                type="text"
+                                x-model="branchFilter"
+                                placeholder="Filter branches..."
+                                class="w-full rounded-md border border-[var(--border)] bg-white pl-8 pr-7 py-1 text-[11px] focus:outline-none focus:border-[var(--accent-dark)]"
+                            >
+                            <button
+                                type="button"
+                                x-show="branchFilter"
+                                @click="branchFilter = ''"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer font-bold"
+                            >&times;</button>
+                        </div>
+                    @endif
+                </div>
                 <div class="flex flex-wrap gap-4">
                     <label class="inline-flex items-center gap-2 font-semibold cursor-pointer">
                         <input type="radio" name="branch_scope" value="ALL_BRANCHES" x-model="vBranchScope" class="accent-[#244229]">
@@ -127,7 +146,8 @@
 
                 <div x-show="vBranchScope === 'SPECIFIC_BRANCHES'" x-cloak class="pt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                     @foreach($branches as $br)
-                        <label class="flex items-center gap-2 rounded border border-[var(--border)] bg-[var(--mint-50)] px-3 py-2 cursor-pointer">
+                        @php $bHay = strtolower($br->name . ' ' . ($br->display_branch_tag ?? '') . ' ' . $br->area . ' ' . $br->city); @endphp
+                        <label x-show="!branchFilter || @js($bHay).includes(branchFilter.toLowerCase())" class="flex items-center gap-2 rounded border border-[var(--border)] bg-[var(--mint-50)] px-3 py-2 cursor-pointer">
                             <input type="checkbox" name="shop_ids[]" value="{{ $br->id }}" {{ $activeBranch && $activeBranch->id === $br->id ? 'checked' : '' }} class="accent-[#244229]">
                             <span class="font-semibold truncate">{{ $br->display_branch_tag ?: $br->name }} ({{ $br->area }}, {{ $br->city }})</span>
                         </label>
@@ -289,8 +309,27 @@
                             </div>
                         </div>
 
-                        <div class="space-y-2">
-                            <label class="block font-bold">Branch Scope</label>
+                        <div class="space-y-2" x-data="{ editBranchFilter: '' }">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <label class="block font-bold">Branch Scope</label>
+                                @if(count($branches) > 3)
+                                    <div x-show="editScope === 'SPECIFIC_BRANCHES'" x-cloak class="relative w-full sm:w-60">
+                                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-[11px] text-[var(--muted-foreground)] pointer-events-none"></i>
+                                        <input
+                                            type="text"
+                                            x-model="editBranchFilter"
+                                            placeholder="Filter branches..."
+                                            class="w-full rounded-md border border-[var(--border)] bg-white pl-8 pr-7 py-1 text-[11px] focus:outline-none focus:border-[var(--accent-dark)]"
+                                        >
+                                        <button
+                                            type="button"
+                                            x-show="editBranchFilter"
+                                            @click="editBranchFilter = ''"
+                                            class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer font-bold"
+                                        >&times;</button>
+                                    </div>
+                                @endif
+                            </div>
                             <div class="flex flex-wrap gap-4">
                                 <label class="inline-flex items-center gap-1.5 cursor-pointer">
                                     <input type="radio" name="branch_scope" value="ALL_BRANCHES" x-model="editScope" class="accent-[#244229]">
@@ -303,7 +342,8 @@
                             </div>
                             <div x-show="editScope === 'SPECIFIC_BRANCHES'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-1">
                                 @foreach($branches as $br)
-                                    <label class="flex items-center gap-2 rounded border border-[var(--border)] bg-white px-2.5 py-1.5 cursor-pointer">
+                                    @php $ebHay = strtolower($br->name . ' ' . ($br->display_branch_tag ?? '') . ' ' . $br->area . ' ' . $br->city); @endphp
+                                    <label x-show="!editBranchFilter || @js($ebHay).includes(editBranchFilter.toLowerCase())" class="flex items-center gap-2 rounded border border-[var(--border)] bg-white px-2.5 py-1.5 cursor-pointer">
                                         <input type="checkbox" name="shop_ids[]" value="{{ $br->id }}" {{ in_array($br->id, $vvShopIds, true) ? 'checked' : '' }} class="accent-[#244229]">
                                         <span class="truncate">{{ $br->display_branch_tag ?: $br->name }} ({{ $br->area }})</span>
                                     </label>
