@@ -1804,4 +1804,54 @@ class SparePartsMarketplaceTest extends TestCase
             ->assertSee('Mirpur Laptop Lab')
             ->assertSee('ProTech Solutions');
     }
+
+    /** @test */
+    public function spare_parts_marketplace_shows_16_at_once_on_desktop_and_9_on_mobile()
+    {
+        [$vendor, $profile, $shop] = $this->createApprovedVendorWithShop([], 'MultiPart Store');
+
+        // Seed 25 spare parts to test pagination
+        for ($i = 1; $i <= 25; $i++) {
+            SparePartListing::create([
+                'shop_id' => $shop->id,
+                'title' => "Component Part SKU-{$i}",
+                'product_group_key' => "pgk-component-sku-{$i}",
+                'slug' => "component-part-sku-{$i}-" . uniqid(),
+                'brand' => 'Universal',
+                'part_category' => 'Battery',
+                'base_price' => 1000 + ($i * 50),
+                'is_active' => true,
+                'stock_quantity' => 10,
+            ]);
+        }
+
+        // 1. Desktop request (Standard Chrome Desktop User-Agent): 16 items per page
+        $desktopUa = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+        $desktopResp = $this->withHeaders(['User-Agent' => $desktopUa])->get('/spare-parts');
+        $desktopResp->assertStatus(200);
+        $desktopListings = $desktopResp->viewData('listings');
+        $this->assertEquals(16, $desktopListings->perPage());
+        $this->assertEquals(1, $desktopListings->firstItem());
+        $this->assertEquals(16, $desktopListings->lastItem());
+        $desktopResp->assertSee('Showing <strong class="text-[var(--foreground)] font-semibold">1–16</strong>', false);
+
+        // 2. Mobile request (Mobile iPhone User-Agent): 9 items per page
+        $mobileUa = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1';
+        $mobileResp = $this->withHeaders(['User-Agent' => $mobileUa])->get('/spare-parts');
+        $mobileResp->assertStatus(200);
+        $mobileListings = $mobileResp->viewData('listings');
+        $this->assertEquals(9, $mobileListings->perPage());
+        $this->assertEquals(1, $mobileListings->firstItem());
+        $this->assertEquals(9, $mobileListings->lastItem());
+        $mobileResp->assertSee('Showing <strong class="text-[var(--foreground)] font-semibold">1–9</strong>', false);
+
+        // 3. Explicit query parameter overrides
+        $overrideResp16 = $this->get('/spare-parts?per_page=16');
+        $overrideResp16->assertStatus(200);
+        $this->assertEquals(16, $overrideResp16->viewData('listings')->perPage());
+
+        $overrideResp9 = $this->get('/spare-parts?per_page=9');
+        $overrideResp9->assertStatus(200);
+        $this->assertEquals(9, $overrideResp9->viewData('listings')->perPage());
+    }
 }

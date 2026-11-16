@@ -686,4 +686,22 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function() {
+        const isMobileScreen = window.innerWidth < 768;
+        const targetPerPage = isMobileScreen ? 9 : 16;
+        const currentPerPage = @js((int) $listings->perPage());
+
+        try {
+            document.cookie = 'sp_per_page=' + targetPerPage + '; path=/; max-age=604800; SameSite=Lax';
+        } catch (e) {}
+
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has('per_page') && currentPerPage !== targetPerPage && (!url.searchParams.has('page') || url.searchParams.get('page') === '1')) {
+            url.searchParams.set('per_page', targetPerPage);
+            window.location.replace(url.toString());
+        }
+    })();
+</script>
 @endsection

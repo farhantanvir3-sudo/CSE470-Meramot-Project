@@ -644,11 +644,24 @@ class SparePartController extends Controller
             }
         }
 
+        $userAgent = (string) $request->header('User-Agent', '');
+        $isMobileUserAgent = (bool) preg_match('/Mobile|Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i', $userAgent);
+
+        $cookiePerPage = (int) $request->cookie('sp_per_page', 0);
+        $defaultPerPage = in_array($cookiePerPage, [9, 16], true)
+            ? $cookiePerPage
+            : ($isMobileUserAgent ? 9 : 16);
+
+        $perPage = (int) $request->input('per_page', $defaultPerPage);
+        if ($perPage <= 0 || $perPage > 48) {
+            $perPage = $defaultPerPage;
+        }
+
         $listings = $query->with(['shop.vendorProfile', 'vendorProfile'])
-            ->paginate(24)
+            ->paginate($perPage)
             ->withQueryString();
 
-        // Enrich ONLY the 24 current-page listings with exact group seller benchmarks
+        // Enrich ONLY the current-page listings with exact group seller benchmarks
         $pageItems = $listings->getCollection();
         $pageGroupKeys = $pageItems->pluck('product_group_key')->unique()->values()->all();
 
