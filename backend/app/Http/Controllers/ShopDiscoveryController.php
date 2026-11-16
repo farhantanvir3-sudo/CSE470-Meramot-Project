@@ -52,12 +52,16 @@ class ShopDiscoveryController extends Controller
         $offerCards = [
             [
                 'title' => 'Free pickup on your first repair',
+                'title_key' => 'offer_pickup_title',
                 'subtitle' => 'Complimentary doorstep pickup and return on eligible first bookings.',
+                'subtitle_key' => 'offer_pickup_sub',
                 'href' => '/shops?sort=distance&freeDelivery=true&deals=true&q=pickup',
             ],
             [
                 'title' => 'Laptop battery week',
+                'title_key' => 'offer_battery_title',
                 'subtitle' => 'Save up to 15% on replacement batteries at participating shops.',
+                'subtitle_key' => 'offer_battery_sub',
                 'href' => '/shops?q=battery&sort=price&deals=true',
             ],
         ];

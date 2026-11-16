@@ -3447,6 +3447,10 @@
                 'open_cart_checkout': 'কার্ট ও চেকআউটে যান →',
                 // home
                 'offer_available': 'বিশেষ অফার',
+                'offer_pickup_title': 'প্রথম মেরামতে ফ্রি পিকআপ',
+                'offer_pickup_sub': 'প্রথম যোগ্য বুকিংয়ে বিনামূল্যে ডোরস্টেপ পিকআপ ও ফিরত সুবিধা।',
+                'offer_battery_title': 'ল্যাপটপ ব্যাটারি সপ্তাহ',
+                'offer_battery_sub': 'নির্ধারিত শপে ব্যাটারি পরিবর্তনে সর্বোচ্চ ১৫% পর্যন্ত ছাড়।',
                 'explore_btn': 'বিস্তারিত',
                 'explore_shops_suffix': ' দেখুন',
                 'featured_shops': 'সেরা শপসমূহ',

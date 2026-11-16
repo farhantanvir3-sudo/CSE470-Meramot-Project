@@ -4,26 +4,26 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-5">
-    <div class="space-y-6 md:space-y-7">
+    <div class="space-y-4 sm:space-y-5 md:space-y-6">
 
         <!-- ── 1. Promotional Banners ── -->
-        <section class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+        <section class="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
             @foreach($offerCards as $offer)
-                <article class="flex flex-col justify-between rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-4 sm:p-5 md:min-h-[168px] md:p-6 shadow-sm transition hover:border-[var(--accent-dark)]/45">
-                    <div>
-                        <span class="inline-block rounded bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)]" data-i18n="offer_available">
+                <article class="flex flex-col justify-between rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-2.5 sm:p-3.5 md:p-4 shadow-sm transition hover:border-[var(--accent-dark)]/45 min-w-0">
+                    <div class="min-w-0">
+                        <span class="inline-block rounded bg-[var(--mint-200)] px-1.5 py-0.5 text-[8px] sm:text-[9px] font-semibold uppercase tracking-wider text-[var(--accent-dark)] leading-none" data-i18n="offer_available">
                             Featured Offer
                         </span>
-                        <h2 class="mt-2 text-lg font-bold leading-snug text-[var(--foreground)] md:text-2xl">
+                        <h2 class="mt-1.5 text-xs sm:text-sm md:text-base font-bold leading-snug text-[var(--foreground)] line-clamp-2" @if(!empty($offer['title_key'])) data-i18n="{{ $offer['title_key'] }}" @endif>
                             {{ $offer['title'] }}
                         </h2>
-                        <p class="mt-1.5 line-clamp-2 text-xs leading-relaxed text-[var(--muted-foreground)] md:max-w-xl md:text-sm">
+                        <p class="mt-1 line-clamp-2 text-[10px] sm:text-xs leading-snug text-[var(--muted-foreground)]" @if(!empty($offer['subtitle_key'])) data-i18n="{{ $offer['subtitle_key'] }}" @endif>
                             {{ $offer['subtitle'] }}
                         </p>
                     </div>
 
-                    <div class="mt-4">
-                        <a href="{{ $offer['href'] }}" class="inline-flex items-center justify-center rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)] md:px-5 md:text-sm transition hover:opacity-90">
+                    <div class="mt-2.5 sm:mt-3">
+                        <a href="{{ $offer['href'] }}" class="inline-flex items-center justify-center gap-1 rounded-md bg-[var(--accent-dark)] px-2.5 py-1 sm:px-3.5 sm:py-1.5 text-[11px] sm:text-xs font-semibold text-[var(--accent-foreground)] transition hover:opacity-90">
                             <span data-i18n="explore_btn">Explore</span><span class="hidden md:inline" data-i18n="explore_shops_suffix">&nbsp;shops</span>
                         </a>
                     </div>
