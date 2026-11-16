@@ -13,7 +13,7 @@
     if (!$requestedTab && (request()->has('sp_page') || request()->has('sp_q') || request()->has('sp_filter'))) {
         $requestedTab = 'spare_parts';
     }
-    $initialTab = in_array($requestedTab, ['overview', 'marketplace', 'direct_orders', 'assigned_jobs', 'branches', 'spare_parts', 'payouts'], true)
+    $initialTab = in_array($requestedTab, ['overview', 'marketplace', 'direct_orders', 'assigned_jobs', 'branches', 'spare_parts', 'vouchers', 'payouts'], true)
         ? $requestedTab
         : 'overview';
     $brandTitle = $vendorProfile->canonical_brand_name ?? 'ProTech Solutions';
@@ -274,6 +274,20 @@
                 <span class="truncate">Spare Parts</span>
             </span>
             <span class="shrink-0 rounded bg-rose-600 px-2 py-0.5 text-[10px] text-white font-bold">{{ number_format($vendorSparePartStats['total_count'] ?? 0) }}</span>
+        </button>
+
+        <button
+            type="button"
+            @click="activeTab = 'vouchers'"
+            data-vendor-vouchers-tab-btn
+            :class="activeTab === 'vouchers' ? 'bg-[var(--card)] text-[var(--accent-dark)] font-bold border border-[var(--accent-dark)]/40 sm:border-[var(--border)] shadow-sm' : 'bg-[var(--mint-100)]/60 sm:bg-transparent text-[var(--muted-foreground)] hover:bg-[var(--mint-50)] border border-[var(--border)]/60 sm:border-transparent'"
+            class="justify-between sm:justify-start rounded-xl sm:rounded-md md:rounded-t-2xl px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 transition flex items-center gap-1.5 min-w-0"
+        >
+            <span class="flex items-center gap-1.5 truncate">
+                <i class="fa-solid fa-ticket text-xs text-rose-700 shrink-0"></i>
+                <span class="truncate">Vouchers</span>
+            </span>
+            <span class="shrink-0 rounded bg-rose-700 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($vendorVouchers ?? collect())->count() }}</span>
         </button>
 
         <button
@@ -1532,6 +1546,9 @@
 
     <!-- ── TAB 7: SPARE PARTS MARKETPLACE INVENTORY & OFFERS ── -->
     @include('vendor.partials.spare-parts-tab')
+
+    <!-- ── TAB 8: VENDOR BRANCH & ALL-BRANCHES VOUCHERS ── -->
+    @include('vendor.partials.vouchers-tab')
 
 </div>
 @endsection

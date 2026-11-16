@@ -44,6 +44,7 @@ class RepairRequest extends Model
         'dropoff_address',
         'checkup_fee',
         'quoted_final_amount',
+        'voucher_id',
         'voucher_code',
         'discount_amount',
         'ai_summary',
@@ -256,6 +257,16 @@ class RepairRequest extends Model
     public function warrantyClaims()
     {
         return $this->hasMany(WarrantyClaim::class, 'repair_request_id')->orderByDesc('id');
+    }
+
+    public function voucher()
+    {
+        return $this->belongsTo(Voucher::class, 'voucher_id');
+    }
+
+    public function voucherRedemption()
+    {
+        return $this->hasOne(VoucherRedemption::class, 'repair_request_id');
     }
 
     /**

@@ -8,6 +8,7 @@ use App\Models\SparePartListing;
 use App\Services\GeolocationService;
 use App\Services\MarketplaceSearchEngine;
 use App\Services\RecentSearchService;
+use App\Services\VoucherService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -42,6 +43,8 @@ class ShopDiscoveryController extends Controller
      */
     public function home(Request $request)
     {
+        $voucherService = app(VoucherService::class);
+
         $featuredShops = RepairShop::where('is_active', true)
             ->where('is_public', true)
             ->where('is_featured', true)
@@ -50,22 +53,9 @@ class ShopDiscoveryController extends Controller
             ->take(6)
             ->get();
 
-        $offerCards = [
-            [
-                'title' => 'Free pickup on your first repair',
-                'title_key' => 'offer_pickup_title',
-                'subtitle' => 'Complimentary doorstep pickup and return on eligible first bookings.',
-                'subtitle_key' => 'offer_pickup_sub',
-                'href' => '/shops?sort=distance&freeDelivery=true&deals=true&q=pickup',
-            ],
-            [
-                'title' => 'Laptop battery week',
-                'title_key' => 'offer_battery_title',
-                'subtitle' => 'Save up to 15% on replacement batteries at participating shops.',
-                'subtitle_key' => 'offer_battery_sub',
-                'href' => '/shops?q=battery&sort=price&deals=true',
-            ],
-        ];
+        $voucherService->attachAvailableVouchersToShops($featuredShops);
+
+        $offerCards = $voucherService->resolveHomepageOfferCards();
 
         $popularCategories = [
             ['label' => 'Phone', 'sprite' => 'fa-mobile-screen-button', 'trend' => 'Screens & batteries', 'href' => '/shops?q=phone'],
@@ -238,6 +228,8 @@ class ShopDiscoveryController extends Controller
 
         $shops = $query->paginate(12)->withQueryString();
 
+        app(VoucherService::class)->attachAvailableVouchersToShops($shops->getCollection());
+
         // Synchronize each shop's ETA dynamically with its calculated Haversine distance
         $shops->getCollection()->transform(function ($shop) {
             if (isset($shop->distance_km) && is_numeric($shop->distance_km)) {
@@ -372,7 +364,20 @@ class ShopDiscoveryController extends Controller
             ->take(3)
             ->get();
 
-        return view('shops.show', compact('shop', 'siblingBranches', 'relatedShops', 'shopSpareParts', 'shopSparePartsCount'));
+        $voucherSvc = app(VoucherService::class);
+        $voucherSvc->attachAvailableVouchersToShops(
+            collect([$shop])->merge($siblingBranches)->merge($relatedShops)
+        );
+        $shopAvailableVouchers = $shop->availableVouchers();
+
+        return view('shops.show', compact(
+            'shop',
+            'siblingBranches',
+            'relatedShops',
+            'shopSpareParts',
+            'shopSparePartsCount',
+            'shopAvailableVouchers'
+        ));
     }
 
     /**

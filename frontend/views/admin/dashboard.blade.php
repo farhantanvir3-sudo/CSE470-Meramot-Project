@@ -7,6 +7,81 @@
 
     @include('admin.partials.nav')
 
+    @php
+        $fvHealth = $featuredVoucherStackHealth ?? null;
+    @endphp
+
+    @if($fvHealth && !empty($fvHealth['is_empty']))
+        <!-- Popup Alert Modal when ALL Featured Vouchers Have Ended -->
+        <div
+            x-data="{ emptyPopupOpen: true }"
+            data-featured-voucher-empty-alert
+            class="rounded-lg border border-rose-300 bg-rose-50 px-4 py-3.5 text-xs text-rose-950 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+            <div class="flex items-start gap-2.5">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600 text-sm mt-0.5 shrink-0"></i>
+                <div>
+                    <p class="font-bold text-rose-950">{{ $fvHealth['alert_title'] ?? 'All Featured Vouchers Have Ended' }}</p>
+                    <p class="text-[11px] text-rose-900/90 mt-0.5 leading-relaxed">{{ $fvHealth['alert_message'] }}</p>
+                </div>
+            </div>
+            <a href="/admin/vouchers" class="shrink-0 inline-flex items-center justify-center rounded-md bg-rose-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-rose-800 transition whitespace-nowrap">
+                Manage Featured Vouchers &rarr;
+            </a>
+
+            <template x-teleport="body">
+                <div
+                    x-show="emptyPopupOpen"
+                    x-cloak
+                    data-featured-voucher-empty-modal
+                    role="dialog"
+                    aria-modal="true"
+                    class="fixed inset-0 z-[130] flex items-center justify-center bg-black/55 backdrop-blur-[1px] p-4"
+                    @click.self="emptyPopupOpen = false"
+                >
+                    <div class="w-full max-w-md rounded-xl border border-rose-300 bg-white p-6 shadow-2xl space-y-4 text-xs">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
+                                <i class="fa-solid fa-ticket text-base"></i>
+                            </span>
+                            <div>
+                                <h3 class="text-base font-bold text-rose-950">{{ $fvHealth['alert_title'] ?? 'All Featured Vouchers Have Ended' }}</h3>
+                                <p class="mt-1 text-xs text-slate-700 leading-relaxed">
+                                    {{ $fvHealth['alert_message'] }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200">
+                            <button type="button" @click="emptyPopupOpen = false" class="rounded-md border border-slate-300 bg-white px-3.5 py-2 font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">
+                                Dismiss
+                            </button>
+                            <a href="/admin/vouchers" class="rounded-md bg-[var(--accent-dark)] px-4 py-2 font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                                Add Featured Voucher &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+    @elseif($fvHealth && !empty($fvHealth['is_low_stack']))
+        <!-- Proactive Early Warning Before Featured Voucher Stack Runs Out -->
+        <div
+            data-featured-voucher-low-alert
+            class="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3.5 text-xs text-amber-950 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+        >
+            <div class="flex items-start gap-2.5">
+                <i class="fa-solid fa-clock-rotate-left text-amber-700 text-sm mt-0.5 shrink-0"></i>
+                <div>
+                    <p class="font-bold text-amber-950">{{ $fvHealth['alert_title'] ?? 'Featured Voucher Stack Running Low' }}</p>
+                    <p class="text-[11px] text-amber-900/90 mt-0.5 leading-relaxed">{{ $fvHealth['alert_message'] }}</p>
+                </div>
+            </div>
+            <a href="/admin/vouchers" class="shrink-0 inline-flex items-center justify-center rounded-md bg-amber-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-amber-800 transition whitespace-nowrap">
+                Queue Next Featured Voucher &rarr;
+            </a>
+        </div>
+    @endif
+
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-[var(--border)] pb-4 sm:pb-5">
         <div class="max-w-2xl">

@@ -176,8 +176,7 @@
                     @php
                         $offers = [
                             ['label' => 'Vouchers', 'key' => 'voucher', 'alt' => 'has_voucher'],
-                            ['label' => 'Free delivery', 'key' => 'freeDelivery', 'alt' => 'free_delivery'],
-                            ['label' => 'Deals', 'key' => 'deals', 'alt' => 'has_deals'],
+                            ['label' => 'Free courier', 'key' => 'freeDelivery', 'alt' => 'free_delivery'],
                         ];
                     @endphp
                     @foreach($offers as $off)
@@ -356,13 +355,7 @@
                             <a href="/shops?{{ http_build_query(array_filter($delParams)) }}"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-md border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasFreeDel ? 'bg-[var(--accent-dark)] text-white font-semibold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-truck-fast text-[10px] text-emerald-700"></i>
-                                <span data-i18n="free_delivery_filter">Free Delivery</span>
-                            </a>
-
-                            <a href="/shops?{{ http_build_query(array_filter($dealsParams)) }}"
-                               class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-md border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasDeals ? 'bg-[var(--accent-dark)] text-white font-semibold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
-                                <i class="fa-solid fa-fire text-[10px] text-rose-600"></i>
-                                <span data-i18n="deals_filter">Deals</span>
+                                <span data-i18n="free_delivery_filter">Free Courier</span>
                             </a>
 
                             @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm', 'lat']))
@@ -564,7 +557,7 @@
                             <i class="fa-solid fa-store text-[9px] opacity-75 mr-1"></i>{{ $shop->public_address }}
                         </p>
 
-                        <!-- Badges -->
+                        <!-- Capability Badges -->
                         <div class="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-medium text-[var(--accent-dark)] md:text-[11px]">
                             @if($shop->supportsCourierPickup())
                                 <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-medium text-emerald-950" data-i18n="nav_courier_pickup">Courier Pickup</span>
@@ -575,19 +568,33 @@
                             @if($shop->supportsSpareParts())
                                 <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-medium text-sky-950" data-i18n="nav_spare_parts">Spare Parts</span>
                             @endif
-                            @if($shop->supportsCourierPickup() && $shop->free_delivery)
-                                <span class="rounded bg-emerald-100 px-2 py-0.5 text-emerald-900 font-medium" data-i18n="free_courier">Free Courier</span>
-                            @endif
-                            @if($shop->has_voucher)
-                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5" data-i18n="voucher">Voucher</span>
-                            @endif
-                            @if($shop->has_deals)
-                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 text-rose-900 font-medium" data-i18n="deal">Deal</span>
-                            @endif
                             <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-semibold">
                                 {{ str_repeat('৳', $shop->price_level ?? 2) }}
                             </span>
                         </div>
+
+                        <!-- Available Vouchers (Foodpanda Alfresco Format: Offer + Code) -->
+                        @php
+                            $tileVouchers = $shop->availableVouchers();
+                        @endphp
+                        @if($tileVouchers->isNotEmpty())
+                            <div class="mt-2 flex flex-wrap items-center gap-1.5" data-shop-tile-vouchers>
+                                @foreach($tileVouchers->take(3) as $tv)
+                                    <span
+                                        data-shop-voucher-badge="{{ $tv->code }}"
+                                        class="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200/90 px-2.5 py-0.5 text-[10px] md:text-[11px] font-bold text-rose-800 max-w-full"
+                                    >
+                                        <i class="fa-solid fa-ticket text-[9px] text-rose-600 shrink-0"></i>
+                                        <span class="truncate">{{ $tv->advertisedBadgeText() }}</span>
+                                    </span>
+                                @endforeach
+                                @if($tileVouchers->count() > 3)
+                                    <span class="inline-flex items-center rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                                        +{{ $tileVouchers->count() - 3 }} more
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
                     </a>
                 @empty
                     <div class="col-span-2 py-12 text-center rounded-lg border border-[var(--border)] bg-[var(--card)] p-8">

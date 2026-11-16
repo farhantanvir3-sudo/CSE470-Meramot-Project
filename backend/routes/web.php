@@ -20,6 +20,7 @@ use App\Http\Controllers\StatusTransitionController;   // R7 - Dual-Quote Lifecy
 use App\Http\Controllers\ServicePackageController;     // R8 - Shanid + Direct Order Cart
 use App\Http\Controllers\ReviewController;             // R9 - Shanid
 use App\Http\Controllers\WarrantyClaimController;      // Separate Warranty Registry, Claims & Admin Arbitration
+use App\Http\Controllers\VoucherManagementController;  // Featured Vouchers Stack & Vendor Branch Vouchers
 use App\Http\Controllers\AIChatController;             // R10 - Shanid
 
 use App\Http\Controllers\VendorOnboardingController;   // R11 - Farhan
@@ -172,7 +173,7 @@ Route::delete('/cart/remove/{packageId}', [ServicePackageController::class, 'rem
 Route::patch('/cart/update/{packageId}', [ServicePackageController::class, 'updateCartQuantity'])->name('cart.update'); // R8
 Route::post('/cart/clear', [ServicePackageController::class, 'clearCart'])->name('cart.clear');        // R8
 Route::post('/cart/voucher/apply', [ServicePackageController::class, 'applyVoucher'])->name('cart.voucher.apply');   // R8
-Route::post('/cart/voucher/remove', [ServicePackageController::class, 'removeVoucher'])->name('cart.voucher.remove'); // R8
+Route::match(['post', 'delete'], '/cart/voucher/remove', [ServicePackageController::class, 'removeVoucher'])->name('cart.voucher.remove'); // R8
 Route::get('/cart/checkout', [ServicePackageController::class, 'checkout'])->name('cart.checkout');    // R8
 Route::post('/cart/checkout/place', [ServicePackageController::class, 'placeDirectOrder'])->name('cart.place'); // R8 Direct Order
 
@@ -223,6 +224,12 @@ Route::prefix('vendor')->group(function () {
     Route::put('/spare-parts/{id}', [SparePartController::class, 'update'])->name('vendor.spare-parts.update');
     Route::post('/spare-parts/{id}/toggle', [SparePartController::class, 'toggleStatus'])->name('vendor.spare-parts.toggle');
     Route::delete('/spare-parts/{id}', [SparePartController::class, 'destroy'])->name('vendor.spare-parts.destroy');
+
+    // Vendor Branch-Specific & All-Branches Vouchers
+    Route::post('/vouchers', [VoucherManagementController::class, 'vendorStore'])->name('vendor.vouchers.store');
+    Route::put('/vouchers/{voucher}', [VoucherManagementController::class, 'vendorUpdate'])->name('vendor.vouchers.update');
+    Route::post('/vouchers/{voucher}/toggle', [VoucherManagementController::class, 'vendorToggle'])->name('vendor.vouchers.toggle');
+    Route::delete('/vouchers/{voucher}', [VoucherManagementController::class, 'vendorDestroy'])->name('vendor.vouchers.destroy');
 });
 
 // -------------------------------------------------------------
@@ -266,6 +273,14 @@ Route::prefix('admin')->middleware('admin.access')->group(function () {
     Route::get('/warranties', [WarrantyClaimController::class, 'adminIndex'])->name('admin.warranties');
     Route::post('/warranties/{claim}/assess', [WarrantyClaimController::class, 'assess'])->name('admin.warranties.assess');
 
+    // Admin Featured Vouchers & First-Order Free Courier Governance
+    Route::get('/vouchers', [VoucherManagementController::class, 'adminIndex'])->name('admin.vouchers.index');
+    Route::post('/vouchers', [VoucherManagementController::class, 'adminStore'])->name('admin.vouchers.store');
+    Route::put('/vouchers/{voucher}', [VoucherManagementController::class, 'adminUpdate'])->name('admin.vouchers.update');
+    Route::post('/vouchers/{voucher}/promote-top', [VoucherManagementController::class, 'adminPromoteTop'])->name('admin.vouchers.promote-top');
+    Route::post('/vouchers/{voucher}/toggle', [VoucherManagementController::class, 'adminToggle'])->name('admin.vouchers.toggle');
+    Route::delete('/vouchers/{voucher}', [VoucherManagementController::class, 'adminDestroy'])->name('admin.vouchers.destroy');
+
     // Feature R20: Security Audit Trail (Sprint 4)
     Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('admin.audit-logs');                            // R20
 });
@@ -275,6 +290,8 @@ Route::prefix('admin')->middleware('admin.access')->group(function () {
 // -------------------------------------------------------------
 Route::get('/checkout/payment/{requestId}', [PaymentGatewayController::class, 'showCheckout'])->name('payment.checkout'); // R17
 Route::get('/payment/checkout/{requestId}', [PaymentGatewayController::class, 'showCheckout'])->name('checkout.payment'); // R17 Alias
+Route::post('/checkout/payment/{requestId}/voucher', [PaymentGatewayController::class, 'applyRequestVoucher'])->name('payment.voucher.apply');
+Route::match(['post', 'delete'], '/checkout/payment/{requestId}/voucher/remove', [PaymentGatewayController::class, 'removeRequestVoucher'])->name('payment.voucher.remove');
 Route::post('/payment/initiate', [PaymentGatewayController::class, 'initiatePayment'])->name('payment.initiate');         // R17
 Route::get('/payment/sandbox/{transactionRef}', [PaymentGatewayController::class, 'showSandbox'])->name('payment.sandbox'); // R17
 Route::match(['get', 'post'], '/payment/success', [PaymentGatewayController::class, 'handleSuccess'])->name('payment.success'); // R17

@@ -29,7 +29,7 @@
     canInShopRepair: @js($allowInShop),
     scheduleType: '{{ old('schedule_type', 'NOW') }}',
     deliveryType: '{{ old('delivery_type', 'REGULAR') }}',
-    paymentMethod: '{{ old('payment_method', 'SSLCOMMERZ') }}',
+    paymentMethod: '{{ old('payment_method', $appliedVoucherMeta['required_payment_method'] ?? 'SSLCOMMERZ') }}',
     checkoutAddress: @js(old('address', auth()->user()->address ?? ($customerLocation['address'] ?? ''))),
     checkoutArea: @js(old('area', auth()->user()->area ?? ($customerLocation['area'] ?? 'Banani'))),
     subtotal: {{ (float) ($total ?? 0) }},
@@ -37,6 +37,7 @@
     regularFee: {{ $regCourierFee }},
     expressFee: {{ $expCourierFee }},
     appliedVoucher: @js($appliedVoucher ?? ''),
+    appliedVoucherMeta: @js($appliedVoucherMeta ?? null),
     baseDiscount: {{ (float) ($discountAmount ?? 0) }},
     get isCourierMode() { return this.isSparePartCart || this.fulfillmentMode === 'COURIER_PICKUP'; },
     get deliveryFee() {
@@ -44,9 +45,33 @@
         return this.deliveryType === 'EXPRESS' ? this.expressFee : this.regularFee;
     },
     get activeDiscount() {
-        if (this.appliedVoucher === 'FREEDELIVERY') return this.deliveryFee;
-        if (this.appliedVoucher === 'SHOPFREE') return Math.min(this.deliveryFee, this.regularFee);
-        return this.baseDiscount;
+        if (!this.appliedVoucher) return 0;
+        const m = this.appliedVoucherMeta;
+        if (!m) return this.baseDiscount;
+        if (m.required_payment_method && String(this.paymentMethod).toUpperCase() !== String(m.required_payment_method).toUpperCase()) {
+            return 0;
+        }
+        if (m.min_order_amount && this.subtotal + 0.009 < Number(m.min_order_amount)) {
+            return 0;
+        }
+        if (m.discount_type === 'FREE_COURIER') {
+            if (!this.isCourierMode) return 0;
+            const cap = m.max_discount_amount ? Number(m.max_discount_amount) : null;
+            return cap ? Math.min(this.deliveryFee, cap) : this.deliveryFee;
+        }
+        if (m.discount_type === 'PERCENTAGE') {
+            const raw = Math.round(this.subtotal * (Number(m.discount_value) / 100) * 100) / 100;
+            const cap = m.max_discount_amount ? Number(m.max_discount_amount) : null;
+            return Math.min(this.subtotal, cap ? Math.min(cap, raw) : raw);
+        }
+        return Math.min(this.subtotal, Number(m.discount_value || this.baseDiscount));
+    },
+    get paymentMismatchWarning() {
+        const m = this.appliedVoucherMeta;
+        if (m && m.required_payment_method && String(this.paymentMethod).toUpperCase() !== String(m.required_payment_method).toUpperCase()) {
+            return `Voucher ${this.appliedVoucher} requires paying with ${m.required_payment_method}.`;
+        }
+        return null;
     },
     get grandTotal() { return Math.max(0, this.subtotal + this.serviceCharge + this.deliveryFee - this.activeDiscount); },
     applyMapLocation(loc) {
@@ -305,6 +330,21 @@
                     </div>
                 @endforeach
             </div>
+
+            @include('partials.voucher-modal', [
+                'applyActionUrl' => route('cart.voucher.apply'),
+                'removeActionUrl' => route('cart.voucher.remove'),
+                'appliedCode' => $appliedVoucher ?? null,
+                'appliedLabel' => $voucherLabel ?? null,
+                'appliedDiscount' => $discountAmount ?? 0,
+                'availableVouchers' => $availableCheckoutVouchers ?? [],
+            ])
+            <template x-if="paymentMismatchWarning">
+                <div class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-950">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-700 mr-1"></i>
+                    <span x-text="paymentMismatchWarning"></span>
+                </div>
+            </template>
 
             <div class="space-y-1.5">
                 <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">

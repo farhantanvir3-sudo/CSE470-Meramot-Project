@@ -216,6 +216,7 @@ class PaymentGatewayController extends Controller
             'requestedShop',
             'repairJob.acceptedBid',
             'repairJob.shop',
+            'voucher',
             'invoices.lineItems',
             'payments',
         ])->find($requestId);
@@ -230,18 +231,186 @@ class PaymentGatewayController extends Controller
             ->sortByDesc('id')
             ->first();
         $latestInvoice = $repairRequest->invoices->sortByDesc('id')->first();
-        $preferredChannel = strtoupper((string) $request->query('method', 'BKASH'));
+
+        $shopId = $repairRequest->repairJob?->shop_id
+            ?? $repairRequest->requested_shop_id
+            ?? $repairRequest->bids?->firstWhere('id', $repairRequest->selected_bid_id)?->shop_id;
+        $checkoutShop = $shopId ? RepairShop::with('vendorProfile')->find($shopId) : null;
+
+        $requiredPayMethod = $repairRequest->voucher?->required_payment_method;
+        $preselected = session('preselected_payment_method');
+        $preferredChannel = strtoupper((string) $request->query('method', $requiredPayMethod ?: ($preselected ?: 'BKASH')));
         if (!in_array($preferredChannel, ['BKASH', 'NAGAD', 'ROCKET', 'CARD', 'SSLCOMMERZ'], true)) {
             $preferredChannel = 'BKASH';
         }
+
+        $availableCheckoutVouchers = !$paidTransaction
+            ? app(\App\Services\VoucherService::class)->buildCheckoutVoucherCatalog(
+                $checkoutShop,
+                $request->user(),
+                (float) ($breakdown['services_subtotal'] ?? $breakdown['invoice_subtotal'] ?? 0),
+                (float) ($breakdown['delivery_fee'] ?? 0),
+                $repairRequest->requiresCourierLogistics(),
+                (int) $repairRequest->id
+            )
+            : [];
 
         return view('checkout.payment', compact(
             'repairRequest',
             'breakdown',
             'paidTransaction',
             'latestInvoice',
-            'preferredChannel'
+            'preferredChannel',
+            'checkoutShop',
+            'availableCheckoutVouchers'
         ));
+    }
+
+    /**
+     * Apply or replace a single voucher on an unpaid RepairRequest at Secure Checkout.
+     * Route: POST /checkout/payment/{requestId}/voucher
+     */
+    public function applyRequestVoucher(Request $request, $requestId)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => 'Please sign in first.'], 401)
+                : redirect('/login');
+        }
+
+        $validated = $request->validate([
+            'voucher_code' => 'required|string|max:40',
+            'payment_method' => 'nullable|string|max:24',
+        ]);
+
+        $repairRequest = RepairRequest::with(['bids.shop', 'requestedShop', 'repairJob.acceptedBid', 'repairJob.shop', 'payments'])->findOrFail($requestId);
+        if ((int) $repairRequest->customer_id !== (int) $user->id && $user->role !== 'admin') {
+            abort(403);
+        }
+
+        if ($repairRequest->payments->where('status', 'PAID')->isNotEmpty()) {
+            $msg = 'This order has already been paid.';
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $msg], 422)
+                : back()->with('error', $msg);
+        }
+
+        $shopId = $repairRequest->repairJob?->shop_id
+            ?? $repairRequest->requested_shop_id
+            ?? $repairRequest->bids?->firstWhere('id', $repairRequest->selected_bid_id)?->shop_id;
+        $shop = $shopId ? RepairShop::with('vendorProfile')->find($shopId) : null;
+
+        // Compute base subtotal & delivery fee before voucher discount
+        $priorDiscount = (float) ($repairRequest->discount_amount ?? 0);
+        $repairRequest->discount_amount = 0;
+        if (($repairRequest->source ?? '') === 'DIRECT_SERVICE' && $repairRequest->quoted_final_amount !== null) {
+            $repairRequest->quoted_final_amount = round((float) $repairRequest->quoted_final_amount + $priorDiscount, 2);
+        }
+        $baseBreakdown = self::computeCheckoutBreakdown($repairRequest);
+        $subtotal = (float) ($baseBreakdown['services_subtotal'] ?? $baseBreakdown['invoice_subtotal'] ?? 0);
+        $deliveryFee = (float) ($baseBreakdown['delivery_fee'] ?? 0);
+        $escrowFee = (float) ($baseBreakdown['escrow_fee'] ?? 0);
+
+        $voucherSvc = app(\App\Services\VoucherService::class);
+        $eval = $voucherSvc->evaluate(
+            $validated['voucher_code'],
+            $subtotal,
+            $deliveryFee,
+            $shop,
+            $user,
+            (float) ($baseBreakdown['commission_rate_pct'] ?? 8),
+            $validated['payment_method'] ?? null,
+            $repairRequest->requiresCourierLogistics(),
+            false,
+            (int) $repairRequest->id
+        );
+
+        if (!$eval['valid']) {
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => $eval['error']], 422)
+                : back()->with('error', $eval['error'] ?: 'Invalid voucher code.');
+        }
+
+        $newDiscount = round((float) $eval['discount'], 2);
+        $newTotal = max(0.0, round($subtotal + $escrowFee + $deliveryFee - $newDiscount, 2));
+
+        DB::transaction(function () use ($repairRequest, $eval, $newDiscount, $newTotal, $user, $shop, $voucherSvc) {
+            $updates = [
+                'voucher_id' => $eval['voucher_id'],
+                'voucher_code' => $eval['code'],
+                'discount_amount' => $newDiscount,
+            ];
+            if (($repairRequest->source ?? '') === 'DIRECT_SERVICE') {
+                $updates['quoted_final_amount'] = $newTotal;
+                if ($repairRequest->repairJob) {
+                    $repairRequest->repairJob->update(['final_quoted_amount' => $newTotal]);
+                }
+            }
+            $repairRequest->update($updates);
+
+            $repairRequest->payments()
+                ->where('status', 'PENDING')
+                ->update(['amount' => $newTotal]);
+
+            if ($eval['voucher']) {
+                $voucherSvc->recordRedemption($eval['voucher'], $user, $repairRequest, $shop, $newDiscount);
+            }
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'voucher_code' => $eval['code'],
+                'discount' => $newDiscount,
+                'total_payable' => $newTotal,
+                'required_payment_method' => $eval['required_payment_method'],
+                'label' => $eval['label'],
+            ]);
+        }
+
+        return back()->with('success', "Voucher {$eval['code']} applied (-৳" . number_format($newDiscount, 0) . ').');
+    }
+
+    /**
+     * Remove the active voucher from an unpaid RepairRequest at Secure Checkout.
+     * Route: POST|DELETE /checkout/payment/{requestId}/voucher/remove
+     */
+    public function removeRequestVoucher(Request $request, $requestId)
+    {
+        $user = $request->user();
+        abort_unless($user, 403);
+
+        $repairRequest = RepairRequest::with(['bids.shop', 'requestedShop', 'repairJob', 'payments'])->findOrFail($requestId);
+        abort_unless((int) $repairRequest->customer_id === (int) $user->id || $user->role === 'admin', 403);
+
+        if ($repairRequest->payments->where('status', 'PAID')->isEmpty()) {
+            $priorDiscount = (float) ($repairRequest->discount_amount ?? 0);
+            DB::transaction(function () use ($repairRequest, $priorDiscount) {
+                app(\App\Services\VoucherService::class)->releaseRedemptionForCancelledOrder($repairRequest);
+
+                $updates = [
+                    'voucher_id' => null,
+                    'voucher_code' => null,
+                    'discount_amount' => 0.00,
+                ];
+                if (($repairRequest->source ?? '') === 'DIRECT_SERVICE' && $repairRequest->quoted_final_amount !== null) {
+                    $restoredTotal = round((float) $repairRequest->quoted_final_amount + $priorDiscount, 2);
+                    $updates['quoted_final_amount'] = $restoredTotal;
+                    if ($repairRequest->repairJob) {
+                        $repairRequest->repairJob->update(['final_quoted_amount' => $restoredTotal]);
+                    }
+                    $repairRequest->payments()->where('status', 'PENDING')->update(['amount' => $restoredTotal]);
+                }
+                $repairRequest->update($updates);
+            });
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return back()->with('success', 'Voucher removed.');
     }
 
     /**
@@ -283,6 +452,19 @@ class PaymentGatewayController extends Controller
 
         $rawChannel = strtoupper((string) ($validated['payment_method'] ?? 'SSLCOMMERZ'));
         $dbPaymentMethod = $rawChannel === 'ROCKET' ? 'SSLCOMMERZ' : $rawChannel;
+
+        if (!empty($repairRequest->voucher_code) && \Illuminate\Support\Facades\Schema::hasTable('vouchers')) {
+            $linkedVoucher = $repairRequest->voucher_id
+                ? \App\Models\Voucher::find($repairRequest->voucher_id)
+                : \App\Models\Voucher::where('code', strtoupper($repairRequest->voucher_code))->first();
+            if ($linkedVoucher && !empty($linkedVoucher->required_payment_method)) {
+                $reqPay = strtoupper(trim($linkedVoucher->required_payment_method));
+                if ($rawChannel !== $reqPay) {
+                    $payLbl = $linkedVoucher->paymentMethodLabel() ?: $reqPay;
+                    return back()->with('error', "Applied voucher {$linkedVoucher->code} requires paying with {$payLbl}. Select {$payLbl} or remove the voucher first.");
+                }
+            }
+        }
 
         $breakdown = self::computeCheckoutBreakdown($repairRequest);
         $shopId = $repairRequest->repairJob?->shop_id
@@ -787,7 +969,14 @@ class PaymentGatewayController extends Controller
 
                 $deliveryAmt = round((float) ($invoice->delivery_amount ?? 0), 2);
                 $voucherCodeUpper = strtoupper((string) ($req?->voucher_code ?? ''));
-                $deliveryDiscounted = in_array($voucherCodeUpper, ['FREEDELIVERY', 'SHOPFREE'], true)
+                $isFreeCourierVoucher = in_array($voucherCodeUpper, ['FREEDELIVERY', 'SHOPFREE', 'FREECOURIER'], true);
+                if (!$isFreeCourierVoucher && $voucherCodeUpper !== '' && \Illuminate\Support\Facades\Schema::hasTable('vouchers')) {
+                    $vRow = $req?->voucher_id
+                        ? \App\Models\Voucher::find($req->voucher_id)
+                        : \App\Models\Voucher::where('code', $voucherCodeUpper)->first();
+                    $isFreeCourierVoucher = $vRow && $vRow->discount_type === \App\Models\Voucher::DISCOUNT_FREE_COURIER;
+                }
+                $deliveryDiscounted = $isFreeCourierVoucher
                     ? min($deliveryAmt, (float) ($invoice->discount_amount ?? 0))
                     : 0.0;
                 $netLogisticsInflow = max(0.0, round($deliveryAmt - $deliveryDiscounted, 2));

@@ -211,6 +211,24 @@ class VendorBranchController extends Controller
         $sparePartBrands = SparePartController::POPULAR_BRANDS;
         $vendorAnalytics = $this->buildVendorPerformanceAnalytics($vendorProfile, $scopedShopIds);
 
+        $vendorVouchers = \Illuminate\Support\Facades\Schema::hasTable('vouchers')
+            ? \App\Models\Voucher::with(['includedShops:id,name,branch_name,is_branch,area,city'])
+                ->withCount('redemptions')
+                ->where('issuer_type', \App\Models\Voucher::ISSUER_VENDOR)
+                ->where('vendor_profile_id', $vendorProfile->id)
+                ->orderByDesc('id')
+                ->get()
+            : collect();
+
+        $platformFeaturedVouchers = \Illuminate\Support\Facades\Schema::hasTable('vouchers')
+            ? \App\Models\Voucher::with(['excludedShops:id'])
+                ->where('issuer_type', \App\Models\Voucher::ISSUER_ADMIN)
+                ->where('is_active', true)
+                ->orderByDesc('is_system_default')
+                ->orderBy('featured_order', 'asc')
+                ->get()
+            : collect();
+
         return view('vendor.dashboard', compact(
             'vendorProfile',
             'branches',
@@ -228,7 +246,9 @@ class VendorBranchController extends Controller
             'sparePartBrands',
             'spSearch',
             'spFilter',
-            'vendorAnalytics'
+            'vendorAnalytics',
+            'vendorVouchers',
+            'platformFeaturedVouchers'
         ));
     }
 
@@ -1050,6 +1070,7 @@ class VendorBranchController extends Controller
             $deliveryAmt = ($job->repairRequest->preferred_pickup ?? false)
                 ? (($job->repairRequest->delivery_type === 'REGULAR') ? 80.0 : 150.0)
                 : 0.0;
+            $reqDiscountAmt = round(max(0.0, (float) ($job->repairRequest->discount_amount ?? 0)), 2);
             $invoiceId = DB::table('invoices')->insertGetId([
                 'repair_request_id' => $job->repairRequest->id,
                 'repair_job_id' => $job->id,
@@ -1059,9 +1080,9 @@ class VendorBranchController extends Controller
                 'invoice_number' => 'INV-' . $now->format('Y') . '-' . str_pad((string) $job->id, 4, '0', STR_PAD_LEFT) . '-' . strtoupper(Str::random(3)),
                 'subtotal_amount' => $vendorNet,
                 'delivery_amount' => $deliveryAmt,
-                'discount_amount' => 0.00,
+                'discount_amount' => $reqDiscountAmt,
                 'commission_amount' => $commission,
-                'total_amount' => round($vendorNet + $commission + $deliveryAmt, 2),
+                'total_amount' => max(0.0, round($vendorNet + $commission + $deliveryAmt - $reqDiscountAmt, 2)),
                 'issued_at' => $now,
                 'due_at' => $now,
                 'paid_at' => $now,
@@ -1171,11 +1192,12 @@ class VendorBranchController extends Controller
             ->first();
 
         if (!$payment) {
+            $reqDisc = round(max(0.0, (float) ($job->repairRequest->discount_amount ?? 0)), 2);
             $payment = PaymentTransaction::create([
                 'repair_request_id' => $job->repairRequest->id,
                 'user_id' => $job->repairRequest->customer_id,
                 'invoice_id' => $invoiceId,
-                'amount' => round($vendorNet + $commission + $deliveryAmt, 2),
+                'amount' => max(0.0, round($vendorNet + $commission + $deliveryAmt - $reqDisc, 2)),
                 'currency' => 'BDT',
                 'payment_method' => 'CASH',
                 'status' => 'PAID',
@@ -1183,11 +1205,12 @@ class VendorBranchController extends Controller
                 'transaction_reference' => 'MRM-JOB-' . $job->id . '-' . strtoupper(Str::random(4)),
             ]);
         } elseif ($payment->status !== 'PAID' || !$payment->invoice_id) {
+            $reqDisc = round(max(0.0, (float) ($job->repairRequest->discount_amount ?? 0)), 2);
             $payment->update([
                 'invoice_id' => $invoiceId,
                 'status' => 'PAID',
                 'paid_at' => $payment->paid_at ?? $now,
-                'amount' => (float) $payment->amount > 0 ? $payment->amount : round($vendorNet + $commission + $deliveryAmt, 2),
+                'amount' => (float) $payment->amount > 0 ? $payment->amount : max(0.0, round($vendorNet + $commission + $deliveryAmt - $reqDisc, 2)),
             ]);
         }
 

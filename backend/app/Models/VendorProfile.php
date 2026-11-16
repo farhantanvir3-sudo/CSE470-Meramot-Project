@@ -119,6 +119,11 @@ class VendorProfile extends Model
         return $this->hasMany(SparePartListing::class, 'vendor_profile_id');
     }
 
+    public function vouchers()
+    {
+        return $this->hasMany(Voucher::class, 'vendor_profile_id');
+    }
+
     /**
      * Canonical brand name shared across all branches of this vendor.
      */

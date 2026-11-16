@@ -72,9 +72,7 @@ class ServicePackageController extends Controller
     }
 
     /**
-     * Evaluate promotional voucher codes against cart subtotal, delivery fee, and matched shop perks.
-     *
-     * @return array{valid: bool, code: ?string, discount: float, label: string, error: ?string}
+     * Evaluate promotional voucher codes against cart subtotal, delivery fee, and matched shop/user rules.
      */
     public static function evaluateVoucher(
         ?string $rawCode,
@@ -82,168 +80,76 @@ class ServicePackageController extends Controller
         float $deliveryFee = 80.0,
         ?RepairShop $shop = null,
         ?User $user = null,
-        ?float $activeFeeRatePct = null
+        ?float $activeFeeRatePct = null,
+        ?string $paymentMethod = null,
+        bool $isCourierFulfillment = true,
+        bool $enforcePaymentMethod = false,
+        ?int $currentRepairRequestId = null
     ): array {
-        $code = strtoupper(trim((string) $rawCode));
-        if ($code === '' || $subtotal <= 0) {
-            return ['valid' => false, 'code' => null, 'discount' => 0.0, 'label' => '', 'error' => null];
-        }
-
-        if ($code === 'MERAMOT10') {
-            $discount = (float) min(500.0, round($subtotal * 0.10, 2));
-            return [
-                'valid' => true,
-                'code' => 'MERAMOT10',
-                'discount' => $discount,
-                'label' => '10% Marketplace Discount (up to ৳500)',
-                'error' => null,
-            ];
-        }
-
-        if ($code === 'FIRSTFIX100') {
-            if ($subtotal < 800) {
-                return [
-                    'valid' => false,
-                    'code' => null,
-                    'discount' => 0.0,
-                    'label' => '',
-                    'error' => 'FIRSTFIX100 requires a minimum service subtotal of ৳800.',
-                ];
-            }
-            return [
-                'valid' => true,
-                'code' => 'FIRSTFIX100',
-                'discount' => 100.0,
-                'label' => '৳100 Off Direct Repair Booking',
-                'error' => null,
-            ];
-        }
-
-        if ($code === 'FREEDELIVERY') {
-            return [
-                'valid' => true,
-                'code' => 'FREEDELIVERY',
-                'discount' => (float) $deliveryFee,
-                'label' => 'Two-Way Doorstep Courier Fee Waived',
-                'error' => null,
-            ];
-        }
-
-        if ($code === 'SHOPFREE') {
-            if (!$shop || !$shop->free_delivery) {
-                return [
-                    'valid' => false,
-                    'code' => null,
-                    'discount' => 0.0,
-                    'label' => '',
-                    'error' => 'SHOPFREE applies only when the selected workshop sponsors Free Delivery.',
-                ];
-            }
-            return [
-                'valid' => true,
-                'code' => 'SHOPFREE',
-                'discount' => (float) min($deliveryFee, self::REGULAR_DELIVERY_FEE),
-                'label' => 'Platform Regular Pickup & Delivery Sponsored',
-                'error' => null,
-            ];
-        }
-
-        if (in_array($code, ['FIRSTSHOP1', 'WELCOME1'], true)) {
-            if (!$user) {
-                return [
-                    'valid' => false,
-                    'code' => null,
-                    'discount' => 0.0,
-                    'label' => '',
-                    'error' => 'Sign in to redeem this first-order workshop offer.',
-                ];
-            }
-            if (!$shop) {
-                return [
-                    'valid' => false,
-                    'code' => null,
-                    'discount' => 0.0,
-                    'label' => '',
-                    'error' => 'Select a workshop first to verify first-order eligibility.',
-                ];
-            }
-            if ($subtotal < MarketplacePricingService::FIRST_SHOP_PROMO_MIN_SUBTOTAL) {
-                return [
-                    'valid' => false,
-                    'code' => null,
-                    'discount' => 0.0,
-                    'label' => '',
-                    'error' => $code . ' requires a minimum order subtotal of ৳' . number_format(MarketplacePricingService::FIRST_SHOP_PROMO_MIN_SUBTOTAL, 0) . '.',
-                ];
-            }
-            if (!MarketplacePricingService::isEligibleForFirstShopOrderPromo($user, $shop)) {
-                return [
-                    'valid' => false,
-                    'code' => null,
-                    'discount' => 0.0,
-                    'label' => '',
-                    'error' => 'This welcome offer is valid only on your very first order with this workshop.',
-                ];
-            }
-
-            $ratePct = $activeFeeRatePct ?? self::resolveCommissionRatePct($shop);
-            $promo = MarketplacePricingService::calculateFirstShopPromoDiscount($subtotal, $ratePct);
-
-            return [
-                'valid' => true,
-                'code' => $code,
-                'discount' => (float) $promo['discount_amount'],
-                'label' => 'First Order at Workshop — Reduced Service Fee Offer',
-                'error' => null,
-            ];
-        }
-
-        return [
-            'valid' => false,
-            'code' => null,
-            'discount' => 0.0,
-            'label' => '',
-            'error' => "Promo code '{$code}' is invalid or expired. Try MERAMOT10, FIRSTFIX100, or FREEDELIVERY.",
-        ];
+        return app(\App\Services\VoucherService::class)->evaluate(
+            $rawCode,
+            $subtotal,
+            $deliveryFee,
+            $shop,
+            $user,
+            $activeFeeRatePct,
+            $paymentMethod,
+            $isCourierFulfillment,
+            $enforcePaymentMethod,
+            $currentRepairRequestId
+        );
     }
 
     /**
-     * Apply a promotional voucher to the active cart session.
-     * Route: POST /cart/voucher
+     * Apply a single voucher to the active cart session (replaces any prior voucher).
+     * Route: POST /cart/voucher/apply
      */
     public function applyVoucher(Request $request)
     {
         $cart = session()->get('cart', []);
-        if ($resp = $this->guardCustomerOrdering($request, $this->cartHasSpareParts($cart))) {
+        $isSparePartCart = $this->cartHasSpareParts($cart);
+        if ($resp = $this->guardCustomerOrdering($request, $isSparePartCart)) {
             return $resp;
         }
 
         $validated = $request->validate([
             'voucher_code' => 'required|string|max:40',
+            'fulfillment_mode' => 'nullable|in:COURIER_PICKUP,IN_SHOP',
+            'delivery_type' => 'nullable|in:REGULAR,EXPRESS',
+            'payment_method' => 'nullable|string|max:24',
         ]);
 
         $subtotal = array_reduce($cart, fn ($sum, $item) => $sum + ((float) $item['price'] * (int) $item['quantity']), 0.0);
-        $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request) : null;
+        $requiredPackageIds = $this->extractRequiredPackageIds($cart);
+        $activeShop = !empty($cart) ? $this->resolveTargetShop(null, $request, $requiredPackageIds) : null;
         $customerLocation = $this->resolveCustomerLocation($request);
-        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, 'REGULAR');
+        $fulfillmentCaps = $this->resolveShopFulfillmentCapabilities($activeShop, $isSparePartCart);
+        $mode = strtoupper((string) ($validated['fulfillment_mode'] ?? $fulfillmentCaps['default_mode']));
+        $isCourierMode = $isSparePartCart || $mode === 'COURIER_PICKUP';
+        $tier = $isCourierMode ? strtoupper((string) ($validated['delivery_type'] ?? 'REGULAR')) : 'REGULAR';
+        $deliveryQuote = $this->resolveCartDeliveryQuote($cart, $activeShop, $customerLocation, $tier, $mode);
         $commissionRatePct = self::resolveCommissionRatePct($activeShop, $customerLocation, $cart);
 
         $eval = self::evaluateVoucher(
             $validated['voucher_code'],
-            $subtotal,
-            (float) $deliveryQuote['regular_delivery_fee'],
+            (float) $subtotal,
+            (float) $deliveryQuote['delivery_fee'],
             $activeShop,
             $request->user(),
-            $commissionRatePct
+            $commissionRatePct,
+            $validated['payment_method'] ?? null,
+            $isCourierMode,
+            false
         );
+
         if (!$eval['valid']) {
-            session()->forget('cart_voucher_code');
             if ($request->expectsJson()) {
                 return response()->json(['success' => false, 'message' => $eval['error']], 422);
             }
-            return back()->with('error', $eval['error'] ?: 'Invalid promo code.');
+            return back()->with('error', $eval['error'] ?: 'Invalid voucher code.');
         }
 
+        // Enforce strictly 1 active voucher at once in cart session
         session()->put('cart_voucher_code', $eval['code']);
 
         if ($request->expectsJson()) {
@@ -251,6 +157,11 @@ class ServicePackageController extends Controller
                 'success' => true,
                 'voucher_code' => $eval['code'],
                 'discount' => $eval['discount'],
+                'discount_type' => $eval['discount_type'],
+                'discount_value' => $eval['discount_value'],
+                'max_discount_amount' => $eval['max_discount_amount'],
+                'min_order_amount' => $eval['min_order_amount'],
+                'required_payment_method' => $eval['required_payment_method'],
                 'label' => $eval['label'],
             ]);
         }
@@ -1657,17 +1568,40 @@ class ServicePackageController extends Controller
         $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
         $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
 
+        $voucherSvc = app(\App\Services\VoucherService::class);
+        $isDefaultCourier = $isSparePartCart || $defaultFulfillmentMode === 'COURIER_PICKUP';
+
         $voucherEval = self::evaluateVoucher(
             session('cart_voucher_code'),
             (float) $total,
             (float) $deliveryQuote['delivery_fee'],
             $activeShop,
             $request->user(),
-            $commissionRatePct
+            $commissionRatePct,
+            null,
+            $isDefaultCourier,
+            false
         );
         $appliedVoucher = $voucherEval['valid'] ? $voucherEval['code'] : null;
         $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
         $voucherLabel = $voucherEval['valid'] ? $voucherEval['label'] : null;
+        $appliedVoucherMeta = $voucherEval['valid'] ? [
+            'code' => $voucherEval['code'],
+            'label' => $voucherEval['label'],
+            'discount' => $voucherEval['discount'],
+            'discount_type' => $voucherEval['discount_type'],
+            'discount_value' => $voucherEval['discount_value'],
+            'max_discount_amount' => $voucherEval['max_discount_amount'],
+            'min_order_amount' => $voucherEval['min_order_amount'],
+            'required_payment_method' => $voucherEval['required_payment_method'],
+        ] : null;
+        $availableCheckoutVouchers = $voucherSvc->buildCheckoutVoucherCatalog(
+            $activeShop,
+            $request->user(),
+            (float) $total,
+            (float) $deliveryQuote['delivery_fee'],
+            $isDefaultCourier
+        );
         $firstShopPromoEligible = MarketplacePricingService::isEligibleForFirstShopOrderPromo($request->user(), $activeShop);
 
         return view('packages.cart', compact(
@@ -1681,6 +1615,8 @@ class ServicePackageController extends Controller
             'verifiedShops',
             'customerLocation',
             'appliedVoucher',
+            'appliedVoucherMeta',
+            'availableCheckoutVouchers',
             'discountAmount',
             'voucherLabel',
             'firstShopPromoEligible',
@@ -1878,17 +1814,40 @@ class ServicePackageController extends Controller
         $regularDeliveryFee = (float) $deliveryQuote['regular_delivery_fee'];
         $expressDeliveryFee = (float) $deliveryQuote['express_delivery_fee'];
 
+        $voucherSvc = app(\App\Services\VoucherService::class);
+        $isDefaultCourier = $isSparePartCart || $defaultFulfillmentMode === 'COURIER_PICKUP';
+
         $voucherEval = self::evaluateVoucher(
             session('cart_voucher_code'),
             (float) $total,
             (float) $deliveryQuote['delivery_fee'],
             $activeShop,
             $request->user(),
-            $commissionRatePct
+            $commissionRatePct,
+            null,
+            $isDefaultCourier,
+            false
         );
         $appliedVoucher = $voucherEval['valid'] ? $voucherEval['code'] : null;
         $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
         $voucherLabel = $voucherEval['valid'] ? $voucherEval['label'] : null;
+        $appliedVoucherMeta = $voucherEval['valid'] ? [
+            'code' => $voucherEval['code'],
+            'label' => $voucherEval['label'],
+            'discount' => $voucherEval['discount'],
+            'discount_type' => $voucherEval['discount_type'],
+            'discount_value' => $voucherEval['discount_value'],
+            'max_discount_amount' => $voucherEval['max_discount_amount'],
+            'min_order_amount' => $voucherEval['min_order_amount'],
+            'required_payment_method' => $voucherEval['required_payment_method'],
+        ] : null;
+        $availableCheckoutVouchers = $voucherSvc->buildCheckoutVoucherCatalog(
+            $activeShop,
+            $request->user(),
+            (float) $total,
+            (float) $deliveryQuote['delivery_fee'],
+            $isDefaultCourier
+        );
 
         return view('packages.checkout', compact(
             'cart',
@@ -1900,6 +1859,8 @@ class ServicePackageController extends Controller
             'verifiedShops',
             'customerLocation',
             'appliedVoucher',
+            'appliedVoucherMeta',
+            'availableCheckoutVouchers',
             'discountAmount',
             'voucherLabel',
             'isSparePartCart',
@@ -2060,8 +2021,23 @@ class ServicePackageController extends Controller
             (float) $deliveryFee,
             $shop,
             $request->user(),
-            $commissionRatePct
+            $commissionRatePct,
+            $validated['payment_method'],
+            $isCourierPickup,
+            true
         );
+
+        if (!empty($requestedVoucher) && !$voucherEval['valid']) {
+            if ($request->filled('voucher_code') || !empty($voucherEval['required_payment_method'])) {
+                throw ValidationException::withMessages([
+                    'voucher_code' => $voucherEval['error'] ?: 'Selected voucher is not valid for this order.',
+                ]);
+            }
+            session()->forget('cart_voucher_code');
+        }
+
+        $appliedVoucherId = $voucherEval['valid'] ? $voucherEval['voucher_id'] : null;
+        $appliedVoucherModel = $voucherEval['valid'] ? $voucherEval['voucher'] : null;
         $appliedVoucherCode = $voucherEval['valid'] ? $voucherEval['code'] : null;
         $discountAmount = $voucherEval['valid'] ? (float) $voucherEval['discount'] : 0.0;
         $totalAmount = max(0.0, ($subtotal + $serviceCharge + $deliveryFee) - $discountAmount);
@@ -2101,8 +2077,8 @@ class ServicePackageController extends Controller
         $repairRequest = DB::transaction(function () use (
             $user, $shop, $cart, $firstItem, $validated, $cleanPhone, $title, $serviceLines, $scheduleLabel,
             $subtotal, $commissionRatePct, $serviceCharge, $deliveryFee, $deliveryType, $isCourierPickup,
-            $totalAmount, $fullAddress, $customerCity, $appliedVoucherCode, $discountAmount, $scheduledPickupAt,
-            $isSparePartCart
+            $totalAmount, $fullAddress, $customerCity, $appliedVoucherId, $appliedVoucherModel, $appliedVoucherCode,
+            $discountAmount, $scheduledPickupAt, $isSparePartCart
         ) {
             $requestedServiceId = is_numeric($firstItem['id'] ?? null) ? (int) $firstItem['id'] : null;
             $discountLine = $discountAmount > 0 ? " | Discount ({$appliedVoucherCode}): -৳" . number_format($discountAmount, 2) : '';
@@ -2141,10 +2117,21 @@ class ServicePackageController extends Controller
                 'checkup_fee' => $serviceCharge,
                 'commission_amount' => $serviceCharge,
                 'quoted_final_amount' => $totalAmount,
+                'voucher_id' => $appliedVoucherId,
                 'voucher_code' => $appliedVoucherCode,
                 'discount_amount' => $discountAmount,
                 'scheduled_pickup_at' => $scheduledPickupAt,
             ]);
+
+            if ($appliedVoucherModel && $user) {
+                app(\App\Services\VoucherService::class)->recordRedemption(
+                    $appliedVoucherModel,
+                    $user,
+                    $req,
+                    $shop,
+                    $discountAmount
+                );
+            }
 
             $orderWarrantyDays = collect($cart)->map(function ($it) {
                 if (array_key_exists('has_warranty', $it) && !$it['has_warranty']) {

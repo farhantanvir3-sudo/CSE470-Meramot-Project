@@ -70,6 +70,7 @@ class AdminDashboardController extends Controller
         $bestPerformingShops = $biMetrics['bestPerformingShops'];
         $platformIncomeTrend = $biMetrics['platformIncomeTrend'];
         $avgCommissionRatePct = $biMetrics['avgCommissionRatePct'];
+        $featuredVoucherStackHealth = app(\App\Services\VoucherService::class)->getAdminFeaturedStackHealth();
 
         return view('admin.dashboard', compact(
             'kpis',
@@ -78,7 +79,8 @@ class AdminDashboardController extends Controller
             'recentRequests',
             'bestPerformingShops',
             'platformIncomeTrend',
-            'avgCommissionRatePct'
+            'avgCommissionRatePct',
+            'featuredVoucherStackHealth'
         ));
     }
 }

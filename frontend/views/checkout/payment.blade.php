@@ -215,6 +215,17 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
         </div>
 
         @if(!$paidTxn)
+            <div class="mb-5">
+                @include('partials.voucher-modal', [
+                    'applyActionUrl' => route('payment.voucher.apply', $repairRequest->id),
+                    'removeActionUrl' => route('payment.voucher.remove', $repairRequest->id),
+                    'appliedCode' => $repairRequest->voucher_code ?? null,
+                    'appliedLabel' => $repairRequest->voucher?->title ?? (!empty($repairRequest->voucher_code) ? 'Voucher applied' : null),
+                    'appliedDiscount' => $discountAmount ?? 0,
+                    'availableVouchers' => $availableCheckoutVouchers ?? [],
+                ])
+            </div>
+
             <form method="POST" action="{{ route('payment.initiate') }}" class="space-y-4">
                 @csrf
                 <input type="hidden" name="repair_request_id" value="{{ $repairRequest->id }}">

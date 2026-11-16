@@ -42,6 +42,7 @@
     regularFee: {{ $regCourierFee }},
     expressFee: {{ $expCourierFee }},
     appliedVoucher: @js($appliedVoucher ?? ''),
+    appliedVoucherMeta: @js($appliedVoucherMeta ?? null),
     baseDiscount: {{ (float) ($discountAmount ?? 0) }},
     get isCourierMode() {
         return this.isSparePartCart || this.fulfillmentMode === 'COURIER_PICKUP';
@@ -51,9 +52,33 @@
         return this.deliveryType === 'EXPRESS' ? this.expressFee : this.regularFee;
     },
     get activeDiscount() {
-        if (this.appliedVoucher === 'FREEDELIVERY') return this.deliveryFee;
-        if (this.appliedVoucher === 'SHOPFREE') return Math.min(this.deliveryFee, this.regularFee);
-        return this.baseDiscount;
+        if (!this.appliedVoucher) return 0;
+        const m = this.appliedVoucherMeta;
+        if (!m) return this.baseDiscount;
+        if (m.required_payment_method && String(this.paymentMethod).toUpperCase() !== String(m.required_payment_method).toUpperCase()) {
+            return 0;
+        }
+        if (m.min_order_amount && this.subtotal + 0.009 < Number(m.min_order_amount)) {
+            return 0;
+        }
+        if (m.discount_type === 'FREE_COURIER') {
+            if (!this.isCourierMode) return 0;
+            const cap = m.max_discount_amount ? Number(m.max_discount_amount) : null;
+            return cap ? Math.min(this.deliveryFee, cap) : this.deliveryFee;
+        }
+        if (m.discount_type === 'PERCENTAGE') {
+            const raw = Math.round(this.subtotal * (Number(m.discount_value) / 100) * 100) / 100;
+            const cap = m.max_discount_amount ? Number(m.max_discount_amount) : null;
+            return Math.min(this.subtotal, cap ? Math.min(cap, raw) : raw);
+        }
+        return Math.min(this.subtotal, Number(m.discount_value || this.baseDiscount));
+    },
+    get paymentMismatchWarning() {
+        const m = this.appliedVoucherMeta;
+        if (m && m.required_payment_method && String(this.paymentMethod).toUpperCase() !== String(m.required_payment_method).toUpperCase()) {
+            return `Voucher ${this.appliedVoucher} requires paying with ${m.required_payment_method}.`;
+        }
+        return null;
     },
     get grandTotal() {
         return Math.max(0, this.subtotal + this.serviceCharge + (this.subtotal > 0 ? this.deliveryFee : 0) - this.activeDiscount);
@@ -94,6 +119,15 @@
         }
     },
     init() {
+        try {
+            const autoPay = sessionStorage.getItem('meramot_auto_payment_method');
+            if (autoPay) {
+                this.paymentMethod = autoPay;
+                sessionStorage.removeItem('meramot_auto_payment_method');
+            } else if (this.appliedVoucherMeta && this.appliedVoucherMeta.required_payment_method) {
+                this.paymentMethod = this.appliedVoucherMeta.required_payment_method;
+            }
+        } catch {}
         setTimeout(() => {
             const stored = window.MeramotLocationPicker ? window.MeramotLocationPicker.parseStoredLocation() : null;
             if (stored) {
@@ -710,76 +744,21 @@
                     <h2 class="text-xl font-bold text-[var(--foreground)] mt-0.5" data-i18n="checkout_payment">Checkout &amp; Payment</h2>
                 </div>
 
-                <!-- Promo & Voucher Engine (Daraz / Foodpanda Style) -->
-                <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/75 p-3.5 space-y-2.5 text-xs">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
-                            <i class="fa-solid fa-ticket text-[var(--accent-dark)]"></i>
-                            <span data-i18n="promo_code">Promo / Voucher Code</span>
-                        </span>
-                        @if(!empty($appliedVoucher))
-                            <form method="POST" action="{{ route('cart.voucher.remove') }}" class="inline">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-[11px] font-bold text-rose-700 hover:underline">Remove</button>
-                            </form>
-                        @endif
+                <!-- Single-Voucher "Apply a voucher" Dialog -->
+                @include('partials.voucher-modal', [
+                    'applyActionUrl' => route('cart.voucher.apply'),
+                    'removeActionUrl' => route('cart.voucher.remove'),
+                    'appliedCode' => $appliedVoucher ?? null,
+                    'appliedLabel' => $voucherLabel ?? null,
+                    'appliedDiscount' => $discountAmount ?? 0,
+                    'availableVouchers' => $availableCheckoutVouchers ?? [],
+                ])
+                <template x-if="paymentMismatchWarning">
+                    <div class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-950">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-700 mr-1"></i>
+                        <span x-text="paymentMismatchWarning"></span>
                     </div>
-
-                    @if(!empty($appliedVoucher))
-                        <div class="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-2 flex items-center justify-between gap-2 text-emerald-950">
-                            <div class="min-w-0">
-                                <p class="font-mono font-bold text-xs">{{ $appliedVoucher }}</p>
-                                <p class="text-[10px] text-emerald-800">{{ $voucherLabel ?? 'Promo discount active' }}</p>
-                            </div>
-                            <span class="font-bold text-xs text-emerald-800 shrink-0">-৳<span x-text="activeDiscount.toLocaleString()">{{ number_format($discountAmount ?? 0) }}</span></span>
-                        </div>
-                    @else
-                        <form method="POST" action="{{ route('cart.voucher.apply') }}" class="flex gap-2">
-                            @csrf
-                            <input
-                                type="text"
-                                name="voucher_code"
-                                maxlength="30"
-                                required
-                                placeholder="Enter promo or voucher code"
-                                class="flex-1 min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs font-mono font-bold uppercase text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
-                            >
-                            <button type="submit" class="shrink-0 rounded-xl bg-[var(--accent-dark)] px-3.5 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition" data-i18n="apply_btn">
-                                Apply
-                            </button>
-                        </form>
-                        <div class="flex flex-wrap gap-1.5 pt-0.5">
-                            @foreach(['MERAMOT10' => '10% Off', 'FIRSTFIX100' => '৳100 Off', 'FREEDELIVERY' => 'Free Courier'] as $vCode => $vHint)
-                                <form method="POST" action="{{ route('cart.voucher.apply') }}" class="inline">
-                                    @csrf
-                                    <input type="hidden" name="voucher_code" value="{{ $vCode }}">
-                                    <button type="submit" class="rounded border border-[var(--border)] bg-[var(--card)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] hover:bg-[var(--mint-200)] transition">
-                                        {{ $vCode }} · {{ $vHint }}
-                                    </button>
-                                </form>
-                            @endforeach
-                            @if(isset($activeShop) && $activeShop && $activeShop->free_delivery)
-                                <form method="POST" action="{{ route('cart.voucher.apply') }}" class="inline">
-                                    @csrf
-                                    <input type="hidden" name="voucher_code" value="SHOPFREE">
-                                    <button type="submit" class="rounded border border-emerald-400 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-900 hover:bg-emerald-100 transition">
-                                        SHOPFREE · Shop Free Pickup
-                                    </button>
-                                </form>
-                            @endif
-                            @if(!empty($firstShopPromoEligible) && ($total ?? 0) >= 500)
-                                <form method="POST" action="{{ route('cart.voucher.apply') }}" class="inline">
-                                    @csrf
-                                    <input type="hidden" name="voucher_code" value="FIRSTSHOP1">
-                                    <button type="submit" class="rounded border border-amber-400 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-900 hover:bg-amber-100 transition">
-                                        FIRSTSHOP1 · First Order at Shop
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
-                    @endif
-                </div>
+                </template>
 
                 <div class="space-y-2.5 text-xs border-y border-[var(--border)] py-4">
                     <div class="flex items-center justify-between gap-2">

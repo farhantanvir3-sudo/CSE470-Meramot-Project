@@ -5,6 +5,9 @@
     $adminPendingWarrantiesCount = \Illuminate\Support\Facades\Schema::hasTable('warranty_claims')
         ? \App\Models\WarrantyClaim::where('status', \App\Models\WarrantyClaim::STATUS_PENDING)->count()
         : 0;
+    $adminVoucherNavHealth = \Illuminate\Support\Facades\Schema::hasTable('vouchers')
+        ? app(\App\Services\VoucherService::class)->getAdminFeaturedStackHealth()
+        : null;
     $currentAdminPath = '/' . ltrim(request()->path(), '/');
 @endphp
 
@@ -76,6 +79,19 @@
                 <span>Warranties</span>
                 @if($adminPendingWarrantiesCount > 0)
                     <span class="rounded bg-amber-500 px-1.5 py-0.5 text-[9px] sm:px-2 sm:text-[10px] font-bold leading-none text-white">{{ $adminPendingWarrantiesCount }}</span>
+                @endif
+            </a>
+            <a
+                href="/admin/vouchers"
+                class="col-span-3 inline-flex items-center justify-center md:justify-start whitespace-nowrap gap-1 sm:gap-1.5 rounded px-1.5 py-2 sm:px-3.5 text-[10px] sm:text-xs font-bold transition {{ str_starts_with($currentAdminPath, '/admin/vouchers') ? 'bg-[var(--accent-dark)] text-[var(--accent-foreground)] shadow-sm' : 'bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--accent-dark)]' }}"
+            >
+                <i class="fa-solid fa-ticket hidden sm:inline text-[10px]"></i>
+                <span class="sm:hidden">Vouchers</span>
+                <span class="hidden sm:inline">Featured Vouchers</span>
+                @if(!empty($adminVoucherNavHealth['is_empty']))
+                    <span class="rounded bg-rose-600 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">!</span>
+                @elseif(!empty($adminVoucherNavHealth['is_low_stack']))
+                    <span class="rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white">Low</span>
                 @endif
             </a>
             <a

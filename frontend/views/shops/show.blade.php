@@ -177,7 +177,7 @@
                         : "Verified electronic device repair center offering transparent inspection, component-level servicing, and platform-protected payments.") }}
                 </p>
 
-                <!-- Badges & Perks -->
+                <!-- Capability Badges -->
                 <div class="mt-4 flex flex-wrap items-center gap-2 text-xs">
                     @if(!$isOperational)
                         <span class="rounded-md bg-amber-100 border border-amber-300 px-3 py-1 font-bold text-amber-900">
@@ -199,25 +199,41 @@
                             <i class="fa-solid fa-microchip text-sky-700 mr-1"></i> {{ $isPureWholesaler ? 'Spare Parts Wholesaler' : 'Spare Parts Store' }}
                         </span>
                     @endif
-                    @if($shop->has_voucher)
-                        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-[var(--accent-dark)]">
-                            <i class="fa-solid fa-ticket text-amber-600 mr-1"></i> Coupon Voucher
-                        </span>
-                    @endif
-                    @if($supportsCourier && $shop->free_delivery)
-                        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-emerald-800">
-                            <i class="fa-solid fa-gift text-emerald-600 mr-1"></i> Free Courier Pickup
-                        </span>
-                    @endif
-                    @if($shop->has_deals)
-                        <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-semibold text-rose-800">
-                            <i class="fa-solid fa-fire text-rose-600 mr-1"></i> Active Deals
-                        </span>
-                    @endif
                     <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 font-bold text-[var(--accent-dark)]">
                         Tier {{ str_repeat('৳', $shop->price_level ?? 2) }}
                     </span>
                 </div>
+
+                <!-- Available Vouchers at This Shop (Foodpanda Alfresco Format + Copyable Codes) -->
+                @php
+                    $profileVouchers = $shopAvailableVouchers ?? $shop->availableVouchers();
+                @endphp
+                @if($profileVouchers->isNotEmpty())
+                    <div class="mt-4 pt-3.5 border-t border-[var(--border)]/70 space-y-2" data-shop-profile-vouchers x-data="{ copiedCode: null }">
+                        <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">
+                            <i class="fa-solid fa-ticket text-rose-600"></i>
+                            <span>Available Vouchers ({{ $profileVouchers->count() }})</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($profileVouchers as $pv)
+                                <button
+                                    type="button"
+                                    data-profile-voucher-badge="{{ $pv->code }}"
+                                    @click="navigator.clipboard?.writeText(@js($pv->code)); copiedCode = @js($pv->code); setTimeout(() => { if (copiedCode === @js($pv->code)) copiedCode = null; }, 1800)"
+                                    class="group inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50/90 hover:bg-rose-100/80 px-3 py-1.5 text-left text-xs transition cursor-pointer"
+                                    title="Click to copy voucher code {{ $pv->code }}"
+                                >
+                                    <i class="fa-solid fa-ticket text-rose-600 shrink-0"></i>
+                                    <div>
+                                        <span class="font-bold text-rose-900 block leading-tight">{{ $pv->advertisedBadgeText() }}</span>
+                                        <span class="text-[10px] text-rose-800/80 block leading-tight">{{ $pv->conditionsPillLabel() }}</span>
+                                    </div>
+                                    <span class="ml-1 rounded bg-white border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-800 shrink-0" x-text="copiedCode === @js($pv->code) ? 'Copied ✓' : 'Copy'">Copy</span>
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <!-- Right: Quick Quote / Booking Card (full-width row below lg, sidebar column on lg+) -->

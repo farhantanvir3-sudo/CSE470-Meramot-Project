@@ -1598,5 +1598,9 @@ class SprintOneDemoSeeder extends Seeder
                 }
             }
         }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('vouchers')) {
+            $this->call(VoucherSeeder::class);
+        }
     }
 }

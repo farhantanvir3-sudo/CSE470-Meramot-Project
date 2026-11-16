@@ -141,6 +141,30 @@ class RepairShop extends Model
         return $this->hasMany(SparePartListing::class, 'shop_id');
     }
 
+    public function branchVouchers()
+    {
+        return $this->belongsToMany(Voucher::class, 'voucher_shops', 'shop_id', 'voucher_id')
+            ->withTimestamps();
+    }
+
+    public function excludedFromVouchers()
+    {
+        return $this->belongsToMany(Voucher::class, 'voucher_excluded_shops', 'shop_id', 'voucher_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Resolved collection of active Vouchers applicable to this shop branch.
+     */
+    public function availableVouchers()
+    {
+        if ($this->relationLoaded('available_vouchers')) {
+            return $this->getRelation('available_vouchers');
+        }
+
+        return app(\App\Services\VoucherService::class)->getAvailableVouchersForShop($this);
+    }
+
     /**
      * Public vendor-provided storefront address.
      * If `same_as_gps_location` is true, returns `gps_address` (which equals `address`).

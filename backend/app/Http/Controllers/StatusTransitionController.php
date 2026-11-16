@@ -484,6 +484,8 @@ class StatusTransitionController extends Controller
                 $request->user()?->id
             );
 
+            app(\App\Services\VoucherService::class)->releaseRedemptionForCancelledOrder($repairRequest);
+
             return redirect()
                 ->route('requests.track', $repairRequest->id)
                 ->with('success', 'Request cancelled successfully.');

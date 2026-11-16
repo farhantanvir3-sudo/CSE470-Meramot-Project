@@ -7,13 +7,21 @@
     <div class="space-y-4 sm:space-y-6 md:space-y-7">
 
         <!-- ── 1. Promotional Banners ── -->
-        <section class="grid grid-cols-2 gap-2.5 sm:gap-3 md:gap-4">
+        <section class="grid {{ count($offerCards) > 1 ? 'grid-cols-2' : 'grid-cols-1' }} gap-2.5 sm:gap-3 md:gap-4" data-home-offer-grid data-offer-count="{{ count($offerCards) }}">
             @foreach($offerCards as $offer)
                 <article class="flex flex-col justify-between rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-2.5 sm:p-5 md:min-h-[168px] md:p-6 shadow-sm transition hover:border-[var(--accent-dark)]/45 min-w-0">
                     <div class="min-w-0">
-                        <span class="inline-block rounded bg-[var(--mint-200)] px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)] leading-none sm:leading-normal" data-i18n="offer_available">
-                            Featured Offer
-                        </span>
+                        <div class="flex flex-wrap items-center gap-1.5">
+                            <span class="inline-block rounded bg-[var(--mint-200)] px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)] leading-none sm:leading-normal" data-i18n="offer_available">
+                                Featured Offer
+                            </span>
+                            @if(!empty($offer['voucher_pill']))
+                                <span class="inline-flex items-center gap-1 rounded bg-white/85 border border-[var(--border)] px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-semibold text-[var(--accent-dark)] leading-none sm:leading-normal max-w-full truncate" data-home-offer-voucher-pill>
+                                    <i class="fa-solid fa-ticket text-[7px] sm:text-[9px] text-[var(--accent-dark)] shrink-0"></i>
+                                    <span class="truncate">{{ $offer['voucher_pill'] }}</span>
+                                </span>
+                            @endif
+                        </div>
                         <h2 class="mt-1.5 sm:mt-2 text-xs sm:text-lg sm:leading-snug md:text-2xl font-bold leading-snug text-[var(--foreground)] line-clamp-2 sm:line-clamp-none" @if(!empty($offer['title_key'])) data-i18n="{{ $offer['title_key'] }}" @endif>
                             {{ $offer['title'] }}
                         </h2>
@@ -22,10 +30,15 @@
                         </p>
                     </div>
 
-                    <div class="mt-2.5 sm:mt-4">
+                    <div class="mt-2.5 sm:mt-4 flex flex-wrap items-center justify-between gap-2">
                         <a href="{{ $offer['href'] }}" class="inline-flex items-center justify-center rounded-md bg-[var(--accent-dark)] px-2.5 py-1 sm:px-4 sm:py-2 md:px-5 text-[11px] sm:text-xs md:text-sm font-semibold text-[var(--accent-foreground)] transition hover:opacity-90">
                             <span data-i18n="explore_btn">Explore</span><span class="hidden md:inline" data-i18n="explore_shops_suffix">&nbsp;shops</span>
                         </a>
+                        @if(!empty($offer['expires_label']))
+                            <span class="hidden sm:inline-block text-[10px] font-medium text-[var(--muted-foreground)]">
+                                {{ $offer['expires_label'] }}
+                            </span>
+                        @endif
                     </div>
                 </article>
             @endforeach
@@ -97,29 +110,29 @@
                                 </div>
                             </div>
 
+                            @php
+                                $homeShopVouchers = $shop->availableVouchers();
+                            @endphp
                             <div class="mt-3.5 pt-3 border-t border-[var(--border)]/60 flex flex-wrap items-center justify-between gap-2">
-                                <div class="flex flex-wrap gap-1.5">
-                                    @if($shop->has_voucher)
-                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]" data-i18n="voucher">
-                                            Voucher
+                                <div class="flex flex-wrap gap-1.5 min-w-0">
+                                    @foreach($homeShopVouchers->take(2) as $hv)
+                                        <span data-shop-voucher-badge="{{ $hv->code }}" class="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[10px] font-bold text-rose-800 max-w-full">
+                                            <i class="fa-solid fa-ticket text-[9px] text-rose-600 shrink-0"></i>
+                                            <span class="truncate">{{ $hv->advertisedBadgeText() }}</span>
+                                        </span>
+                                    @endforeach
+                                    @if($homeShopVouchers->count() > 2)
+                                        <span class="inline-flex items-center rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                                            +{{ $homeShopVouchers->count() - 2 }}
                                         </span>
                                     @endif
-                                    @if($shop->supportsCourierPickup() && $shop->free_delivery)
-                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]" data-i18n="free_courier_pickup">
-                                            Free Courier Pickup
-                                        </span>
-                                    @elseif(!$shop->supportsCourierPickup() && $shop->supportsInShopRepair())
+                                    @if(!$shop->supportsCourierPickup() && $shop->supportsInShopRepair())
                                         <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]" data-i18n="in_shop_walk_in">
                                             In-Shop Walk-In
                                         </span>
                                     @endif
-                                    @if($shop->has_deals)
-                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]" data-i18n="deal">
-                                            Deal
-                                        </span>
-                                    @endif
                                 </div>
-                                @if(!empty($shop->specialties))
+                                @if(!empty($shop->specialties) && $homeShopVouchers->isEmpty())
                                     <span class="truncate max-w-[180px] text-[11px] text-[var(--muted-foreground)]">
                                         {{ is_array($shop->specialties) ? implode(' · ', array_slice($shop->specialties, 0, 2)) : $shop->specialties }}
                                     </span>
@@ -133,7 +146,11 @@
             <!-- Mobile Grid — 2 cols, compact crisp cards -->
             <div class="grid grid-cols-2 gap-2.5 md:hidden">
                 @foreach($featuredShops->slice(0, 4) as $shop)
-                    <a href="/shops/{{ $shop->slug }}" class="relative flex flex-col justify-between overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 shadow-sm transition hover:border-[var(--accent-dark)]/50 min-h-[136px]">
+                    @php
+                        $mobVouchers = $shop->availableVouchers();
+                        $topMobVoucher = $mobVouchers->first();
+                    @endphp
+                    <a href="/shops/{{ $shop->slug }}" class="relative flex flex-col justify-between overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--card)] p-3 shadow-sm transition hover:border-[var(--accent-dark)]/50 min-h-[144px]">
                         <!-- Top Row: Logo & Rating -->
                         <div class="flex items-start justify-between gap-2">
                             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[var(--border)] bg-[var(--mint-100)] text-xs font-bold text-[var(--accent-dark)] overflow-hidden">
@@ -161,29 +178,30 @@
                             @endif
                         </div>
 
-                        <!-- Bottom: Price & Badges -->
-                        <div class="mt-auto pt-2 flex items-end justify-between gap-1 tabular-nums">
-                            <div class="flex flex-col min-w-0">
-                                <span class="text-[9px] font-medium uppercase text-[var(--muted-foreground)] leading-none truncate" data-i18n="starting_from">
-                                    From
-                                </span>
-                                <div class="text-sm font-bold tracking-tight text-[var(--accent-dark)] leading-none mt-1 truncate">
-                                    ৳{{ number_format($shop->inspection_fee ?? ($shop->base_labor_fee ?? 350)) }}
+                        <!-- Bottom: Price & Alfresco Voucher Pill -->
+                        <div class="mt-auto pt-2 space-y-1.5 min-w-0 tabular-nums">
+                            <div class="flex items-end justify-between gap-1">
+                                <div class="flex flex-col min-w-0">
+                                    <span class="text-[9px] font-medium uppercase text-[var(--muted-foreground)] leading-none truncate" data-i18n="starting_from">
+                                        From
+                                    </span>
+                                    <div class="text-sm font-bold tracking-tight text-[var(--accent-dark)] leading-none mt-1 truncate">
+                                        ৳{{ number_format($shop->inspection_fee ?? ($shop->base_labor_fee ?? 350)) }}
+                                    </div>
                                 </div>
+                                @if($mobVouchers->count() > 1)
+                                    <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-1.5 py-0.5 text-[8px] font-bold text-[var(--accent-dark)] leading-none shrink-0">
+                                        +{{ $mobVouchers->count() - 1 }}
+                                    </span>
+                                @endif
                             </div>
 
-                            <div class="flex flex-col items-end gap-1 shrink-0">
-                                @if($shop->has_voucher)
-                                    <span class="rounded bg-[var(--accent-dark)] px-1.5 py-[2px] text-[7px] font-semibold uppercase tracking-wider text-[var(--accent-foreground)] leading-none" data-i18n="voucher">
-                                        VOUCHER
-                                    </span>
-                                @endif
-                                @if($shop->supportsCourierPickup() && $shop->free_delivery)
-                                    <span class="rounded bg-[var(--mint-100)] px-1.5 py-[2px] text-[7px] font-semibold uppercase tracking-wider text-[var(--accent-dark)] leading-none" data-i18n="free_short">
-                                        FREE
-                                    </span>
-                                @endif
-                            </div>
+                            @if($topMobVoucher)
+                                <div class="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2 py-0.5 text-[9px] font-bold text-rose-800 leading-tight">
+                                    <i class="fa-solid fa-ticket text-[8px] text-rose-600 shrink-0"></i>
+                                    <span class="truncate">{{ $topMobVoucher->advertisedBadgeText() }}</span>
+                                </div>
+                            @endif
                         </div>
                     </a>
                 @endforeach
