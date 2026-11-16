@@ -24,6 +24,7 @@ class ShopReview extends Model
         'repair_shop_id',
         'customer_id',
         'repair_request_id',
+        'spare_part_listing_id',
         'rating', // 1 to 5 stars
         'service_provided',
         'review_comment',
@@ -35,6 +36,7 @@ class ShopReview extends Model
     ];
 
     protected $casts = [
+        'spare_part_listing_id' => 'integer',
         'rating' => 'integer',
         'is_verified_purchase' => 'boolean',
         'is_hidden' => 'boolean',
@@ -54,6 +56,11 @@ class ShopReview extends Model
     public function repairRequest()
     {
         return $this->belongsTo(RepairRequest::class, 'repair_request_id');
+    }
+
+    public function sparePartListing()
+    {
+        return $this->belongsTo(SparePartListing::class, 'spare_part_listing_id');
     }
 
     public function moderator()

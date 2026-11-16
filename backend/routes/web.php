@@ -138,6 +138,7 @@ Route::post('/api/support/rider-chat/send', [RiderChatController::class, 'sendMe
 Route::get('/shops', [ShopDiscoveryController::class, 'index'])->name('shops.index');
 Route::get('/shops/explore', [ShopDiscoveryController::class, 'index'])->name('shops.explore');
 Route::get('/shops/{slug}', [ShopDiscoveryController::class, 'show'])->name('shops.show'); // R6
+Route::get('/api/shops/{slug}/spare-parts', [ShopDiscoveryController::class, 'shopSparePartsJson'])->name('api.shops.spare-parts');
 
 // Dedicated Spare Parts Marketplace (Items w/ Seller Shop, Specs, Wholesale & Sale Offers)
 Route::get('/search', [SparePartController::class, 'smartSearch'])->name('search.smart');

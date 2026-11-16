@@ -306,6 +306,7 @@ class ShopDiscoveryController extends Controller
             'vendorProfile',
             'reviews.customer',
             'reviews.repairRequest',
+            'reviews.sparePartListing',
             'services' => function ($q) {
                 $q->where('is_active', true)->orderBy('sort_order', 'asc');
             },
@@ -340,11 +341,14 @@ class ShopDiscoveryController extends Controller
             ->where('is_active', true)
             ->count();
 
+        // Preload 18 items (lcm(6, 9): 2 desktop pages of 9 / 3 mobile pages of 6); subsequent pages load via JSON
         $shopSpareParts = SparePartListing::where('shop_id', $shop->id)
             ->where('is_active', true)
             ->orderByRaw('LOWER(TRIM(title)) ASC')
-            ->limit(48)
+            ->limit(18)
             ->get();
+
+        $shopSparePartsJson = $shopSpareParts->map(fn (SparePartListing $sp) => self::serializeShopSparePartCard($sp))->values()->all();
 
         $relatedShops = RepairShop::where('is_active', true)
             ->where('is_public', true)
@@ -375,9 +379,64 @@ class ShopDiscoveryController extends Controller
             'siblingBranches',
             'relatedShops',
             'shopSpareParts',
+            'shopSparePartsJson',
             'shopSparePartsCount',
             'shopAvailableVouchers'
         ));
+    }
+
+    /**
+     * Paginated lightweight JSON slice of a shop's SparePartListings for responsive
+     * 9-per-page (desktop) / 6-per-page (mobile) Shop Profile pagination.
+     * Route: GET /api/shops/{slug}/spare-parts
+     */
+    public function shopSparePartsJson(Request $request, string $slug)
+    {
+        $shop = RepairShop::where('slug', $slug)->firstOrFail();
+        $offset = max(0, (int) $request->query('offset', 0));
+        $limit = max(1, min(36, (int) $request->query('limit', 18)));
+
+        $total = SparePartListing::where('shop_id', $shop->id)
+            ->where('is_active', true)
+            ->count();
+
+        $items = SparePartListing::where('shop_id', $shop->id)
+            ->where('is_active', true)
+            ->orderByRaw('LOWER(TRIM(title)) ASC')
+            ->skip($offset)
+            ->take($limit)
+            ->get()
+            ->map(fn (SparePartListing $sp) => self::serializeShopSparePartCard($sp))
+            ->values();
+
+        return response()->json([
+            'ok' => true,
+            'total' => $total,
+            'offset' => $offset,
+            'limit' => $limit,
+            'items' => $items,
+        ]);
+    }
+
+    public static function serializeShopSparePartCard(SparePartListing $spItem): array
+    {
+        $eff = (float) $spItem->effectiveBasePrice();
+        $norm = (float) $spItem->resolvedNormalBasePrice();
+        $offer = (bool) $spItem->isOfferActive();
+
+        return [
+            'id' => (int) $spItem->id,
+            'slug' => $spItem->slug,
+            'url' => route('spare-parts.show', ['slug' => $spItem->slug]),
+            'title' => $spItem->title,
+            'image_url' => $spItem->image_url,
+            'fallback_url' => $spItem->fallbackImageUrl(),
+            'effective_price' => $eff,
+            'effective_price_fmt' => number_format($eff, 0),
+            'normal_price' => $norm,
+            'normal_price_fmt' => number_format($norm, 0),
+            'is_offer' => $offer && $norm > $eff,
+        ];
     }
 
     /**

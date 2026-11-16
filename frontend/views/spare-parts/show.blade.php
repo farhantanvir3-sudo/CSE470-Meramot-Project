@@ -794,6 +794,45 @@
         </section>
     @endif
 
+    {{-- Verified Buyer Reviews for This Spare Part Listing --}}
+    @if(isset($partReviews) && $partReviews->isNotEmpty())
+        <section class="mt-6 rounded-lg bg-white/95 border border-emerald-900/15 p-4 sm:p-6 shadow-sm space-y-3" data-part-verified-reviews>
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-900/10 pb-2.5">
+                <h2 class="text-base sm:text-lg font-semibold text-emerald-950 flex items-center gap-2">
+                    <i class="fa-solid fa-star text-amber-500 text-sm"></i>
+                    <span>Verified Spare Part Buyer Reviews ({{ $partReviews->count() }})</span>
+                </h2>
+                @if($listing->shop)
+                    <a href="{{ route('shops.show', $listing->shop->slug) }}" class="text-xs font-semibold text-emerald-900 hover:underline">
+                        Sold by {{ $listing->shop->name }} &rarr;
+                    </a>
+                @endif
+            </div>
+
+            <div class="space-y-3">
+                @foreach($partReviews as $pRev)
+                    <article class="rounded-lg border border-emerald-900/15 bg-[var(--mint-50)]/70 p-3.5 text-xs space-y-1.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="font-bold text-emerald-950">{{ $pRev->customer?->name ?? 'Verified Buyer' }}</span>
+                                <span class="rounded bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold text-emerald-900">
+                                    Verified Purchase
+                                </span>
+                                <span class="text-[11px] text-emerald-900/65">{{ $pRev->created_at?->diffForHumans() }}</span>
+                            </div>
+                            <div class="text-amber-500 shrink-0">
+                                @for($s = 1; $s <= 5; $s++)
+                                    <i class="fa-solid fa-star text-[10px] {{ $s <= (int) $pRev->rating ? 'text-amber-500' : 'text-slate-300' }}"></i>
+                                @endfor
+                            </div>
+                        </div>
+                        <p class="text-emerald-950/90 leading-relaxed">"{{ $pRev->review_comment }}"</p>
+                    </article>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
     {{-- Related Spare Parts --}}
     @if($relatedListings->isNotEmpty())
         <section class="mt-8">

@@ -1068,6 +1068,15 @@ class SparePartController extends Controller
         $activeSearchQuery = trim((string) $request->input('q', ''));
         $hasActiveSearchQuery = ($activeSearchQuery !== '');
 
+        $partReviews = (\Illuminate\Support\Facades\Schema::hasTable('shop_reviews') && \Illuminate\Support\Facades\Schema::hasColumn('shop_reviews', 'spare_part_listing_id'))
+            ? \App\Models\ShopReview::with(['customer:id,name', 'shop:id,name,slug,branch_name,is_branch'])
+                ->where('spare_part_listing_id', $listing->id)
+                ->where('is_hidden', false)
+                ->orderByDesc('created_at')
+                ->limit(10)
+                ->get()
+            : collect();
+
         return view('spare-parts.show', [
             'listing' => $listing,
             'specOptions' => $specOptions,
@@ -1083,6 +1092,7 @@ class SparePartController extends Controller
             'deviceSegment' => $deviceSegment,
             'activeSearchQuery' => $activeSearchQuery,
             'hasActiveSearchQuery' => $hasActiveSearchQuery,
+            'partReviews' => $partReviews,
         ]);
     }
 

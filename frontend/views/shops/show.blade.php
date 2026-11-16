@@ -534,54 +534,198 @@
                 </div>
                 @endif
 
-                {{-- Tab 2: Spare Parts (renders listed parts if present, otherwise stays empty as requested) --}}
+                {{-- Tab 2: Spare Parts (9 at once on desktop, 6 at once on mobile, with inline Prev/Next pagination) --}}
                 <div x-show="catalogTab === 'spare_parts'" x-cloak>
                     @if($shopSpareParts->isNotEmpty())
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            @foreach($shopSpareParts as $spItem)
-                                @php
-                                    $spEff = $spItem->effectiveBasePrice();
-                                    $spNorm = $spItem->resolvedNormalBasePrice();
-                                    $spOffer = $spItem->isOfferActive();
-                                @endphp
-                                <a href="{{ route('spare-parts.show', ['slug' => $spItem->slug]) }}"
-                                   class="group rounded-lg border border-[var(--border)] bg-white/95 dark:bg-[var(--mint-100)]/20 hover:border-emerald-700 hover:shadow-sm transition overflow-hidden flex flex-col">
-                                    <div class="relative aspect-square bg-white p-2.5 border-b border-slate-100">
-                                        @if($spOffer)
-                                            <span class="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-600 text-white text-[10px] font-semibold flex items-center justify-center shadow-xs">
-                                                Sale!
-                                            </span>
-                                        @endif
-                                        <img src="{{ $spItem->image_url }}"
-                                             alt="{{ $spItem->title }}"
-                                             loading="lazy"
-                                             onerror="this.onerror=null;this.src='{{ e($spItem->fallbackImageUrl()) }}';"
-                                             class="w-full h-full object-contain group-hover:scale-105 transition">
-                                    </div>
-                                    <div class="p-3 flex-1 flex flex-col justify-between gap-1.5">
-                                        <div class="text-xs font-bold text-[var(--foreground)] line-clamp-2 group-hover:text-emerald-800">
-                                            {{ $spItem->title }}
-                                        </div>
-                                        <div class="flex items-baseline gap-1.5 flex-wrap">
-                                            @if($spOffer && $spNorm > $spEff)
-                                                <span class="text-[11px] text-slate-400 line-through">৳{{ number_format($spNorm, 0) }}</span>
-                                                <span class="text-sm font-semibold text-red-600">৳{{ number_format($spEff, 0) }}</span>
-                                            @else
-                                                <span class="text-sm font-semibold text-[var(--foreground)]">৳{{ number_format($spEff, 0) }}</span>
+                        @php
+                            $initialPartsPayload = $shopSparePartsJson ?? $shopSpareParts->map(fn ($sp) => \App\Http\Controllers\ShopDiscoveryController::serializeShopSparePartCard($sp))->values()->all();
+                        @endphp
+                        <div
+                            data-shop-spare-parts-section
+                            x-data="{
+                                hydrated: false,
+                                isMobile: typeof window !== 'undefined' ? window.matchMedia('(max-width: 639.98px)').matches : false,
+                                page: 1,
+                                totalCount: {{ (int) $shopSparePartsCount }},
+                                loadedMap: {},
+                                loadingPage: false,
+                                apiEndpoint: @js(route('api.shops.spare-parts', $shop->slug)),
+                                get perPage() {
+                                    return this.isMobile ? 6 : 9;
+                                },
+                                get totalPages() {
+                                    return Math.max(1, Math.ceil(this.totalCount / this.perPage));
+                                },
+                                get startIndex() {
+                                    return (this.page - 1) * this.perPage;
+                                },
+                                get visibleParts() {
+                                    const out = [];
+                                    const end = Math.min(this.totalCount, this.startIndex + this.perPage);
+                                    for (let i = this.startIndex; i < end; i++) {
+                                        if (this.loadedMap[i]) out.push(this.loadedMap[i]);
+                                    }
+                                    return out;
+                                },
+                                init() {
+                                    const seed = @js($initialPartsPayload);
+                                    seed.forEach((it, idx) => { this.loadedMap[idx] = it; });
+                                    this.hydrated = true;
+
+                                    if (typeof window !== 'undefined' && window.matchMedia) {
+                                        const mq = window.matchMedia('(max-width: 639.98px)');
+                                        const onChange = (ev) => {
+                                            this.isMobile = ev.matches;
+                                            if (this.page > this.totalPages) {
+                                                this.page = this.totalPages;
+                                            }
+                                            this.ensureCurrentSliceLoaded();
+                                        };
+                                        if (mq.addEventListener) {
+                                            mq.addEventListener('change', onChange);
+                                        } else if (mq.addListener) {
+                                            mq.addListener(onChange);
+                                        }
+                                    }
+                                },
+                                async ensureCurrentSliceLoaded() {
+                                    const start = this.startIndex;
+                                    const end = Math.min(this.totalCount, start + this.perPage);
+                                    let missing = false;
+                                    for (let i = start; i < end; i++) {
+                                        if (!this.loadedMap[i]) { missing = true; break; }
+                                    }
+                                    if (!missing || this.loadingPage) return;
+
+                                    this.loadingPage = true;
+                                    try {
+                                        const batchOffset = Math.floor(start / 18) * 18;
+                                        const res = await fetch(`${this.apiEndpoint}?offset=${batchOffset}&limit=18`, {
+                                            headers: { 'Accept': 'application/json' },
+                                        });
+                                        const data = await res.json();
+                                        if (data && Array.isArray(data.items)) {
+                                            data.items.forEach((it, k) => {
+                                                this.loadedMap[batchOffset + k] = it;
+                                            });
+                                        }
+                                    } catch {} finally {
+                                        this.loadingPage = false;
+                                    }
+                                },
+                                async goToPage(nextPage) {
+                                    const target = Math.max(1, Math.min(this.totalPages, nextPage));
+                                    if (target === this.page) return;
+                                    this.page = target;
+                                    await this.ensureCurrentSliceLoaded();
+                                }
+                            }"
+                        >
+                            {{-- Pre-hydration SSR Grid: strictly 6 visible on mobile (<640px) and 9 visible on desktop (>=640px) --}}
+                            <div x-show="!hydrated" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                @foreach($shopSpareParts->take(9)->values() as $spIdx => $spItem)
+                                    @php
+                                        $spEff = $spItem->effectiveBasePrice();
+                                        $spNorm = $spItem->resolvedNormalBasePrice();
+                                        $spOffer = $spItem->isOfferActive();
+                                    @endphp
+                                    <a href="{{ route('spare-parts.show', ['slug' => $spItem->slug]) }}"
+                                       class="group rounded-lg border border-[var(--border)] bg-white/95 dark:bg-[var(--mint-100)]/20 hover:border-emerald-700 hover:shadow-sm transition overflow-hidden {{ $spIdx >= 6 ? 'hidden sm:flex' : 'flex' }} flex-col">
+                                        <div class="relative aspect-square bg-white p-2.5 border-b border-slate-100">
+                                            @if($spOffer)
+                                                <span class="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-600 text-white text-[10px] font-semibold flex items-center justify-center shadow-xs">
+                                                    Sale!
+                                                </span>
                                             @endif
+                                            <img src="{{ $spItem->image_url }}"
+                                                 alt="{{ $spItem->title }}"
+                                                 loading="lazy"
+                                                 onerror="this.onerror=null;this.src='{{ e($spItem->fallbackImageUrl()) }}';"
+                                                 class="w-full h-full object-contain group-hover:scale-105 transition">
                                         </div>
-                                    </div>
-                                </a>
-                            @endforeach
-                        </div>
-                        @if($shopSparePartsCount > $shopSpareParts->count())
-                            <div class="mt-4 text-center">
-                                <a href="{{ route('spare-parts.index', ['seller_shop_id' => $shop->id]) }}"
-                                   class="inline-flex items-center gap-1 px-4 py-2 rounded-md bg-emerald-900 text-white text-xs font-bold hover:bg-emerald-800 transition">
-                                    View all {{ number_format($shopSparePartsCount) }} spare parts from {{ $shop->name }} →
-                                </a>
+                                        <div class="p-3 flex-1 flex flex-col justify-between gap-1.5">
+                                            <div class="text-xs font-bold text-[var(--foreground)] line-clamp-2 group-hover:text-emerald-800">
+                                                {{ $spItem->title }}
+                                            </div>
+                                            <div class="flex items-baseline gap-1.5 flex-wrap">
+                                                @if($spOffer && $spNorm > $spEff)
+                                                    <span class="text-[11px] text-slate-400 line-through">৳{{ number_format($spNorm, 0) }}</span>
+                                                    <span class="text-sm font-semibold text-red-600">৳{{ number_format($spEff, 0) }}</span>
+                                                @else
+                                                    <span class="text-sm font-semibold text-[var(--foreground)]">৳{{ number_format($spEff, 0) }}</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </a>
+                                @endforeach
                             </div>
-                        @endif
+
+                            {{-- Hydrated Responsive Grid: 6 items on mobile (<640px), 9 items on desktop (>=640px) --}}
+                            <template x-if="hydrated">
+                                <div class="space-y-4">
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" data-shop-parts-live-grid>
+                                        <template x-for="sp in visibleParts" :key="sp.id">
+                                            <a :href="sp.url"
+                                               data-shop-spare-part-card
+                                               class="group rounded-lg border border-[var(--border)] bg-white/95 dark:bg-[var(--mint-100)]/20 hover:border-emerald-700 hover:shadow-sm transition overflow-hidden flex flex-col">
+                                                <div class="relative aspect-square bg-white p-2.5 border-b border-slate-100">
+                                                    <template x-if="sp.is_offer">
+                                                        <span class="absolute top-2 left-2 z-10 w-8 h-8 rounded-full bg-red-600 text-white text-[10px] font-semibold flex items-center justify-center shadow-xs">
+                                                            Sale!
+                                                        </span>
+                                                    </template>
+                                                    <img :src="sp.image_url"
+                                                         :alt="sp.title"
+                                                         loading="lazy"
+                                                         x-on:error="$event.target.onerror = null; $event.target.src = sp.fallback_url"
+                                                         class="w-full h-full object-contain group-hover:scale-105 transition">
+                                                </div>
+                                                <div class="p-3 flex-1 flex flex-col justify-between gap-1.5">
+                                                    <div class="text-xs font-bold text-[var(--foreground)] line-clamp-2 group-hover:text-emerald-800" x-text="sp.title"></div>
+                                                    <div class="flex items-baseline gap-1.5 flex-wrap">
+                                                        <template x-if="sp.is_offer">
+                                                            <span class="text-[11px] text-slate-400 line-through" x-text="'৳' + sp.normal_price_fmt"></span>
+                                                        </template>
+                                                        <span class="text-sm font-semibold" :class="sp.is_offer ? 'text-red-600' : 'text-[var(--foreground)]'" x-text="'৳' + sp.effective_price_fmt"></span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </template>
+                                    </div>
+
+                                    <div x-show="totalCount > perPage" class="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-[var(--border)]/60">
+                                        <div class="flex items-center justify-between sm:justify-start gap-2 text-xs">
+                                            <button
+                                                type="button"
+                                                data-shop-parts-prev
+                                                :disabled="page <= 1 || loadingPage"
+                                                @click="goToPage(page - 1)"
+                                                class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1.5 font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] disabled:opacity-45 disabled:cursor-not-allowed transition cursor-pointer"
+                                            >
+                                                &larr; Prev
+                                            </button>
+                                            <span class="text-[11px] font-semibold text-[var(--muted-foreground)] tabular-nums px-1" data-shop-parts-range>
+                                                Showing <strong class="text-[var(--foreground)]" x-text="(startIndex + 1) + '–' + Math.min(totalCount, startIndex + perPage)"></strong> of <strong class="text-[var(--foreground)]" x-text="totalCount.toLocaleString()"></strong>
+                                            </span>
+                                            <button
+                                                type="button"
+                                                data-shop-parts-next
+                                                :disabled="page >= totalPages || loadingPage"
+                                                @click="goToPage(page + 1)"
+                                                class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1.5 font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] disabled:opacity-45 disabled:cursor-not-allowed transition cursor-pointer"
+                                            >
+                                                Next &rarr;
+                                            </button>
+                                        </div>
+
+                                        <a href="{{ route('spare-parts.index', ['seller_shop_id' => $shop->id]) }}"
+                                           class="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-md bg-emerald-900 text-white text-xs font-bold hover:bg-emerald-800 transition">
+                                            View all {{ number_format($shopSparePartsCount) }} spare parts from {{ $shop->name }} →
+                                        </a>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
                     @endif
                 </div>
             </div>
@@ -836,7 +980,14 @@
                                                         Your Review
                                                     </span>
                                                 @endif
-                                                @if($isVerifiedRepair)
+                                                @php
+                                                    $linkedPart = $rev->relationLoaded('sparePartListing') ? $rev->sparePartListing : null;
+                                                @endphp
+                                                @if($linkedPart)
+                                                    <span class="rounded bg-sky-100 px-2 py-0.5 text-[9px] font-bold text-sky-900 border border-sky-300">
+                                                        <i class="fa-solid fa-microchip mr-0.5 text-[8px]"></i>Verified spare part
+                                                    </span>
+                                                @elseif($isVerifiedRepair)
                                                     <span class="rounded bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-800 border border-emerald-300">
                                                         <i class="fa-solid fa-certificate mr-0.5 text-[8px]"></i>Verified repair
                                                     </span>
@@ -857,7 +1008,30 @@
                                                 @endif
                                             </div>
 
-                                            @if($serviceProvidedLabel !== '')
+                                            @if($linkedPart)
+                                                <div class="mt-1.5">
+                                                    <a
+                                                        href="{{ route('spare-parts.show', ['slug' => $linkedPart->slug]) }}"
+                                                        data-review-spare-part-link="{{ $linkedPart->slug }}"
+                                                        class="group/part inline-flex max-w-full items-center gap-2 rounded-lg border border-emerald-600/35 bg-white/90 hover:bg-emerald-50 hover:border-emerald-700 px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] shadow-2xs transition"
+                                                    >
+                                                        <img
+                                                            src="{{ $linkedPart->image_url }}"
+                                                            alt="{{ $linkedPart->title }}"
+                                                            loading="lazy"
+                                                            onerror="this.onerror=null;this.src='{{ e($linkedPart->fallbackImageUrl()) }}';"
+                                                            class="h-6 w-6 rounded border border-slate-200 bg-white object-contain p-0.5 shrink-0"
+                                                        >
+                                                        <span class="min-w-0 break-words leading-snug group-hover/part:underline">
+                                                            Spare Part: {{ $linkedPart->title }}
+                                                        </span>
+                                                        <span class="inline-flex items-center gap-0.5 rounded bg-[var(--mint-100)] px-1.5 py-0.5 text-[9px] font-semibold text-emerald-900 shrink-0">
+                                                            <span>View Listing</span>
+                                                            <i class="fa-solid fa-arrow-up-right-from-square text-[8px]"></i>
+                                                        </span>
+                                                    </a>
+                                                </div>
+                                            @elseif($serviceProvidedLabel !== '')
                                                 <div class="mt-1">
                                                     <span class="inline-flex flex-wrap items-center gap-1 rounded-lg bg-[var(--mint-200)]/90 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] border border-[var(--border)] break-words">
                                                         <i class="fa-solid fa-screwdriver-wrench text-[9px] shrink-0"></i>

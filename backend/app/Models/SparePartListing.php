@@ -121,6 +121,11 @@ class SparePartListing extends Model
         return $this->hasOne(SparePartWarranty::class, 'spare_part_listing_id');
     }
 
+    public function reviews()
+    {
+        return $this->hasMany(ShopReview::class, 'spare_part_listing_id');
+    }
+
     public function hasSeparateWarranty(): bool
     {
         if ($this->relationLoaded('warrantyCoverage')) {

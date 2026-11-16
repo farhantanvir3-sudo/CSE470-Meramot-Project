@@ -2,31 +2,35 @@
 
 namespace Database\Seeders;
 
+use App\Http\Controllers\VendorBranchController;
+use App\Models\RepairJob;
 use App\Models\RepairRequest;
 use App\Models\RepairShop;
 use App\Models\ShopReview;
+use App\Models\SparePartListing;
 use App\Models\User;
 use App\Models\VendorProfile;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 /**
  * ============================================================================
- * FEATURE R9: 100% Order-Backed Customer Review Seeder & Rating Synchronizer
+ * FEATURE R9: 100% Order-Backed Repair & Spare Parts Customer Review Seeder
  * ============================================================================
  * Assigned Member: Shanid Sajjatuz Islam [Student ID: 23201465]
- * End-to-End Relational Sync: Farhan Tanvir [22299179]
+ * End-to-End Relational & Spare-Part Sync: Farhan Tanvir [22299179]
  *
  * Enforces Strict End-to-End Relational Invariants:
  *   1. 100% of `ShopReview` rows (`repair_request_id IS NOT NULL`) are derived
- *      directly from actual `COMPLETED` `RepairRequest`s that already have a
- *      `COMPLETED` `RepairJob`, `Warranty`, `PAID` `Invoice`, `PAID`
- *      `PaymentTransaction`, `EscrowLedger`, and `FinancialLedger` settlement!
- *   2. Zero orphan reviews, zero reviews on un-onboarded shops, and at most
+ *      directly from actual `COMPLETED` `RepairRequest`s with a `COMPLETED`
+ *      `RepairJob`, `Warranty`, `PAID` `Invoice`, `PAID` `PaymentTransaction`,
+ *      `EscrowLedger`, and `FinancialLedger` settlement!
+ *   2. Includes verified Spare Parts reviews (`spare_part_listing_id IS NOT NULL`)
+ *      linking directly to actual `SparePartListing` product pages (`/spare-parts/{slug}`).
+ *   3. Zero orphan reviews, zero reviews on un-onboarded shops, and at most
  *      ONE review per `(repair_shop_id, customer_id)` pair.
- *   3. Includes 1 moderated/hidden review (`is_hidden = true`, `moderated_by_id`
- *      linked to System Admin `Meramot`) so `ModerationLog` links to a real row
- *      while visible `review_count` & `rating` exclude hidden reviews.
  *   4. Synchronizes 100% of `repair_shops.review_count`, `repair_shops.rating`,
  *      and `vendor_profiles.rating` strictly from visible `shop_reviews`.
  * ============================================================================
@@ -37,16 +41,18 @@ class ReviewSeeder extends Seeder
     {
         ShopReview::query()->delete();
 
+        $hasSparePartCol = Schema::hasColumn('shop_reviews', 'spare_part_listing_id');
+
         $meramotAdmin = User::where('email', 'admin@meramot.demo')->first()
             ?? User::where('role', 'admin')->orderBy('id')->first();
 
-        $completedRequests = RepairRequest::with(['requestedShop', 'customer'])
+        $completedRequests = RepairRequest::with(['requestedShop.vendorProfile', 'customer', 'repairJob'])
             ->where('status', 'COMPLETED')
             ->whereNotNull('requested_shop_id')
             ->orderBy('id')
             ->get();
 
-        if ($completedRequests->isEmpty()) {
+        if ($completedRequests->isEmpty() && (!Schema::hasTable('spare_part_listings') || SparePartListing::count() === 0)) {
             RepairShop::query()->update(['rating' => 0.00, 'review_count' => 0]);
             VendorProfile::query()->update(['rating' => 0.00]);
             return;
@@ -101,6 +107,9 @@ class ReviewSeeder extends Seeder
             if (!$shop || !$customer || !$shop->is_public || !$shop->is_active) {
                 continue;
             }
+            if ($shop->vendorProfile && $shop->vendorProfile->verification_status !== 'approved') {
+                continue;
+            }
 
             $pairKey = $shop->id . ':' . $customer->id;
             if (isset($insertedPairs[$pairKey])) {
@@ -114,10 +123,23 @@ class ReviewSeeder extends Seeder
 
             $slugEmailKey = $shop->slug . ':' . $customer->email;
 
+            // Detect if this completed order already purchased a SparePartListing
+            $detectedPart = null;
+            if ($hasSparePartCol && is_array($req->repairJob?->final_quote_items)) {
+                foreach ($req->repairJob->final_quote_items as $qIt) {
+                    if (is_array($qIt) && !empty($qIt['spare_part_id'])) {
+                        $detectedPart = SparePartListing::find((int) $qIt['spare_part_id']);
+                        if ($detectedPart) {
+                            break;
+                        }
+                    }
+                }
+            }
+
             // Specifically mark 1 review (`protech-solutions:imran.kabir@meramot.demo`) as moderated/hidden spam
             // so Admin Moderation (`moderation_logs`) links to an actual hidden review row!
             if ($slugEmailKey === 'protech-solutions:imran.kabir@meramot.demo') {
-                $rowsToInsert[] = [
+                $row = [
                     'repair_shop_id' => $shop->id,
                     'customer_id' => $customer->id,
                     'repair_request_id' => $req->id,
@@ -132,10 +154,17 @@ class ReviewSeeder extends Seeder
                     'created_at' => $reviewTime,
                     'updated_at' => (clone $reviewTime)->addHours(2),
                 ];
+                if ($hasSparePartCol) {
+                    $row['spare_part_listing_id'] = null;
+                }
+                $rowsToInsert[] = $row;
                 continue;
             }
 
-            if (isset($curatedComments[$slugEmailKey])) {
+            if ($detectedPart) {
+                $rating = 5;
+                $comment = "Ordered {$detectedPart->title} from {$shop->name}. Genuine factory-sealed component, matched exact model specs, and delivered safely.";
+            } elseif (isset($curatedComments[$slugEmailKey])) {
                 [$rating, $comment] = $curatedComments[$slugEmailKey];
             } else {
                 $rating = ($idx % 5 === 4) ? 3 : (($idx % 4 === 3) ? 4 : 5);
@@ -149,12 +178,14 @@ class ReviewSeeder extends Seeder
                         : "Reliable {$req->title} service at {$shopLabel} in {$shop->area}. Workmanship is solid and matched the approved quote.");
             }
 
-            $rowsToInsert[] = [
+            $row = [
                 'repair_shop_id' => $shop->id,
                 'customer_id' => $customer->id,
                 'repair_request_id' => $req->id,
                 'rating' => $rating,
-                'service_provided' => $req->title ?: ($req->issue_category ?: 'Hardware Repair'),
+                'service_provided' => $detectedPart
+                    ? Str::limit('Spare Part — ' . $detectedPart->title, 175, '')
+                    : ($req->title ?: ($req->issue_category ?: 'Hardware Repair')),
                 'review_comment' => $comment,
                 'is_verified_purchase' => true,
                 'is_hidden' => false,
@@ -164,6 +195,201 @@ class ReviewSeeder extends Seeder
                 'created_at' => $reviewTime,
                 'updated_at' => $reviewTime,
             ];
+            if ($hasSparePartCol) {
+                $row['spare_part_listing_id'] = $detectedPart?->id;
+            }
+            $rowsToInsert[] = $row;
+        }
+
+        // ---------------------------------------------------------------------
+        // PART 2: Seed Order-Backed Verified Spare Parts Reviews (with direct
+        // `spare_part_listing_id` links to actual product listings!)
+        // ---------------------------------------------------------------------
+        if ($hasSparePartCol && Schema::hasTable('spare_part_listings')) {
+            $eligibleCustomers = User::where('role', 'customer')
+                ->where('is_active', true)
+                ->where(function ($q) {
+                    $q->whereNull('status')->orWhere('status', '!=', 'banned');
+                })
+                ->orderBy('id')
+                ->get();
+
+            $priorityShopSlugs = [
+                'protech-solutions',
+                'protech-solutions-uttara',
+                'protech-solutions-agrabad',
+                'dhaka-device-doctors',
+                'dragon-tech',
+                'bytesize-repairs',
+                'mirpur-laptop-lab',
+                'the-gadget-den',
+                'macmaster-repairs',
+            ];
+
+            $priorityShops = RepairShop::with('vendorProfile')
+                ->whereIn('slug', $priorityShopSlugs)
+                ->where('is_active', true)
+                ->where('is_public', true)
+                ->get();
+
+            $wholesalerShops = RepairShop::with('vendorProfile')
+                ->whereNotIn('slug', $priorityShopSlugs)
+                ->where('is_active', true)
+                ->where('is_public', true)
+                ->whereHas('sparePartListings', fn ($q) => $q->where('is_active', true))
+                ->orderByDesc('is_featured')
+                ->orderBy('id')
+                ->limit(6)
+                ->get();
+
+            $targetPartShops = $priorityShops->merge($wholesalerShops);
+
+            $partCommentTemplates = [
+                [5, 'Genuine %s arrived well-packed in anti-static protection. Exact connector fit and tested 100%% healthy right out of the box.'],
+                [5, 'Purchased %s from %s — authentic part matching the listed SKU & specs, quick dispatch, and verified warranty coverage included.'],
+                [5, 'Installed %s without any compatibility issues. Voltage and build quality match original factory standards.'],
+                [4, 'Solid replacement %s from %s. Clean packaging and accurate product listing; courier arrived within the estimated window.'],
+            ];
+
+            $tplCursor = 0;
+            foreach ($targetPartShops as $pShop) {
+                if ($pShop->vendorProfile && $pShop->vendorProfile->verification_status !== 'approved') {
+                    continue;
+                }
+
+                $shopParts = SparePartListing::where('shop_id', $pShop->id)
+                    ->where('is_active', true)
+                    ->where('stock_quantity', '>', 0)
+                    ->orderByRaw('LOWER(TRIM(title)) ASC')
+                    ->limit(3)
+                    ->get();
+
+                if ($shopParts->isEmpty()) {
+                    continue;
+                }
+
+                $addedForShop = collect($rowsToInsert)
+                    ->where('repair_shop_id', $pShop->id)
+                    ->filter(fn ($r) => !empty($r['spare_part_listing_id']))
+                    ->count();
+                if ($addedForShop >= 2) {
+                    continue;
+                }
+
+                foreach ($shopParts as $partItem) {
+                    if ($addedForShop >= 2) {
+                        break;
+                    }
+
+                    $chosenCustomer = $eligibleCustomers->first(function (User $u) use ($pShop, $insertedPairs) {
+                        return !isset($insertedPairs[$pShop->id . ':' . $u->id]);
+                    });
+
+                    if (!$chosenCustomer) {
+                        break;
+                    }
+
+                    $pairKey = $pShop->id . ':' . $chosenCustomer->id;
+                    $insertedPairs[$pairKey] = true;
+
+                    $unitPrice = max(150.0, round((float) $partItem->effectiveBasePrice(), 2));
+                    $wDays = max(0, (int) ($partItem->warranty_days ?? 0));
+                    $completedAt = now()->subDays(2 + ($tplCursor % 9))->subHours(3);
+                    $usesCourier = (bool) $pShop->supports_pickup;
+
+                    // Create / sync full order-backed COMPLETED RepairRequest + RepairJob + Ledger Settlement
+                    $spReq = RepairRequest::updateOrCreate(
+                        [
+                            'customer_id' => $chosenCustomer->id,
+                            'requested_shop_id' => $pShop->id,
+                            'issue_category' => 'Spare Parts Order',
+                            'model_name' => 'Verified Spare Part #' . $partItem->id,
+                        ],
+                        [
+                            'source' => 'DIRECT_SERVICE',
+                            'title' => $partItem->title,
+                            'description' => "Verified Spare Part Order ({$pShop->name}): {$partItem->title}",
+                            'problem' => "Spare Part Purchase: {$partItem->title}",
+                            'device_type' => $partItem->part_category ?: 'Spare Part',
+                            'brand' => $partItem->brand ?: $pShop->name,
+                            'mode' => 'DIRECT_REPAIR',
+                            'status' => RepairRequest::STATUS_COMPLETED,
+                            'preferred_pickup' => $usesCourier,
+                            'preferred_service_type' => $usesCourier ? 'pickup_dropoff' : 'walk_in',
+                            'delivery_type' => $usesCourier ? 'REGULAR' : null,
+                            'contact_phone' => $chosenCustomer->phone ?: '+8801711000099',
+                            'pickup_address' => $usesCourier ? ($chosenCustomer->address ?: 'Road 11, Banani, Dhaka') : null,
+                            'dropoff_address' => $pShop->public_address,
+                            'checkup_fee' => round($unitPrice * ($pShop->effectiveCommissionRatePct() / 100.0), 2),
+                            'quoted_final_amount' => $unitPrice,
+                            'approved_at' => $completedAt->copy()->subHours(4),
+                        ]
+                    );
+
+                    $spJob = RepairJob::updateOrCreate(
+                        ['repair_request_id' => $spReq->id],
+                        [
+                            'shop_id' => $pShop->id,
+                            'status' => 'COMPLETED',
+                            'parts_cost' => $unitPrice,
+                            'labor_cost' => 0,
+                            'has_warranty' => $wDays > 0,
+                            'warranty_days' => $wDays,
+                            'diagnosis_notes' => "Dispatched verified spare part SKU {$partItem->sku}.",
+                            'final_quoted_amount' => $unitPrice,
+                            'final_quote_items' => [[
+                                'id' => 'sp_' . $partItem->id,
+                                'spare_part_id' => $partItem->id,
+                                'slug' => $partItem->slug,
+                                'title' => $partItem->title,
+                                'price' => $unitPrice,
+                                'part_unit_price' => $unitPrice,
+                                'quantity' => 1,
+                                'source' => 'SPARE_PART',
+                                'has_warranty' => $wDays > 0,
+                                'warranty_days' => $wDays,
+                            ]],
+                            'customer_approved' => true,
+                            'started_at' => $completedAt->copy()->subHours(3),
+                            'completed_at' => $completedAt,
+                        ]
+                    );
+
+                    VendorBranchController::settleCompletedJobFinancials(
+                        $spJob->fresh(['repairRequest', 'shop.vendorProfile'])
+                    );
+
+                    [$tplRating, $tplFmt] = $partCommentTemplates[$tplCursor % count($partCommentTemplates)];
+                    $shortTitle = Str::limit($partItem->title, 68, '');
+                    $shopDisplay = $pShop->display_branch_tag
+                        ? "{$pShop->name} ({$pShop->display_branch_tag})"
+                        : $pShop->name;
+                    $commentText = substr_count($tplFmt, '%s') === 2
+                        ? sprintf($tplFmt, $shortTitle, $shopDisplay)
+                        : sprintf($tplFmt, $shortTitle);
+
+                    $revTime = $completedAt->copy()->addHours(2);
+                    $rowsToInsert[] = [
+                        'repair_shop_id' => $pShop->id,
+                        'customer_id' => $chosenCustomer->id,
+                        'repair_request_id' => $spReq->id,
+                        'spare_part_listing_id' => $partItem->id,
+                        'rating' => $tplRating,
+                        'service_provided' => Str::limit('Spare Part — ' . $partItem->title, 175, ''),
+                        'review_comment' => $commentText,
+                        'is_verified_purchase' => true,
+                        'is_hidden' => false,
+                        'moderated_at' => null,
+                        'moderated_by_id' => null,
+                        'moderation_note' => null,
+                        'created_at' => $revTime,
+                        'updated_at' => $revTime,
+                    ];
+
+                    $addedForShop++;
+                    $tplCursor++;
+                }
+            }
         }
 
         foreach (array_chunk($rowsToInsert, 200) as $chunk) {

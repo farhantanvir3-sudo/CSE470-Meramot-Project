@@ -219,6 +219,24 @@ class ReviewController extends Controller
         $isVerifiedRepair = $verifiedOrder !== null;
         $linkedRequestId = $verifiedOrder?->id ?? $fallbackCompletedOrder?->id;
 
+        $linkedSparePartId = null;
+        $orderForPartLookup = $verifiedOrder ?? $fallbackCompletedOrder;
+        if ($orderForPartLookup) {
+            $orderForPartLookup->loadMissing('repairJob');
+            $quoteItems = is_array($orderForPartLookup->repairJob?->final_quote_items)
+                ? $orderForPartLookup->repairJob->final_quote_items
+                : [];
+            foreach ($quoteItems as $qIt) {
+                if (is_array($qIt) && !empty($qIt['spare_part_id'])) {
+                    $candidatePart = \App\Models\SparePartListing::find((int) $qIt['spare_part_id']);
+                    if ($candidatePart) {
+                        $linkedSparePartId = (int) $candidatePart->id;
+                        break;
+                    }
+                }
+            }
+        }
+
         $serviceProvided = trim((string) ($validated['service_provided'] ?? ''));
         if ($serviceProvided === '' && $verifiedOrder) {
             $cat = trim((string) ($verifiedOrder->issue_category ?: $verifiedOrder->device_type ?: 'Hardware Repair'));
@@ -236,6 +254,7 @@ class ReviewController extends Controller
             if ($existingReview) {
                 $existingReview->update([
                     'rating' => $validated['rating'],
+                    'spare_part_listing_id' => $linkedSparePartId ?? $existingReview->spare_part_listing_id,
                     'service_provided' => $serviceProvided ?: $existingReview->service_provided,
                     'review_comment' => $validated['review_comment'],
                     'is_verified_purchase' => true,
@@ -253,6 +272,7 @@ class ReviewController extends Controller
             'repair_shop_id' => $shop->id,
             'customer_id' => $customerId,
             'repair_request_id' => $linkedRequestId,
+            'spare_part_listing_id' => $linkedSparePartId,
             'rating' => $validated['rating'],
             'service_provided' => $serviceProvided !== '' ? $serviceProvided : null,
             'review_comment' => $validated['review_comment'],
