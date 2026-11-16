@@ -11,7 +11,7 @@
             @foreach($offerCards as $offer)
                 <article class="flex flex-col justify-between rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-4 sm:p-5 md:min-h-[168px] md:p-6 shadow-sm transition hover:border-[var(--accent-dark)]/45">
                     <div>
-                        <span class="inline-block rounded bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)]">
+                        <span class="inline-block rounded bg-[var(--mint-200)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)]" data-i18n="offer_available">
                             Featured Offer
                         </span>
                         <h2 class="mt-2 text-lg font-bold leading-snug text-[var(--foreground)] md:text-2xl">
@@ -24,7 +24,7 @@
 
                     <div class="mt-4">
                         <a href="{{ $offer['href'] }}" class="inline-flex items-center justify-center rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)] md:px-5 md:text-sm transition hover:opacity-90">
-                            Explore<span class="hidden md:inline">&nbsp;shops</span>
+                            <span data-i18n="explore_btn">Explore</span><span class="hidden md:inline" data-i18n="explore_shops_suffix">&nbsp;shops</span>
                         </a>
                     </div>
                 </article>
@@ -34,10 +34,10 @@
         <!-- ── 2. Featured Shops ── -->
         <section>
             <div class="mb-3 flex items-center justify-between gap-2 md:mb-4">
-                <h2 class="text-lg font-bold text-[var(--foreground)] md:text-xl">
+                <h2 class="text-lg font-bold text-[var(--foreground)] md:text-xl" data-i18n="featured_shops">
                     Featured shops
                 </h2>
-                <a href="/shops" class="text-xs font-semibold text-[var(--accent-dark)] hover:underline md:text-sm">
+                <a href="/shops" class="text-xs font-semibold text-[var(--accent-dark)] hover:underline md:text-sm" data-i18n="view_all_arrow">
                     View all &rarr;
                 </a>
             </div>
@@ -79,13 +79,13 @@
                                                         <span class="inline-flex items-center gap-1 font-semibold"><i class="fa-solid fa-star text-amber-500 text-[11px]"></i> {{ number_format($shop->rating, 1) }}</span>
                                                         <span class="text-[var(--muted-foreground)]">({{ $shop->review_count }})</span>
                                                     @else
-                                                        <span class="font-medium text-[var(--accent-dark)]">New · No reviews yet</span>
+                                                        <span class="font-medium text-[var(--accent-dark)]" data-i18n="new_no_reviews">New · No reviews yet</span>
                                                     @endif
                                                 </div>
                                             </div>
 
                                             <div class="flex shrink-0 flex-col items-end pl-2 text-right tabular-nums">
-                                                <span class="font-medium text-[var(--muted-foreground)] uppercase tracking-wider text-[10px]">
+                                                <span class="font-medium text-[var(--muted-foreground)] uppercase tracking-wider text-[10px]" data-i18n="starting_from">
                                                     {{ $shop->inspection_fee !== null ? 'From' : 'Starts' }}
                                                 </span>
                                                 <span class="font-bold tracking-tight text-[var(--accent-dark)] leading-tight text-base md:text-lg">
@@ -100,21 +100,21 @@
                             <div class="mt-3.5 pt-3 border-t border-[var(--border)]/60 flex flex-wrap items-center justify-between gap-2">
                                 <div class="flex flex-wrap gap-1.5">
                                     @if($shop->has_voucher)
-                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]">
+                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]" data-i18n="voucher">
                                             Voucher
                                         </span>
                                     @endif
                                     @if($shop->supportsCourierPickup() && $shop->free_delivery)
-                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]">
+                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]" data-i18n="free_courier_pickup">
                                             Free Courier Pickup
                                         </span>
                                     @elseif(!$shop->supportsCourierPickup() && $shop->supportsInShopRepair())
-                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]">
+                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]" data-i18n="in_shop_walk_in">
                                             In-Shop Walk-In
                                         </span>
                                     @endif
                                     @if($shop->has_deals)
-                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]">
+                                        <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-medium text-[var(--accent-dark)]" data-i18n="deal">
                                             Deal
                                         </span>
                                     @endif
@@ -164,7 +164,7 @@
                         <!-- Bottom: Price & Badges -->
                         <div class="mt-auto pt-2 flex items-end justify-between gap-1 tabular-nums">
                             <div class="flex flex-col min-w-0">
-                                <span class="text-[9px] font-medium uppercase text-[var(--muted-foreground)] leading-none truncate">
+                                <span class="text-[9px] font-medium uppercase text-[var(--muted-foreground)] leading-none truncate" data-i18n="starting_from">
                                     From
                                 </span>
                                 <div class="text-sm font-bold tracking-tight text-[var(--accent-dark)] leading-none mt-1 truncate">
@@ -174,12 +174,12 @@
 
                             <div class="flex flex-col items-end gap-1 shrink-0">
                                 @if($shop->has_voucher)
-                                    <span class="rounded bg-[var(--accent-dark)] px-1.5 py-[2px] text-[7px] font-semibold uppercase tracking-wider text-[var(--accent-foreground)] leading-none">
+                                    <span class="rounded bg-[var(--accent-dark)] px-1.5 py-[2px] text-[7px] font-semibold uppercase tracking-wider text-[var(--accent-foreground)] leading-none" data-i18n="voucher">
                                         VOUCHER
                                     </span>
                                 @endif
                                 @if($shop->supportsCourierPickup() && $shop->free_delivery)
-                                    <span class="rounded bg-[var(--mint-100)] px-1.5 py-[2px] text-[7px] font-semibold uppercase tracking-wider text-[var(--accent-dark)] leading-none">
+                                    <span class="rounded bg-[var(--mint-100)] px-1.5 py-[2px] text-[7px] font-semibold uppercase tracking-wider text-[var(--accent-dark)] leading-none" data-i18n="free_short">
                                         FREE
                                     </span>
                                 @endif
@@ -192,7 +192,7 @@
             <!-- Explore More Button -->
             <div class="mt-5 flex justify-center md:mt-6">
                 <a href="/shops" class="inline-flex items-center gap-2 rounded-md border border-[var(--accent-dark)] bg-transparent px-5 py-2 text-xs sm:text-sm font-semibold text-[var(--accent-dark)] transition-colors hover:bg-[var(--mint-50)] md:px-6 md:py-2.5">
-                    <span>Explore More Featured Shops</span>
+                    <span data-i18n="explore_more_featured">Explore More Featured Shops</span>
                     <i class="fa-solid fa-arrow-right text-xs"></i>
                 </a>
             </div>
@@ -200,7 +200,7 @@
 
         <!-- ── 3. Popular Categories ── -->
         <section class="space-y-3">
-            <h2 class="text-lg font-bold text-[var(--foreground)] md:text-xl">
+            <h2 class="text-lg font-bold text-[var(--foreground)] md:text-xl" data-i18n="popular_categories">
                 Popular Categories
             </h2>
 
@@ -229,7 +229,7 @@
 
         <!-- ── 4. Recent Searches ── -->
         <section class="space-y-3">
-            <h2 class="text-lg font-bold text-[var(--foreground)] md:text-xl">
+            <h2 class="text-lg font-bold text-[var(--foreground)] md:text-xl" data-i18n="recently_viewed">
                 Recent Searches
             </h2>
 

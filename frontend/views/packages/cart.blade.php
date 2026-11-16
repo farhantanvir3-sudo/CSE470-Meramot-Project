@@ -109,13 +109,13 @@
     <div class="mb-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-4">
         <div class="min-w-0">
             <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
-                <a href="/" class="hover:underline">Home</a>
+                <a href="/" class="hover:underline" data-i18n="home_nav">Home</a>
                 <span>›</span>
-                <a href="{{ route('packages.catalog') }}" class="hover:underline">Service Packages</a>
+                <a href="{{ route('packages.catalog') }}" class="hover:underline" data-i18n="service_packages">Service Packages</a>
                 <span>›</span>
-                <span class="text-[var(--foreground)] font-semibold">Cart</span>
+                <span class="text-[var(--foreground)] font-semibold" data-i18n="cart_label">Cart</span>
             </div>
-            <h1 class="text-xl md:text-2xl font-bold tracking-tight text-[var(--foreground)]">
+            <h1 class="text-xl md:text-2xl font-bold tracking-tight text-[var(--foreground)]" data-i18n="your_service_cart">
                 Your Service Cart
             </h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1 flex flex-wrap items-center gap-2 leading-relaxed">
@@ -127,11 +127,11 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
-            <a href="{{ route('spare-parts.index') }}" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap">
+            <a href="{{ route('spare-parts.index') }}" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition whitespace-nowrap" data-i18n="add_spare_parts_btn">
                 + Add Spare Parts
             </a>
             @if(!$isVendorViewer)
-                <a href="{{ route('packages.catalog') }}" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-3.5 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition whitespace-nowrap">
+                <a href="{{ route('packages.catalog') }}" class="rounded-md border border-[var(--border)] bg-[var(--card)] px-3.5 py-2 text-xs font-semibold text-[var(--accent-dark)] hover:bg-[var(--mint-100)] transition whitespace-nowrap" data-i18n="add_packages_btn">
                     + Add Packages
                 </a>
             @endif
@@ -173,7 +173,7 @@
             <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--mint-100)] border border-[var(--border)] text-[var(--accent-dark)]">
                 <i class="fa-solid fa-cart-shopping text-2xl"></i>
             </div>
-            <h2 class="text-xl font-bold text-[var(--foreground)]">Your cart is empty</h2>
+            <h2 class="text-xl font-bold text-[var(--foreground)]" data-i18n="cart_empty">Your cart is empty</h2>
             <p class="mt-2 text-xs text-[var(--muted-foreground)] max-w-md mx-auto leading-relaxed">
                 Browse genuine spare parts, flat-rate service packages, or verified workshops to get started.
             </p>
@@ -206,10 +206,10 @@
                                     <span class="inline-flex items-center gap-1.5 whitespace-nowrap rounded bg-[var(--mint-100)] border border-[var(--border)] px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent-dark)]">
                                         @if(!empty($shopLocked) || !empty($shopManuallySelected))
                                             <i class="fa-solid fa-circle-check text-[9px]"></i>
-                                            <span>Selected Workshop</span>
+                                            <span data-i18n="selected_workshop">Selected Workshop</span>
                                         @else
                                             <i class="fa-solid fa-location-dot text-[9px]"></i>
-                                            <span>Nearest Verified Workshop</span>
+                                            <span data-i18n="nearest_verified_workshop">Nearest Verified Workshop</span>
                                         @endif
                                     </span>
 
@@ -220,7 +220,7 @@
                                                 <span class="font-medium text-amber-700/80">({{ $activeShop->review_count }})</span>
                                             @endif
                                         @else
-                                            <span>Verified Partner</span>
+                                            <span data-i18n="verified_partner">Verified Partner</span>
                                         @endif
                                     </span>
 
@@ -234,7 +234,7 @@
                                     @if($activeShop->is_featured)
                                         <span class="inline-flex items-center gap-1 whitespace-nowrap rounded bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
                                             <i class="fa-solid fa-award text-[9px]"></i>
-                                            <span>Featured</span>
+                                            <span data-i18n="featured_badge">Featured</span>
                                         </span>
                                     @endif
                                 </div>
@@ -438,7 +438,7 @@
 
                     @if(empty($isSparePartCart))
                         <div>
-                            <label class="block font-bold text-[var(--foreground)] mb-2">1. How would you like your device serviced? *</label>
+                            <label class="block font-bold text-[var(--foreground)] mb-2" data-i18n="how_serviced_label">1. How would you like your device serviced? *</label>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <label
                                     class="rounded-lg border-2 p-3.5 transition flex items-start justify-between gap-2.5 {{ !$allowCourier ? 'opacity-55 cursor-not-allowed bg-slate-50/70' : 'cursor-pointer' }}"
@@ -454,7 +454,7 @@
                                             class="mt-0.5 accent-[#244229]"
                                         >
                                         <div class="min-w-0">
-                                            <span class="font-bold text-[var(--foreground)] block">Courier Pickup &amp; Return</span>
+                                            <span class="font-bold text-[var(--foreground)] block" data-i18n="courier_pickup_return">Courier Pickup &amp; Return</span>
                                             <span class="text-[11px] text-[var(--muted-foreground)] block leading-snug">
                                                 {{ $allowCourier ? 'A rider collects your device from home and returns it after service.' : 'This workshop accepts in-shop visits only.' }}
                                             </span>
@@ -479,7 +479,7 @@
                                             class="mt-0.5 accent-[#244229]"
                                         >
                                         <div class="min-w-0">
-                                            <span class="font-bold text-[var(--foreground)] block">In-Shop Walk-In Repair</span>
+                                            <span class="font-bold text-[var(--foreground)] block" data-i18n="inshop_walkin_repair">In-Shop Walk-In Repair</span>
                                             <span class="text-[11px] text-[var(--muted-foreground)] block leading-snug">
                                                 {{ $allowInShop ? 'Drop by the workshop in person and pay on Meramot — zero delivery fee.' : 'This workshop operates by courier only.' }}
                                             </span>
@@ -509,8 +509,8 @@
                             <label class="cursor-pointer rounded-lg border-2 p-3.5 transition flex items-start gap-3" :class="scheduleType === 'LATER' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)]' : 'border-[var(--border)] bg-[var(--card)]'">
                                 <input type="radio" name="schedule_type" value="LATER" x-model="scheduleType" class="mt-0.5 accent-[#244229]">
                                 <div class="min-w-0">
-                                    <span class="font-bold text-[var(--foreground)] block">Schedule for Later</span>
-                                    <span class="text-[11px] text-[var(--muted-foreground)]">Select a preferred date and time</span>
+                                    <span class="font-bold text-[var(--foreground)] block" data-i18n="schedule_later">Schedule for Later</span>
+                                    <span class="text-[11px] text-[var(--muted-foreground)]" data-i18n="select_datetime">Select a preferred date and time</span>
                                 </div>
                             </label>
                         </div>
@@ -558,7 +558,7 @@
                                 <div class="flex items-start gap-2.5 min-w-0">
                                     <input type="radio" name="delivery_type" value="REGULAR" x-model="deliveryType" :disabled="!isCourierMode" class="mt-0.5 accent-[#244229]">
                                     <div class="min-w-0">
-                                        <span class="font-bold text-[var(--foreground)] block">Regular Courier</span>
+                                        <span class="font-bold text-[var(--foreground)] block" data-i18n="regular_courier">Regular Courier</span>
                                         <span class="text-[11px] text-[var(--muted-foreground)]">{{ !empty($isSparePartCart) ? ($deliveryQuote['eta_label'] ?? 'Standard insured dispatch') : 'Standard insured pickup & return' }}</span>
                                     </div>
                                 </div>
@@ -569,8 +569,8 @@
                                 <div class="flex items-start gap-2.5 min-w-0">
                                     <input type="radio" name="delivery_type" value="EXPRESS" x-model="deliveryType" :disabled="!isCourierMode" class="mt-0.5 accent-[#244229]">
                                     <div class="min-w-0">
-                                        <span class="font-bold text-[var(--foreground)] block">Express Courier</span>
-                                        <span class="text-[11px] text-[var(--muted-foreground)]">Priority direct dispatch</span>
+                                        <span class="font-bold text-[var(--foreground)] block" data-i18n="express_courier">Express Courier</span>
+                                        <span class="text-[11px] text-[var(--muted-foreground)]" data-i18n="priority_dispatch">Priority direct dispatch</span>
                                     </div>
                                 </div>
                                 <span class="font-bold text-sm text-[var(--accent-dark)] shrink-0">৳{{ number_format($expCourierFee, 0) }}</span>
@@ -581,7 +581,7 @@
                     <!-- Contact Phone & Neighborhood -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label class="block font-bold text-[var(--foreground)] mb-1">Contact Phone *</label>
+                            <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="contact_phone">Contact Phone *</label>
                             <input
                                 type="tel"
                                 name="phone"
@@ -595,7 +595,7 @@
                             >
                         </div>
                         <div x-show="isCourierMode" x-cloak>
-                            <label for="cart-pickup-area" class="block font-bold text-[var(--foreground)] mb-1">Pickup Area</label>
+                            <label for="cart-pickup-area" class="block font-bold text-[var(--foreground)] mb-1" data-i18n="pickup_area">Pickup Area</label>
                             <input
                                 id="cart-pickup-area"
                                 type="text"
@@ -617,14 +617,14 @@
                     <!-- Pickup Address Location Mode Selector (Only when Courier mode) -->
                     <div x-show="isCourierMode" x-cloak class="space-y-3 rounded-lg border border-[var(--border)] bg-[var(--mint-100)]/60 p-4">
                         <div class="flex flex-wrap items-center justify-between gap-2">
-                            <label for="cart-pickup-address" class="font-bold text-[var(--foreground)]">Pickup Address *</label>
+                            <label for="cart-pickup-address" class="font-bold text-[var(--foreground)]" data-i18n="pickup_address_req">Pickup Address *</label>
                             <div class="flex items-center gap-2">
                                 <button
                                     type="button"
                                     @click="$dispatch('meramot-open-location-modal')"
                                     class="inline-flex items-center gap-1 rounded-md bg-[var(--accent-dark)] px-3 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition whitespace-nowrap"
                                 >
-                                    <i class="fa-solid fa-map-location-dot"></i> Pin on Map
+                                    <i class="fa-solid fa-map-location-dot"></i> <span data-i18n="pin_on_map">Pin on Map</span>
                                 </button>
                                 <button
                                     type="button"
@@ -645,7 +645,7 @@
                                 class="min-w-0 rounded-xl border p-2.5 text-left transition"
                                 :class="addressMode === 'MAP' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/40 hover:border-[var(--accent-dark)]/50'"
                             >
-                                <div class="font-bold text-xs text-[var(--foreground)]">Map Pin</div>
+                                <div class="font-bold text-xs text-[var(--foreground)]" data-i18n="map_pin">Map Pin</div>
                                 <div class="text-[10px] text-[var(--muted-foreground)]">Use pinned location</div>
                             </button>
                             <button
@@ -654,7 +654,7 @@
                                 class="min-w-0 rounded-xl border p-2.5 text-left transition"
                                 :class="addressMode === 'MANUAL' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/40 hover:border-[var(--accent-dark)]/50'"
                             >
-                                <div class="font-bold text-xs text-[var(--foreground)]">Manual Entry</div>
+                                <div class="font-bold text-xs text-[var(--foreground)]" data-i18n="manual_entry">Manual Entry</div>
                                 <div class="text-[10px] text-[var(--muted-foreground)]">Type street address</div>
                             </button>
                             <button
@@ -663,7 +663,7 @@
                                 class="min-w-0 rounded-xl border p-2.5 text-left transition"
                                 :class="addressMode === 'PROFILE' ? 'border-[var(--accent-dark)] bg-[var(--card)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)]/40 hover:border-[var(--accent-dark)]/50'"
                             >
-                                <div class="font-bold text-xs text-[var(--foreground)]">Saved Profile</div>
+                                <div class="font-bold text-xs text-[var(--foreground)]" data-i18n="saved_profile">Saved Profile</div>
                                 <div class="text-[10px] text-[var(--muted-foreground)]">Use account address</div>
                             </button>
                         </div>
@@ -688,7 +688,7 @@
 
                     <!-- Optional Device Model / Symptom Note -->
                     <div>
-                        <label class="block font-bold text-[var(--foreground)] mb-1">Device Model &amp; Notes (Optional)</label>
+                        <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="device_notes_optional">Device Model &amp; Notes (Optional)</label>
                         <textarea
                             name="problem_note"
                             rows="2"
@@ -706,8 +706,8 @@
             <!-- ── Right Column: Sticky Direct-Order & Payment Summary ── -->
             <div class="min-w-0 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm lg:sticky lg:top-6 space-y-5">
                 <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Order Summary</p>
-                    <h2 class="text-xl font-bold text-[var(--foreground)] mt-0.5">Checkout &amp; Payment</h2>
+                    <p class="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]" data-i18n="order_summary">Order Summary</p>
+                    <h2 class="text-xl font-bold text-[var(--foreground)] mt-0.5" data-i18n="checkout_payment">Checkout &amp; Payment</h2>
                 </div>
 
                 <!-- Promo & Voucher Engine (Daraz / Foodpanda Style) -->
@@ -715,7 +715,7 @@
                     <div class="flex items-center justify-between gap-2">
                         <span class="font-bold text-[var(--foreground)] flex items-center gap-1.5">
                             <i class="fa-solid fa-ticket text-[var(--accent-dark)]"></i>
-                            <span>Promo / Voucher Code</span>
+                            <span data-i18n="promo_code">Promo / Voucher Code</span>
                         </span>
                         @if(!empty($appliedVoucher))
                             <form method="POST" action="{{ route('cart.voucher.remove') }}" class="inline">
@@ -745,7 +745,7 @@
                                 placeholder="Enter promo or voucher code"
                                 class="flex-1 min-w-0 rounded-xl border border-[var(--border)] bg-[var(--card)] px-3 py-2 text-xs font-mono font-bold uppercase text-[var(--foreground)] outline-none focus:border-[var(--accent-dark)]"
                             >
-                            <button type="submit" class="shrink-0 rounded-xl bg-[var(--accent-dark)] px-3.5 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                            <button type="submit" class="shrink-0 rounded-xl bg-[var(--accent-dark)] px-3.5 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition" data-i18n="apply_btn">
                                 Apply
                             </button>
                         </form>
@@ -787,7 +787,7 @@
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($total, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-2">
-                        <span class="text-[var(--muted-foreground)]">Service &amp; Buyer Protection Fee</span>
+                        <span class="text-[var(--muted-foreground)]" data-i18n="buyer_protection_fee">Service &amp; Buyer Protection Fee</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($serviceCharge ?? 0, 2) }}</span>
                     </div>
                     <template x-if="isCourierMode">
@@ -809,14 +809,14 @@
                         </div>
                     </template>
                     <div class="pt-2 border-t border-[var(--border)] flex items-center justify-between gap-2 text-base">
-                        <span class="font-bold text-[var(--foreground)]">Total Payable</span>
+                        <span class="font-bold text-[var(--foreground)]" data-i18n="total_payable">Total Payable</span>
                         <span class="text-2xl font-bold text-[var(--accent-dark)] shrink-0">৳<span x-text="grandTotal.toLocaleString()">{{ number_format(max(0, $total + ($serviceCharge ?? 0) + ($initFulfillment === 'IN_SHOP' && empty($isSparePartCart) ? 0 : $regCourierFee) - ($discountAmount ?? 0))) }}</span></span>
                     </div>
                 </div>
 
                 <!-- Payment Method Selector -->
                 <div class="space-y-2 text-xs">
-                    <label class="block font-bold text-[var(--foreground)]">Payment Method</label>
+                    <label class="block font-bold text-[var(--foreground)]" data-i18n="payment_method">Payment Method</label>
                     <label class="cursor-pointer rounded-lg border p-3 flex items-center justify-between gap-2 transition" :class="paymentMethod === 'CASH' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)] font-bold' : 'border-[var(--border)] bg-[var(--card)]'">
                         <span class="flex items-center gap-2 text-[var(--foreground)]">
                             <input type="radio" value="CASH" x-model="paymentMethod" class="accent-[#244229]">
@@ -827,7 +827,7 @@
                     <label class="cursor-pointer rounded-lg border p-3 flex items-center justify-between gap-2 transition" :class="paymentMethod === 'SSLCOMMERZ' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)] font-bold' : 'border-[var(--border)] bg-[var(--card)]'">
                         <span class="flex items-center gap-2 text-[var(--foreground)]">
                             <input type="radio" value="SSLCOMMERZ" x-model="paymentMethod" class="accent-[#244229]">
-                            <span>SSLCommerz Online Payment (All Channels)</span>
+                            <span data-i18n="ssl_online_payment">SSLCommerz Online Payment (All Channels)</span>
                         </span>
                         <i class="fa-solid fa-lock text-[var(--accent-dark)] shrink-0"></i>
                     </label>
@@ -860,7 +860,7 @@
                     form="direct-order-form"
                     class="w-full rounded-md bg-[var(--accent-dark)] px-6 py-3.5 text-xs sm:text-sm font-bold text-[var(--accent-foreground)] shadow-lg hover:opacity-90 transition flex items-center justify-center gap-2"
                 >
-                    <span>Confirm Booking</span>
+                    <span data-i18n="confirm_booking">Confirm Booking</span>
                     <i class="fa-solid fa-arrow-right"></i>
                 </button>
             </div>

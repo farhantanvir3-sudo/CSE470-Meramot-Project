@@ -71,9 +71,9 @@
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3 mb-2.5 sm:mb-4">
         <div class="min-w-0">
             <nav class="text-[11px] sm:text-xs font-medium text-[var(--muted-foreground)] mb-0.5 flex items-center gap-1.5 truncate">
-                <a href="{{ url('/') }}" class="hover:underline">Home</a>
+                <a href="{{ url('/') }}" class="hover:underline" data-i18n="home_nav">Home</a>
                 <span>/</span>
-                <span class="text-[var(--foreground)] font-semibold">Spare Parts</span>
+                <span class="text-[var(--foreground)] font-semibold" data-i18n="nav_spare_parts">Spare Parts</span>
                 @if($selectedCategory !== 'All')
                     <span>/</span>
                     <span class="text-[var(--accent-dark)] font-bold truncate">{{ $selectedCategory }}</span>
@@ -87,10 +87,10 @@
                     <span class="text-[var(--foreground)] font-semibold truncate">{{ $selectedBrand }}</span>
                 @endif
             </nav>
-            <h1 class="text-lg sm:text-2xl font-bold tracking-tight text-[var(--foreground)] leading-tight">
+            <h1 class="text-lg sm:text-2xl font-bold tracking-tight text-[var(--foreground)] leading-tight" data-i18n="spare_parts_market">
                 Spare Parts Marketplace
             </h1>
-            <p class="hidden sm:block text-xs sm:text-sm text-[var(--muted-foreground)] mt-0.5">
+            <p class="hidden sm:block text-xs sm:text-sm text-[var(--muted-foreground)] mt-0.5" data-i18n="spare_parts_subtitle">
                 Genuine replacement components and precision repair tools from verified workshops.
             </p>
         </div>
@@ -152,6 +152,7 @@
                            @keydown.enter="onEnter($event)"
                            @keydown.escape="close()"
                            placeholder="Search displays, batteries, laptop keyboards, SSDs, models..."
+                           data-i18n-placeholder="search_parts_placeholder"
                            class="w-full h-9 sm:h-10 pl-3.5 {{ $search !== '' ? 'pr-16 sm:pr-10' : 'pr-10' }} rounded-md bg-[var(--mint-50)] border border-[var(--border)] text-xs sm:text-sm text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:ring-2 focus:ring-emerald-800">
                     @if($search !== '')
                         <a href="{{ $buildFilterUrl(['q' => null]) }}"
@@ -168,7 +169,8 @@
                 </div>
 
                 <button type="submit"
-                        class="hidden sm:inline-flex items-center px-4 h-10 rounded-md bg-emerald-900 text-white text-xs sm:text-sm font-semibold hover:bg-emerald-800 transition shrink-0">
+                        class="hidden sm:inline-flex items-center px-4 h-10 rounded-md bg-emerald-900 text-white text-xs sm:text-sm font-semibold hover:bg-emerald-800 transition shrink-0"
+                        data-i18n="search_parts_btn">
                     Search Parts
                 </button>
             </form>
@@ -179,9 +181,9 @@
                         onclick="if(window.openMeramotLocationModal){window.openMeramotLocationModal();}"
                         class="min-w-0 flex-1 sm:flex-initial inline-flex items-center gap-1.5 h-8 sm:h-10 px-2.5 sm:px-3.5 rounded-md bg-[var(--mint-50)] border border-[var(--border)] text-[11px] sm:text-xs text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
                     <i class="fa-solid fa-location-dot text-emerald-700 text-xs shrink-0"></i>
-                    <span class="text-[var(--muted-foreground)] hidden md:inline shrink-0">Deliver to:</span>
+                    <span class="text-[var(--muted-foreground)] hidden md:inline shrink-0" data-i18n="deliver_to">Deliver to:</span>
                     <strong class="font-semibold text-[var(--foreground)] truncate max-w-[165px] sm:max-w-[200px]" id="spActiveLocationLabel">{{ $locLabel }}</strong>
-                    <span class="text-[10px] text-emerald-800 font-semibold shrink-0 ml-auto sm:ml-0.5">Change ▾</span>
+                    <span class="text-[10px] text-emerald-800 font-semibold shrink-0 ml-auto sm:ml-0.5" data-i18n="change_dropdown">Change ▾</span>
                 </button>
             </div>
         </div>
@@ -208,7 +210,7 @@
 
         {{-- Desktop Catalog & Deal Toggles Row --}}
         <div class="hidden sm:flex items-center gap-2 min-w-0 border-t border-[var(--border)]/60 pt-2">
-            <span class="w-20 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">Catalog:</span>
+            <span class="w-20 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]" data-i18n="catalog_label">Catalog:</span>
             <div class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                 @foreach([
                     'mobile' => ['icon' => 'fa-mobile-screen-button', 'label' => 'Mobile Parts'],
@@ -278,7 +280,7 @@
                 </a>
             @endif
             @if($hasActiveFilters)
-                <a href="{{ url('/spare-parts') }}" class="text-[11px] sm:text-xs font-semibold text-red-600 hover:underline">
+                <a href="{{ url('/spare-parts') }}" class="text-[11px] sm:text-xs font-semibold text-red-600 hover:underline" data-i18n="clear_all_filters">
                     Reset Filters
                 </a>
             @endif

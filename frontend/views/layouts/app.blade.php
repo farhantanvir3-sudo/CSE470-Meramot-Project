@@ -9,11 +9,14 @@
     <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg?v=2">
     <link rel="apple-touch-icon" href="/favicon.svg?v=2">
 
-    <!-- Zero-Flicker Theme Initializer (Applies Dark Mode at Frame 0) -->
+    <!-- Zero-Flicker Theme & Language Initializer (Applies at Frame 0) -->
     <script>
         try {
             if (localStorage.getItem('meramot_theme') === 'dark') {
                 document.documentElement.classList.add('dark');
+            }
+            if (localStorage.getItem('meramot_lang') === 'bn') {
+                document.documentElement.lang = 'bn';
             }
         } catch (e) {}
     </script>
@@ -130,6 +133,14 @@
 
         h1, h2, h3, h4 {
             letter-spacing: -0.02em;
+        }
+
+        html[lang="bn"] body {
+            font-family: 'Inter', 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+            letter-spacing: normal;
+        }
+        html[lang="bn"] [data-i18n] {
+            letter-spacing: normal !important;
         }
 
         [x-cloak] { display: none !important; }
@@ -1121,27 +1132,27 @@
                                             {{ $isBannedCustomer ? 'Ongoing & Past Orders' : 'My Repair Requests' }}
                                         </a>
                                         @if(!$isBannedCustomer)
-                                            <a href="/requests/create" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <a href="/requests/create" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]" data-i18n="post_repair_request">
                                                 Make Repair Request
                                             </a>
-                                            <a href="/cart" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                            <a href="/cart" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]" data-i18n="view_cart">
                                                 View cart
                                             </a>
                                         @endif
-                                        <a href="/shops" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/shops" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]" data-i18n="explore_shops_short">
                                             Explore shops
                                         </a>
-                                        <a href="/spare-parts" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/spare-parts" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]" data-i18n="spare_parts_market">
                                             Spare Parts Marketplace
                                         </a>
-                                        <a href="/packages/catalog" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/packages/catalog" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]" data-i18n="service_packages">
                                             Service Packages
                                         </a>
-                                        <a href="/ai-consultant/chat" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
+                                        <a href="/ai-consultant/chat" class="block rounded-lg px-4 py-2.5 text-[var(--foreground)] transition hover:bg-[var(--mint-50)]" data-i18n="ai_help_chat">
                                             AI help chat
                                         </a>
                                         <a href="/profile" class="block rounded-lg px-4 py-2.5 font-semibold text-[var(--foreground)] transition hover:bg-[var(--mint-50)]">
-                                            <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> Account Profile
+                                            <i class="fa-regular fa-user mr-1.5 text-[var(--accent-dark)]"></i> <span data-i18n="account_profile">Account Profile</span>
                                         </a>
                                     @endif
                                     <div class="my-1 border-t border-[var(--border)]"></div>
@@ -1149,6 +1160,7 @@
                                         type="button"
                                         @click="userMenuOpen = false; showLogoutConfirm = true"
                                         class="block w-full rounded-lg px-4 py-2.5 text-left font-medium text-red-700 transition hover:bg-red-50"
+                                        data-i18n="log_out"
                                     >
                                         Log out
                                     </button>
@@ -1158,6 +1170,7 @@
                             <a
                                 href="/login"
                                 class="inline-flex items-center justify-center whitespace-nowrap text-center rounded-full bg-[var(--accent-dark)] px-4 lg:px-6 py-2.5 text-sm font-semibold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
+                                data-i18n="sign_in_up"
                             >
                                 Sign in/Sign up
                             </a>
@@ -1181,14 +1194,14 @@
                             >
                                 <button
                                     type="button"
-                                    @click="currentLang = 'en'; localStorage.setItem('meramot_lang', 'en'); langMenuOpen = false; showToast({ message: 'Language set to English.', type: 'success' })"
+                                    @click="currentLang = 'en'; localStorage.setItem('meramot_lang', 'en'); langMenuOpen = false; window.MeramotI18n && window.MeramotI18n.apply('en'); showToast({ message: 'Language set to English.', type: 'success' })"
                                     class="block w-full rounded-md px-3 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
                                 >
                                     English
                                 </button>
                                 <button
                                     type="button"
-                                    @click="currentLang = 'bn'; localStorage.setItem('meramot_lang', 'bn'); langMenuOpen = false; showToast({ message: 'Bangla interface selected. Expanded localized copy is rolling out progressively.', type: 'success' })"
+                                    @click="currentLang = 'bn'; localStorage.setItem('meramot_lang', 'bn'); langMenuOpen = false; window.MeramotI18n && window.MeramotI18n.apply('bn'); showToast({ message: 'বাংলা ইন্টারফেস চালু করা হয়েছে।', type: 'success' })"
                                     class="block w-full rounded-md px-3 py-2 text-left text-[var(--foreground)] hover:bg-[var(--mint-50)]"
                                 >
                                     বাংলা
@@ -1254,6 +1267,7 @@
                             @keydown.enter="onEnter($event)"
                             @keydown.escape="close()"
                             placeholder="Search spare parts, workshops, or fixed packages..."
+                            data-i18n-placeholder="search_header_placeholder"
                             class="w-full rounded-lg border border-[var(--border)] bg-white/85 dark:bg-[var(--mint-100)] py-2 pl-3.5 pr-16 text-[0.875rem] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)]"
                         />
                         <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -1279,24 +1293,28 @@
                     <a
                         href="/shops?category=COURIER_PICKUP"
                         class="inline-flex border-b-2 pb-1 transition {{ $activeCategory === 'COURIER_PICKUP' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-semibold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
+                        data-i18n="nav_courier_pickup"
                     >
                         Courier Pickup
                     </a>
                     <a
                         href="/shops?category=IN_SHOP_REPAIR"
                         class="inline-flex border-b-2 pb-1 transition {{ $activeCategory === 'IN_SHOP_REPAIR' ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-semibold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
+                        data-i18n="nav_inshop_repair"
                     >
                         In-shop Repair
                     </a>
                     <a
                         href="/spare-parts"
                         class="inline-flex border-b-2 pb-1 transition {{ $isSparePartsNav ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-semibold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
+                        data-i18n="nav_spare_parts"
                     >
                         Spare Parts
                     </a>
                     <a
                         href="/packages/catalog"
                         class="inline-flex border-b-2 pb-1 transition {{ request()->is('packages*') ? 'border-[var(--accent-dark)] text-[var(--accent-dark)] font-semibold' : 'border-transparent text-[var(--foreground)] hover:border-[var(--accent-dark)]/40' }}"
+                        data-i18n="nav_fixed_packages"
                     >
                         Fixed Packages
                     </a>
@@ -1325,6 +1343,7 @@
                         @keydown.enter="onEnter($event)"
                         @keydown.escape="close()"
                         placeholder="Search spare parts, workshops, or fixed packages..."
+                        data-i18n-placeholder="search_header_placeholder"
                         class="w-full rounded-lg border border-[var(--border)] bg-white/85 dark:bg-[var(--mint-100)] py-2.5 pl-4 pr-20 text-[13.5px] text-[var(--foreground)] shadow-sm outline-none placeholder:text-[var(--muted-foreground)] focus:border-[var(--accent-dark)] transition"
                     />
                     <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -1450,27 +1469,27 @@
                         Explore all shops
                     </a>
                 @else
-                    <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                    <a href="/shops" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]" data-i18n="explore_all_shops">
                         Explore all shops
                     </a>
-                    <a href="/spare-parts" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                    <a href="/spare-parts" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]" data-i18n="spare_parts_market">
                         Spare Parts Marketplace
                     </a>
                     <a href="/requests" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
                         {{ $isBannedCustomer ? 'Ongoing & Past Orders' : 'My Repair Requests' }}
                     </a>
                     @if(!$isBannedCustomer)
-                        <a href="/requests/create" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        <a href="/requests/create" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]" data-i18n="post_repair_request">
                             Make Repair Request
                         </a>
-                        <a href="/cart" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                        <a href="/cart" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]" data-i18n="service_cart">
                             Service Cart
                         </a>
                     @endif
-                    <a href="/packages/catalog" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                    <a href="/packages/catalog" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]" data-i18n="service_packages">
                         Service Packages
                     </a>
-                    <a href="/ai-consultant/chat" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]">
+                    <a href="/ai-consultant/chat" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm text-[var(--foreground)] hover:bg-[var(--mint-50)]" data-i18n="ai_diagnostics">
                         AI Diagnostic Help
                     </a>
                     <div class="my-1.5 border-t border-[var(--border)]"></div>
@@ -1490,18 +1509,19 @@
                 @auth
                     @if(!$isRiderAuth)
                         <a href="/profile" @click="mobileMenuOpen = false" class="block rounded-xl px-4 py-3 text-sm font-semibold text-[var(--foreground)] hover:bg-[var(--mint-50)]">
-                            <i class="fa-regular fa-user mr-2 text-[var(--accent-dark)]"></i> Account Profile
+                            <i class="fa-regular fa-user mr-2 text-[var(--accent-dark)]"></i> <span data-i18n="account_profile">Account Profile</span>
                         </a>
                     @endif
                     <button
                         type="button"
                         @click="mobileMenuOpen = false; showLogoutConfirm = true"
                         class="block w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-red-700 hover:bg-red-50"
+                        data-i18n="log_out"
                     >
                         Log out
                     </button>
                 @else
-                    <a href="/login" @click="mobileMenuOpen = false" class="block rounded-xl bg-[var(--accent-dark)] px-4 py-3 text-center text-sm font-semibold text-[var(--accent-foreground)]">
+                    <a href="/login" @click="mobileMenuOpen = false" class="block rounded-xl bg-[var(--accent-dark)] px-4 py-3 text-center text-sm font-semibold text-[var(--accent-foreground)]" data-i18n="sign_in_up">
                         Sign In / Sign Up
                     </a>
                 @endauth
@@ -2122,21 +2142,21 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-12 gap-x-6 gap-y-7 mb-8">
                 <div class="col-span-2 sm:col-span-3 lg:col-span-4 pb-5 border-b border-[var(--border)]/60 lg:border-b-0 lg:pb-0 lg:pr-6">
                     <img src="/images/meramot.svg" alt="Meramot" class="h-9 sm:h-10 w-auto mb-2.5">
-                    <p class="leading-relaxed max-w-md text-[var(--muted-foreground)]">
+                    <p class="leading-relaxed max-w-md text-[var(--muted-foreground)]" data-i18n="footer_tagline">
                         Bangladesh's premier digital electronics repair marketplace connecting device owners with vetted local workshops and tracked doorstep couriers.
                     </p>
                 </div>
                 <div class="col-span-1 lg:col-span-2">
-                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Popular Services</h5>
+                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]" data-i18n="popular_services">Popular Services</h5>
                     <ul class="space-y-1.5">
-                        <li><a href="/shops?q=screen" class="hover:text-[var(--foreground)] hover:underline transition">Screen Replacement</a></li>
-                        <li><a href="/shops?q=battery" class="hover:text-[var(--foreground)] hover:underline transition">Battery Replacement</a></li>
-                        <li><a href="/shops?q=motherboard" class="hover:text-[var(--foreground)] hover:underline transition">Logic Board Diagnostics</a></li>
-                        <li><a href="/shops?q=keyboard" class="hover:text-[var(--foreground)] hover:underline transition">Keyboard &amp; Port Repair</a></li>
+                        <li><a href="/shops?q=screen" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="srv_screen">Screen Replacement</a></li>
+                        <li><a href="/shops?q=battery" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="srv_battery">Battery Replacement</a></li>
+                        <li><a href="/shops?q=motherboard" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="srv_logic_board">Logic Board Diagnostics</a></li>
+                        <li><a href="/shops?q=keyboard" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="srv_keyboard_port">Keyboard &amp; Port Repair</a></li>
                     </ul>
                 </div>
                 <div class="col-span-1 lg:col-span-3">
-                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Service Hubs</h5>
+                    <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]" data-i18n="service_hubs">Service Hubs</h5>
                     <ul class="space-y-1.5">
                         <li><a href="/shops?area=Banani" class="hover:text-[var(--foreground)] hover:underline transition">Banani DOHS &amp; Road 11</a></li>
                         <li><a href="/shops?area=Gulshan" class="hover:text-[var(--foreground)] hover:underline transition">Gulshan 1 &amp; 2 Circle</a></li>
@@ -2151,13 +2171,13 @@
                         <p>Faculty: <strong>Nazmul Islam [NZU]</strong></p>
                         <p class="mt-2 text-[10px] text-emerald-800 font-bold">Strict MVC Architecture • Laravel 10 • FastAPI Microservice • PostgreSQL</p>
                     @else
-                        <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]">Customer &amp; Partner Hub</h5>
+                        <h5 class="font-bold text-[var(--foreground)] mb-2.5 uppercase tracking-wider text-[11px]" data-i18n="customer_partner_hub">Customer &amp; Partner Hub</h5>
                         <ul class="grid grid-cols-2 sm:grid-cols-1 gap-x-4 gap-y-1.5">
                             @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
-                                <li><a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition">Post Repair Request</a></li>
+                                <li><a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="post_repair_request">Post Repair Request</a></li>
                             @endif
-                            <li><a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition">AI Fault Diagnostics</a></li>
-                            <li><a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition">Fixed-Price Packages</a></li>
+                            <li><a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="ai_fault_diagnostics">AI Fault Diagnostics</a></li>
+                            <li><a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="fixed_price_packages">Fixed-Price Packages</a></li>
                             @if($isVendorAuth)
                                 <li><a href="{{ $vendorWorkspaceUrl }}" class="font-semibold text-[var(--accent-dark)] hover:underline">{{ $vendorWorkspaceLabel }}</a></li>
                             @elseif($isRiderAuth)
@@ -2165,7 +2185,7 @@
                             @elseif($isAdminAuth)
                                 <li><a href="/admin" class="font-semibold text-[var(--accent-dark)] hover:underline">Admin Console</a></li>
                             @else
-                                <li><a href="/vendor/apply" class="hover:text-[var(--foreground)] hover:underline transition">Register as Partner Shop</a></li>
+                                <li><a href="/vendor/apply" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="register_partner_shop">Register as Partner Shop</a></li>
                                 <li><a href="{{ $isCustomerAuth ? '/delivery-agent/register' : '/delivery/login' }}" class="hover:text-[var(--foreground)] hover:underline transition">{{ $isCustomerAuth ? 'Become a Delivery Partner' : 'Delivery Partner Portal' }}</a></li>
                             @endif
                         </ul>
@@ -2175,14 +2195,14 @@
             <div class="border-t border-[var(--border)] pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-center sm:text-left">
                 <p>&copy; 2026 Meramot (মেরামত) Digital Marketplace. All rights reserved.</p>
                 <div class="flex flex-wrap items-center justify-center sm:justify-end gap-x-4 gap-y-2">
-                    <a href="/shops" class="hover:text-[var(--foreground)] hover:underline transition">Explore All Shops</a>
-                    <a href="/spare-parts" class="hover:text-[var(--foreground)] hover:underline transition">Spare Parts Marketplace</a>
-                    <a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition">Service Packages</a>
+                    <a href="/shops" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="explore_all_shops">Explore All Shops</a>
+                    <a href="/spare-parts" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="spare_parts_market">Spare Parts Marketplace</a>
+                    <a href="/packages/catalog" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="service_packages">Service Packages</a>
                     @if(!$isAdminAuth && !$isVendorAuth && !$isRiderAuth && !$isBannedCustomer)
-                        <a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition">Request Repair</a>
+                        <a href="/requests/create" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="request_repair_short">Request Repair</a>
                     @endif
-                    <a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition">AI Diagnostics</a>
-                    <a href="/support" class="hover:text-[var(--foreground)] hover:underline transition">Support &amp; Disputes</a>
+                    <a href="/ai-consultant/chat" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="ai_diagnostics">AI Diagnostics</a>
+                    <a href="/support" class="hover:text-[var(--foreground)] hover:underline transition" data-i18n="support_disputes">Support &amp; Disputes</a>
                     <a href="{{ request()->fullUrlWithQuery(['dev' => $isDevMode ? '0' : '1']) }}" class="text-[10px] text-[var(--muted-foreground)] opacity-40 hover:opacity-100 transition" title="Toggle developer presentation mode (Ctrl+Shift+D)">
                         <i class="fa-solid fa-code"></i> {{ $isDevMode ? 'Dev Mode (ON)' : 'Dev' }}
                     </a>
@@ -2206,11 +2226,11 @@
                             <i class="fa-solid fa-bag-shopping text-sm"></i>
                         </span>
                         <div>
-                            <h3 class="text-sm font-bold text-[var(--foreground)]">Service Cart</h3>
+                            <h3 class="text-sm font-bold text-[var(--foreground)]" data-i18n="service_cart">Service Cart</h3>
                             <p class="text-[11px] text-[var(--muted-foreground)]">{{ count($miniCartItems) }} {{ count($miniCartItems) === 1 ? 'item' : 'items' }} in cart</p>
                         </div>
                     </div>
-                    <button type="button" @click="miniCartOpen = false" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)]">
+                    <button type="button" @click="miniCartOpen = false" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)]" data-i18n="close_btn">
                         Close
                     </button>
                 </div>
@@ -2233,22 +2253,22 @@
                         </div>
                     @empty
                         <div class="rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] p-8 text-center">
-                            <p class="text-xs font-medium text-[var(--muted-foreground)]">Your cart is currently empty.</p>
+                            <p class="text-xs font-medium text-[var(--muted-foreground)]" data-i18n="cart_currently_empty">Your cart is currently empty.</p>
                         </div>
                     @endforelse
                 </div>
 
                 <div class="border-t border-[var(--border)] bg-[var(--card)] p-4 space-y-2.5">
                     <div class="flex items-center justify-between text-xs">
-                        <span class="font-medium text-[var(--muted-foreground)]">Order Subtotal</span>
+                        <span class="font-medium text-[var(--muted-foreground)]" data-i18n="order_subtotal">Order Subtotal</span>
                         <span class="text-base font-bold text-[var(--accent-dark)] tabular-nums">৳{{ number_format($miniCartSubtotal) }}</span>
                     </div>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">Promo codes and delivery options can be applied in your cart.</p>
+                    <p class="text-[11px] text-[var(--muted-foreground)]" data-i18n="mini_cart_promo_note">Promo codes and delivery options can be applied in your cart.</p>
                     <div class="grid grid-cols-2 gap-2">
                         <a href="{{ $isVendorAuth ? '/spare-parts' : '/packages/catalog' }}" class="rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2 text-center text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] transition">
                             {{ $isVendorAuth ? '+ Add Spare Parts' : '+ Add Services' }}
                         </a>
-                        <a href="/cart" class="rounded-md bg-[var(--accent-dark)] px-3.5 py-2 text-center text-xs font-semibold text-[var(--accent-foreground)] shadow hover:opacity-90 transition">
+                        <a href="/cart" class="rounded-md bg-[var(--accent-dark)] px-3.5 py-2 text-center text-xs font-semibold text-[var(--accent-foreground)] shadow hover:opacity-90 transition" data-i18n="open_cart_checkout">
                             Open Cart &amp; Checkout &rarr;
                         </a>
                     </div>
@@ -3384,6 +3404,226 @@
                 };
             };
         })();
+    </script>
+    <script>
+        window.MeramotI18n = (function () {
+            var bn = {
+                // header
+                'nav_courier_pickup': 'কুরিয়ার পিকআপ',
+                'nav_inshop_repair': 'শপে মেরামত',
+                'nav_spare_parts': 'স্পেয়ার পার্টস',
+                'nav_fixed_packages': 'নির্ধারিত প্যাকেজ',
+                'sign_in_up': 'সাইন ইন / সাইন আপ',
+                'explore_shops_short': 'শপ খুঁজুন',
+                'explore_all_shops': 'সব শপ দেখুন',
+                'spare_parts_market': 'স্পেয়ার পার্টস মার্কেটপ্লেস',
+                'service_packages': 'সার্ভিস প্যাকেজ',
+                'post_repair_request': 'মেরামত অর্ডার দিন',
+                'request_repair_short': 'মেরামত অর্ডার',
+                'view_cart': 'কার্ট দেখুন',
+                'service_cart': 'সার্ভিস কার্ট',
+                'ai_help_chat': 'এআই সাহায্য চ্যাট',
+                'account_profile': 'অ্যাকাউন্ট প্রোফাইল',
+                'log_out': 'লগ আউট',
+                'home_nav': 'হোম',
+                // footer & mini-cart
+                'footer_tagline': 'বাংলাদেশের ডিজিটাল ইলেকট্রনিক্স মেরামত মার্কেটপ্লেস—যাচাইকৃত স্থানীয় ওয়ার্কশপ এবং ট্র্যাকযোগ্য ডোরস্টেপ কুরিয়ারের সমন্বয়ে।',
+                'popular_services': 'জনপ্রিয় সার্ভিস',
+                'srv_screen': 'স্ক্রিন প্রতিস্থাপন',
+                'srv_battery': 'ব্যাটারি প্রতিস্থাপন',
+                'srv_logic_board': 'লজিক বোর্ড ডায়াগনস্টিকস',
+                'srv_keyboard_port': 'কিবোর্ড ও পোর্ট মেরামত',
+                'service_hubs': 'সার্ভিস হাব',
+                'customer_partner_hub': 'গ্রাহক ও পার্টনার হাব',
+                'ai_fault_diagnostics': 'এআই ফল্ট ডায়াগনস্টিকস',
+                'fixed_price_packages': 'নির্ধারিত মূল্যের প্যাকেজ',
+                'register_partner_shop': 'পার্টনার শপ হিসেবে নিবন্ধন',
+                'ai_diagnostics': 'এআই ডায়াগনস্টিকস',
+                'support_disputes': 'সাপোর্ট ও অভিযোগ',
+                'close_btn': 'বন্ধ করুন',
+                'cart_currently_empty': 'আপনার কার্ট এখন খালি।',
+                'order_subtotal': 'অর্ডার সাবটোটাল',
+                'mini_cart_promo_note': 'প্রোমো কোড এবং ডেলিভারি অপশন কার্ট থেকে প্রয়োগ করা যাবে।',
+                'open_cart_checkout': 'কার্ট ও চেকআউটে যান →',
+                // home
+                'offer_available': 'বিশেষ অফার',
+                'explore_btn': 'বিস্তারিত',
+                'explore_shops_suffix': ' দেখুন',
+                'featured_shops': 'সেরা শপসমূহ',
+                'view_all_arrow': 'সব দেখুন →',
+                'starting_from': 'শুরু',
+                'voucher': 'ভাউচার',
+                'free_courier_pickup': 'ফ্রি কুরিয়ার পিকআপ',
+                'in_shop_walk_in': 'সরাসরি শপে মেরামত',
+                'deal': 'ডিল',
+                'free_short': 'ফ্রি',
+                'explore_more_featured': 'আরও সেরা শপ দেখুন',
+                'popular_categories': 'জনপ্রিয় ক্যাটাগরি',
+                'recently_viewed': 'সাম্প্রতিক সার্চ',
+                // explore
+                'nav_repair_shops': 'মেরামত শপ',
+                'explore_verified_shops': 'যাচাইকৃত মেরামত শপ খুঁজুন',
+                'sort_shops': 'শপ সাজান',
+                'distance_label': 'দূরত্ব',
+                'offers_savings': 'অফার ও ছাড়',
+                'pin_location_map': 'ম্যাপে লোকেশন পিন করুন',
+                'sort_label': 'সাজান:',
+                'pin_on_map': 'ম্যাপে পিন',
+                'near_me': 'কাছাকাছি',
+                'multi_branch': 'বহু-শাখা',
+                'vouchers': 'ভাউচার',
+                'free_delivery_filter': 'ফ্রি ডেলিভারি',
+                'deals_filter': 'ডিল',
+                'reset_short': 'রিসেট',
+                'free_courier': 'ফ্রি কুরিয়ার',
+                'new_no_reviews': 'নতুন · কোনো রিভিউ নেই',
+                'inspection_label': 'ইনসপেকশন',
+                'labor_label': 'সার্ভিস চার্জ',
+                'eta_label': 'সম্ভাব্য সময়',
+                'no_workshops_found': 'কোনো উপযুক্ত ওয়ার্কশপ পাওয়া যায়নি',
+                'clear_all_filters': 'সব ফিল্টার মুছুন',
+                // spare-parts
+                'spare_parts_subtitle': 'যাচাইকৃত ওয়ার্কশপ থেকে আসল স্পেয়ার পার্টস ও নির্ভুল মেরামত সরঞ্জাম।',
+                'search_parts_btn': 'পার্টস খুঁজুন',
+                'deliver_to': 'ডেলিভারি ঠিকানা:',
+                'change_dropdown': 'পরিবর্তন ▾',
+                'catalog_label': 'ক্যাটালগ:',
+                // requests
+                'my_repair_requests': 'আমার মেরামত অর্ডার',
+                'post_device_request_heading': 'ইলেকট্রনিক ডিভাইস মেরামতের অর্ডার দিন',
+                'post_device_request_sub': 'যাচাইকৃত ওয়ার্কশপ থেকে মেরামতের কোটেশন পেতে আপনার ডিভাইসের সমস্যা জমা দিন।',
+                'unsure_device': 'আপনার ডিভাইসের সমস্যা সম্পর্কে নিশ্চিত নন?',
+                'unsure_device_sub': 'আমাদের এআই অ্যাসিস্ট্যান্ট থেকে দ্রুত সমস্যার আনুমানিক ধারণা নিন।',
+                'open_ai_consultant': 'এআই পরামর্শদাতা খুলুন',
+                'device_category': 'ডিভাইস ক্যাটাগরি *',
+                'brand_name': 'ব্র্যান্ড নাম *',
+                'model_name': 'মডেল নাম / নম্বর *',
+                'release_year': 'মুক্তির / কেনার বছর',
+                'screen_chipset': 'স্ক্রিন সাইজ / চিপসেট',
+                'problem_category': 'প্রধান সমস্যা ক্যাটাগরি *',
+                'issue_headline': 'সমস্যার শিরোনাম *',
+                'detailed_symptoms': 'বিস্তারিত লক্ষণ ও ডিভাইসের ইতিহাস *',
+                'upload_device_photos': 'ডিভাইসের ছবি আপলোড করুন (ঐচ্ছিক)',
+                'pickup_logistics_kicker': 'পিকআপ লোকেশন ও লজিস্টিক্স',
+                'rider_pickup': 'রাইডার কোথা থেকে ডিভাইস নেবে?',
+                'pin_interactive_map': 'ইন্টার্যাক্টিভ ম্যাপে পিন',
+                'use_map_location': 'ম্যাপ লোকেশন ব্যবহার',
+                'manual_entry': 'সরাসরি লিখুন',
+                'saved_profile': 'প্রোফাইল ঠিকানা',
+                'logistics_mode': 'আপনি কীভাবে ডিভাইস জমা দেবেন? *',
+                'opt_pickup_dropoff': 'রাইডার ডোরস্টেপ পিকআপ ও ফিরত (OTP যাচাইকৃত)',
+                'opt_walk_in': 'সরাসরি শপে গিয়ে জমা দিন (মেরামত-এ পেমেন্ট, ৳০ ডেলিভারি)',
+                'opt_home_visit': 'টেকনিশিয়ান অন-সাইট ডায়াগনস্টিক',
+                'area_pickup': 'এলাকা / পাড়া *',
+                'contact_phone': 'যোগাযোগ নম্বর *',
+                'pickup_address': 'পূর্ণ পিকআপ / ডেলিভারি ঠিকানা',
+                'estimated_budget': 'আনুমানিক বাজেট (৳)',
+                'cancel_return': 'বাতিল ও ফিরে যান',
+                'publish_request_btn': 'বিডিং মার্কেটপ্লেসে অর্ডার প্রকাশ করুন →',
+                // catalog
+                'fixed_price_packages_heading': 'নির্ধারিত মূল্যের মেরামত প্যাকেজ',
+                'warranty_protected': 'ওয়ারেন্টি সুরক্ষিত',
+                'all_categories': 'সব ক্যাটাগরি',
+                'any_budget': 'যেকোনো বাজেট',
+                'most_popular': 'সর্বাধিক জনপ্রিয়',
+                'price_low_high': 'দাম: কম থেকে বেশি',
+                'price_high_low': 'দাম: বেশি থেকে কম',
+                'apply_filters': 'ফিল্টার প্রয়োগ',
+                'fixed_price': 'নির্ধারিত দাম',
+                'included_in_package': 'প্যাকেজে অন্তর্ভুক্ত:',
+                'select_workshop': 'ওয়ার্কশপ নির্বাচন',
+                'add_to_cart': 'কার্টে যোগ করুন',
+                'no_packages_found': 'আপনার ফিল্টারে কোনো প্যাকেজ পাওয়া যায়নি।',
+                'view_all_packages': 'সব প্যাকেজ দেখুন',
+                // cart & checkout
+                'cart_label': 'কার্ট',
+                'your_service_cart': 'আপনার সার্ভিস কার্ট',
+                'add_spare_parts_btn': '+ স্পেয়ার পার্টস যোগ',
+                'add_packages_btn': '+ প্যাকেজ যোগ',
+                'cart_empty': 'আপনার কার্ট খালি',
+                'selected_workshop': 'নির্বাচিত ওয়ার্কশপ',
+                'nearest_verified_workshop': 'নিকটস্থ যাচাইকৃত ওয়ার্কশপ',
+                'verified_partner': 'যাচাইকৃত পার্টনার',
+                'featured_badge': 'ফিচার্ড',
+                'how_serviced_label': '১. কীভাবে ডিভাইসটি মেরামত করাতে চান? *',
+                'courier_pickup_return': 'কুরিয়ার পিকআপ ও ফিরত',
+                'inshop_walkin_repair': 'সরাসরি শপে মেরামত (Walk-In)',
+                'schedule_later': 'পরে সময় নির্ধারণ করুন',
+                'select_datetime': 'পছন্দের তারিখ ও সময় বেছে নিন',
+                'regular_courier': 'সাধারণ কুরিয়ার',
+                'express_courier': 'এক্সপ্রেস কুরিয়ার',
+                'priority_dispatch': 'অগ্রাধিকারভিত্তিক দ্রুত ডিসপ্যাচ',
+                'pickup_area': 'পিকআপ এলাকা',
+                'pickup_address_req': 'পিকআপ ঠিকানা *',
+                'pickup_street_address_req': 'পিকআপ রাস্তার ঠিকানা *',
+                'map_pin': 'ম্যাপ পিন',
+                'device_notes_optional': 'ডিভাইস মডেল ও নোট (ঐচ্ছিক)',
+                'order_summary': 'অর্ডার সারসংক্ষেপ',
+                'checkout_payment': 'চেকআউট ও পেমেন্ট',
+                'promo_code': 'প্রোমো / ভাউচার কোড',
+                'apply_btn': 'প্রয়োগ',
+                'buyer_protection_fee': 'সার্ভিস ও ক্রেতা সুরক্ষা ফি',
+                'total_payable': 'মোট প্রদেয়',
+                'total_label': 'মোট',
+                'payment_method': 'পেমেন্ট পদ্ধতি',
+                'ssl_online_payment': 'SSLCommerz অনলাইন পেমেন্ট (সব মাধ্যম)',
+                'bkash_online_payment': 'বিকাশ অনলাইন পেমেন্ট',
+                'nagad_online_payment': 'নগদ অনলাইন পেমেন্ট',
+                'confirm_booking': 'বুকিং নিশ্চিত করুন',
+                'back_to_cart': '← কার্টে ফিরে যান',
+                'booking_checkout': 'বুকিং চেকআউট',
+                'booking_checkout_sub': 'ডেলিভারি ধরন, সময়সূচি ও পেমেন্ট নিশ্চিত করুন।',
+                'workshop_pickup_details': 'ওয়ার্কশপ ও পিকআপ বিবরণ',
+                'fulfillment_option_req': 'সার্ভিস গ্রহণের ধরন *',
+                'courier_tier_label': 'কুরিয়ার ধরন *',
+                'preferred_datetime_req': 'পছন্দের তারিখ ও সময় *',
+                // ai-consultant
+                'ai_consultant': 'এআই ডায়াগনস্টিক পরামর্শদাতা',
+                'ai_hw_consultant': 'এআই হার্ডওয়্যার ডায়াগনস্টিক পরামর্শদাতা',
+                'ai_consultant_sub': 'ওয়ার্কশপ বুক করার আগেই তাৎক্ষণিক লক্ষণ বিশ্লেষণ, সমস্যা নির্ণয় এবং প্রাথমিক মেরামত নির্দেশনা।',
+                'ai_active': 'এআই ডায়াগনস্টিকস সক্রিয়',
+                'device_category_label': 'ডিভাইস ক্যাটাগরি:',
+                'post_repair_request_arrow': 'মেরামত অর্ডার দিন →',
+                'analyzing_symptoms': 'ডিভাইসের লক্ষণ বিশ্লেষণ করা হচ্ছে...',
+                'quick_prompts': 'দ্রুত সমস্যা প্রম্পট',
+                'diagnostic_tips': 'ডায়াগনস্টিক টিপস'
+            };
+            var ph = {
+                'search_header_placeholder': 'স্পেয়ার পার্টস, ওয়ার্কশপ বা নির্ধারিত প্যাকেজ খুঁজুন...',
+                'search_parts_placeholder': 'ডিসপ্লে, ব্যাটারি, ল্যাপটপ কিবোর্ড, এসএসডি, মডেল খুঁজুন...',
+                'search_packages_placeholder': 'ওএস সেটআপ, ক্লিনিং, টিউন-আপ খুঁজুন...',
+                'ai_input_placeholder': 'আপনার ডিভাইসের সমস্যা লিখুন (যেমন: ম্যাকবুক চালু হয় কিন্তু স্ক্রিন কালো)...'
+            };
+
+            function apply(lang) {
+                try {
+                    lang = lang || localStorage.getItem('meramot_lang') || 'en';
+                } catch (e) {
+                    lang = lang || 'en';
+                }
+                document.querySelectorAll('[data-i18n]').forEach(function (el) {
+                    if (el.dataset.i18nOriginal === undefined) {
+                        el.dataset.i18nOriginal = el.textContent;
+                    }
+                    var key = el.getAttribute('data-i18n');
+                    el.textContent = (lang === 'bn' && bn[key]) ? bn[key] : el.dataset.i18nOriginal;
+                });
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(function (el) {
+                    if (el.dataset.i18nPlaceholderOriginal === undefined) {
+                        el.dataset.i18nPlaceholderOriginal = el.getAttribute('placeholder') || '';
+                    }
+                    var pKey = el.getAttribute('data-i18n-placeholder');
+                    el.setAttribute('placeholder', (lang === 'bn' && ph[pKey]) ? ph[pKey] : el.dataset.i18nPlaceholderOriginal);
+                });
+                document.documentElement.lang = (lang === 'bn') ? 'bn' : 'en';
+            }
+
+            return { apply: apply };
+        })();
+
+        window.MeramotI18n.apply();
+        document.addEventListener('DOMContentLoaded', function () { window.MeramotI18n.apply(); });
+        window.addEventListener('meramot-softnav-complete', function () { window.MeramotI18n.apply(); });
     </script>
 </body>
 </html>

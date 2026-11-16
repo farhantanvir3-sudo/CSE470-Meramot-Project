@@ -9,9 +9,9 @@
     <div class="mb-3 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4">
         <div class="min-w-0">
             <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[var(--muted-foreground)] mb-1 truncate">
-                <a href="/" class="hover:underline">Home</a>
+                <a href="/" class="hover:underline" data-i18n="home_nav">Home</a>
                 <span>/</span>
-                <span class="text-[var(--foreground)] font-semibold">Repair Shops</span>
+                <span class="text-[var(--foreground)] font-semibold" data-i18n="nav_repair_shops">Repair Shops</span>
                 @if(request('city') && request('city') !== 'All')
                     <span>/</span>
                     <span class="text-[var(--accent-dark)] font-bold">{{ request('city') }}</span>
@@ -25,7 +25,7 @@
                     <span class="italic">"{{ request('q') }}"</span>
                 @endif
             </div>
-            <h1 class="text-xl sm:text-2xl font-bold text-[var(--foreground)] leading-tight">
+            <h1 class="text-xl sm:text-2xl font-bold text-[var(--foreground)] leading-tight" data-i18n="explore_verified_shops">
                 Explore Verified Repair Shops
             </h1>
             <p class="dev-only-badge text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -39,7 +39,7 @@
         <div class="flex items-center gap-3 shrink-0">
             <a href="/requests/create" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-md bg-[var(--accent-dark)] px-3.5 py-2 sm:px-4 sm:py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap">
                 <i class="fa-solid fa-plus"></i>
-                <span>Post Device Repair Request</span>
+                <span data-i18n="post_repair_request">Post Device Repair Request</span>
             </a>
         </div>
     </div>
@@ -52,7 +52,7 @@
             
             <!-- 1. Sort Shops Card -->
             <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-                <h3 class="mb-3 text-sm font-semibold text-[var(--foreground)]">
+                <h3 class="mb-3 text-sm font-semibold text-[var(--foreground)]" data-i18n="sort_shops">
                     Sort shops
                 </h3>
                 <div class="space-y-1.5">
@@ -117,7 +117,7 @@
                 }
             }">
                 <div class="mb-2.5 flex items-center justify-between">
-                    <h3 class="text-sm font-semibold text-[var(--foreground)]">
+                    <h3 class="text-sm font-semibold text-[var(--foreground)]" data-i18n="distance_label">
                         Distance
                     </h3>
                     <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent-dark)] tabular-nums">
@@ -140,7 +140,7 @@
                         class="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-3 py-2 text-xs font-semibold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
                     >
                         <i class="fa-solid fa-map-location-dot"></i>
-                        <span>Pin Location on Map</span>
+                        <span data-i18n="pin_location_map">Pin Location on Map</span>
                     </button>
                     @php
                         $isDesktopNearMeActive = request()->filled('maxDistanceKm') || ($currSort === 'distance' && request()->filled('lat') && request()->filled('lng'));
@@ -160,7 +160,7 @@
 
             <!-- 3. Offers & Savings Card -->
             <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
-                <h3 class="mb-3 text-sm font-semibold text-[var(--foreground)]">
+                <h3 class="mb-3 text-sm font-semibold text-[var(--foreground)]" data-i18n="offers_savings">
                     Offers & savings
                 </h3>
                 <div class="space-y-1.5">
@@ -267,7 +267,7 @@
                 <div class="border-t border-[var(--border)]/60 pt-2 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 xl:gap-3 text-xs min-w-0">
                     <!-- Quick Sort Slider -->
                     <div class="flex items-center gap-1.5 min-w-0">
-                        <span class="font-semibold text-[var(--foreground)] text-[10px] sm:text-[11px] uppercase tracking-wider shrink-0">Sort:</span>
+                        <span class="font-semibold text-[var(--foreground)] text-[10px] sm:text-[11px] uppercase tracking-wider shrink-0" data-i18n="sort_label">Sort:</span>
                         @php
                             $sortTabs = [
                                 ['label' => 'Top Rated', 'value' => 'topRated', 'icon' => 'fa-star'],
@@ -318,7 +318,7 @@
                                 class="lg:hidden shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-md border border-[var(--accent-dark)]/40 bg-[var(--mint-50)] text-[var(--accent-dark)] font-semibold transition flex items-center gap-1.5 text-[11px] hover:bg-[var(--mint-200)]"
                             >
                                 <i class="fa-solid fa-map-location-dot text-[10px]"></i>
-                                <span>Pin on Map</span>
+                                <span data-i18n="pin_on_map">Pin on Map</span>
                             </button>
 
                             <button
@@ -329,35 +329,35 @@
                                 class="lg:hidden shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-md border transition flex items-center gap-1.5 text-[11px] font-semibold {{ $isNearMeActive ? 'bg-[var(--accent-dark)] text-white shadow-sm border-[var(--accent-dark)]' : 'bg-[var(--mint-100)] text-[var(--accent-dark)] border-[var(--border)] hover:bg-[var(--mint-200)]' }}"
                             >
                                 <i class="fa-solid fa-location-crosshairs text-[10px]"></i>
-                                <span>Near Me</span>
+                                <span data-i18n="near_me">Near Me</span>
                             </button>
 
                             <a href="/shops?{{ http_build_query(array_filter($branchedParams)) }}"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-md border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasBranched ? 'bg-[var(--accent-dark)] text-white font-semibold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-code-branch text-[10px] {{ $hasBranched ? 'text-emerald-200' : 'text-[var(--accent-dark)]' }}"></i>
-                                <span>Multi-Branch</span>
+                                <span data-i18n="multi_branch">Multi-Branch</span>
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($voucherParams)) }}"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-md border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasVoucher ? 'bg-[var(--accent-dark)] text-white font-semibold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-ticket text-[10px] text-amber-600"></i>
-                                <span>Vouchers</span>
+                                <span data-i18n="vouchers">Vouchers</span>
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($delParams)) }}"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-md border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasFreeDel ? 'bg-[var(--accent-dark)] text-white font-semibold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-truck-fast text-[10px] text-emerald-700"></i>
-                                <span>Free Delivery</span>
+                                <span data-i18n="free_delivery_filter">Free Delivery</span>
                             </a>
 
                             <a href="/shops?{{ http_build_query(array_filter($dealsParams)) }}"
                                class="shrink-0 whitespace-nowrap select-none px-2.5 py-1 rounded-md border border-[var(--border)] transition flex items-center gap-1.5 text-[11px] sm:text-xs {{ $hasDeals ? 'bg-[var(--accent-dark)] text-white font-semibold' : 'bg-[var(--mint-100)] text-[var(--foreground)] hover:bg-[var(--mint-50)]' }}">
                                 <i class="fa-solid fa-fire text-[10px] text-rose-600"></i>
-                                <span>Deals</span>
+                                <span data-i18n="deals_filter">Deals</span>
                             </a>
 
                             @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm', 'lat']))
-                                <a href="/shops" class="shrink-0 whitespace-nowrap select-none text-[11px] text-rose-700 font-semibold hover:underline px-1.5">
+                                <a href="/shops" class="shrink-0 whitespace-nowrap select-none text-[11px] text-rose-700 font-semibold hover:underline px-1.5" data-i18n="reset_short">
                                     Reset
                                 </a>
                             @endif
@@ -391,7 +391,7 @@
                         <span>Search: <strong class="text-[var(--foreground)]">"{{ request('q') }}"</strong></span>
                     @endif
                     @if(request()->anyFilled(['q', 'city', 'area', 'branched', 'voucher', 'freeDelivery', 'deals', 'category', 'maxDistanceKm', 'lat']))
-                        <a href="/shops" class="select-none font-semibold text-rose-700 hover:underline">Clear all filters</a>
+                        <a href="/shops" class="select-none font-semibold text-rose-700 hover:underline" data-i18n="clear_all_filters">Clear all filters</a>
                     @endif
                 </div>
             </div>
@@ -436,7 +436,7 @@
                                                 <span class="opacity-60">·</span>
                                                 <span>{{ $shop->review_count }} {{ \Illuminate\Support\Str::plural('review', $shop->review_count) }}</span>
                                             @else
-                                                <span class="font-medium text-[var(--accent-dark)]">New · No reviews yet</span>
+                                                <span class="font-medium text-[var(--accent-dark)]" data-i18n="new_no_reviews">New · No reviews yet</span>
                                             @endif
                                             <span class="opacity-60">·</span>
                                             <span><i class="fa-solid fa-location-dot text-[10px] text-[var(--accent-dark)]"></i> {{ $shop->area }}{{ ($shop->city && !str_contains(strtolower((string)$shop->area), strtolower($shop->city))) ? ', ' . $shop->city : '' }}</span>
@@ -476,15 +476,15 @@
                         @else
                             <div class="mt-2.5 grid grid-cols-3 items-center rounded-md bg-[var(--mint-50)] border border-[var(--border)]/50 px-2.5 py-1.5 md:mt-3 text-center min-w-0 tabular-nums">
                                 <div>
-                                    <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Inspection</span>
+                                    <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]" data-i18n="inspection_label">Inspection</span>
                                     <div class="text-xs font-bold text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->inspection_fee ?? 200) }}</div>
                                 </div>
                                 <div class="border-x border-[var(--border)]/50 px-1">
-                                    <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">Labor</span>
+                                    <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]" data-i18n="labor_label">Labor</span>
                                     <div class="text-xs font-bold text-[var(--accent-dark)] sm:text-sm">৳{{ number_format($shop->base_labor_fee ?? 400) }}</div>
                                 </div>
                                 <div>
-                                    <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]">ETA</span>
+                                    <span class="block truncate text-[9px] font-semibold uppercase text-[var(--muted-foreground)]" data-i18n="eta_label">ETA</span>
                                     <div class="eta-display text-xs font-semibold text-[var(--foreground)] sm:text-sm">
                                         {{ \App\Services\GeolocationService::formatEta((int) ($shop->eta_minutes ?: 30)) }}
                                     </div>
@@ -500,22 +500,22 @@
                         <!-- Badges -->
                         <div class="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] font-medium text-[var(--accent-dark)] md:text-[11px]">
                             @if($shop->supportsCourierPickup())
-                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-medium text-emerald-950">Courier Pickup</span>
+                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-medium text-emerald-950" data-i18n="nav_courier_pickup">Courier Pickup</span>
                             @endif
                             @if($shop->supportsInShopRepair())
-                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-medium text-teal-950">In-Shop Repair</span>
+                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-medium text-teal-950" data-i18n="in_shop_walk_in">In-Shop Repair</span>
                             @endif
                             @if($shop->supportsSpareParts())
-                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-medium text-sky-950">Spare Parts</span>
+                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-medium text-sky-950" data-i18n="nav_spare_parts">Spare Parts</span>
                             @endif
                             @if($shop->supportsCourierPickup() && $shop->free_delivery)
-                                <span class="rounded bg-emerald-100 px-2 py-0.5 text-emerald-900 font-medium">Free Courier</span>
+                                <span class="rounded bg-emerald-100 px-2 py-0.5 text-emerald-900 font-medium" data-i18n="free_courier">Free Courier</span>
                             @endif
                             @if($shop->has_voucher)
-                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5">Voucher</span>
+                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5" data-i18n="voucher">Voucher</span>
                             @endif
                             @if($shop->has_deals)
-                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 text-rose-900 font-medium">Deal</span>
+                                <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 text-rose-900 font-medium" data-i18n="deal">Deal</span>
                             @endif
                             <span class="rounded bg-[var(--mint-100)] border border-[var(--border)]/70 px-2 py-0.5 font-semibold">
                                 {{ str_repeat('৳', $shop->price_level ?? 2) }}
@@ -525,9 +525,9 @@
                 @empty
                     <div class="col-span-2 py-12 text-center rounded-lg border border-[var(--border)] bg-[var(--card)] p-8">
                         <i class="fa-solid fa-magnifying-glass text-2xl text-[var(--muted-foreground)] mb-3"></i>
-                        <h3 class="text-base font-bold text-[var(--foreground)]">No matching workshops found</h3>
+                        <h3 class="text-base font-bold text-[var(--foreground)]" data-i18n="no_workshops_found">No matching workshops found</h3>
                         <p class="text-xs text-[var(--muted-foreground)] mt-1">Adjust your filters or clear selection to view available shops.</p>
-                        <a href="/shops" class="inline-block mt-4 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-white">
+                        <a href="/shops" class="inline-block mt-4 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-white" data-i18n="clear_all_filters">
                             Reset All Filters
                         </a>
                     </div>

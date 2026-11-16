@@ -7,11 +7,11 @@
 
     <!-- Breadcrumb -->
     <div class="mb-4 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-        <a href="/" class="hover:underline">Home</a>
+        <a href="/" class="hover:underline" data-i18n="home_nav">Home</a>
         <span>/</span>
-        <a href="/requests" class="hover:underline">My Repair Requests</a>
+        <a href="/requests" class="hover:underline" data-i18n="my_repair_requests">My Repair Requests</a>
         <span>/</span>
-        <span class="text-[var(--foreground)] font-semibold">Post Repair Request</span>
+        <span class="text-[var(--foreground)] font-semibold" data-i18n="post_repair_request">Post Repair Request</span>
     </div>
 
     <div class="meramot-card p-4 sm:p-6 md:p-8 shadow-sm">
@@ -20,10 +20,10 @@
             <span class="dev-only-badge text-[10px] font-semibold uppercase px-2.5 py-1 rounded bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] inline-block mb-2">
                 Feature R7 • Shanid Sajjatuz Islam [23201465]
             </span>
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-[var(--foreground)]">
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight text-[var(--foreground)]" data-i18n="post_device_request_heading">
                 Post an Electronic Device Repair Request
             </h1>
-            <p class="text-xs text-[var(--muted-foreground)] mt-1">
+            <p class="text-xs text-[var(--muted-foreground)] mt-1" data-i18n="post_device_request_sub">
                 Submit your device issue to receive repair quotes from verified workshops.
             </p>
         </div>
@@ -35,11 +35,11 @@
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                 </div>
                 <div class="min-w-0">
-                    <h4 class="font-semibold text-xs text-[var(--foreground)]">Unsure what is wrong with your device?</h4>
-                    <p class="text-[11px] text-[var(--muted-foreground)]">Get a quick fault estimate from the AI assistant.</p>
+                    <h4 class="font-semibold text-xs text-[var(--foreground)]" data-i18n="unsure_device">Unsure what is wrong with your device?</h4>
+                    <p class="text-[11px] text-[var(--muted-foreground)]" data-i18n="unsure_device_sub">Get a quick fault estimate from the AI assistant.</p>
                 </div>
             </div>
-            <a href="/ai-consultant/chat" class="w-full sm:w-auto text-center rounded-md bg-[var(--accent-dark)] text-white text-[11px] font-semibold px-4 py-2 hover:opacity-90 transition shrink-0">
+            <a href="/ai-consultant/chat" class="w-full sm:w-auto text-center rounded-md bg-[var(--accent-dark)] text-white text-[11px] font-semibold px-4 py-2 hover:opacity-90 transition shrink-0" data-i18n="open_ai_consultant">
                 Open AI Consultant
             </a>
         </div>
@@ -78,7 +78,7 @@
             <!-- 1. Device Type & Brand -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Device Category *</label>
+                    <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="device_category">Device Category *</label>
                     <select name="device_type" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none" required>
                         @php
                             $deviceTypes = [
@@ -95,7 +95,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Brand Name *</label>
+                    <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="brand_name">Brand Name *</label>
                     <input type="text" name="brand" value="{{ old('brand') }}" placeholder="e.g. Apple, Dell, Lenovo, Asus, Samsung, HP..." class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
                 </div>
             </div>
@@ -103,15 +103,15 @@
             <!-- 2. Model & Distinguishing Hardware Specs (From commit 695ec21 / 5d858e6) -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div class="sm:col-span-1">
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Model Name / Number *</label>
+                    <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="model_name">Model Name / Number *</label>
                     <input type="text" name="model_name" value="{{ old('model_name') }}" placeholder="e.g. MacBook Pro, ThinkPad T14, Galaxy S23" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
                 </div>
                 <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Release / Purchase Year</label>
+                    <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="release_year">Release / Purchase Year</label>
                     <input type="text" name="year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" data-digits-only value="{{ old('year') }}" placeholder="e.g. 2023" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                 </div>
                 <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Screen Size / Chipset</label>
+                    <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="screen_chipset">Screen Size / Chipset</label>
                     <input type="text" name="specs" value="{{ old('specs') }}" placeholder="e.g. 14-inch OLED, M1 Pro, Core i7" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                 </div>
             </div>
@@ -119,7 +119,7 @@
             <!-- 3. Issue Category & Issue Title -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Primary Problem Category *</label>
+                    <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="problem_category">Primary Problem Category *</label>
                     <select name="issue_category" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none" required>
                         @php
                             $issueCategories = [
@@ -135,14 +135,14 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block font-bold text-[var(--foreground)] mb-1">Issue Headline *</label>
+                    <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="issue_headline">Issue Headline *</label>
                     <input type="text" name="issue_title" value="{{ old('issue_title', $prefilledIssue ?? request('issue', '')) }}" placeholder="e.g. Broken display glass, does not turn on" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none" required>
                 </div>
             </div>
 
             <!-- 4. Detailed Description -->
             <div>
-                <label class="block font-bold text-[var(--foreground)] mb-1">Detailed Symptoms & Device History *</label>
+                <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="detailed_symptoms">Detailed Symptoms & Device History *</label>
                 <textarea name="issue_description" rows="4" placeholder="Describe symptoms: Was there any liquid spill? Does the fan spin? Did it drop? Any smoke or burning odor?" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 leading-relaxed outline-none" required>{{ old('issue_description') }}</textarea>
             </div>
 
@@ -193,7 +193,7 @@
                 <div class="mb-1.5 flex items-center justify-between">
                     <div>
                         <label class="block font-bold text-[var(--foreground)]">
-                            <i class="fa-solid fa-images mr-1.5 text-[var(--accent-dark)]"></i>Upload Device Photos (Optional)
+                            <i class="fa-solid fa-images mr-1.5 text-[var(--accent-dark)]"></i><span data-i18n="upload_device_photos">Upload Device Photos (Optional)</span>
                         </label>
                         <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">
                             Attach up to 5 photos showing hardware symptoms, cracks, liquid indicators, or error screens (Max 5MB each)
@@ -310,10 +310,10 @@
             >
                 <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]">
+                        <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted-foreground)]" data-i18n="pickup_logistics_kicker">
                             Pickup location & logistics
                         </p>
-                        <h3 class="text-sm font-bold text-[var(--foreground)]">Where should our rider pick up the device?</h3>
+                        <h3 class="text-sm font-bold text-[var(--foreground)]" data-i18n="rider_pickup">Where should our rider pick up the device?</h3>
                     </div>
                     <button
                         type="button"
@@ -321,7 +321,7 @@
                         class="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-[11px] font-bold text-[var(--accent-foreground)] shadow-sm transition hover:opacity-90"
                     >
                         <i class="fa-solid fa-map-location-dot"></i>
-                        <span>Pin on Interactive Map</span>
+                        <span data-i18n="pin_interactive_map">Pin on Interactive Map</span>
                     </button>
                 </div>
 
@@ -335,7 +335,7 @@
                     >
                         <div class="font-bold text-xs text-[var(--foreground)] flex items-center gap-1.5">
                             <i class="fa-solid fa-location-dot text-[var(--accent-dark)]"></i>
-                            <span>Use map location</span>
+                            <span data-i18n="use_map_location">Use map location</span>
                         </div>
                         <div class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Pinned map coordinates</div>
                     </button>
@@ -348,7 +348,7 @@
                     >
                         <div class="font-bold text-xs text-[var(--foreground)] flex items-center gap-1.5">
                             <i class="fa-solid fa-keyboard text-[var(--accent-dark)]"></i>
-                            <span>Manual address</span>
+                            <span data-i18n="manual_entry">Manual address</span>
                         </div>
                         <div class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">Type custom pickup street</div>
                     </button>
@@ -361,7 +361,7 @@
                     >
                         <div class="font-bold text-xs text-[var(--foreground)] flex items-center gap-1.5">
                             <i class="fa-solid fa-user-check text-[var(--accent-dark)]"></i>
-                            <span>Profile address</span>
+                            <span data-i18n="saved_profile">Profile address</span>
                         </div>
                         <div class="mt-0.5 text-[11px] text-[var(--muted-foreground)]">
                             {{ !empty(auth()->user()?->address) ? Str::limit(auth()->user()->address, 26) : 'Saved account delivery address' }}
@@ -402,22 +402,22 @@
                 <div class="space-y-4" x-data="{ serviceType: @js($defaultReqServiceType) }">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block font-bold text-[var(--foreground)] mb-1">How will you submit your device? *</label>
+                            <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="logistics_mode">How will you submit your device? *</label>
                             <select name="preferred_service_type" x-model="serviceType" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 font-medium outline-none" required>
                                 @if($shopCourierOk)
-                                    <option value="pickup_dropoff">Courier Pickup &amp; Return (Rider collects &amp; delivers back)</option>
+                                    <option value="pickup_dropoff" data-i18n="opt_pickup_dropoff">Courier Pickup &amp; Return (Rider collects &amp; delivers back)</option>
                                 @endif
                                 @if($shopWalkInOk)
-                                    <option value="walk_in">In-Shop Walk-In (Drop off in person &amp; pay on Meramot, ৳0 delivery)</option>
+                                    <option value="walk_in" data-i18n="opt_walk_in">In-Shop Walk-In (Drop off in person &amp; pay on Meramot, ৳0 delivery)</option>
                                 @endif
                                 @if(!isset($selectedShop) || !$selectedShop)
-                                    <option value="technician_home_visit">Technician On-Site Diagnostic</option>
+                                    <option value="technician_home_visit" data-i18n="opt_home_visit">Technician On-Site Diagnostic</option>
                                 @endif
                             </select>
                             <p class="mt-1 text-[11px] text-[var(--muted-foreground)]" x-text="serviceType === 'walk_in' ? 'No courier needed — visit the workshop directly and settle payment on Meramot.' : 'A verified rider picks up your device and returns it after completion.'"></p>
                         </div>
                         <div>
-                            <label class="block font-bold text-[var(--foreground)] mb-1">Area / Neighborhood *</label>
+                            <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="area_pickup">Area / Neighborhood *</label>
                             <input
                                 type="text"
                                 name="area"
@@ -452,7 +452,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <div class="flex items-center justify-between mb-1">
-                                <label class="block font-bold text-[var(--foreground)]">Contact Phone *</label>
+                                <label class="block font-bold text-[var(--foreground)]" data-i18n="contact_phone">Contact Phone *</label>
                                 @auth
                                     @if(empty(auth()->user()->phone))
                                         <a href="/profile?edit=1" class="text-[10px] font-bold text-[var(--accent-dark)] hover:underline">Save in Profile</a>
@@ -472,11 +472,11 @@
                             >
                         </div>
                         <div x-show="serviceType !== 'walk_in'" x-cloak>
-                            <label class="block font-bold text-[var(--foreground)] mb-1">Full Pickup / Delivery Address</label>
+                            <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="pickup_address">Full Pickup / Delivery Address</label>
                             <input type="text" name="pickup_address" autocomplete="street-address" x-model="pickupAddress" placeholder="House #, Road #, Block/Sector, Landmarks" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                         </div>
                         <div>
-                            <label class="block font-bold text-[var(--foreground)] mb-1">Estimated Budget (৳)</label>
+                            <label class="block font-bold text-[var(--foreground)] mb-1" data-i18n="estimated_budget">Estimated Budget (৳)</label>
                             <input type="number" min="0" max="1000000" step="1" data-numeric-mode="integer" onwheel="this.blur()" name="estimated_budget" value="{{ old('estimated_budget') }}" placeholder="e.g. 2500" class="w-full rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--mint-100)] text-xs p-3 outline-none">
                         </div>
                     </div>
@@ -485,10 +485,10 @@
 
             <!-- Submit Button -->
             <div class="pt-4 border-t border-[var(--border)] flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3">
-                <a href="/shops" class="w-full sm:w-auto text-center text-xs font-semibold text-[var(--muted-foreground)] hover:underline py-2">
+                <a href="/shops" class="w-full sm:w-auto text-center text-xs font-semibold text-[var(--muted-foreground)] hover:underline py-2" data-i18n="cancel_return">
                     Cancel & Return
                 </a>
-                <button type="submit" class="w-full sm:w-auto text-center rounded-md bg-[var(--accent-dark)] px-8 py-3 text-xs font-bold text-white shadow-lg hover:opacity-90 transition">
+                <button type="submit" class="w-full sm:w-auto text-center rounded-md bg-[var(--accent-dark)] px-8 py-3 text-xs font-bold text-white shadow-lg hover:opacity-90 transition" data-i18n="publish_request_btn">
                     Publish Request to Bidding Marketplace &rarr;
                 </button>
             </div>

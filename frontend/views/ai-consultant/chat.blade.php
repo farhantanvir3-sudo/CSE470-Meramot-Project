@@ -92,9 +92,9 @@
 
     <!-- Breadcrumb -->
     <div class="mb-4 flex items-center gap-2 text-xs text-[var(--muted-foreground)]">
-        <a href="/" class="hover:underline">Home</a>
+        <a href="/" class="hover:underline" data-i18n="home_nav">Home</a>
         <span>›</span>
-        <span class="text-[var(--foreground)] font-semibold">AI Diagnostic Consultant</span>
+        <span class="text-[var(--foreground)] font-semibold" data-i18n="ai_consultant">AI Diagnostic Consultant</span>
     </div>
 
     <!-- Header -->
@@ -102,18 +102,18 @@
         <div>
             <h1 class="text-2xl md:text-3xl font-bold text-[var(--foreground)] flex items-center gap-2">
                 <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i>
-                <span>AI Hardware Diagnostic Consultant</span>
+                <span data-i18n="ai_hw_consultant">AI Hardware Diagnostic Consultant</span>
             </h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1 flex flex-wrap items-center gap-2">
                 <span class="dev-only-badge px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[10px] border border-emerald-300">
                     Feature R10 • Shanid Sajjatuz Islam [23201465]
                 </span>
-                <span>Instant symptom analysis, fault isolation, and preliminary repair guidance before you book a workshop.</span>
+                <span data-i18n="ai_consultant_sub">Instant symptom analysis, fault isolation, and preliminary repair guidance before you book a workshop.</span>
             </p>
         </div>
         <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-3.5 py-1.5 text-xs font-bold text-[var(--accent-dark)] self-start flex items-center gap-2">
             <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
-            <span>AI Diagnostics Active</span>
+            <span data-i18n="ai_active">AI Diagnostics Active</span>
         </span>
     </div>
 
@@ -125,7 +125,7 @@
             <!-- Chat Control Bar -->
             <div class="p-4 border-b border-[var(--border)] bg-[var(--mint-100)] flex flex-wrap items-center justify-between gap-3 text-xs">
                 <div class="flex items-center gap-2">
-                    <span class="font-bold text-[var(--foreground)]">Device Category:</span>
+                    <span class="font-bold text-[var(--foreground)]" data-i18n="device_category_label">Device Category:</span>
                     <select x-model="category" class="rounded-xl border border-[var(--border)] bg-[var(--card)] text-xs py-1.5 px-3 font-semibold text-[var(--foreground)] outline-none">
                         <option value="Laptop">Laptop / MacBook</option>
                         <option value="Phone">Mobile Phone / iPhone</option>
@@ -134,7 +134,7 @@
                         <option value="Smartwatch">Smartwatch & Audio</option>
                     </select>
                 </div>
-                <a href="/requests/create" class="rounded-md bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
+                <a href="/requests/create" class="rounded-md bg-[var(--accent-dark)] px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-foreground)] hover:opacity-90 transition" data-i18n="post_repair_request_arrow">
                     Post Repair Request &rarr;
                 </a>
             </div>
@@ -158,7 +158,7 @@
                 <div x-show="loading" x-cloak class="flex justify-start">
                     <div class="bg-[var(--mint-100)] text-[var(--accent-dark)] border border-[var(--border)] rounded-lg rounded-tl-none px-4 py-2.5 text-xs italic flex items-center gap-2">
                         <i class="fa-solid fa-spinner fa-spin"></i>
-                        <span>Analyzing reported device symptoms...</span>
+                        <span data-i18n="analyzing_symptoms">Analyzing reported device symptoms...</span>
                     </div>
                 </div>
             </div>
@@ -169,6 +169,7 @@
                     type="text"
                     x-model="userInput"
                     placeholder="Describe your device fault (e.g. MacBook powers on with chime, screen stays black)..."
+                    data-i18n-placeholder="ai_input_placeholder"
                     class="flex-grow rounded-lg border-2 border-[var(--border)] bg-[var(--mint-300)] focus:bg-[var(--card)] text-xs px-4 py-2.5 outline-none placeholder:text-[var(--muted-foreground)] text-[var(--foreground)] transition"
                 >
                 <button
@@ -187,7 +188,7 @@
             <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 shadow-sm">
                 <h3 class="text-sm font-bold text-[var(--foreground)] mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-bolt text-amber-600"></i>
-                    <span>Quick Symptom Prompts</span>
+                    <span data-i18n="quick_prompts">Quick Symptom Prompts</span>
                 </h3>
                 <div class="space-y-2 text-xs">
                     <button type="button" @click="quickPrompt('Phone', 'My iPhone screen is cracked and touch is unresponsive in the top corner')" class="w-full rounded-lg border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] p-3 text-left font-medium text-[var(--foreground)] transition">
@@ -208,7 +209,7 @@
             <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm text-xs">
                 <h4 class="font-bold text-[var(--foreground)] mb-2 flex items-center gap-1.5">
                     <i class="fa-solid fa-lightbulb text-[var(--accent-dark)]"></i>
-                    <span>Diagnostic Tips</span>
+                    <span data-i18n="diagnostic_tips">Diagnostic Tips</span>
                 </h4>
                 <ul class="space-y-1.5 text-[var(--muted-foreground)] leading-relaxed">
                     <li>• Mention exact brand & model (e.g., ThinkPad T14, Galaxy S23)</li>

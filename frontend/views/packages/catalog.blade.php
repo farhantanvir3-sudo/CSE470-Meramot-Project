@@ -16,11 +16,11 @@
     <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div class="min-w-0">
             <div class="flex items-center gap-2 text-xs text-[var(--muted-foreground)] mb-1">
-                <a href="/" class="hover:underline">Home</a>
+                <a href="/" class="hover:underline" data-i18n="home_nav">Home</a>
                 <span>›</span>
-                <span class="text-[var(--foreground)] font-semibold">Service Packages</span>
+                <span class="text-[var(--foreground)] font-semibold" data-i18n="service_packages">Service Packages</span>
             </div>
-            <h1 class="text-xl md:text-2xl font-bold text-[var(--foreground)]">
+            <h1 class="text-xl md:text-2xl font-bold text-[var(--foreground)]" data-i18n="fixed_price_packages_heading">
                 Fixed-Price Repair Packages
             </h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1 flex flex-wrap items-center gap-2 leading-relaxed">
@@ -38,12 +38,12 @@
         @endphp
         <div class="flex flex-wrap items-center gap-2.5 shrink-0">
             <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-semibold px-3 py-1.5 rounded-md border border-[var(--border)] whitespace-nowrap">
-                <i class="fa-solid fa-shield-halved text-emerald-700 mr-1"></i> Warranty Protected
+                <i class="fa-solid fa-shield-halved text-emerald-700 mr-1"></i> <span data-i18n="warranty_protected">Warranty Protected</span>
             </span>
             @if(!$isBannedCatalogUser && !$isNonCustomerCatalogUser)
                 <a href="{{ route('cart.view') }}" class="inline-flex items-center gap-2 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition whitespace-nowrap">
                     <i class="fa-solid fa-cart-shopping"></i>
-                    <span>Service Cart</span>
+                    <span data-i18n="service_cart">Service Cart</span>
                     <span data-cart-badge class="{{ ($cartCount ?? 0) > 0 ? '' : 'hidden' }} inline-flex h-5 min-w-[20px] items-center justify-center rounded-md bg-[var(--mint-100)] px-1.5 text-[11px] font-bold text-[#203126]">
                         {{ $cartCount ?? 0 }}
                     </span>
@@ -76,19 +76,20 @@
                     name="q"
                     value="{{ request('q') }}"
                     placeholder="Search OS setup, cleaning, tune-up..."
+                    data-i18n-placeholder="search_packages_placeholder"
                     class="w-full rounded-md border border-[var(--border)] bg-white/85 dark:bg-[var(--mint-100)] pl-9 pr-4 py-2 text-xs text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none transition"
                 >
             </div>
 
             <select name="category" class="w-full min-w-0 max-w-full truncate rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-medium text-[var(--foreground)] outline-none">
-                <option value="">All Categories</option>
+                <option value="" data-i18n="all_categories">All Categories</option>
                 @foreach($categories ?? [] as $cat)
                     <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>{{ $cat }}</option>
                 @endforeach
             </select>
 
             <select name="max_price" class="w-full min-w-0 max-w-full truncate rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-medium text-[var(--foreground)] outline-none">
-                <option value="">Any Budget</option>
+                <option value="" data-i18n="any_budget">Any Budget</option>
                 <option value="2000" {{ request('max_price') == '2000' ? 'selected' : '' }}>Under ৳2,000</option>
                 <option value="3500" {{ request('max_price') == '3500' ? 'selected' : '' }}>Under ৳3,500</option>
                 <option value="5000" {{ request('max_price') == '5000' ? 'selected' : '' }}>Under ৳5,000</option>
@@ -96,13 +97,13 @@
             </select>
 
             <select name="sort" class="w-full min-w-0 max-w-full truncate rounded-md border border-[var(--border)] bg-[var(--mint-100)] px-3 py-2 text-xs font-medium text-[var(--foreground)] outline-none">
-                <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>Most Popular</option>
-                <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>Price: Low to High</option>
-                <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }}>Price: High to Low</option>
+                <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }} data-i18n="most_popular">Most Popular</option>
+                <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }} data-i18n="price_low_high">Price: Low to High</option>
+                <option value="price_high" {{ request('sort') == 'price_high' ? 'selected' : '' }} data-i18n="price_high_low">Price: High to Low</option>
             </select>
 
             <div class="sm:col-span-2 lg:col-span-1 flex items-center gap-2">
-                <button type="submit" class="flex-1 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition whitespace-nowrap">
+                <button type="submit" class="flex-1 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)] shadow-sm hover:opacity-90 transition whitespace-nowrap" data-i18n="apply_filters">
                     Apply Filters
                 </button>
                 @if(request()->hasAny(['q', 'category', 'max_price', 'sort']))
@@ -146,7 +147,7 @@
                         <span class="text-2xl font-bold text-[var(--accent-dark)]">
                             ৳{{ number_format($pkg->fixed_price) }}
                         </span>
-                        <span class="text-xs text-[var(--muted-foreground)] whitespace-nowrap">Fixed price</span>
+                        <span class="text-xs text-[var(--muted-foreground)] whitespace-nowrap" data-i18n="fixed_price">Fixed price</span>
                     </div>
 
                     <!-- Turnaround & Warranty Specs -->
@@ -165,7 +166,7 @@
                     <!-- Package Inclusions -->
                     @if(!empty($pkg->inclusions))
                         <div class="mt-3">
-                            <h5 class="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-1.5">Included in Package:</h5>
+                            <h5 class="text-[10px] font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-1.5" data-i18n="included_in_package">Included in Package:</h5>
                             <ul class="space-y-1 text-xs text-[var(--foreground)]">
                                 @foreach($pkg->inclusions as $inc)
                                     <li class="flex items-start gap-2">
@@ -181,7 +182,7 @@
                 <!-- Quickmatch Workshop Selector + Add Service to Cart Action -->
                 <div class="mt-5 pt-3.5 border-t border-[var(--border)]/70 space-y-2.5 min-w-0">
                     <div class="min-w-0">
-                        <label for="shop-select-{{ $pkg->id }}" class="block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1">
+                        <label for="shop-select-{{ $pkg->id }}" class="block text-[10px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] mb-1" data-i18n="select_workshop">
                             Select Workshop
                         </label>
                         @php
@@ -221,7 +222,7 @@
                             class="w-full rounded-md bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] py-2 px-4 text-xs font-semibold shadow-sm transition flex items-center justify-center gap-2 whitespace-nowrap"
                         >
                             <i class="fa-solid fa-cart-plus"></i>
-                            <span>Add to Cart</span>
+                            <span data-i18n="add_to_cart">Add to Cart</span>
                         </button>
                     @endif
                 </div>
@@ -229,8 +230,8 @@
         @empty
             <div class="col-span-full text-center py-12 rounded-lg border border-[var(--border)] bg-[var(--card)] p-8">
                 <i class="fa-solid fa-box-open text-2xl text-[var(--muted-foreground)] mb-3"></i>
-                <p class="text-sm font-semibold text-[var(--foreground)]">No service packages match your filters.</p>
-                <a href="{{ route('packages.catalog') }}" class="mt-4 inline-flex rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)]">
+                <p class="text-sm font-semibold text-[var(--foreground)]" data-i18n="no_packages_found">No service packages match your filters.</p>
+                <a href="{{ route('packages.catalog') }}" class="mt-4 inline-flex rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-[var(--accent-foreground)]" data-i18n="view_all_packages">
                     View All Packages
                 </a>
             </div>
