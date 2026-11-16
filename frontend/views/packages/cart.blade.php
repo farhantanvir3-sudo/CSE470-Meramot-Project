@@ -697,11 +697,11 @@
                 </form>
             </div>
 
-            <!-- ── Right Column: Sticky Direct-Order & Escrow Summary ── -->
+            <!-- ── Right Column: Sticky Direct-Order & Payment Summary ── -->
             <div class="min-w-0 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-5 md:p-6 shadow-sm lg:sticky lg:top-6 space-y-5">
                 <div>
                     <p class="text-[10px] font-extrabold uppercase tracking-wider text-[var(--muted-foreground)]">Order Summary</p>
-                    <h2 class="text-xl font-black text-[var(--foreground)] mt-0.5">Checkout &amp; Escrow</h2>
+                    <h2 class="text-xl font-black text-[var(--foreground)] mt-0.5">Checkout &amp; Payment</h2>
                 </div>
 
                 <!-- Promo & Voucher Engine (Daraz / Foodpanda Style) -->
@@ -821,7 +821,7 @@
                     <label class="cursor-pointer rounded-2xl border p-3 flex items-center justify-between gap-2 transition" :class="paymentMethod === 'SSLCOMMERZ' ? 'border-[var(--accent-dark)] bg-[var(--mint-100)] font-bold' : 'border-[var(--border)] bg-[var(--card)]'">
                         <span class="flex items-center gap-2 text-[var(--foreground)]">
                             <input type="radio" value="SSLCOMMERZ" x-model="paymentMethod" class="accent-[#244229]">
-                            <span>SSLCommerz Online Escrow (All Channels)</span>
+                            <span>SSLCommerz Online Payment (All Channels)</span>
                         </span>
                         <i class="fa-solid fa-lock text-[var(--accent-dark)] shrink-0"></i>
                     </label>
@@ -829,12 +829,12 @@
                         <label class="cursor-pointer rounded-xl border p-2 text-center transition" :class="paymentMethod === 'BKASH' ? 'border-pink-600 bg-pink-50 font-bold text-pink-900' : 'border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]'">
                             <input type="radio" value="BKASH" x-model="paymentMethod" class="sr-only">
                             <span class="block text-[11px] font-black">bKash</span>
-                            <span class="block text-[9px] opacity-75">Escrow</span>
+                            <span class="block text-[9px] opacity-75">Wallet</span>
                         </label>
                         <label class="cursor-pointer rounded-xl border p-2 text-center transition" :class="paymentMethod === 'NAGAD' ? 'border-orange-600 bg-orange-50 font-bold text-orange-900' : 'border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]'">
                             <input type="radio" value="NAGAD" x-model="paymentMethod" class="sr-only">
                             <span class="block text-[11px] font-black">Nagad</span>
-                            <span class="block text-[9px] opacity-75">Escrow</span>
+                            <span class="block text-[9px] opacity-75">Wallet</span>
                         </label>
                         <label class="cursor-pointer rounded-xl border p-2 text-center transition" :class="paymentMethod === 'CARD' ? 'border-sky-700 bg-sky-50 font-bold text-sky-900' : 'border-[var(--border)] bg-[var(--card)] text-[var(--foreground)]'">
                             <input type="radio" value="CARD" x-model="paymentMethod" class="sr-only">

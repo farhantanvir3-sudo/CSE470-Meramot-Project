@@ -10,7 +10,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
 --}}
 @extends('layouts.app')
 
-@section('title', 'Secure Escrow Checkout | Meramot')
+@section('title', 'Secure Checkout | Meramot')
 
 @section('content')
 @php
@@ -36,7 +36,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
         <span>›</span>
         <a href="{{ route('requests.track', $repairRequest->id) }}" class="hover:underline">Order #{{ $repairRequest->id }}</a>
         <span>›</span>
-        <span class="text-[var(--foreground)] font-semibold">Escrow Payment Checkout</span>
+        <span class="text-[var(--foreground)] font-semibold">Secure Payment Checkout</span>
     </div>
 
     @if(session('error'))
@@ -67,7 +67,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                         <i class="fa-solid fa-shield-check text-lg"></i>
                     </span>
                     <div>
-                        <p class="text-sm font-black text-emerald-950">Escrow Payment Settled &amp; Protected</p>
+                        <p class="text-sm font-black text-emerald-950">Payment Received &amp; Protected</p>
                         <p class="text-xs text-emerald-900">Ref: <span class="font-mono font-bold">{{ $paidTxn->transaction_reference }}</span> • Method: <strong>{{ $paidTxn->payment_method }}</strong></p>
                     </div>
                 </div>
@@ -94,11 +94,11 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
     <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 md:p-8 shadow-sm">
         <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
             <div class="min-w-0">
-                <h1 class="text-2xl font-black text-[var(--foreground)]">Secure Escrow Checkout</h1>
+                <h1 class="text-2xl font-black text-[var(--foreground)]">Secure Checkout</h1>
                 <p class="text-xs text-[var(--muted-foreground)] mt-1 break-words">Order #{{ $repairRequest->id }} — {{ $repairRequest->title }}</p>
             </div>
             <span class="text-xs bg-[var(--mint-100)] text-[var(--accent-dark)] font-bold px-3.5 py-1.5 rounded-full border border-[var(--border)] whitespace-nowrap">
-                <i class="fa-solid fa-shield-halved mr-1"></i> 100% Escrow Protected
+                <i class="fa-solid fa-shield-halved mr-1"></i> 100% Buyer Protected
             </span>
         </div>
 
@@ -126,7 +126,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($servicesSubtotal, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Service &amp; Escrow Protection Fee:</span>
+                    <span>Service &amp; Buyer Protection Fee:</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($escrowFee, 2) }}</span>
                 </div>
                 @if($repairRequest->requiresCourierLogistics())
@@ -181,7 +181,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($acceptedBidCost, 2) }}</span>
                 </div>
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Service &amp; Escrow Protection Fee:</span>
+                    <span>Service &amp; Buyer Protection Fee:</span>
                     <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($escrowFee, 2) }}</span>
                 </div>
                 @if($repairRequest->requiresCourierLogistics())
@@ -196,7 +196,7 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
                     </div>
                 @endif
                 <div class="flex justify-between gap-3 text-[var(--muted-foreground)]">
-                    <span>Escrow Buyer Protection Coverage:</span>
+                    <span>Buyer Protection Coverage:</span>
                     <span class="font-bold text-emerald-700 shrink-0">Included</span>
                 </div>
             @endif
@@ -259,12 +259,12 @@ Controller: PaymentGatewayController@showCheckout, initiatePayment
 
                 <div class="rounded-2xl border border-[var(--border)] bg-white/70 px-4 py-3 text-[11px] text-[var(--muted-foreground)] flex items-start gap-2.5">
                     <i class="fa-solid fa-lock text-[var(--accent-dark)] mt-0.5"></i>
-                    <span>Your payment is held in <strong>Meramot Escrow Custody</strong> and only released to the workshop after repair verification and device return.</span>
+                    <span>Your payment is held <strong>safely by Meramot</strong> and only released to the workshop after repair verification and device return.</span>
                 </div>
 
                 <button type="submit" class="w-full bg-[var(--accent-dark)] hover:opacity-90 text-[var(--accent-foreground)] font-bold py-3.5 px-5 rounded-full text-xs transition flex items-center justify-center gap-2 shadow">
                     <i class="fa-solid fa-lock"></i>
-                    <span>Authorize ৳{{ number_format($totalPayable, 0) }} via SSLCommerz Escrow</span>
+                    <span>Authorize ৳{{ number_format($totalPayable, 0) }} via SSLCommerz</span>
                 </button>
 
                 <a href="{{ route('requests.track', $repairRequest->id) }}" class="block w-full text-center rounded-full border border-[var(--border)] bg-[var(--mint-100)] hover:bg-[var(--mint-200)] py-3 px-4 text-xs font-bold text-[var(--foreground)] transition">

@@ -64,7 +64,7 @@
             <a href="{{ route('cart.view') }}" class="hover:underline">&larr; Back to Cart</a>
         </div>
         <h1 class="text-2xl md:text-3xl font-black text-[var(--foreground)]">Booking Checkout</h1>
-        <p class="mt-1 text-xs text-[var(--muted-foreground)]">Review your service option, schedule, and escrow-protected payment before confirming.</p>
+        <p class="mt-1 text-xs text-[var(--muted-foreground)]">Review your service option, schedule, and protected payment before confirming.</p>
     </div>
 
     @if(session('error'))
@@ -344,10 +344,10 @@
             <div>
                 <label class="block font-bold text-[var(--foreground)] mb-1">Payment Method</label>
                 <select name="payment_method" x-model="paymentMethod" class="w-full min-w-0 max-w-full rounded-2xl border border-[var(--border)] bg-[var(--mint-100)] px-3.5 py-2.5 font-semibold text-[var(--foreground)] outline-none">
-                    <option value="SSLCOMMERZ">SSLCommerz Online Escrow (All Channels)</option>
-                    <option value="BKASH">bKash Online Escrow</option>
-                    <option value="NAGAD">Nagad Online Escrow</option>
-                    <option value="CARD">Visa / Mastercard Escrow</option>
+                    <option value="SSLCOMMERZ">SSLCommerz Online Payment (All Channels)</option>
+                    <option value="BKASH">bKash Online Payment</option>
+                    <option value="NAGAD">Nagad Online Payment</option>
+                    <option value="CARD">Visa / Mastercard</option>
                     <option value="CASH" x-text="isCourierMode ? 'Cash on Device Return (COD)' : 'Cash at Workshop (On Completion)'">Cash on Device Return (COD)</option>
                 </select>
             </div>

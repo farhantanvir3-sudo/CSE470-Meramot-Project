@@ -44,7 +44,7 @@ class PdfInvoiceService
         // Header banner (Meramot Forest Green #214c34 -> RGB 0.129 0.298 0.204)
         $contentOps[] = '0.129 0.298 0.204 rg 36 730 540 68 re f';
         $contentOps[] = $this->pdfText(52, 772, 'F2', 18, 'MERAMOT MARKETPLACE - OFFICIAL INVOICE', [1, 1, 1]);
-        $contentOps[] = $this->pdfText(52, 752, 'F1', 10, 'Verified Electronics Repair, Escrow Protection & Doorstep Logistics (Bangladesh)', [0.89, 0.98, 0.84]);
+        $contentOps[] = $this->pdfText(52, 752, 'F1', 10, 'Verified Electronics Repair, Buyer Protection & Doorstep Logistics (Bangladesh)', [0.89, 0.98, 0.84]);
         $contentOps[] = $this->pdfText(405, 772, 'F2', 10.5, 'INVOICE: ' . ($invoice->invoice_number ?? ('INV-' . $invoice->id)), [1, 1, 1]);
         $contentOps[] = $this->pdfText(405, 754, 'F2', 10, 'STATUS: ' . strtoupper((string) $invoice->status), [0.89, 0.98, 0.84]);
 
@@ -128,7 +128,7 @@ class PdfInvoiceService
 
         $summaryRows = [
             ['Services & Parts Subtotal:', 'BDT ' . number_format($subtotal, 2)],
-            ['Service & Escrow Protection Fee:', 'BDT ' . number_format($commissionAmt, 2)],
+            ['Service & Buyer Protection Fee:', 'BDT ' . number_format($commissionAmt, 2)],
             ['Doorstep Pickup & Delivery:', 'BDT ' . number_format($delivery, 2)],
         ];
         if ($discount > 0) {
@@ -152,12 +152,12 @@ class PdfInvoiceService
 
         $payMethod = $paidTxn ? strtoupper((string) $paidTxn->payment_method) : 'PENDING SETTLEMENT';
         $txnRef = $paidTxn ? $this->cleanText((string) ($paidTxn->transaction_reference ?: ('TXN-' . $paidTxn->id))) : 'N/A';
-        $commissionNote = 'Buyer Protection: Funds remain safeguarded in Meramot Escrow until verified completion and handover.';
+        $commissionNote = 'Buyer Protection: Funds remain held safely by Meramot until verified completion and handover.';
         $warrantyNote = $warranty
             ? ('Active Warranty: ' . (int) $warranty->duration_days . ' days coverage (Ends: ' . optional($warranty->ends_at)->format('d M Y') . '). ' . mb_substr($this->cleanText((string) ($warranty->details ?: $warranty->title)), 0, 68))
             : 'Warranty Protection: Activated automatically upon workshop completion and customer handover verification.';
 
-        $contentOps[] = $this->pdfText(48, $y + 2, 'F2', 9.5, 'PAYMENT & ESCROW AUDIT RECORD', [0.129, 0.298, 0.204]);
+        $contentOps[] = $this->pdfText(48, $y + 2, 'F2', 9.5, 'PAYMENT & PROTECTION RECORD', [0.129, 0.298, 0.204]);
         $contentOps[] = $this->pdfText(48, $y - 13, 'F1', 8.5, 'Payment Channel: ' . $payMethod . '   |   Transaction Reference: ' . $txnRef, [0.15, 0.22, 0.18]);
         $contentOps[] = $this->pdfText(48, $y - 27, 'F1', 8.5, $commissionNote, [0.22, 0.30, 0.25]);
         $contentOps[] = $this->pdfText(48, $y - 41, 'F1', 8.5, $warrantyNote, [0.22, 0.30, 0.25]);

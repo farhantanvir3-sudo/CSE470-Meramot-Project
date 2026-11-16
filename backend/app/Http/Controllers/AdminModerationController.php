@@ -817,7 +817,7 @@ class AdminModerationController extends Controller
             );
         }
 
-        return redirect('/support')->with('success', "Escrow Dispute Case #{$dispute->id} opened for Order #{$req->id}. Meramot Governance will review and respond promptly.");
+        return redirect('/support')->with('success', "Dispute Case #{$dispute->id} opened for Order #{$req->id}. Meramot Governance will review and respond promptly.");
     }
 
     /**

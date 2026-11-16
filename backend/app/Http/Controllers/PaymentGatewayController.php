@@ -252,7 +252,7 @@ class PaymentGatewayController extends Controller
     {
         $user = $request->user();
         if (!$user) {
-            return redirect('/login')->with('warning', 'Please sign in to authorize escrow payment.');
+            return redirect('/login')->with('warning', 'Please sign in to complete your payment.');
         }
 
         $validated = $request->validate([
@@ -278,7 +278,7 @@ class PaymentGatewayController extends Controller
         if ($alreadyPaid && $alreadyPaid->invoice_id) {
             return redirect()
                 ->route('invoices.show', $alreadyPaid->invoice_id)
-                ->with('success', 'This repair order has already been paid and secured in Meramot Escrow.');
+                ->with('success', 'This repair order has already been paid and secured with Meramot Buyer Protection.');
         }
 
         $rawChannel = strtoupper((string) ($validated['payment_method'] ?? 'SSLCOMMERZ'));
@@ -390,7 +390,7 @@ class PaymentGatewayController extends Controller
                     'cus_country' => 'Bangladesh',
                     'cus_phone' => $repairRequest->contact_phone ?: ($repairRequest->customer?->phone ?? '01700000000'),
                     'shipping_method' => 'NO',
-                    'product_name' => $repairRequest->title ?: 'Electronics Repair Escrow',
+                    'product_name' => $repairRequest->title ?: 'Electronics Repair Payment',
                     'product_category' => 'Electronics Repair',
                     'product_profile' => 'general',
                 ]);
@@ -459,7 +459,7 @@ class PaymentGatewayController extends Controller
 
         return redirect()
             ->route('invoices.show', ['invoice' => $invoice->id, 'paid' => 1])
-            ->with('success', "Escrow payment of ৳" . number_format((float) $payment->amount, 2) . " authorized! Official receipt {$invoice->invoice_number} is ready.");
+            ->with('success', "Payment of ৳" . number_format((float) $payment->amount, 2) . " authorized! Official receipt {$invoice->invoice_number} is ready.");
     }
 
     /**
@@ -666,7 +666,7 @@ class PaymentGatewayController extends Controller
                     'total_payable' => (float) $payment->amount,
                     'line_items' => [[
                         'shop_service_id' => null,
-                        'title' => $req?->title ?: 'Escrow Repair Payment',
+                        'title' => $req?->title ?: 'Repair Payment',
                         'description' => 'Verified workshop service & hardware listing',
                         'quantity' => 1,
                         'unit_price' => (float) $payment->amount,
@@ -852,8 +852,8 @@ class PaymentGatewayController extends Controller
                 $notifier->notifyUser(
                     user: $payment->repairRequest->customer,
                     eventType: 'PAYMENT_CONFIRMED',
-                    title: "Escrow Payment Confirmed ({$invoice->invoice_number})",
-                    message: "Your payment of BDT " . number_format((float) $payment->amount, 2) . " ({$payment->transaction_reference}) is secured in Meramot Escrow.",
+                    title: "Payment Confirmed ({$invoice->invoice_number})",
+                    message: "Your payment of BDT " . number_format((float) $payment->amount, 2) . " ({$payment->transaction_reference}) is held safely by Meramot until your repair is complete.",
                     actionUrl: "/invoices/{$invoice->id}",
                     repairRequestId: $payment->repair_request_id,
                     severity: 'success',

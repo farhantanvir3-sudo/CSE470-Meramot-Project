@@ -61,7 +61,7 @@ Controller: VendorNotificationController@notificationCenter
         @empty
             <div class="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--mint-100)]/60 p-10 text-center text-xs text-[var(--muted-foreground)]">
                 <i class="fa-regular fa-bell text-2xl mb-2 block text-[var(--accent-dark)]"></i>
-                You're all caught up — new repair bids, courier handovers, and escrow updates will appear here automatically.
+                You're all caught up — new repair bids, courier handovers, and payment updates will appear here automatically.
             </div>
         @endforelse
 

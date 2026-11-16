@@ -30,7 +30,7 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
                 </a>
                 <span>•</span>
             @endif
-            <span>Official Tax &amp; Escrow Receipt</span>
+            <span>Official Tax &amp; Payment Receipt</span>
         </div>
 
         <div class="flex flex-wrap items-center gap-2.5">
@@ -47,7 +47,7 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
         <div class="rounded-2xl border border-emerald-400 bg-emerald-50 p-4 text-xs text-emerald-950 flex items-center gap-3 print:hidden">
             <i class="fa-solid fa-circle-check text-emerald-700 text-base"></i>
             <div>
-                <p class="font-black">{{ session('success') ?? 'Payment verified and secured under Meramot Escrow Protection.' }}</p>
+                <p class="font-black">{{ session('success') ?? 'Payment verified and secured under Meramot Buyer Protection.' }}</p>
             </div>
         </div>
     @endif
@@ -59,7 +59,7 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
             <div>
                 <p class="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-200">Meramot Verified Marketplace</p>
                 <h1 class="text-2xl md:text-3xl font-black mt-1">OFFICIAL INVOICE</h1>
-                <p class="text-xs text-white/80 mt-1">Escrow-Protected Electronics Diagnostics, Repair &amp; Doorstep Logistics</p>
+                <p class="text-xs text-white/80 mt-1">Buyer-Protected Electronics Diagnostics, Repair &amp; Doorstep Logistics</p>
             </div>
             <div class="text-left sm:text-right space-y-1">
                 <p class="text-sm font-mono font-black text-white">{{ $invoice->invoice_number }}</p>
@@ -144,10 +144,10 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
             <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
                 <div class="md:col-span-7 rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/50 p-4 space-y-2">
                     <p class="text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
-                        <i class="fa-solid fa-scale-balanced mr-1"></i> Escrow Protection &amp; Warranty Summary
+                        <i class="fa-solid fa-scale-balanced mr-1"></i> Buyer Protection &amp; Warranty Summary
                     </p>
                     <p class="text-[11px] text-[var(--muted-foreground)]">
-                        <strong>Escrow &amp; Protection Summary:</strong> Payments are safeguarded under Meramot Escrow until verified completion or handover.
+                        <strong>Buyer Protection Summary:</strong> Payments are held safely by Meramot until verified completion or handover.
                     </p>
                     @if($warranty)
                         <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-[11px] text-emerald-950">
@@ -167,7 +167,7 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invSubtotal, 2) }}</span>
                     </div>
                     <div class="flex justify-between gap-2 text-[var(--muted-foreground)]">
-                        <span>Service &amp; Escrow Protection Fee:</span>
+                        <span>Service &amp; Buyer Protection Fee:</span>
                         <span class="font-bold text-[var(--foreground)] shrink-0">৳{{ number_format($invCommission, 2) }}</span>
                     </div>
                     @if($req && !$req->requiresCourierLogistics() && $invDelivery <= 0)
@@ -193,7 +193,7 @@ Controller: PaymentGatewayController@showInvoice, downloadPdf
                     </div>
                     @if(!$isPaid && $req)
                         <a href="{{ route('payment.checkout', $req->id) }}" class="mt-2 block w-full text-center rounded-full bg-[var(--accent-dark)] py-2.5 px-4 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition print:hidden">
-                            Pay Now via Escrow Gateway
+                            Pay Now Securely Online
                         </a>
                     @endif
                 </div>

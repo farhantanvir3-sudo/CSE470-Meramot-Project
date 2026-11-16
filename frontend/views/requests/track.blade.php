@@ -64,7 +64,7 @@
                     </a>
                 @elseif(!in_array($currentStatus, ['CANCELLED', 'REJECTED'], true))
                     <a href="{{ route('payment.checkout', $repairRequest->id) }}" class="rounded-full bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition shadow-sm">
-                        <i class="fa-solid fa-shield-halved mr-1"></i> Pay Online via Escrow
+                        <i class="fa-solid fa-shield-halved mr-1"></i> Pay Online Securely
                     </a>
                 @endif
                 <a href="{{ url('/tracking/' . $repairRequest->id) }}" class="rounded-full border border-[var(--border)] bg-[var(--card)] px-4 py-2 text-xs font-bold text-[var(--foreground)] hover:bg-[var(--mint-100)] transition">
@@ -835,7 +835,7 @@
                 <div class="space-y-2.5">
                     @if($canActAsCustomer && in_array($currentStatus, ['ASSIGNED', 'REPAIRING', 'WAITING_APPROVAL', 'COMPLETED'], true))
                         <a href="/checkout/payment/{{ $repairRequest->id }}" class="block w-full py-2.5 rounded-full bg-emerald-700 text-center text-xs font-bold text-white hover:opacity-90 transition">
-                            <i class="fa-solid fa-credit-card mr-2"></i>Online Escrow Checkout
+                            <i class="fa-solid fa-credit-card mr-2"></i>Secure Online Checkout
                         </a>
                     @endif
 
@@ -931,10 +931,10 @@
             <!-- Mint Support Card -->
             <div class="rounded-[1.5rem] border border-[var(--border)] bg-[var(--mint-100)] p-5 shadow-sm">
                 <h3 class="text-sm font-bold text-[var(--foreground)] mb-2">
-                    <i class="fa-solid fa-headset mr-2 text-[var(--accent-dark)]"></i>Need Escrow or Courier Help?
+                    <i class="fa-solid fa-headset mr-2 text-[var(--accent-dark)]"></i>Need Payment or Courier Help?
                 </h3>
                 <p class="text-xs text-[var(--muted-foreground)] mb-3">
-                    Our dedicated operations and escrow dispute team monitors every verified repair order.
+                    Our dedicated operations and dispute resolution team monitors every verified repair order.
                 </p>
                 <a href="/support/rider-chat/1" class="block w-full py-2.5 rounded-full bg-[var(--accent-dark)] text-center text-xs font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
                     Open Support Desk

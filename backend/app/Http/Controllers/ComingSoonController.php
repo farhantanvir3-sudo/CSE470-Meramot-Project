@@ -27,7 +27,7 @@ class ComingSoonController extends Controller
             'window' => 'Planned Platform Rollout',
             'code' => 'Meramot Platform Roadmap',
             'icon' => 'fa-credit-card',
-            'summary' => 'Hosted SSLCommerz, bKash, and Nagad online escrow checkout along with downloadable PDF tax invoices will be introduced in an upcoming release. Cash and Escrow on Pickup & Direct Orders remain active.',
+            'summary' => 'Hosted SSLCommerz, bKash, and Nagad secure online checkout along with downloadable PDF tax invoices will be introduced in an upcoming release. Cash and Escrow on Pickup & Direct Orders remain active.',
         ],
         'rider-dispatch-queue' => [
             'title' => 'Live Rider Job Claiming & OTP Handover',
@@ -118,7 +118,7 @@ class ComingSoonController extends Controller
             'summary' => 'Extended hardware serial management and archived invoice history are planned for an upcoming update. Active repair requests remain accessible in My Repair Requests.',
         ],
         'support-desk' => [
-            'title' => 'Escrow Dispute & Live Support Center',
+            'title' => 'Dispute Resolution & Live Support Center',
             'sprint' => 'Upcoming Release',
             'window' => 'Planned Platform Rollout',
             'code' => 'Meramot Operations Support',

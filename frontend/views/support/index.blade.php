@@ -9,7 +9,7 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
 --}}
 @extends('layouts.app')
 
-@section('title', 'Help, Support & Escrow Dispute Desk | Meramot')
+@section('title', 'Help, Support & Dispute Desk | Meramot')
 
 @section('content')
 <div class="mx-auto max-w-6xl px-4 py-6 md:px-6 space-y-6">
@@ -19,9 +19,9 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
             <span class="inline-flex items-center gap-1.5 rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-3 py-1 text-[10px] font-black uppercase tracking-wider text-[var(--accent-dark)]">
                 <i class="fa-solid fa-headset"></i> Meramot Trust &amp; Resolution Center
             </span>
-            <h1 class="mt-2 text-2xl md:text-3xl font-black text-[var(--foreground)]">Support &amp; Escrow Dispute Desk</h1>
+            <h1 class="mt-2 text-2xl md:text-3xl font-black text-[var(--foreground)]">Support &amp; Dispute Desk</h1>
             <p class="text-xs text-[var(--muted-foreground)] mt-1 leading-relaxed">
-                Protected by Meramot Buyer Protection — open an escrow claim if a completed service differs from your approved quote, or reach our customer support team.
+                Protected by Meramot Buyer Protection — open a refund claim if a completed service differs from your approved quote, or reach our customer support team.
             </p>
         </div>
         @if(auth()->user()?->role === 'admin')
@@ -46,7 +46,7 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
 
     @guest
         <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--mint-100)] p-6 text-center space-y-3 text-xs">
-            <p class="text-sm font-black text-[var(--foreground)]">Sign in to file an Escrow Dispute or track your Support Tickets</p>
+            <p class="text-sm font-black text-[var(--foreground)]">Sign in to file an Order Dispute or track your Support Tickets</p>
             <p class="text-[var(--muted-foreground)]">Emergency hotline: <strong>+880 9648-908088</strong> • Email: <strong>support@meramot.bd</strong></p>
             <div class="pt-1">
                 <a href="/login" class="inline-flex items-center gap-2 rounded-full bg-[var(--accent-dark)] px-6 py-2.5 font-bold text-[var(--accent-foreground)] hover:opacity-90 transition">
@@ -59,7 +59,7 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
             <!-- Left: File Order Dispute -->
             <div class="lg:col-span-6 rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-4">
                 <div>
-                    <h2 class="text-base font-black text-[var(--foreground)]"><i class="fa-solid fa-scale-balanced mr-1.5 text-amber-700"></i> Open Order / Escrow Dispute</h2>
+                    <h2 class="text-base font-black text-[var(--foreground)]"><i class="fa-solid fa-scale-balanced mr-1.5 text-amber-700"></i> Open Order Dispute</h2>
                     <p class="text-[11px] text-[var(--muted-foreground)] mt-0.5">Places workshop payout on hold while our resolution team reviews diagnostic notes and handover records.</p>
                 </div>
 
@@ -83,12 +83,12 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
                                       class="w-full rounded-xl border border-[var(--border)] bg-white px-3.5 py-2.5 text-[var(--foreground)]"></textarea>
                         </div>
                         <button type="submit" class="w-full rounded-full bg-amber-700 hover:bg-amber-800 text-white font-black py-3 px-5 transition shadow">
-                            Submit Escrow Arbitration Claim
+                            Submit Dispute Claim
                         </button>
                     </form>
                 @else
                     <div class="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--mint-100)]/60 p-6 text-center text-[var(--muted-foreground)]">
-                        You have no repair orders to attach to an escrow dispute yet. Use the General Support form on the right for account or platform inquiries.
+                        You have no repair orders to attach to a dispute yet. Use the General Support form on the right for account or platform inquiries.
                     </div>
                 @endif
             </div>
@@ -133,7 +133,7 @@ Controller: AdminModerationController@supportDesk, storeDispute, storeSupportTic
         <!-- Active Disputes & Support Threads -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
             <div class="rounded-[2rem] border border-[var(--border)] bg-[var(--card)] p-6 shadow-sm space-y-3">
-                <h3 class="text-base font-black text-[var(--foreground)]">My Escrow Dispute Cases ({{ ($myDisputes ?? collect())->count() }})</h3>
+                <h3 class="text-base font-black text-[var(--foreground)]">My Dispute Cases ({{ ($myDisputes ?? collect())->count() }})</h3>
                 @forelse($myDisputes ?? [] as $dc)
                     <div class="rounded-2xl border border-[var(--border)] bg-[var(--mint-100)]/60 p-4 space-y-2">
                         <div class="flex items-center justify-between gap-2">

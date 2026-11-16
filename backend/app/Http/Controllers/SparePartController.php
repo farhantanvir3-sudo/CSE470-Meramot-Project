@@ -1693,7 +1693,7 @@ class SparePartController extends Controller
         if (empty($highlights)) {
             $highlights = [
                 '100% bench-tested replacement spare part',
-                'Covered by Meramot Escrow Inspection & Return Protection',
+                'Covered by Meramot Inspection & Return Protection',
             ];
         }
 

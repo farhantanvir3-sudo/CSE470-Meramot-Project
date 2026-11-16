@@ -8,7 +8,7 @@ Controller: PaymentGatewayController@showSandbox, handleSuccess, handleFail, han
 --}}
 @extends('layouts.app')
 
-@section('title', 'SSLCommerz Escrow Gateway | Meramot')
+@section('title', 'SSLCommerz Secure Payment | Meramot')
 
 @section('content')
 @php
@@ -37,14 +37,14 @@ Controller: PaymentGatewayController@showSandbox, handleSuccess, handleFail, han
                 </div>
                 <div>
                     <div class="flex items-center gap-2">
-                        <h1 class="text-base font-black tracking-tight">SSLCommerz × Meramot Escrow</h1>
+                        <h1 class="text-base font-black tracking-tight">SSLCommerz × Meramot Secure Pay</h1>
                         <span class="rounded-full bg-amber-300/95 px-2.5 py-0.5 text-[10px] font-black uppercase text-amber-950">Sandbox Simulator</span>
                     </div>
                     <p class="text-[11px] text-white/80 font-mono mt-0.5">TXN: {{ $payment->transaction_reference }} • {{ $inv?->invoice_number ?? 'INV-PENDING' }}</p>
                 </div>
             </div>
             <div class="text-right">
-                <p class="text-[10px] uppercase tracking-wider text-white/75 font-bold">Escrow Amount</p>
+                <p class="text-[10px] uppercase tracking-wider text-white/75 font-bold">Amount to Pay</p>
                 <p class="text-2xl font-black text-white">৳{{ number_format((float) $payment->amount, 2) }}</p>
             </div>
         </div>
@@ -129,12 +129,12 @@ Controller: PaymentGatewayController@showSandbox, handleSuccess, handleFail, han
                 </div>
 
                 <div class="rounded-xl bg-emerald-50 border border-emerald-200 px-3.5 py-2.5 text-[11px] text-emerald-950 flex items-center justify-between gap-2">
-                    <span><i class="fa-solid fa-flask mr-1 text-emerald-700"></i> <strong>Sandbox Test Mode:</strong> Pre-filled test wallet &amp; OTP <code class="font-mono font-bold">123456</code> simulate real SSLCommerz callback &amp; ledger escrow settlement.</span>
+                    <span><i class="fa-solid fa-flask mr-1 text-emerald-700"></i> <strong>Sandbox Test Mode:</strong> Pre-filled test wallet &amp; OTP <code class="font-mono font-bold">123456</code> simulate real SSLCommerz callback &amp; payment settlement.</span>
                 </div>
 
                 <button type="submit" class="w-full rounded-full bg-[var(--accent-dark)] hover:opacity-95 text-[var(--accent-foreground)] py-3.5 px-6 text-xs font-black tracking-wide transition shadow-md flex items-center justify-center gap-2">
                     <i class="fa-solid fa-circle-check"></i>
-                    <span>Authorize Escrow Payment — ৳{{ number_format((float) $payment->amount, 2) }}</span>
+                    <span>Authorize Payment — ৳{{ number_format((float) $payment->amount, 2) }}</span>
                 </button>
             </form>
 

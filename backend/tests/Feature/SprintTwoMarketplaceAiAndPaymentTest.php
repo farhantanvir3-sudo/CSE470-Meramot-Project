@@ -381,7 +381,8 @@ class SprintTwoMarketplaceAiAndPaymentTest extends TestCase
         $this->actingAs($customer)
             ->get("/checkout/payment/{$quoteTwoReq->id}")
             ->assertStatus(200)
-            ->assertSee('Escrow');
+            ->assertSee('Secure Checkout')
+            ->assertDontSee('Escrow');
 
         // 2. Initiate payment -> redirects to Sandbox Gateway Simulator; simulate FAIL first
         $initFailResp = $this->actingAs($customer)->post('/payment/initiate', [
