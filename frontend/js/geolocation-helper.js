@@ -1725,7 +1725,10 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.dataset.locating = 'true';
 
         const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i><span>Locating...</span>';
+        const isClearing = btn.dataset.nearMeActive === 'true';
+        btn.innerHTML = isClearing
+            ? '<i class="fa-solid fa-spinner fa-spin text-[11px] mr-1.5"></i><span>Resetting...</span>'
+            : '<i class="fa-solid fa-spinner fa-spin text-[11px] mr-1.5"></i><span>Detecting...</span>';
         btn.disabled = true;
 
         MeramotGeolocation.enableDistanceFilter(btn).finally(() => {

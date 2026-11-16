@@ -150,11 +150,25 @@
                         id="use-my-location-btn"
                         data-near-me-active="{{ $isDesktopNearMeActive ? 'true' : 'false' }}"
                         aria-pressed="{{ $isDesktopNearMeActive ? 'true' : 'false' }}"
-                        class="w-full select-none inline-flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-xs font-semibold transition {{ $isDesktopNearMeActive ? 'bg-[var(--accent-dark)] text-white border-[var(--accent-dark)] shadow-sm' : 'border-[var(--border)] bg-[var(--mint-100)] text-[var(--accent-dark)] hover:bg-[var(--mint-200)]' }}"
+                        class="group w-full select-none inline-flex items-center {{ $isDesktopNearMeActive ? 'justify-between border-[var(--accent-dark)]/45 bg-[var(--mint-100)] font-semibold text-[var(--accent-dark)] shadow-2xs hover:border-[var(--accent-dark)] hover:bg-[var(--mint-200)]/70' : 'justify-center border-[var(--border)] bg-[var(--mint-100)]/80 font-medium text-[var(--foreground)] hover:border-[var(--accent-dark)]/50 hover:bg-[var(--mint-100)]' }} gap-2 rounded-md border px-3 py-2 text-xs transition"
                     >
-                        <i class="fa-solid fa-location-crosshairs"></i>
-                        <span>{{ $isDesktopNearMeActive ? 'Near Me Active (Tap to Clear)' : 'Use My GPS / Pin' }}</span>
+                        @if($isDesktopNearMeActive)
+                            <span class="inline-flex items-center gap-2 min-w-0 truncate">
+                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400 shrink-0"></span>
+                                <span class="truncate" data-i18n="nearby_active">Nearby Active</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1 rounded bg-[var(--mint-200)]/75 px-1.5 py-0.5 text-[10px] font-medium text-[var(--foreground)]/80 group-hover:bg-[var(--mint-200)] group-hover:text-[var(--foreground)] transition shrink-0">
+                                <span data-i18n="clear_short">Clear</span>
+                                <i class="fa-solid fa-xmark text-[9px]"></i>
+                            </span>
+                        @else
+                            <i class="fa-solid fa-location-crosshairs text-[11px] text-[var(--accent-dark)] opacity-85 group-hover:opacity-100 transition"></i>
+                            <span class="truncate" data-i18n="use_current_location">Use Current Location</span>
+                        @endif
                     </button>
+                    <p class="px-0.5 text-[10.5px] leading-snug text-[var(--muted-foreground)]" data-i18n="{{ $isDesktopNearMeActive ? 'near_me_sub_active' : 'near_me_sub_idle' }}">
+                        {{ $isDesktopNearMeActive ? 'Showing workshops closest to your location.' : 'Sorts results by proximity to your location.' }}
+                    </p>
                 </div>
             </div>
 
