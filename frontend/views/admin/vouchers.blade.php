@@ -94,8 +94,8 @@
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
                         <span class="rounded bg-emerald-100 border border-emerald-300 px-2 py-0.5 text-[10px] font-bold text-emerald-900">Homepage Tile #1 • System Default Code</span>
-                        <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[11px] font-bold text-rose-800">
-                            <i class="fa-solid fa-ticket text-[9px] text-rose-600"></i>
+                        <span class="inline-flex items-center gap-1.5 rounded-md bg-white border border-[var(--border)] px-2.5 py-1 text-[11px] font-bold text-[var(--accent-dark)] shadow-2xs">
+                            <i class="fa-solid fa-ticket text-[9px] text-[var(--accent-dark)]"></i>
                             <span>{{ $defaultFreeVoucher->advertisedBadgeText() }}</span>
                         </span>
                         <span class="text-[11px] text-[var(--muted-foreground)]">Redemptions: <strong>{{ $defaultFreeVoucher->redemptions_count }}</strong></span>
@@ -541,8 +541,8 @@
                                 <span class="rounded bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">Stack #{{ $fv->featured_order }}</span>
                             @endif
 
-                            <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[11px] font-bold text-rose-800">
-                                <i class="fa-solid fa-ticket text-[9px] text-rose-600"></i>
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-white border border-[var(--border)] px-2.5 py-1 text-[11px] font-bold text-[var(--accent-dark)] shadow-2xs">
+                                <i class="fa-solid fa-ticket text-[9px] text-[var(--accent-dark)]"></i>
                                 <span>{{ $fv->advertisedBadgeText() }}</span>
                             </span>
 
@@ -737,8 +737,8 @@
             @forelse($vendorVouchers as $vv)
                 <div class="rounded-lg border border-[var(--border)] bg-[var(--mint-50)]/60 p-3 flex items-center justify-between gap-2">
                     <div class="min-w-0">
-                        <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[10px] font-bold text-rose-800">
-                            <i class="fa-solid fa-ticket text-[9px] text-rose-600"></i>
+                        <span class="inline-flex items-center gap-1.5 rounded-md bg-white border border-[var(--border)] px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] shadow-2xs">
+                            <i class="fa-solid fa-ticket text-[9px] text-[var(--accent-dark)]"></i>
                             <span>{{ $vv->advertisedBadgeText() }}</span>
                         </span>
                         <p class="font-bold text-[var(--foreground)] mt-1 truncate">{{ $vv->title }}</p>

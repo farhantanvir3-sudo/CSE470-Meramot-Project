@@ -221,7 +221,7 @@
                 @if($profileVouchers->isNotEmpty())
                     <div class="mt-4 pt-3.5 border-t border-[var(--border)]/70 space-y-2" data-shop-profile-vouchers x-data="{ copiedCode: null }">
                         <div class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--accent-dark)]">
-                            <i class="fa-solid fa-ticket text-rose-600"></i>
+                            <i class="fa-solid fa-ticket text-[var(--accent-dark)]"></i>
                             <span>Available Vouchers ({{ $profileVouchers->count() }})</span>
                         </div>
                         <div class="flex flex-wrap gap-2">
@@ -230,15 +230,15 @@
                                     type="button"
                                     data-profile-voucher-badge="{{ $pv->code }}"
                                     @click="navigator.clipboard?.writeText(@js($pv->code)); copiedCode = @js($pv->code); setTimeout(() => { if (copiedCode === @js($pv->code)) copiedCode = null; }, 1800)"
-                                    class="group inline-flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50/90 hover:bg-rose-100/80 px-3 py-1.5 text-left text-xs transition cursor-pointer"
+                                    class="group inline-flex items-center gap-2 rounded-md border border-[var(--border)] bg-white hover:bg-[var(--mint-100)]/60 px-3 py-1.5 text-left text-xs transition cursor-pointer shadow-2xs"
                                     title="Click to copy voucher code {{ $pv->code }}"
                                 >
-                                    <i class="fa-solid fa-ticket text-rose-600 shrink-0"></i>
+                                    <i class="fa-solid fa-ticket text-[var(--accent-dark)] shrink-0"></i>
                                     <div>
-                                        <span class="font-bold text-rose-900 block leading-tight">{{ $pv->advertisedBadgeText() }}</span>
-                                        <span class="text-[10px] text-rose-800/80 block leading-tight">{{ $pv->conditionsPillLabel() }}</span>
+                                        <span class="font-bold text-[var(--accent-dark)] block leading-tight">{{ $pv->advertisedBadgeText() }}</span>
+                                        <span class="text-[10px] text-[var(--muted-foreground)] block leading-tight">{{ $pv->conditionsPillLabel() }}</span>
                                     </div>
-                                    <span class="ml-1 rounded bg-white border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-800 shrink-0" x-text="copiedCode === @js($pv->code) ? 'Copied ✓' : 'Copy'">Copy</span>
+                                    <span class="ml-1 rounded bg-[var(--mint-100)] border border-[var(--border)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] shrink-0" x-text="copiedCode === @js($pv->code) ? 'Copied ✓' : 'Copy'">Copy</span>
                                 </button>
                             @endforeach
                         </div>

@@ -613,14 +613,14 @@
                                 @foreach($tileVouchers->take(3) as $tv)
                                     <span
                                         data-shop-voucher-badge="{{ $tv->code }}"
-                                        class="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200/90 px-2.5 py-0.5 text-[10px] md:text-[11px] font-bold text-rose-800 max-w-full"
+                                        class="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-white px-2.5 py-1 text-[10px] md:text-[11px] font-bold text-[var(--accent-dark)] shadow-2xs max-w-full"
                                     >
-                                        <i class="fa-solid fa-ticket text-[9px] text-rose-600 shrink-0"></i>
+                                        <i class="fa-solid fa-ticket text-[9px] text-[var(--accent-dark)] shrink-0"></i>
                                         <span class="truncate">{{ $tv->advertisedBadgeText() }}</span>
                                     </span>
                                 @endforeach
                                 @if($tileVouchers->count() > 3)
-                                    <span class="inline-flex items-center rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                                    <span class="inline-flex items-center rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-2 py-1 text-[10px] font-bold text-[var(--accent-dark)] shadow-2xs">
                                         +{{ $tileVouchers->count() - 3 }} more
                                     </span>
                                 @endif

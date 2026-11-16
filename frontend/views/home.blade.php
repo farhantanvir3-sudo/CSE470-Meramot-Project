@@ -116,13 +116,13 @@
                             <div class="mt-3.5 pt-3 border-t border-[var(--border)]/60 flex flex-wrap items-center justify-between gap-2">
                                 <div class="flex flex-wrap gap-1.5 min-w-0">
                                     @foreach($homeShopVouchers->take(2) as $hv)
-                                        <span data-shop-voucher-badge="{{ $hv->code }}" class="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[10px] font-bold text-rose-800 max-w-full">
-                                            <i class="fa-solid fa-ticket text-[9px] text-rose-600 shrink-0"></i>
+                                        <span data-shop-voucher-badge="{{ $hv->code }}" class="inline-flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-white px-2.5 py-1 text-[10px] font-bold text-[var(--accent-dark)] shadow-2xs max-w-full">
+                                            <i class="fa-solid fa-ticket text-[9px] text-[var(--accent-dark)] shrink-0"></i>
                                             <span class="truncate">{{ $hv->advertisedBadgeText() }}</span>
                                         </span>
                                     @endforeach
                                     @if($homeShopVouchers->count() > 2)
-                                        <span class="inline-flex items-center rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)]">
+                                        <span class="inline-flex items-center rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-2 py-1 text-[10px] font-bold text-[var(--accent-dark)] shadow-2xs">
                                             +{{ $homeShopVouchers->count() - 2 }}
                                         </span>
                                     @endif
@@ -190,15 +190,15 @@
                                     </div>
                                 </div>
                                 @if($mobVouchers->count() > 1)
-                                    <span class="rounded-full bg-[var(--mint-100)] border border-[var(--border)] px-1.5 py-0.5 text-[8px] font-bold text-[var(--accent-dark)] leading-none shrink-0">
+                                    <span class="rounded-md bg-[var(--mint-100)] border border-[var(--border)] px-1.5 py-0.5 text-[8px] font-bold text-[var(--accent-dark)] leading-none shrink-0 shadow-2xs">
                                         +{{ $mobVouchers->count() - 1 }}
                                     </span>
                                 @endif
                             </div>
 
                             @if($topMobVoucher)
-                                <div class="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2 py-0.5 text-[9px] font-bold text-rose-800 leading-tight">
-                                    <i class="fa-solid fa-ticket text-[8px] text-rose-600 shrink-0"></i>
+                                <div class="inline-flex max-w-full items-center gap-1 rounded-md border border-[var(--border)] bg-white px-2 py-0.5 text-[9px] font-bold text-[var(--accent-dark)] leading-tight shadow-2xs">
+                                    <i class="fa-solid fa-ticket text-[8px] text-[var(--accent-dark)] shrink-0"></i>
                                     <span class="truncate">{{ $topMobVoucher->advertisedBadgeText() }}</span>
                                 </div>
                             @endif

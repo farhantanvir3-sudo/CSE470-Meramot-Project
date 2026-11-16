@@ -284,10 +284,10 @@
             class="justify-between sm:justify-start rounded-xl sm:rounded-md md:rounded-t-2xl px-2.5 sm:px-3.5 lg:px-4 py-1.5 sm:py-2 transition flex items-center gap-1.5 min-w-0"
         >
             <span class="flex items-center gap-1.5 truncate">
-                <i class="fa-solid fa-ticket text-xs text-rose-700 shrink-0"></i>
+                <i class="fa-solid fa-ticket text-xs text-[var(--accent-dark)] shrink-0"></i>
                 <span class="truncate">Vouchers</span>
             </span>
-            <span class="shrink-0 rounded bg-rose-700 px-2 py-0.5 text-[10px] text-white font-bold">{{ ($vendorVouchers ?? collect())->count() }}</span>
+            <span class="shrink-0 rounded bg-[var(--accent-dark)] px-2 py-0.5 text-[10px] text-white font-bold">{{ ($vendorVouchers ?? collect())->count() }}</span>
         </button>
 
         <button

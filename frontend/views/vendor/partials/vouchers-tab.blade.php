@@ -156,8 +156,8 @@
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                     <div class="space-y-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2.5 py-0.5 text-[11px] font-bold text-rose-800">
-                                <i class="fa-solid fa-ticket text-[9px] text-rose-600"></i>
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-white border border-[var(--border)] px-2.5 py-1 text-[11px] font-bold text-[var(--accent-dark)] shadow-2xs">
+                                <i class="fa-solid fa-ticket text-[9px] text-[var(--accent-dark)]"></i>
                                 <span>{{ $vv->advertisedBadgeText() }}</span>
                             </span>
 
@@ -336,8 +336,8 @@
                     @endphp
                     <div class="rounded-md border border-[var(--border)] bg-white p-3 flex items-center justify-between gap-2">
                         <div class="min-w-0">
-                            <span class="inline-flex items-center gap-1 rounded-full bg-rose-50 border border-rose-200 px-2 py-0.5 text-[10px] font-bold text-rose-800">
-                                <i class="fa-solid fa-ticket text-[8px] text-rose-600"></i>
+                            <span class="inline-flex items-center gap-1.5 rounded-md bg-white border border-[var(--border)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-dark)] shadow-2xs">
+                                <i class="fa-solid fa-ticket text-[8px] text-[var(--accent-dark)]"></i>
                                 <span>{{ $pfv->advertisedBadgeText() }}</span>
                             </span>
                             <p class="font-semibold text-[var(--foreground)] mt-1 truncate">{{ $pfv->title }}</p>
