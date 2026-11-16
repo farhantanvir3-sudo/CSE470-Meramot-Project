@@ -348,13 +348,55 @@ class ShopDiscoveryController extends Controller
 
         $siblingBranches = $shop->siblingBranches();
 
+        $now = now();
         $shopSparePartsCount = SparePartListing::where('shop_id', $shop->id)
             ->where('is_active', true)
             ->count();
 
-        // Preload 18 items (lcm(6, 9): 2 desktop pages of 9 / 3 mobile pages of 6); subsequent pages load via JSON
-        $shopSpareParts = SparePartListing::where('shop_id', $shop->id)
+        $shopSalePartsCount = SparePartListing::where('shop_id', $shop->id)
             ->where('is_active', true)
+            ->where(function ($sq) use ($now) {
+                RepairShop::applySparePartsOnSaleCondition($sq, $now);
+            })
+            ->count();
+
+        $shopPartCategories = SparePartListing::where('shop_id', $shop->id)
+            ->where('is_active', true)
+            ->selectRaw('part_category, count(*) as count')
+            ->groupBy('part_category')
+            ->orderByDesc('count')
+            ->get()
+            ->map(fn ($r) => ['name' => $r->part_category, 'count' => (int) $r->count])
+            ->values()
+            ->all();
+
+        // Support initial query params if pre-filtered via URL (e.g. ?sale=1 or ?q=battery)
+        $partsQuery = SparePartListing::where('shop_id', $shop->id)
+            ->where('is_active', true);
+
+        if ($request->filled('q')) {
+            $search = trim((string) $request->query('q'));
+            $isPg = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+            $likeOp = $isPg ? 'ILIKE' : 'LIKE';
+            $partsQuery->where(function ($sq) use ($search, $likeOp) {
+                $sq->where('title', $likeOp, "%{$search}%")
+                    ->orWhere('compatible_model', $likeOp, "%{$search}%")
+                    ->orWhere('sku', $likeOp, "%{$search}%")
+                    ->orWhere('brand', $likeOp, "%{$search}%")
+                    ->orWhere('part_category', $likeOp, "%{$search}%");
+            });
+        }
+        if ($request->boolean('sale') || $request->boolean('has_sale')) {
+            RepairShop::applySparePartsOnSaleCondition($partsQuery, $now);
+        }
+        if ($request->filled('category') && strtolower(trim((string) $request->query('category'))) !== 'all') {
+            $partsQuery->where('part_category', trim((string) $request->query('category')));
+        }
+
+        $filteredPartsCount = (clone $partsQuery)->count();
+
+        // Preload 18 items (lcm(6, 9): 2 desktop pages of 9 / 3 mobile pages of 6); subsequent pages load via JSON
+        $shopSpareParts = $partsQuery
             ->orderByRaw('LOWER(TRIM(title)) ASC')
             ->limit(18)
             ->get();
@@ -392,6 +434,9 @@ class ShopDiscoveryController extends Controller
             'shopSpareParts',
             'shopSparePartsJson',
             'shopSparePartsCount',
+            'shopSalePartsCount',
+            'filteredPartsCount',
+            'shopPartCategories',
             'shopAvailableVouchers'
         ));
     }
@@ -399,6 +444,7 @@ class ShopDiscoveryController extends Controller
     /**
      * Paginated lightweight JSON slice of a shop's SparePartListings for responsive
      * 9-per-page (desktop) / 6-per-page (mobile) Shop Profile pagination.
+     * Supports search (q), sale offers (sale), categories, and sorting.
      * Route: GET /api/shops/{slug}/spare-parts
      */
     public function shopSparePartsJson(Request $request, string $slug)
@@ -406,15 +452,50 @@ class ShopDiscoveryController extends Controller
         $shop = RepairShop::where('slug', $slug)->firstOrFail();
         $offset = max(0, (int) $request->query('offset', 0));
         $limit = max(1, min(36, (int) $request->query('limit', 18)));
+        $now = now();
 
-        $total = SparePartListing::where('shop_id', $shop->id)
-            ->where('is_active', true)
-            ->count();
+        $query = SparePartListing::where('shop_id', $shop->id)
+            ->where('is_active', true);
 
-        $items = SparePartListing::where('shop_id', $shop->id)
-            ->where('is_active', true)
-            ->orderByRaw('LOWER(TRIM(title)) ASC')
-            ->skip($offset)
+        // 1. In-Shop Text Search (q)
+        if ($request->filled('q')) {
+            $search = trim((string) $request->query('q'));
+            $isPg = \Illuminate\Support\Facades\DB::connection()->getDriverName() === 'pgsql';
+            $likeOp = $isPg ? 'ILIKE' : 'LIKE';
+            $query->where(function ($sq) use ($search, $likeOp) {
+                $sq->where('title', $likeOp, "%{$search}%")
+                    ->orWhere('compatible_model', $likeOp, "%{$search}%")
+                    ->orWhere('sku', $likeOp, "%{$search}%")
+                    ->orWhere('brand', $likeOp, "%{$search}%")
+                    ->orWhere('part_category', $likeOp, "%{$search}%");
+            });
+        }
+
+        // 2. Sale Filter (sale / has_sale)
+        if ($request->boolean('sale') || $request->boolean('has_sale')) {
+            RepairShop::applySparePartsOnSaleCondition($query, $now);
+        }
+
+        // 3. Category Filter
+        if ($request->filled('category') && strtolower(trim((string) $request->query('category'))) !== 'all') {
+            $query->where('part_category', trim((string) $request->query('category')));
+        }
+
+        // 4. Sort Order
+        $sort = strtolower(trim((string) $request->query('sort', 'title_asc')));
+        if ($sort === 'price_asc') {
+            $query->orderBy('base_price', 'asc');
+        } elseif ($sort === 'price_desc') {
+            $query->orderByDesc('base_price');
+        } elseif ($sort === 'popular') {
+            $query->orderByDesc('sold_count')->orderByRaw('LOWER(TRIM(title)) ASC');
+        } else {
+            $query->orderByRaw('LOWER(TRIM(title)) ASC');
+        }
+
+        $total = (clone $query)->count();
+
+        $items = $query->skip($offset)
             ->take($limit)
             ->get()
             ->map(fn (SparePartListing $sp) => self::serializeShopSparePartCard($sp))

@@ -444,7 +444,37 @@
 
                 {{-- Tab 1: Services --}}
                 @if(!$isPureWholesaler || !empty($displayServices))
-                <div x-show="catalogTab === 'services'">
+                @php
+                    $servicesCount = count($displayServices);
+                    $dealsCount = collect($displayServices)->where('has_deal', true)->count();
+                    $packagesCount = collect($displayServices)->where('kind', 'package')->count();
+                    $workshopCount = collect($displayServices)->where('kind', 'shop_service')->count();
+                @endphp
+                <div
+                    x-show="catalogTab === 'services'"
+                    x-data="{
+                        serviceSearch: '',
+                        serviceFilter: 'all',
+                        services: @js($displayServices),
+                        matchesService(name, summary, cat, kind, hasDeal) {
+                            if (this.serviceFilter === 'deals' && !hasDeal) return false;
+                            if (this.serviceFilter === 'packages' && kind !== 'package') return false;
+                            if (this.serviceFilter === 'workshop' && kind !== 'shop_service') return false;
+                            if (!this.serviceSearch.trim()) return true;
+                            const q = this.serviceSearch.toLowerCase().trim();
+                            return (name || '').toLowerCase().includes(q)
+                                || (summary || '').toLowerCase().includes(q)
+                                || (cat || '').toLowerCase().includes(q);
+                        },
+                        get matchedCount() {
+                            return this.services.filter(s => this.matchesService(s.name, s.summary, s.category, s.kind, s.has_deal)).length;
+                        },
+                        resetServiceFilters() {
+                            this.serviceSearch = '';
+                            this.serviceFilter = 'all';
+                        }
+                    }"
+                >
                     @if(empty($displayServices))
                         <div class="rounded-lg border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center">
                             <i class="fa-solid fa-screwdriver-wrench text-2xl text-[var(--muted-foreground)]"></i>
@@ -457,9 +487,122 @@
                             @endif
                         </div>
                     @else
-                        <div class="space-y-4">
+                        <!-- In-Shop Services Search & Filters Toolbar -->
+                        <div class="mb-4 space-y-3">
+                            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                <div class="relative flex-1">
+                                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]"></i>
+                                    <input
+                                        type="text"
+                                        x-model="serviceSearch"
+                                        placeholder="Search services by issue, name, or device..."
+                                        data-service-search-input
+                                        class="w-full rounded-md border border-[var(--border)] bg-white/95 px-9 py-2 text-xs sm:text-sm text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--accent-dark)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-dark)] shadow-2xs"
+                                    >
+                                    <button
+                                        type="button"
+                                        x-show="serviceSearch.length > 0"
+                                        @click="serviceSearch = ''"
+                                        class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+                                    >
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Filter Chips Row -->
+                            <div class="flex flex-wrap items-center gap-2 pt-0.5">
+                                <button
+                                    type="button"
+                                    @click="serviceFilter = 'all'"
+                                    :class="serviceFilter === 'all'
+                                        ? 'bg-[var(--accent-dark)] text-white border-[var(--accent-dark)] shadow-2xs'
+                                        : 'bg-[var(--mint-100)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--mint-200)]'"
+                                    class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition cursor-pointer"
+                                >
+                                    <span>All Services</span>
+                                    <span :class="serviceFilter === 'all' ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--muted-foreground)]'" class="rounded-full px-1.5 py-0.2 text-[10px]">
+                                        {{ $servicesCount }}
+                                    </span>
+                                </button>
+
+                                @if($dealsCount > 0)
+                                    <button
+                                        type="button"
+                                        @click="serviceFilter = (serviceFilter === 'deals' ? 'all' : 'deals')"
+                                        :class="serviceFilter === 'deals'
+                                            ? 'bg-rose-600 text-white border-rose-600 shadow-2xs ring-2 ring-rose-300'
+                                            : 'bg-rose-50 border-rose-300 text-rose-800 hover:bg-rose-100'"
+                                        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition cursor-pointer"
+                                        data-service-filter-deals
+                                    >
+                                        <i class="fa-solid fa-fire text-[10px]" :class="serviceFilter === 'deals' ? 'text-amber-200' : 'text-rose-600'"></i>
+                                        <span>Active Deals</span>
+                                        <span :class="serviceFilter === 'deals' ? 'bg-white text-rose-700' : 'bg-rose-200 text-rose-900'" class="rounded-full px-1.5 py-0.2 text-[10px] font-bold">
+                                            {{ $dealsCount }}
+                                        </span>
+                                    </button>
+                                @endif
+
+                                @if($packagesCount > 0)
+                                    <button
+                                        type="button"
+                                        @click="serviceFilter = (serviceFilter === 'packages' ? 'all' : 'packages')"
+                                        :class="serviceFilter === 'packages'
+                                            ? 'bg-[var(--accent-dark)] text-white border-[var(--accent-dark)] shadow-2xs'
+                                            : 'bg-[var(--mint-100)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--mint-200)]'"
+                                        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition cursor-pointer"
+                                    >
+                                        <i class="fa-solid fa-box-open text-[10px]"></i>
+                                        <span>Fixed Packages</span>
+                                        <span :class="serviceFilter === 'packages' ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--muted-foreground)]'" class="rounded-full px-1.5 py-0.2 text-[10px]">
+                                            {{ $packagesCount }}
+                                        </span>
+                                    </button>
+                                @endif
+
+                                @if($workshopCount > 0)
+                                    <button
+                                        type="button"
+                                        @click="serviceFilter = (serviceFilter === 'workshop' ? 'all' : 'workshop')"
+                                        :class="serviceFilter === 'workshop'
+                                            ? 'bg-[var(--accent-dark)] text-white border-[var(--accent-dark)] shadow-2xs'
+                                            : 'bg-[var(--mint-100)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--mint-200)]'"
+                                        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition cursor-pointer"
+                                    >
+                                        <i class="fa-solid fa-wrench text-[10px]"></i>
+                                        <span>Workshop Services</span>
+                                        <span :class="serviceFilter === 'workshop' ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--muted-foreground)]'" class="rounded-full px-1.5 py-0.2 text-[10px]">
+                                            {{ $workshopCount }}
+                                        </span>
+                                    </button>
+                                @endif
+
+                                <button
+                                    type="button"
+                                    data-services-reset-filters
+                                    x-show="serviceSearch.trim().length > 0 || serviceFilter !== 'all'"
+                                    @click="resetServiceFilters()"
+                                    class="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 hover:text-rose-900 underline transition cursor-pointer ml-auto"
+                                >
+                                    <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                                    <span>Reset filters</span>
+                                </button>
+                            </div>
+
+                            <!-- Active matches feedback -->
+                            <div x-show="serviceSearch.trim().length > 0 || serviceFilter !== 'all'" class="text-xs text-[var(--muted-foreground)] pt-0.5">
+                                Showing <strong class="text-[var(--foreground)]" x-text="matchedCount"></strong> of {{ $servicesCount }} services
+                            </div>
+                        </div>
+
+                        <!-- Services List -->
+                        <div class="space-y-4" x-show="matchedCount > 0">
                             @foreach($displayServices as $svcItem)
-                                <article class="flex flex-col gap-4 rounded-lg border border-[var(--border)] p-4 transition hover:shadow-sm md:flex-row md:items-start md:justify-between bg-[var(--mint-100)]/40">
+                                <article
+                                    x-show="matchesService(@js($svcItem['name']), @js($svcItem['summary']), @js($svcItem['category'] ?? ''), @js($svcItem['kind']), {{ !empty($svcItem['has_deal']) ? 'true' : 'false' }})"
+                                    class="flex flex-col gap-4 rounded-lg border border-[var(--border)] p-4 transition hover:shadow-sm md:flex-row md:items-start md:justify-between bg-[var(--mint-100)]/40"
+                                >
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-start justify-between gap-4">
                                             <div class="min-w-0">
@@ -557,13 +700,28 @@
                                 </article>
                             @endforeach
                         </div>
+
+                        <!-- Services Empty State -->
+                        <div x-show="matchedCount === 0" class="rounded-lg border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-8 text-center">
+                            <i class="fa-solid fa-magnifying-glass text-2xl text-slate-400"></i>
+                            <p class="mt-2 text-sm font-semibold text-[var(--foreground)]">No services match your search or filter.</p>
+                            <p class="mt-1 text-xs text-[var(--muted-foreground)]">Try searching with a different term, or reset the active filter.</p>
+                            <button
+                                type="button"
+                                @click="resetServiceFilters()"
+                                class="mt-3 inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:opacity-90 transition cursor-pointer"
+                            >
+                                <i class="fa-solid fa-rotate-left text-[11px]"></i>
+                                <span>Reset Filters</span>
+                            </button>
+                        </div>
                     @endif
                 </div>
                 @endif
 
-                {{-- Tab 2: Spare Parts (9 at once on desktop, 6 at once on mobile, with inline Prev/Next pagination) --}}
+                {{-- Tab 2: Spare Parts (9 at once on desktop, 6 at once on mobile, with in-profile search, sale filter & pagination) --}}
                 <div x-show="catalogTab === 'spare_parts'" x-cloak>
-                    @if($shopSpareParts->isNotEmpty())
+                    @if($shopSpareParts->isNotEmpty() || request()->filled('q') || request()->boolean('sale') || request()->filled('category') || $shopSparePartsCount > 0)
                         @php
                             $initialPartsPayload = $shopSparePartsJson ?? $shopSpareParts->map(fn ($sp) => \App\Http\Controllers\ShopDiscoveryController::serializeShopSparePartCard($sp))->values()->all();
                         @endphp
@@ -573,10 +731,14 @@
                                 hydrated: false,
                                 isMobile: typeof window !== 'undefined' ? window.matchMedia('(max-width: 639.98px)').matches : false,
                                 page: 1,
-                                totalCount: {{ (int) $shopSparePartsCount }},
+                                totalCount: {{ (int) ($filteredPartsCount ?? $shopSparePartsCount) }},
                                 loadedMap: {},
                                 loadingPage: false,
                                 apiEndpoint: @js(route('api.shops.spare-parts', $shop->slug)),
+                                partsSearch: @js(request('q', '')),
+                                saleOnly: @js(request()->boolean('sale') || request()->boolean('has_sale')),
+                                selectedCategory: @js(request('category', 'all')),
+                                selectedSort: @js(request('sort', 'title_asc')),
                                 get perPage() {
                                     return this.isMobile ? 6 : 9;
                                 },
@@ -585,6 +747,9 @@
                                 },
                                 get startIndex() {
                                     return (this.page - 1) * this.perPage;
+                                },
+                                get hasActiveFilters() {
+                                    return Boolean(this.partsSearch.trim() || this.saleOnly || (this.selectedCategory && this.selectedCategory !== 'all') || (this.selectedSort && this.selectedSort !== 'title_asc'));
                                 },
                                 get visibleParts() {
                                     const out = [];
@@ -615,6 +780,16 @@
                                         }
                                     }
                                 },
+                                buildApiUrl(offset, limit) {
+                                    const params = new URLSearchParams();
+                                    params.set('offset', offset);
+                                    params.set('limit', limit);
+                                    if (this.partsSearch.trim()) params.set('q', this.partsSearch.trim());
+                                    if (this.saleOnly) params.set('sale', '1');
+                                    if (this.selectedCategory && this.selectedCategory !== 'all') params.set('category', this.selectedCategory);
+                                    if (this.selectedSort && this.selectedSort !== 'title_asc') params.set('sort', this.selectedSort);
+                                    return `${this.apiEndpoint}?${params.toString()}`;
+                                },
                                 async ensureCurrentSliceLoaded() {
                                     const start = this.startIndex;
                                     const end = Math.min(this.totalCount, start + this.perPage);
@@ -627,7 +802,7 @@
                                     this.loadingPage = true;
                                     try {
                                         const batchOffset = Math.floor(start / 18) * 18;
-                                        const res = await fetch(`${this.apiEndpoint}?offset=${batchOffset}&limit=18`, {
+                                        const res = await fetch(this.buildApiUrl(batchOffset, 18), {
                                             headers: { 'Accept': 'application/json' },
                                         });
                                         const data = await res.json();
@@ -635,10 +810,54 @@
                                             data.items.forEach((it, k) => {
                                                 this.loadedMap[batchOffset + k] = it;
                                             });
+                                            if (typeof data.total === 'number') {
+                                                this.totalCount = data.total;
+                                            }
                                         }
                                     } catch {} finally {
                                         this.loadingPage = false;
                                     }
+                                },
+                                async fetchFilteredParts(resetPage = true) {
+                                    if (resetPage) {
+                                        this.page = 1;
+                                        this.loadedMap = {};
+                                    }
+                                    this.loadingPage = true;
+                                    try {
+                                        const start = this.startIndex;
+                                        const batchOffset = Math.floor(start / 18) * 18;
+                                        const res = await fetch(this.buildApiUrl(batchOffset, 18), {
+                                            headers: { 'Accept': 'application/json' },
+                                        });
+                                        const data = await res.json();
+                                        if (data && Array.isArray(data.items)) {
+                                            this.loadedMap = {};
+                                            data.items.forEach((it, k) => {
+                                                this.loadedMap[batchOffset + k] = it;
+                                            });
+                                            if (typeof data.total === 'number') {
+                                                this.totalCount = data.total;
+                                            }
+                                        }
+                                    } catch {} finally {
+                                        this.loadingPage = false;
+                                    }
+                                },
+                                toggleSaleFilter() {
+                                    this.saleOnly = !this.saleOnly;
+                                    this.fetchFilteredParts(true);
+                                },
+                                selectCategory(cat) {
+                                    this.selectedCategory = (this.selectedCategory === cat) ? 'all' : cat;
+                                    this.fetchFilteredParts(true);
+                                },
+                                resetFilters() {
+                                    this.partsSearch = '';
+                                    this.saleOnly = false;
+                                    this.selectedCategory = 'all';
+                                    this.selectedSort = 'title_asc';
+                                    this.fetchFilteredParts(true);
                                 },
                                 async goToPage(nextPage) {
                                     const target = Math.max(1, Math.min(this.totalPages, nextPage));
@@ -648,6 +867,139 @@
                                 }
                             }"
                         >
+                            <!-- In-Shop Spare Parts Search & Filters Toolbar -->
+                            <div class="mb-4 space-y-3">
+                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                    <div class="relative flex-1">
+                                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-[var(--muted-foreground)]"></i>
+                                        <input
+                                            type="text"
+                                            x-model="partsSearch"
+                                            @input.debounce.350ms="fetchFilteredParts(true)"
+                                            @keydown.enter.prevent="fetchFilteredParts(true)"
+                                            placeholder="Search parts by title, model, brand, or SKU..."
+                                            data-parts-search-input
+                                            class="w-full rounded-md border border-[var(--border)] bg-white/95 px-9 py-2 text-xs sm:text-sm text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:border-[var(--accent-dark)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-dark)] shadow-2xs"
+                                        >
+                                        <button
+                                            type="button"
+                                            x-show="partsSearch.length > 0"
+                                            @click="partsSearch = ''; fetchFilteredParts(true)"
+                                            class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
+                                        >
+                                            <i class="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="flex items-center gap-2">
+                                        <label for="parts-sort-select" class="text-xs font-semibold text-[var(--muted-foreground)] whitespace-nowrap">Sort:</label>
+                                        <select
+                                            id="parts-sort-select"
+                                            x-model="selectedSort"
+                                            @change="fetchFilteredParts(true)"
+                                            class="rounded-md border border-[var(--border)] bg-white/95 px-2.5 py-2 text-xs font-semibold text-[var(--foreground)] focus:border-[var(--accent-dark)] focus:outline-none cursor-pointer shadow-2xs"
+                                        >
+                                            <option value="title_asc">Title: A &rarr; Z</option>
+                                            <option value="price_asc">Price: Low to High</option>
+                                            <option value="price_desc">Price: High to Low</option>
+                                            <option value="popular">Most Popular</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Filter Chips Row -->
+                                <div class="flex flex-wrap items-center gap-2 pt-0.5">
+                                    {{-- All Parts Chip --}}
+                                    <button
+                                        type="button"
+                                        @click="saleOnly = false; selectedCategory = 'all'; fetchFilteredParts(true)"
+                                        :class="(!saleOnly && (selectedCategory === 'all' || !selectedCategory))
+                                            ? 'bg-[var(--accent-dark)] text-white border-[var(--accent-dark)] shadow-2xs'
+                                            : 'bg-[var(--mint-100)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--mint-200)]'"
+                                        class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition cursor-pointer"
+                                    >
+                                        <span>All Parts</span>
+                                        <span :class="(!saleOnly && (selectedCategory === 'all' || !selectedCategory)) ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--muted-foreground)]'" class="rounded-full px-1.5 py-0.2 text-[10px]">
+                                            {{ number_format($shopSparePartsCount) }}
+                                        </span>
+                                    </button>
+
+                                    {{-- Specially Emphasized Sale Offers Chip --}}
+                                    @if(!empty($shopSalePartsCount) && $shopSalePartsCount > 0)
+                                        <button
+                                            type="button"
+                                            @click="toggleSaleFilter()"
+                                            :class="saleOnly
+                                                ? 'bg-red-600 text-white border-red-600 shadow-2xs ring-2 ring-red-300'
+                                                : 'bg-rose-50 border-rose-300 text-rose-800 hover:bg-rose-100'"
+                                            class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition cursor-pointer"
+                                            data-parts-filter-sale
+                                        >
+                                            <i class="fa-solid fa-bolt text-[10px]" :class="saleOnly ? 'text-amber-200' : 'text-red-600'"></i>
+                                            <span>Sale Offers</span>
+                                            <span :class="saleOnly ? 'bg-white text-red-700' : 'bg-rose-200 text-rose-900'" class="rounded-full px-1.5 py-0.2 text-[10px] font-bold">
+                                                {{ number_format($shopSalePartsCount) }}
+                                            </span>
+                                        </button>
+                                    @endif
+
+                                    {{-- Category Chips --}}
+                                    @if(!empty($shopPartCategories))
+                                        @foreach(array_slice($shopPartCategories, 0, 6) as $catItem)
+                                            <button
+                                                type="button"
+                                                @click="selectCategory(@js($catItem['name']))"
+                                                :class="selectedCategory === @js($catItem['name'])
+                                                    ? 'bg-[var(--accent-dark)] text-white border-[var(--accent-dark)] shadow-2xs'
+                                                    : 'bg-[var(--mint-100)] border-[var(--border)] text-[var(--foreground)] hover:bg-[var(--mint-200)]'"
+                                                class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition cursor-pointer whitespace-nowrap"
+                                            >
+                                                <span>{{ $catItem['name'] }}</span>
+                                                <span :class="selectedCategory === @js($catItem['name']) ? 'bg-white/20 text-white' : 'bg-black/5 text-[var(--muted-foreground)]'" class="rounded-full px-1.5 py-0.2 text-[10px]">
+                                                    {{ number_format($catItem['count']) }}
+                                                </span>
+                                            </button>
+                                        @endforeach
+
+                                        @if(count($shopPartCategories) > 6)
+                                            <select
+                                                x-model="selectedCategory"
+                                                @change="fetchFilteredParts(true)"
+                                                class="rounded-full border border-[var(--border)] bg-[var(--mint-100)] px-3 py-1 text-xs font-semibold text-[var(--foreground)] hover:bg-[var(--mint-200)] focus:outline-none cursor-pointer shadow-2xs"
+                                            >
+                                                <option value="all">More categories...</option>
+                                                @foreach(array_slice($shopPartCategories, 6) as $catItem)
+                                                    <option value="{{ $catItem['name'] }}">{{ $catItem['name'] }} ({{ number_format($catItem['count']) }})</option>
+                                                @endforeach
+                                            </select>
+                                        @endif
+                                    @endif
+
+                                    <button
+                                        type="button"
+                                        data-parts-reset-filters
+                                        x-show="hasActiveFilters"
+                                        @click="resetFilters()"
+                                        class="inline-flex items-center gap-1 text-xs font-semibold text-rose-700 hover:text-rose-900 underline transition cursor-pointer ml-auto"
+                                    >
+                                        <i class="fa-solid fa-rotate-left text-[10px]"></i>
+                                        <span>Reset filters</span>
+                                    </button>
+                                </div>
+
+                                <!-- Results count & Loading status -->
+                                <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)] pt-0.5">
+                                    <div>
+                                        Showing <strong class="text-[var(--foreground)]" x-text="totalCount > 0 ? ((startIndex + 1) + '–' + Math.min(totalCount, startIndex + perPage)) : '0'"></strong> of <strong class="text-[var(--foreground)]" x-text="totalCount.toLocaleString()"></strong> spare parts
+                                        <span x-show="hasActiveFilters" class="font-medium text-[var(--accent-dark)]">(filtered)</span>
+                                    </div>
+                                    <div x-show="loadingPage" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--accent-dark)]">
+                                        <i class="fa-solid fa-circle-notch fa-spin text-xs"></i>
+                                        <span>Loading...</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             {{-- Pre-hydration SSR Grid: strictly 6 visible on mobile (<640px) and 9 visible on desktop (>=640px) --}}
                             <div x-show="!hydrated" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                 @foreach($shopSpareParts->take(9)->values() as $spIdx => $spItem)
@@ -690,7 +1042,23 @@
                             {{-- Hydrated Responsive Grid: 6 items on mobile (<640px), 9 items on desktop (>=640px) --}}
                             <template x-if="hydrated">
                                 <div class="space-y-4">
-                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3" data-shop-parts-live-grid>
+                                    {{-- Empty State when 0 items match --}}
+                                    <div x-show="totalCount === 0" class="rounded-lg border border-dashed border-[var(--border)] bg-[var(--mint-100)]/40 px-5 py-10 text-center">
+                                        <i class="fa-solid fa-boxes-stacked text-3xl text-slate-400"></i>
+                                        <h4 class="mt-3 text-sm font-bold text-[var(--foreground)]">No spare parts match your filters</h4>
+                                        <p class="mt-1 text-xs text-[var(--muted-foreground)]">Try adjusting your search keywords, category, or clear filters to view all catalog parts.</p>
+                                        <button
+                                            type="button"
+                                            @click="resetFilters()"
+                                            class="mt-4 inline-flex items-center gap-1.5 rounded-md bg-[var(--accent-dark)] px-4 py-2 text-xs font-bold text-white shadow-2xs hover:opacity-90 transition cursor-pointer"
+                                        >
+                                            <i class="fa-solid fa-rotate-left text-[11px]"></i>
+                                            <span>Clear all filters</span>
+                                        </button>
+                                    </div>
+
+                                    {{-- Grid when items exist --}}
+                                    <div x-show="totalCount > 0" class="grid grid-cols-2 sm:grid-cols-3 gap-3" data-shop-parts-live-grid>
                                         <template x-for="sp in visibleParts" :key="sp.id">
                                             <a :href="sp.url"
                                                data-shop-spare-part-card

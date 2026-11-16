@@ -355,4 +355,153 @@ class ShopDiscoveryTest extends TestCase
         $expiredResp->assertStatus(200);
         $expiredResp->assertDontSee('ProTech Solutions');
     }
+
+    public function test_shop_profile_renders_in_profile_search_and_filters_for_services_and_spare_parts(): void
+    {
+        $shop = RepairShop::where('name', 'ProTech Solutions')->first();
+
+        // Add a spare part with sale
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'title' => 'ThinkPad T480 Battery',
+            'product_group_key' => 'pgk-lenovo-t480-test-1',
+            'slug' => 'thinkpad-t480-battery-profile-test',
+            'brand' => 'Lenovo',
+            'part_category' => 'Battery',
+            'base_price' => 2000,
+            'normal_price' => 2500,
+            'regular_price' => 2500,
+            'offer_price' => 2000,
+            'offer_enabled' => true,
+            'is_active' => true,
+            'stock_quantity' => 10,
+        ]);
+
+        // Add a shop service with deal
+        \App\Models\ShopService::create([
+            'shop_id' => $shop->id,
+            'slug' => 'laptop-deep-clean-deal',
+            'name' => 'Laptop Thermal Paste & Deep Clean',
+            'short_description' => 'Cooling overhaul with arctic thermal paste.',
+            'device_type' => 'Laptop',
+            'issue_category' => 'Thermal',
+            'pricing_type' => 'FIXED',
+            'base_price' => 500,
+            'regular_price' => 800,
+            'deal_enabled' => true,
+            'deal_price' => 500,
+            'deal_discount_pct' => 38,
+            'is_active' => true,
+        ]);
+
+        // 1. Visit shop profile page
+        $response = $this->get("/shops/{$shop->slug}");
+        $response->assertStatus(200);
+
+        // 2. Services tab search & filter controls are rendered
+        $response->assertSee('data-service-search-input', false);
+        $response->assertSee('data-service-filter-deals', false);
+        $response->assertSee('All Services');
+        $response->assertSee('Active Deals');
+
+        // 3. Spare parts tab search & filter controls are rendered
+        $response->assertSee('data-parts-search-input', false);
+        $response->assertSee('data-parts-filter-sale', false);
+        $response->assertSee('Sale Offers');
+        $response->assertSee('parts-sort-select', false);
+    }
+
+    public function test_shop_spare_parts_api_supports_search_sale_category_and_sorting(): void
+    {
+        $shop = RepairShop::where('name', 'ProTech Solutions')->first();
+
+        // Create parts: 1 battery on sale, 1 screen normal, 1 charger on sale
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'title' => 'ThinkPad T480 Battery 24Wh',
+            'product_group_key' => 'pgk-t480-batt',
+            'slug' => 'thinkpad-t480-batt-24wh',
+            'brand' => 'Lenovo',
+            'part_category' => 'Battery',
+            'base_price' => 2000,
+            'normal_price' => 2500,
+            'regular_price' => 2500,
+            'offer_price' => 2000,
+            'offer_enabled' => true,
+            'is_active' => true,
+            'stock_quantity' => 10,
+        ]);
+
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'title' => 'MacBook Air M1 Retina Display Panel',
+            'product_group_key' => 'pgk-m1-display',
+            'slug' => 'macbook-air-m1-display-panel',
+            'brand' => 'Apple',
+            'part_category' => 'Display & Touch',
+            'base_price' => 12000,
+            'normal_price' => 12000,
+            'regular_price' => 12000,
+            'offer_enabled' => false,
+            'is_active' => true,
+            'stock_quantity' => 5,
+        ]);
+
+        SparePartListing::create([
+            'shop_id' => $shop->id,
+            'title' => 'Dell 65W USB-C Fast Charger Battery Pack',
+            'product_group_key' => 'pgk-dell-charger',
+            'slug' => 'dell-65w-usb-c-charger',
+            'brand' => 'Dell',
+            'part_category' => 'Charger',
+            'base_price' => 1500,
+            'normal_price' => 1800,
+            'regular_price' => 1800,
+            'offer_price' => 1500,
+            'offer_enabled' => true,
+            'is_active' => true,
+            'stock_quantity' => 8,
+        ]);
+
+        // 1. In-shop text search for 'battery'
+        $searchResp = $this->getJson("/api/shops/{$shop->slug}/spare-parts?q=battery");
+        $searchResp->assertStatus(200);
+        $searchResp->assertJson(['ok' => true]);
+        $this->assertEquals(2, $searchResp->json('total')); // T480 Battery and Dell Charger Battery Pack
+        foreach ($searchResp->json('items') as $item) {
+            $matched = stripos($item['title'], 'battery') !== false || stripos($item['url'], 'battery') !== false;
+            $this->assertTrue($matched, "Item {$item['title']} should match 'battery'");
+        }
+
+        // 2. In-shop promotional sale filter
+        $saleResp = $this->getJson("/api/shops/{$shop->slug}/spare-parts?sale=1");
+        $saleResp->assertStatus(200);
+        $saleResp->assertJson(['ok' => true]);
+        $this->assertEquals(2, $saleResp->json('total')); // 2 items on sale
+        foreach ($saleResp->json('items') as $item) {
+            $this->assertTrue($item['is_offer'], "Item {$item['title']} must be on sale");
+            $this->assertLessThanOrEqual($item['normal_price'], $item['effective_price']);
+        }
+
+        // 3. Combined search + sale filter
+        $combResp = $this->getJson("/api/shops/{$shop->slug}/spare-parts?q=dell&sale=1");
+        $combResp->assertStatus(200);
+        $this->assertEquals(1, $combResp->json('total'));
+        $this->assertEquals('Dell 65W USB-C Fast Charger Battery Pack', $combResp->json('items.0.title'));
+
+        // 4. In-shop Category filter
+        $catResp = $this->getJson("/api/shops/{$shop->slug}/spare-parts?category=" . urlencode('Display & Touch'));
+        $catResp->assertStatus(200);
+        $this->assertEquals(1, $catResp->json('total'));
+        $this->assertEquals('MacBook Air M1 Retina Display Panel', $catResp->json('items.0.title'));
+
+        // 5. In-shop Sorting (price_asc)
+        $sortResp = $this->getJson("/api/shops/{$shop->slug}/spare-parts?sort=price_asc&limit=10");
+        $sortResp->assertStatus(200);
+        $items = $sortResp->json('items');
+        $this->assertCount(3, $items);
+        $this->assertEquals(1500, $items[0]['effective_price']); // Dell 1500
+        $this->assertEquals(2000, $items[1]['effective_price']); // Lenovo 2000
+        $this->assertEquals(12000, $items[2]['effective_price']); // Apple 12000
+    }
 }
