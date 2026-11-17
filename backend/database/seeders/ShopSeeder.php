@@ -468,10 +468,10 @@ class ShopSeeder extends Seeder
                 'review_count' => 145,
                 'price_level' => 2,
                 'has_voucher' => false,
-                'free_delivery' => false,
+                'free_delivery' => true,
                 'has_deals' => true,
                 'is_featured' => false,
-                'categories' => ['IN_SHOP_REPAIR', 'SPARE_PARTS'],
+                'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR', 'SPARE_PARTS'],
                 'specialties' => ['Smartphone Screen Repair', 'Genuine Spare Parts Installation', 'Battery & Housing Replacement'],
                 'eta_minutes' => 120,
                 'result_tag' => null,
@@ -585,7 +585,7 @@ class ShopSeeder extends Seeder
                 'free_delivery' => true,
                 'has_deals' => true,
                 'is_featured' => false,
-                'categories' => ['IN_SHOP_REPAIR', 'SPARE_PARTS'],
+                'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR', 'SPARE_PARTS'],
                 'specialties' => ['Hinge repair', 'Display replacement', 'Keyboard swapping'],
                 'eta_minutes' => 90,
                 'result_tag' => 'Budget Friendly',
@@ -666,10 +666,10 @@ class ShopSeeder extends Seeder
                 'review_count' => 410,
                 'price_level' => 1,
                 'has_voucher' => false,
-                'free_delivery' => false,
+                'free_delivery' => true,
                 'has_deals' => true,
                 'is_featured' => false,
-                'categories' => ['IN_SHOP_REPAIR', 'SPARE_PARTS'],
+                'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR', 'SPARE_PARTS'],
                 'specialties' => ['Wholesale spare parts', 'Soldering', 'Desktop power supply'],
                 'eta_minutes' => 120,
                 'result_tag' => null,
@@ -1002,10 +1002,10 @@ class ShopSeeder extends Seeder
                 'review_count' => 260,
                 'price_level' => 2,
                 'has_voucher' => true,
-                'free_delivery' => false,
+                'free_delivery' => true,
                 'has_deals' => true,
                 'is_featured' => false,
-                'categories' => ['IN_SHOP_REPAIR', 'SPARE_PARTS'],
+                'categories' => ['COURIER_PICKUP', 'IN_SHOP_REPAIR', 'SPARE_PARTS'],
                 'specialties' => ['Console repair', 'HDMI port soldering', 'Joy-Con stick drift fix'],
                 'eta_minutes' => 90,
                 'result_tag' => 'Console Specialist',
@@ -1092,7 +1092,10 @@ class ShopSeeder extends Seeder
             $slug = $s['slug'];
             $usedSlugs[$slug] = true;
             $groupKey = $s['vendor_group_key'] ?? ('curated_standalone:' . $slug);
-            $sCats = $s['categories'] ?? ['IN_SHOP_REPAIR'];
+            $sCats = $s['categories'] ?? ['COURIER_PICKUP', 'IN_SHOP_REPAIR'];
+            if (!in_array('COURIER_PICKUP', $sCats, true) && !in_array('SPARE_PARTS', $sCats, true)) {
+                $sCats[] = 'COURIER_PICKUP';
+            }
             $hasCourier = in_array('COURIER_PICKUP', $sCats, true);
 
             $combinedEntries[] = [
@@ -1140,7 +1143,10 @@ class ShopSeeder extends Seeder
             }
             $usedSlugs[$slug] = true;
 
-            $osmCats = $osm['categories'] ?? ['IN_SHOP_REPAIR', 'SPARE_PARTS'];
+            $osmCats = $osm['categories'] ?? ['COURIER_PICKUP', 'IN_SHOP_REPAIR', 'SPARE_PARTS'];
+            if (!in_array('COURIER_PICKUP', $osmCats, true)) {
+                $osmCats[] = 'COURIER_PICKUP';
+            }
             $osmCourier = in_array('COURIER_PICKUP', $osmCats, true);
             $inspFee = (float) ($osm['inspection_fee'] ?? 200);
             $combinedEntries[] = [
@@ -1491,6 +1497,10 @@ class ShopSeeder extends Seeder
             if (ServicePackage::where('is_active', true)->exists()) {
                 (new ServicePackageSeeder())->syncSeededShopCapabilities();
             }
+        }
+
+        if (class_exists(\App\Services\VoucherService::class)) {
+            app(\App\Services\VoucherService::class)->syncShopVoucherFlags();
         }
     }
 

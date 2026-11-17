@@ -269,9 +269,10 @@ class VoucherService
             return false;
         }
 
-        // Free Courier vouchers only apply to shops supporting courier pickup or spare part dispatch
+        // Free Courier vouchers: Vendor vouchers require shop courier support; Admin platform vouchers apply to all shops not excluded by admin
         if (
-            $voucher->discount_type === Voucher::DISCOUNT_FREE_COURIER
+            $voucher->issuer_type === Voucher::ISSUER_VENDOR
+            && $voucher->discount_type === Voucher::DISCOUNT_FREE_COURIER
             && !$shop->supportsCourierPickup()
             && !$shop->supportsSpareParts()
         ) {
@@ -529,7 +530,7 @@ class VoucherService
 
         // Free Courier fulfillment check
         if ($voucher->discount_type === Voucher::DISCOUNT_FREE_COURIER) {
-            if ($shop && !$shop->supportsCourierPickup() && !$shop->supportsSpareParts()) {
+            if ($voucher->issuer_type === Voucher::ISSUER_VENDOR && $shop && !$shop->supportsCourierPickup() && !$shop->supportsSpareParts()) {
                 return array_merge($empty, [
                     'error' => "'{$code}' covers courier pickup & delivery, which {$shop->name} does not offer.",
                 ]);

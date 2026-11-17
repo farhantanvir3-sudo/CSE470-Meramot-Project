@@ -52,7 +52,6 @@ class VoucherManagementController extends Controller
             ->orderBy('name')
             ->orderBy('city')
             ->orderBy('area')
-            ->limit(250)
             ->get(['id', 'name', 'is_branch', 'branch_name', 'area', 'city', 'supports_pickup', 'categories']);
 
         return view('admin.vouchers', compact(
