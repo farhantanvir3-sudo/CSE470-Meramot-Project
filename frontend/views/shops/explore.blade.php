@@ -6,8 +6,8 @@
 <div class="mx-auto max-w-7xl px-3 py-3 sm:px-4 sm:py-6 md:px-6">
 
     <!-- Breadcrumb & Page Header -->
-    <div class="mb-3 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-4">
-        <div class="min-w-0">
+    <div class="mb-3 sm:mb-6 flex items-center justify-between gap-2.5 sm:gap-4">
+        <div class="min-w-0 pr-1">
             <div class="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-[var(--muted-foreground)] mb-1 truncate">
                 <a href="/" class="hover:underline" data-i18n="home_nav">Home</a>
                 <span>/</span>
@@ -25,7 +25,7 @@
                     <span class="italic">"{{ request('q') }}"</span>
                 @endif
             </div>
-            <h1 class="text-xl sm:text-2xl font-bold text-[var(--foreground)] leading-tight" data-i18n="explore_verified_shops">
+            <h1 class="text-base sm:text-2xl font-bold text-[var(--foreground)] leading-tight" data-i18n="explore_verified_shops">
                 Explore Verified Repair Shops
             </h1>
             <p class="dev-only-badge text-[11px] sm:text-xs text-[var(--muted-foreground)] mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
@@ -36,13 +36,22 @@
         </div>
 
         <!-- Quick Action: Make Request Button -->
-        <div class="flex items-center gap-3 shrink-0">
-            <a href="/requests/create" class="inline-flex items-center justify-center gap-1.5 sm:gap-2 rounded-md bg-[var(--accent-dark)] px-3.5 py-2 sm:px-4 sm:py-2 text-xs font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap">
-                <i class="fa-solid fa-plus"></i>
-                <span data-i18n="post_repair_request">Post Device Repair Request</span>
+        <div class="flex items-center shrink-0">
+            <a href="/requests/create" class="inline-flex items-center justify-center gap-1 sm:gap-2 rounded-md bg-[var(--accent-dark)] px-2.5 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs font-semibold text-white shadow-sm hover:opacity-90 transition whitespace-nowrap shrink-0" title="Post Device Repair Request">
+                <i class="fa-solid fa-plus text-[10px] sm:text-xs"></i>
+                <span class="hidden sm:inline" data-i18n="post_repair_request">Post Device Repair Request</span>
+                <span class="inline sm:hidden btn-repair-text">Repair Request</span>
+                <i class="fa-solid fa-screwdriver-wrench text-[10px] hidden btn-repair-icon-extra" aria-hidden="true"></i>
             </a>
         </div>
     </div>
+    <style>
+        .btn-repair-icon-extra { display: none !important; }
+        @media (max-width: 349px) {
+            .btn-repair-text { display: none !important; }
+            .btn-repair-icon-extra { display: inline-block !important; }
+        }
+    </style>
 
     <!-- Main Layout: 2 Columns on Desktop (Matching SidebarFilters.tsx & shops-results-client.tsx) -->
     <div class="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-4 sm:gap-6 items-start">

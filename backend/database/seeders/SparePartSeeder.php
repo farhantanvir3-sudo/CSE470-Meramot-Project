@@ -144,15 +144,15 @@ class SparePartSeeder extends Seeder
         $curatedRepairTools = [
             ['title' => 'Kaisi K-8126 126-in-1 Magnetic Precision Repair Screwdriver Kit', 'brand' => 'Kaisi', 'base_price' => 1450, 'warranty_days' => 90, 'ext_id' => 990001],
             ['title' => 'Quick 861DW 1000W Hot Air BGA Rework & Soldering Station', 'brand' => 'Quick', 'base_price' => 16500, 'warranty_days' => 180, 'ext_id' => 990002],
-            ['title' => 'Mechanic UV50 BGA Solder Flux Paste (50g Jar)', 'brand' => 'Mechanic', 'base_price' => 380, 'warranty_days' => 30, 'ext_id' => 990003],
-            ['title' => 'Mechanic 0.3mm Lead-Free Rosin Core Solder Wire Roll', 'brand' => 'Mechanic', 'base_price' => 520, 'warranty_days' => 30, 'ext_id' => 990004],
+            ['title' => 'Mechanic UV50 BGA Solder Flux Paste (50g Jar)', 'brand' => 'Mechanic', 'base_price' => 380, 'warranty_days' => 0, 'ext_id' => 990003],
+            ['title' => 'Mechanic 0.3mm Lead-Free Rosin Core Solder Wire Roll', 'brand' => 'Mechanic', 'base_price' => 520, 'warranty_days' => 0, 'ext_id' => 990004],
             ['title' => 'UNI-T UT89X True RMS Digital Multimeter for PCB Diagnostics', 'brand' => 'UNI-T', 'base_price' => 2850, 'warranty_days' => 180, 'ext_id' => 990005],
-            ['title' => 'Zhanlida B-7000 Frame & Display Bonding Adhesive (110ml)', 'brand' => 'Zhanlida', 'base_price' => 240, 'warranty_days' => 30, 'ext_id' => 990006],
-            ['title' => 'Relife RL-049B Anti-Static IC & Motherboard Pry Spudger Set', 'brand' => 'Relife', 'base_price' => 350, 'warranty_days' => 30, 'ext_id' => 990007],
+            ['title' => 'Zhanlida B-7000 Frame & Display Bonding Adhesive (110ml)', 'brand' => 'Zhanlida', 'base_price' => 240, 'warranty_days' => 0, 'ext_id' => 990006],
+            ['title' => 'Relife RL-049B Anti-Static IC & Motherboard Pry Spudger Set', 'brand' => 'Relife', 'base_price' => 350, 'warranty_days' => 0, 'ext_id' => 990007],
             ['title' => 'Sunshine S-918E LCD & OLED Screen Heating Separator Pad', 'brand' => 'Sunshine', 'base_price' => 4200, 'warranty_days' => 180, 'ext_id' => 990008],
-            ['title' => 'ESD-15 Stainless Steel Anti-Static Precision Micro Tweezers Set', 'brand' => 'Mechanic', 'base_price' => 290, 'warranty_days' => 30, 'ext_id' => 990009],
+            ['title' => 'ESD-15 Stainless Steel Anti-Static Precision Micro Tweezers Set', 'brand' => 'Mechanic', 'base_price' => 290, 'warranty_days' => 0, 'ext_id' => 990009],
             ['title' => 'Mechanic S-160 Heat-Resistant Silicone Soldering Repair Mat', 'brand' => 'Mechanic', 'base_price' => 680, 'warranty_days' => 30, 'ext_id' => 990010],
-            ['title' => '3M 300LSE Double-Sided Display & Battery Mounting Tape Roll', 'brand' => 'Universal', 'base_price' => 220, 'warranty_days' => 30, 'ext_id' => 990011],
+            ['title' => '3M 300LSE Double-Sided Display & Battery Mounting Tape Roll', 'brand' => 'Universal', 'base_price' => 220, 'warranty_days' => 0, 'ext_id' => 990011],
         ];
         foreach ($curatedRepairTools as $toolRow) {
             $catalog[] = [
@@ -170,7 +170,9 @@ class SparePartSeeder extends Seeder
                 'highlights' => [
                     'Category: Tools, Consumables & Soldering',
                     'Workshop Grade Bench Tool / Consumable',
-                    'Warranty: ' . $toolRow['warranty_days'] . ' Days',
+                    $toolRow['warranty_days'] > 0
+                        ? ('Warranty: ' . $toolRow['warranty_days'] . ' Days')
+                        : 'No Shop or Brand Warranty (Consumable / Adhesive)',
                 ],
                 'description' => $toolRow['title'] . ' — professional electronics repair & micro-soldering tool for certified Meramot workshops.',
             ];
@@ -422,6 +424,20 @@ class SparePartSeeder extends Seeder
                     $shop->slug
                 );
 
+                // Logically determine warranty period:
+                // Consumables, chemical adhesives, tapes, solder supplies, raw micro-soldering IC chips,
+                // SIM trays, screw sets, and cosmetic glass covers realistically have NO warranty
+                // from either the workshop or the brand. Consequently, Meramot warranty protection cannot be offered.
+                $isNoWarrantyItem = ($normalizedCategory === 'Tools, Consumables & Soldering')
+                    || preg_match('/\b(glue|adhesive|tape|paste|flux|solder wire|solder paste|b-7000|t-7000|e-8000|3m|wick|resin|rosin|cleaner|alcohol|thermal pad|liquid metal)\b/i', $cleanTitle)
+                    || preg_match('/\b(sim tray|screw set|screws|pull tab|battery sticker|dust mesh|rubber gasket|jumper wire|rear glass|back glass|camera glass lens)\b/i', $cleanTitle)
+                    || preg_match('/\b(power ic|charging ic|audio ic|touch ic|backlight ic|pmic|ic chip|diode|resistor|capacitor|mosfet)\b/i', $cleanTitle)
+                    || ($role === 'alt_competitor' && (($idx + $sIdx) % 6 === 0));
+
+                $itemWarrantyDays = $isNoWarrantyItem
+                    ? 0
+                    : (int) ($item['warranty_days'] ?? 30);
+
                 $batchRows[] = [
                     'slug' => $listingSlug,
                     'shop_id' => $shop->id,
@@ -453,7 +469,7 @@ class SparePartSeeder extends Seeder
                     'assembly_fee' => (isset($item['assembly_fee']) && $item['assembly_fee'] !== null && $normalizedCategory !== 'Tools, Consumables & Soldering')
                         ? (float) $item['assembly_fee']
                         : 0.00,
-                    'warranty_days' => (int) ($item['warranty_days'] ?? 30),
+                    'warranty_days' => $itemWarrantyDays,
                     'stock_quantity' => 500 + (($idx * 37 + $sIdx * 85) % 900),
                     'sold_count' => 12 + (($idx * 29 + $sIdx * 41) % 320),
                     'wholesale_enabled' => $wholesaleEnabled,
@@ -504,6 +520,14 @@ class SparePartSeeder extends Seeder
         $normalizedBrandsCount = \App\Models\SparePartListing::normalizeGenericBrandsInDatabase();
         if (\Illuminate\Support\Facades\Schema::hasTable('spare_part_warranties')) {
             if (DB::getDriverName() === 'pgsql') {
+                // Delete warranties for items that have no shop/brand warranty
+                DB::statement("
+                    DELETE FROM spare_part_warranties
+                    WHERE spare_part_listing_id IN (
+                        SELECT id FROM spare_part_listings WHERE warranty_days <= 0
+                    )
+                ");
+
                 DB::statement("
                     INSERT INTO spare_part_warranties (
                         spare_part_listing_id, shop_id, vendor_profile_id, duration_days,
@@ -516,7 +540,9 @@ class SparePartSeeder extends Seeder
                         ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                     FROM spare_part_listings
                     WHERE warranty_days > 0
-                    ON CONFLICT (spare_part_listing_id) DO NOTHING
+                    ON CONFLICT (spare_part_listing_id) DO UPDATE
+                    SET duration_days = EXCLUDED.duration_days,
+                        updated_at = CURRENT_TIMESTAMP
                 ", [\App\Services\WarrantyLifecycleService::DEFAULT_SPARE_PART_TERMS]);
             }
         }
